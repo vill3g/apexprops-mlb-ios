@@ -19,18 +19,12 @@
       --sal: env(safe-area-inset-left, 0px);
       --sar: env(safe-area-inset-right, 0px);
     }
-    /* Stop pinch-to-zoom and rubber-band bounce */
+    /* Stop pinch-to-zoom */
     html, body {
       touch-action: pan-x pan-y;
       -webkit-text-size-adjust: 100%;
       user-select: none;
       -webkit-user-select: none;
-    }
-    body {
-      padding-top: max(0.5rem, var(--sat));
-      padding-bottom: max(5rem, calc(var(--sab) + 4.5rem));
-      padding-left: max(0.5rem, var(--sal));
-      padding-right: max(0.5rem, var(--sar));
     }
     /* Fixed background lock when modal is open */
     body.modal-open {
@@ -49,18 +43,29 @@
       border: 1px solid rgba(51, 65, 85, 0.65);
       backdrop-filter: blur(16px);
     }
-    /* Sticky Bottom Bar with Safe Area Support */
+    /* Sticky Bottom Bar */
     #bottomSlipBar {
       position: sticky;
-      bottom: max(0.75rem, var(--sab));
+      bottom: 1rem;
       z-index: 40;
     }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
 
+  <!-- Pull to Refresh Visual Indicator -->
+  <div id="pullToRefresh" class="w-full flex items-center justify-center overflow-hidden transition-[height,opacity] duration-200 ease-out pointer-events-none" style="height: 0px; opacity: 0;">
+    <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/95 border border-emerald-500/40 shadow-lg shadow-emerald-500/20 text-emerald-400 text-xs font-bold my-1">
+      <svg id="ptrArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+      </svg>
+      <span id="ptrSpinner" class="hidden animate-spin w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full"></span>
+      <span id="ptrText">Pull down to refresh</span>
+    </div>
+  </div>
+
   <!-- Main Container -->
-  <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+  <div class="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
     
     <!-- Top Navigation / Header -->
     <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
@@ -108,17 +113,15 @@
     <div id="view_mlb_hrrbi" class="space-y-6">
       
       <!-- Top 5 Daily Highest Probability Hero Section -->
-      <section class="space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="h-3.5 w-1.5 bg-emerald-500 rounded-full"></span>
-              <h2 class="text-lg sm:text-xl font-black text-white">Top 5 Highest Probability Picks (+1 Line)</h2>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">+1 Hit+Run+RBI</span>
-            </div>
-            <p class="text-xs text-slate-400 mt-0.5">Click any player to inspect complete Head-to-Head (BvP) history and Ballpark Weather & Wind radar.</p>
+      <section class="space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="h-3.5 w-1.5 bg-emerald-500 rounded-full shrink-0"></span>
+            <h2 class="text-sm sm:text-base md:text-xl font-black text-white whitespace-nowrap tracking-tight">Top 5 Highest Probability Picks</h2>
           </div>
+          <span class="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 whitespace-nowrap shrink-0">+1 H+R+RBI</span>
         </div>
+        <p class="text-xs text-slate-400">Click any player to inspect complete Head-to-Head (BvP) history and Ballpark Weather &amp; Wind radar.</p>
 
         <!-- Top 5 Grid Cards -->
         <div id="top5Grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5">
@@ -130,7 +133,7 @@
       <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div>
-            <h3 class="text-base font-black text-white">MLB Slate +1 H+R+RBI Screener</h3>
+            <h3 class="text-sm sm:text-base font-black text-white whitespace-nowrap">MLB Slate +1 H+R+RBI Screener</h3>
             <p class="text-xs text-slate-400">Click any row to open Head-to-Head (BvP) &amp; Stadium Weather Radar.</p>
           </div>
           <div class="flex items-center gap-2">
@@ -812,8 +815,8 @@
             </div>
 
             <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
-              <span class="font-bold text-white">+1 H+R+RBI</span>
-              <span class="font-mono font-bold text-emerald-400">${p.proj_total} Proj</span>
+              <span class="font-bold text-white whitespace-nowrap">+1 H+R+RBI</span>
+              <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">${p.proj_total} Proj</span>
             </div>
 
             <!-- DraftKings Live Odds Badge -->
@@ -2051,9 +2054,150 @@
       }
     });
 
+    // ==========================================
+    // 8. Mobile Pull-to-Refresh
+    // ==========================================
+    let ptrStartY = 0;
+    let ptrCurrentY = 0;
+    let isPtrPulling = false;
+    let isPtrRefreshing = false;
+    const PTR_THRESHOLD = 65;
+
+    function initPullToRefresh() {
+      const ptr = document.getElementById('pullToRefresh');
+      const arrow = document.getElementById('ptrArrow');
+      const spinner = document.getElementById('ptrSpinner');
+      const text = document.getElementById('ptrText');
+      if (!ptr) return;
+
+      const onStart = (clientY) => {
+        if (window.scrollY <= 2 && !isPtrRefreshing && !document.body.classList.contains('modal-open')) {
+          ptrStartY = clientY;
+          isPtrPulling = true;
+        } else {
+          isPtrPulling = false;
+        }
+      };
+
+      const onMove = (clientY) => {
+        if (!isPtrPulling || isPtrRefreshing) return;
+        ptrCurrentY = clientY;
+        const diff = ptrCurrentY - ptrStartY;
+
+        if (diff > 5 && window.scrollY <= 2) {
+          const pullDist = Math.min(diff * 0.45, 80);
+          ptr.style.height = `${pullDist}px`;
+          ptr.style.opacity = `${Math.min(pullDist / 40, 1)}`;
+
+          if (pullDist >= PTR_THRESHOLD) {
+            arrow.style.transform = 'rotate(180deg)';
+            text.innerText = 'Release to refresh';
+          } else {
+            arrow.style.transform = 'rotate(0deg)';
+            text.innerText = 'Pull down to refresh';
+          }
+        } else if (diff <= 0) {
+          ptr.style.height = '0px';
+          ptr.style.opacity = '0';
+        }
+      };
+
+      const onEnd = async () => {
+        if (!isPtrPulling || isPtrRefreshing) {
+          isPtrPulling = false;
+          return;
+        }
+        isPtrPulling = false;
+        const diff = ptrCurrentY - ptrStartY;
+        const pullDist = Math.min(diff * 0.45, 80);
+
+        if (pullDist >= PTR_THRESHOLD) {
+          isPtrRefreshing = true;
+          ptr.style.height = '48px';
+          ptr.style.opacity = '1';
+          arrow.classList.add('hidden');
+          spinner.classList.remove('hidden');
+          text.innerText = 'Refreshing props...';
+
+          try {
+            if (navigator.vibrate) navigator.vibrate(15);
+          } catch(e) {}
+
+          await refreshAllData();
+
+          text.innerText = 'Props updated!';
+          setTimeout(() => {
+            ptr.style.height = '0px';
+            ptr.style.opacity = '0';
+            setTimeout(() => {
+              arrow.classList.remove('hidden');
+              arrow.style.transform = 'rotate(0deg)';
+              spinner.classList.add('hidden');
+              text.innerText = 'Pull down to refresh';
+              isPtrRefreshing = false;
+            }, 250);
+          }, 500);
+        } else {
+          ptr.style.height = '0px';
+          ptr.style.opacity = '0';
+          arrow.style.transform = 'rotate(0deg)';
+        }
+      };
+
+      // Touch events (Mobile iOS & Android)
+      window.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 1) onStart(e.touches[0].clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches.length === 1) onMove(e.touches[0].clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchend', onEnd, { passive: true });
+
+      // Mouse drag events (Desktop test support)
+      let isMouseDown = false;
+      window.addEventListener('mousedown', (e) => {
+        if (window.scrollY <= 2 && e.button === 0) {
+          isMouseDown = true;
+          onStart(e.clientY);
+        }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (isMouseDown) onMove(e.clientY);
+      });
+      window.addEventListener('mouseup', () => {
+        if (isMouseDown) {
+          isMouseDown = false;
+          onEnd();
+        }
+      });
+    }
+
+    async function refreshAllData() {
+      updateLiveClock();
+      try {
+        if (activeMode === 'mlb_hrrbi') {
+          await loadMLBData();
+        } else if (activeMode === 'pitcher_ks') {
+          await loadPitcherKs();
+        } else if (activeMode === 'npb_japan') {
+          await loadNPB();
+        } else if (activeMode === 'kbo_korea') {
+          await loadKBO();
+        } else if (activeMode === 'slip_export') {
+          renderExportView();
+        }
+        fetch('/api/live/poll').catch(() => {});
+      } catch (err) {
+        console.warn('PTR refresh error:', err);
+      }
+    }
+
     // Initialize
     loadMLBData();
     startLive1sRefresh();
+    initPullToRefresh();
   </script>
 </body>
 </html>
