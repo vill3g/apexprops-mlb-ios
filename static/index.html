@@ -633,7 +633,7 @@
       <!-- Modal Header -->
       <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div class="flex items-center gap-3">
-          <img id="modalHeadshot" src="" class="w-12 h-12 rounded-xl object-cover bg-slate-800 border border-slate-700" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
+          <img id="modalHeadshot" src="" class="w-12 h-12 rounded-xl object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, currentModalPlayer ? currentModalPlayer.name : '', currentModalPlayer ? currentModalPlayer.id : '', currentModalPlayer ? currentModalPlayer.team_logo : '')">
           <div>
             <h3 id="modalPlayerName" class="font-black text-base text-white"></h3>
             <p id="modalSub" class="text-xs text-slate-400"></p>
@@ -791,6 +791,41 @@
     let activeSlip = [];
     let currentModalPlayer = null;
     let savedScrollY = 0;
+
+    // Verified Player Photo Registry & Error Fallback
+    let playerPhotoRegistry = null;
+    async function loadPlayerPhotoRegistry() {
+      if (playerPhotoRegistry) return playerPhotoRegistry;
+      try {
+        const res = await fetch('data/player_photos.json');
+        if (res.ok) playerPhotoRegistry = await res.json();
+      } catch (e) {}
+      return playerPhotoRegistry || {};
+    }
+    loadPlayerPhotoRegistry();
+
+    function handlePlayerHeadshotError(img, playerName, playerId, teamLogo) {
+      img.onerror = null; // stop retry loops
+      if (playerPhotoRegistry && playerName && playerPhotoRegistry[playerName]) {
+        img.src = playerPhotoRegistry[playerName].url;
+        return;
+      }
+      const pid = String(playerId || '').trim();
+      const current = img.src || '';
+      if (current.includes('mlbstatic.com') && pid && pid.length <= 5) {
+        img.src = `https://a.espncdn.com/i/headshots/mlb/players/full/${pid}.png`;
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = teamLogo || 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png';
+        };
+        return;
+      }
+      if (teamLogo) {
+        img.src = teamLogo;
+      } else {
+        img.src = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png';
+      }
+    }
 
     // iOS Modal Scroll Locking (Prevents background bleed/scroll on selection)
     function lockBodyScroll() {
@@ -958,7 +993,7 @@
             </div>
 
             <div class="flex items-center gap-2 cursor-pointer" onclick="openModal('${p.id}')">
-              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
+              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div class="overflow-hidden">
                 <div class="font-black text-xs text-white group-hover:text-emerald-400 truncate">${p.name}</div>
                 <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • #${p.order} (${p.pos || 'DH'})</div>
@@ -1013,7 +1048,7 @@
         <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openModal('${p.id}')">
           <td class="py-2.5 px-3">
             <div class="flex items-center gap-2">
-              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
+              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div>
                 <div class="flex items-center gap-1.5">
                   <span class="font-bold text-white">${p.name}</span>
@@ -1109,7 +1144,7 @@
             </div>
 
             <div class="flex items-center gap-2 cursor-pointer" onclick="openPitcherModal('${p.id}')">
-              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
+              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div class="overflow-hidden">
                 <div class="font-black text-xs text-white group-hover:text-orange-400 truncate">${p.name}</div>
                 <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • ${p.era} ERA</div>
@@ -1164,7 +1199,7 @@
         <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openPitcherModal('${p.id}')">
           <td class="py-2.5 px-3">
             <div class="flex items-center gap-2">
-              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
+              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div>
                 <div class="font-bold text-white">${p.name}</div>
                 <div class="text-[10px] text-slate-400">${p.team} • ${p.era} ERA</div>
@@ -1478,7 +1513,9 @@
       currentModalPlayer = p;
       lockBodyScroll();
 
-      document.getElementById('modalHeadshot').src = p.headshot;
+      const mHs = document.getElementById('modalHeadshot');
+      mHs.onerror = () => handlePlayerHeadshotError(mHs, p.name, p.id, p.team_logo);
+      mHs.src = p.headshot;
       document.getElementById('modalPlayerName').innerText = p.name;
       const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
       const pitcherStr = (p.pitcher_name || p.pitcher) ? ` • SP: ${p.pitcher_name || p.pitcher}` : '';
@@ -1556,7 +1593,9 @@
       currentModalPlayer = p;
       lockBodyScroll();
 
-      document.getElementById('modalHeadshot').src = p.headshot;
+      const mHs = document.getElementById('modalHeadshot');
+      mHs.onerror = () => handlePlayerHeadshotError(mHs, p.name, p.id, p.team_logo);
+      mHs.src = p.headshot;
       document.getElementById('modalPlayerName').innerText = p.name;
       const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
       document.getElementById('modalSub').innerText = `${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • Probable Starter (${p.era || '3.50'} ERA) • 📅 ${dtStr}`;
