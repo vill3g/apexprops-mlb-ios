@@ -535,11 +535,17 @@
         <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/10 group relative">
           <div class="space-y-2.5">
             <div class="flex items-center justify-between">
-              <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500 text-slate-950 font-black text-[11px]">
-                #${idx + 1}
-              </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                +${p.dk_edge || p.edge}% EV Edge
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500 text-slate-950 font-black text-[11px] shrink-0">
+                  #${idx + 1}
+                </span>
+                ${p.is_confirmed_lineup ? 
+                  '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap truncate">✓ Confirmed</span>' : 
+                  '<span class="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap truncate">Projected</span>'
+                }
+              </div>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                +${p.dk_edge || p.edge}% EV
               </span>
             </div>
 
@@ -547,7 +553,8 @@
               <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
               <div class="overflow-hidden">
                 <div class="font-black text-xs text-white group-hover:text-emerald-400 truncate">${p.name}</div>
-                <div class="text-[10px] text-slate-400 truncate">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • #${p.order}</div>
+                <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • #${p.order} (${p.pos || 'DH'})</div>
+                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">vs SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
                 <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
               </div>
             </div>
@@ -600,14 +607,20 @@
             <div class="flex items-center gap-2">
               <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
               <div>
-                <div class="font-bold text-white">${p.name}</div>
-                <div class="text-[10px] text-slate-400">${p.team} • #${p.order}</div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-white">${p.name}</span>
+                  ${p.is_confirmed_lineup ? 
+                    '<span class="text-[8px] font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">✓ Confirmed</span>' : 
+                    '<span class="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap">Projected</span>'
+                  }
+                </div>
+                <div class="text-[10px] text-slate-400">${p.team} • #${p.order} (${p.pos || 'DH'})</div>
               </div>
             </div>
           </td>
           <td class="py-2.5 px-3">
             <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${p.opponent}</div>
-            <div class="text-[10px] text-slate-400 truncate max-w-[120px]">${p.pitcher}</div>
+            <div class="text-[10px] text-slate-300 truncate max-w-[140px]"><span class="text-slate-500">SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono text-[9px]">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
             <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
           </td>
           <td class="py-2.5 px-3">
@@ -674,11 +687,16 @@
         <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-orange-500/50 transition-all hover:shadow-lg hover:shadow-orange-500/10 group relative">
           <div class="space-y-2.5">
             <div class="flex items-center justify-between">
-              <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-orange-500 text-slate-950 font-black text-[11px]">
-                #${idx + 1}
-              </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                +${p.dk_edge || p.edge}% EV Edge
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-orange-500 text-slate-950 font-black text-[11px] shrink-0">
+                  #${idx + 1}
+                </span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 whitespace-nowrap truncate">
+                  Announced Starter
+                </span>
+              </div>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
+                +${p.dk_edge || p.edge}% EV
               </span>
             </div>
 
@@ -686,7 +704,8 @@
               <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="this.onerror=null; this.src='https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png'">
               <div class="overflow-hidden">
                 <div class="font-black text-xs text-white group-hover:text-orange-400 truncate">${p.name}</div>
-                <div class="text-[10px] text-slate-400 truncate">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • ${p.era} ERA</div>
+                <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • ${p.era} ERA</div>
+                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">Metrics:</span> <span class="text-orange-400 font-bold font-mono">${p.k9 ? p.k9 + ' K/9' : ''}</span> • CSW: <span class="text-emerald-400 font-mono">${p.csw || '30.0%'}</span></div>
                 <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
               </div>
             </div>
@@ -1031,8 +1050,9 @@
       document.getElementById('modalHeadshot').src = p.headshot;
       document.getElementById('modalPlayerName').innerText = p.name;
       const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
-      const pitcherStr = p.pitcher ? ` • SP: ${p.pitcher}` : '';
-      document.getElementById('modalSub').innerText = `${p.team} ${p.is_home ? 'vs' : (p.is_home === false ? '@' : 'vs')} ${p.opponent}${pitcherStr} • 📅 ${dtStr}`;
+      const pitcherStr = (p.pitcher_name || p.pitcher) ? ` • SP: ${p.pitcher_name || p.pitcher}` : '';
+      const statusStr = p.lineup_status ? ` • ${p.is_confirmed_lineup ? '✓ ' : ''}${p.lineup_status} (#${p.order})` : '';
+      document.getElementById('modalSub').innerText = `${p.team} ${p.is_home ? 'vs' : (p.is_home === false ? '@' : 'vs')} ${p.opponent}${pitcherStr}${statusStr} • 📅 ${dtStr}`;
       document.getElementById('modalWinProb').innerText = `${p.win_prob}%`;
       
       const isPitcher = p.pos === 'SP' || p.k_line;
@@ -1108,7 +1128,7 @@
       document.getElementById('modalHeadshot').src = p.headshot;
       document.getElementById('modalPlayerName').innerText = p.name;
       const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
-      document.getElementById('modalSub').innerText = `${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • ${p.era || '2.50'} ERA • 📅 ${dtStr}`;
+      document.getElementById('modalSub').innerText = `${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • Probable Starter (${p.era || '3.50'} ERA) • 📅 ${dtStr}`;
       document.getElementById('modalWinProb').innerText = `${p.win_prob}%`;
       document.getElementById('modalMetricLabel').innerText = "Projected Ks";
       document.getElementById('modalProjScore').innerText = `${p.proj_k || p.proj_total} Ks`;
