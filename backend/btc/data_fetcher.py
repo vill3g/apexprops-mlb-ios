@@ -8,7 +8,9 @@ import time
 from datetime import datetime, timezone
 import requests
 import pandas as pd
-
+import os
+import logging
+logger = logging.getLogger(__name__)
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
@@ -231,14 +233,40 @@ _target_cache = {
 
 def get_btc_ticker() -> dict:
     """
-    Get live 24h ticker info: price, 24h high, low, volume, and % change.
-    Cached for 1.0s to support high-frequency 1s polling without external API limits.
+    Get live 24h ticker info. Primary source: CF Benchmarks BRTI.
+    Cached for 1.0s to support high-frequency polling.
+    Falls back to Coinbase, Binance.US, and candle fallback if BRTI is unavailable.
     """
     now = time.time()
     if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 1.0):
         return _ticker_cache["data"]
 
-    # Try Coinbase ticker (fastest endpoint)
+    # Attempt CF Benchmarks BRTI
+    try:
+        api_key = os.getenv("CF_BENCHMARKS_API_KEY")
+        if api_key:
+            url = "https://www.cfbenchmarks.com/api/v1/values?id=BRTI"
+            headers = {"Authorization": f"Basic {api_key}", "Accept": "application/json"}
+            resp = requests.get(url, headers=headers, timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+            price = float(data.get("value"))
+            result = {
+                "price": round(price, 2),
+                "open_24h": round(price, 2),
+                "high_24h": round(price, 2),
+                "low_24h": round(price, 2),
+                "volume_24h": 0.0,
+                "change_24h": 0.0,
+                "source": "CFBRTI",
+            }
+            _ticker_cache["timestamp"] = now
+            _ticker_cache["data"] = result
+            return result
+    except Exception as e:
+        logger.warning(f"CFâ€¯Benchmarks BRTI request failed: {e} â€“ falling back to other sources.")
+
+    # Original Coinbase logic (fastest endpoint)
     try:
         url = "https://api.exchange.coinbase.com/products/BTC-USD/ticker"
         resp = requests.get(url, headers=HEADERS, timeout=3)
@@ -246,7 +274,6 @@ def get_btc_ticker() -> dict:
             tick = resp.json()
             last_price = float(tick["price"])
             vol_24h = float(tick.get("volume", 0))
-
             # Fetch or approximate 24h stats if older than 30s
             stats_cached = _ticker_cache.get("stats")
             if not stats_cached or (now - stats_cached.get("ts", 0) > 30):
@@ -255,21 +282,14 @@ def get_btc_ticker() -> dict:
                     s_resp = requests.get(s_url, headers=HEADERS, timeout=4)
                     if s_resp.status_code == 200:
                         s_data = s_resp.json()
-                        stats_cached = {
-                            "open": float(s_data["open"]),
-                            "high": float(s_data["high"]),
-                            "low": float(s_data["low"]),
-                            "ts": now
-                        }
+                        stats_cached = {"open": float(s_data["open"]), "high": float(s_data["high"]), "low": float(s_data["low"]), "ts": now}
                         _ticker_cache["stats"] = stats_cached
                 except Exception:
                     pass
-
             open_price = stats_cached["open"] if stats_cached else last_price
             high_24h = max(last_price, stats_cached["high"]) if stats_cached else last_price
             low_24h = min(last_price, stats_cached["low"]) if stats_cached else last_price
             change_24h = ((last_price - open_price) / open_price) * 100 if open_price > 0 else 0.0
-
             result = {
                 "price": round(last_price, 2),
                 "open_24h": round(open_price, 2),
@@ -277,7 +297,7 @@ def get_btc_ticker() -> dict:
                 "low_24h": round(low_24h, 2),
                 "volume_24h": round(vol_24h, 2),
                 "change_24h": round(change_24h, 2),
-                "source": "Coinbase"
+                "source": "Coinbase",
             }
             _ticker_cache["timestamp"] = now
             _ticker_cache["data"] = result
@@ -298,7 +318,7 @@ def get_btc_ticker() -> dict:
                 "low_24h": round(float(data["lowPrice"]), 2),
                 "volume_24h": round(float(data["volume"]), 2),
                 "change_24h": round(float(data["priceChangePercent"]), 2),
-                "source": "Binance.US"
+                "source": "Binance.US",
             }
             _ticker_cache["timestamp"] = now
             _ticker_cache["data"] = result
@@ -309,7 +329,6 @@ def get_btc_ticker() -> dict:
     # Fallback to candles
     if _ticker_cache["data"]:
         return _ticker_cache["data"]
-
     candles = fetch_candles(timeframe="15m", limit=2)
     last_close = float(candles.iloc[-1]["close"])
     prev_close = float(candles.iloc[-2]["close"])
@@ -320,7 +339,7 @@ def get_btc_ticker() -> dict:
         "low_24h": round(last_close, 2),
         "volume_24h": round(float(candles.iloc[-1]["volume"]), 2),
         "change_24h": round(((last_close - prev_close) / prev_close) * 100, 2),
-        "source": "CandleFallback"
+        "source": "CandleFallback",
     }
     _ticker_cache["timestamp"] = now
     _ticker_cache["data"] = result
@@ -436,7 +455,7 @@ def get_live_15m_target_data() -> dict:
                         "delta": diff,
                         "delta_pct": diff_pct,
                         "direction": "HIGHER" if is_higher else "LOWER",
-                        "arrow": "▲" if is_higher else "▼",
+                        "arrow": "â–²" if is_higher else "â–¼",
                         "color": "green" if is_higher else "red"
                     })
 
