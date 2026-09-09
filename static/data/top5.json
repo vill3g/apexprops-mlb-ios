@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-09 14:56:26 ET",
+  "timestamp": "2026-09-09 14:59:12 ET",
   "slate_count": 15,
   "total_props": 132,
   "top_5": [
@@ -29,7 +29,7 @@
       "book_odds": "DK -205",
       "implied_prob": 68.0,
       "edge": 20.3,
-      "l10_hit": "8/10",
+      "l10_hit": "9/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Robert Stock (4.3 ERA)",
       "pitcher_name": "Robert Stock",
@@ -107,7 +107,7 @@
         {
           "date": "Sep 7",
           "opp": "vs NYM",
-          "ab": 4,
+          "ab": 5,
           "r": 1,
           "h": 1,
           "so": 1,
@@ -117,7 +117,7 @@
         },
         {
           "date": "Sep 6",
-          "opp": "@ NYM",
+          "opp": "vs NYM",
           "ab": 4,
           "r": 1,
           "h": 2,
@@ -127,7 +127,7 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 4",
+          "date": "Sep 5",
           "opp": "@ NYM",
           "ab": 4,
           "r": 1,
@@ -138,15 +138,70 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 3",
-          "opp": "vs NYM",
+          "date": "Sep 4",
+          "opp": "@ NYM",
           "ab": 5,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "@ NYM",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "vs NYM",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 1",
+          "opp": "vs NYM",
+          "ab": 3,
           "r": 0,
           "h": 0,
           "so": 1,
           "rbi": 0,
           "hrrbi": 0,
           "hit_prop": false
+        },
+        {
+          "date": "Aug 31",
+          "opp": "@ NYM",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 30",
+          "opp": "@ NYM",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -185,7 +240,7 @@
       "book_odds": "DK -183",
       "implied_prob": 68.0,
       "edge": 19.1,
-      "l10_hit": "8/10",
+      "l10_hit": "7/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Janson Junk (4.4 ERA)",
       "pitcher_name": "Janson Junk",
@@ -274,7 +329,7 @@
         },
         {
           "date": "Sep 6",
-          "opp": "@ MIA",
+          "opp": "vs MIA",
           "ab": 5,
           "r": 0,
           "h": 0,
@@ -284,7 +339,7 @@
           "hit_prop": false
         },
         {
-          "date": "Sep 4",
+          "date": "Sep 5",
           "opp": "@ MIA",
           "ab": 4,
           "r": 1,
@@ -295,14 +350,69 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 3",
-          "opp": "vs MIA",
+          "date": "Sep 4",
+          "opp": "@ MIA",
           "ab": 4,
           "r": 1,
           "h": 1,
           "so": 1,
           "rbi": 0,
           "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "@ MIA",
+          "ab": 3,
+          "r": 0,
+          "h": 0,
+          "so": 2,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "vs MIA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 2,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 1",
+          "opp": "vs MIA",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 31",
+          "opp": "@ MIA",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 2,
+          "hrrbi": 5,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 30",
+          "opp": "@ MIA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
           "hit_prop": true
         }
       ],
@@ -442,7 +552,7 @@
         },
         {
           "date": "Sep 6",
-          "opp": "@ COL",
+          "opp": "vs COL",
           "ab": 5,
           "r": 0,
           "h": 0,
@@ -452,7 +562,7 @@
           "hit_prop": false
         },
         {
-          "date": "Sep 4",
+          "date": "Sep 5",
           "opp": "@ COL",
           "ab": 4,
           "r": 1,
@@ -463,14 +573,69 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 3",
-          "opp": "vs COL",
+          "date": "Sep 4",
+          "opp": "@ COL",
           "ab": 4,
           "r": 1,
           "h": 1,
           "so": 1,
           "rbi": 0,
           "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "@ COL",
+          "ab": 3,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "vs COL",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 1",
+          "opp": "vs COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 31",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 30",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 2,
+          "rbi": 1,
+          "hrrbi": 3,
           "hit_prop": true
         }
       ],
@@ -510,7 +675,7 @@
       "book_odds": "DK -180",
       "implied_prob": 68.0,
       "edge": 19.0,
-      "l10_hit": "8/10",
+      "l10_hit": "7/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Tomoyuki Sugano (3.6 ERA)",
       "pitcher_name": "Tomoyuki Sugano",
@@ -602,7 +767,7 @@
         },
         {
           "date": "Sep 6",
-          "opp": "@ COL",
+          "opp": "vs COL",
           "ab": 4,
           "r": 1,
           "h": 2,
@@ -612,7 +777,7 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 4",
+          "date": "Sep 5",
           "opp": "@ COL",
           "ab": 4,
           "r": 1,
@@ -623,8 +788,63 @@
           "hit_prop": true
         },
         {
+          "date": "Sep 4",
+          "opp": "@ COL",
+          "ab": 3,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
           "date": "Sep 3",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
           "opp": "vs COL",
+          "ab": 5,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 1",
+          "opp": "vs COL",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 31",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 30",
+          "opp": "@ COL",
           "ab": 5,
           "r": 0,
           "h": 0,
@@ -670,7 +890,7 @@
       "book_odds": "DK -179",
       "implied_prob": 68.0,
       "edge": 18.9,
-      "l10_hit": "8/10",
+      "l10_hit": "7/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Ryan Johnson (3.9 ERA)",
       "pitcher_name": "Ryan Johnson",
@@ -741,7 +961,7 @@
         {
           "date": "Sep 8",
           "opp": "vs LAA",
-          "ab": 5,
+          "ab": 3,
           "r": 0,
           "h": 0,
           "so": 1,
@@ -762,17 +982,17 @@
         },
         {
           "date": "Sep 6",
-          "opp": "@ LAA",
-          "ab": 4,
-          "r": 0,
-          "h": 0,
+          "opp": "vs LAA",
+          "ab": 5,
+          "r": 1,
+          "h": 1,
           "so": 1,
           "rbi": 0,
-          "hrrbi": 0,
-          "hit_prop": false
+          "hrrbi": 2,
+          "hit_prop": true
         },
         {
-          "date": "Sep 4",
+          "date": "Sep 5",
           "opp": "@ LAA",
           "ab": 4,
           "r": 1,
@@ -783,14 +1003,69 @@
           "hit_prop": true
         },
         {
-          "date": "Sep 3",
-          "opp": "vs LAA",
+          "date": "Sep 4",
+          "opp": "@ LAA",
           "ab": 4,
           "r": 1,
           "h": 1,
           "so": 1,
           "rbi": 0,
           "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "@ LAA",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "vs LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 2,
+          "hrrbi": 5,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 1",
+          "opp": "vs LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 31",
+          "opp": "@ LAA",
+          "ab": 3,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 30",
+          "opp": "@ LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
           "hit_prop": true
         }
       ],
