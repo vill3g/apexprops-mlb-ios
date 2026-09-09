@@ -478,7 +478,7 @@
               <span class="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
                 <span>🎯</span> 15M PRICE TARGET
               </span>
-              <span class="text-[9px] text-slate-400 font-sans">Prev 15M Close</span>
+              <span id="btcTargetSourceLabel" class="text-[9px] text-amber-400/90 font-mono font-bold">Kalshi KXBTC15M</span>
             </div>
             <div class="flex items-baseline justify-between gap-2">
               <div id="btcTargetPriceHero" class="text-2xl sm:text-3xl font-black font-mono text-amber-400">
@@ -596,6 +596,15 @@
                 <span id="btcPredProbText" class="text-xs font-mono font-bold text-cyan-400">50% Probability</span>
                 <span class="text-slate-600">•</span>
                 <span id="btcPredConfidenceTag" class="text-[10px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
+              </div>
+              <!-- Kalshi Market Odds vs Model Prediction Comparison -->
+              <div id="btcKalshiOddsContainer" class="pt-1.5 flex items-center justify-center">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-[11px] font-mono">
+                  <span class="text-slate-400 font-sans font-semibold">🏛️ Kalshi Market Odds:</span>
+                  <span id="btcKalshiYesProb" class="text-emerald-400 font-bold">--% Yes</span>
+                  <span class="text-slate-600">/</span>
+                  <span id="btcKalshiNoProb" class="text-red-400 font-bold">--% No</span>
+                </div>
               </div>
             </div>
 
@@ -1147,6 +1156,7 @@
         }
         initBtcChartOnce();
         updateBtcCountdownClock();
+        fetchKalshiDirect();
         fetchBtcKlinesDirect();
         triggerBtcAnalysis();
       }
@@ -1166,6 +1176,7 @@
     function startLive1sRefresh() {
       updateLiveClock();
       updateBtcCountdownClock();
+      fetchKalshiDirect();
       fetchBtcKlinesDirect();
       setInterval(async () => {
         updateLiveClock();
@@ -2462,6 +2473,10 @@
       if (targetEl && d.target_price) {
         targetEl.innerText = `$${Number(d.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
+      const sourceEl = document.getElementById("btcTargetSourceLabel");
+      if (sourceEl) {
+        sourceEl.innerText = d.target_source || (d.kalshi ? "Kalshi KXBTC15M" : "15M Candle Close");
+      }
 
       // Target Delta Badge
       const deltaBadge = document.getElementById("btcTargetDeltaBadge");
@@ -2554,6 +2569,18 @@
       if (probText) probText.innerText = `${prob}% Probability`;
       if (confTag) confTag.innerText = tb.confidence_badge || "MODERATE EDGE";
 
+      // Render Kalshi Market Odds vs Model Prediction
+      const kData = tb.kalshi || window.cachedKalshiData;
+      const kYesEl = document.getElementById("btcKalshiYesProb");
+      const kNoEl = document.getElementById("btcKalshiNoProb");
+      if (kData && kData.yes_prob !== undefined) {
+        if (kYesEl) kYesEl.innerText = `${kData.yes_prob}% Yes (Above)`;
+        if (kNoEl) kNoEl.innerText = `${kData.no_prob}% No (Below)`;
+      } else {
+        if (kYesEl) kYesEl.innerText = "50% Yes";
+        if (kNoEl) kNoEl.innerText = "50% No";
+      }
+
       if (barAbove && barUnder) {
         if (isAbove) {
           barAbove.style.width = `${prob}%`;
@@ -2609,7 +2636,74 @@
     window.cachedBtcTargetPrice = null;
     window.cachedBtcLast5Targets = [];
     window.cachedBtcStreak = "Calculating...";
+    window.cachedKalshiData = null;
     let isFetchingKlinesDirect = false;
+    let isFetchingKalshiDirect = false;
+
+    // Direct Kalshi 15M Market Fetcher (with local fallback)
+    async function fetchKalshiDirect() {
+      if (isFetchingKalshiDirect) return;
+      isFetchingKalshiDirect = true;
+      try {
+        // 1. Try backend endpoint first
+        try {
+          const res = await fetch('/api/btc/kalshi');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.target_price) {
+              window.cachedKalshiData = data;
+              window.cachedBtcTargetPrice = data.target_price;
+              const tHero = document.getElementById("btcTargetPriceHero");
+              if (tHero) tHero.innerText = `$${Number(data.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              const sLbl = document.getElementById("btcTargetSourceLabel");
+              if (sLbl) sLbl.innerText = "Kalshi KXBTC15M";
+              const kYes = document.getElementById("btcKalshiYesProb");
+              const kNo = document.getElementById("btcKalshiNoProb");
+              if (kYes) kYes.innerText = `${data.yes_prob}% Yes (Above)`;
+              if (kNo) kNo.innerText = `${data.no_prob}% No (Below)`;
+              return;
+            }
+          }
+        } catch (e) {}
+
+        // 2. Try direct public Kalshi API
+        const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
+        if (kRes.ok) {
+          const kJson = await kRes.json();
+          const markets = kJson.markets || [];
+          if (markets.length > 0) {
+            const m = markets[0];
+            const strike = parseFloat(m.floor_strike);
+            if (strike > 0) {
+              const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
+              const yesP = Math.round(yesBid * 100);
+              const noP = 100 - yesP;
+              const kObj = {
+                target_price: strike,
+                yes_prob: yesP,
+                no_prob: noP,
+                ticker: m.ticker,
+                source: "Kalshi KXBTC15M"
+              };
+              window.cachedKalshiData = kObj;
+              window.cachedBtcTargetPrice = strike;
+              const tHero = document.getElementById("btcTargetPriceHero");
+              if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              const sLbl = document.getElementById("btcTargetSourceLabel");
+              if (sLbl) sLbl.innerText = "Kalshi KXBTC15M";
+              const kYes = document.getElementById("btcKalshiYesProb");
+              const kNo = document.getElementById("btcKalshiNoProb");
+              if (kYes) kYes.innerText = `${yesP}% Yes (Above)`;
+              if (kNo) kNo.innerText = `${noP}% No (Below)`;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Direct Kalshi fetch fallback:", err);
+      } finally {
+        isFetchingKalshiDirect = false;
+      }
+    }
 
     // 100% Local 1-second Countdown Timer (Pure JS, never fails on iPhone)
     function updateBtcCountdownClock() {
@@ -2807,6 +2901,13 @@
           }
           if (liveData.target_price) {
             window.cachedBtcTargetPrice = liveData.target_price;
+          }
+          if (liveData.kalshi) {
+            window.cachedKalshiData = liveData.kalshi;
+            const kYes = document.getElementById("btcKalshiYesProb");
+            const kNo = document.getElementById("btcKalshiNoProb");
+            if (kYes) kYes.innerText = `${liveData.kalshi.yes_prob}% Yes (Above)`;
+            if (kNo) kNo.innerText = `${liveData.kalshi.no_prob}% No (Below)`;
           }
           handledByServer = true;
           return;
