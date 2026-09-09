@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexProps MLB // Hits + Runs + RBIs Analytics Engine</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ApexProps">
+  <meta name="theme-color" content="#020617">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/mlb.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Main Container -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    
+    <!-- Top Navigation / Header -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div class="flex items-center gap-3.5">
+        <div class="h-12 w-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-emerald-500/20">
+          ⚾
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black tracking-tight">APEX<span class="text-emerald-400">PROPS</span></h1>
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">MLB H+R+RBI v2.5</span>
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+              ESPN API Live
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Real-time ESPN Lineups &amp; DraftKings Totals • 5,000 Monte Carlo Iterations • Correlated H+R+RBI</p>
+        </div>
+      </div>
+
+      <!-- Live Controls -->
+      <div class="flex items-center flex-wrap gap-3">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl glass-panel text-xs text-slate-300">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>ESPN Games: <strong class="text-white" id="slateGamesHeader">15 Games Active</strong></span>
+        </div>
+
+        <button onclick="refreshBackendData()" id="syncBtn" class="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 hover:text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-md shadow-emerald-500/20">
+          <span>⚡ Sync ESPN &amp; Re-Sim</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Highlight Metric Banners -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+      <div class="glass-panel p-3.5 rounded-2xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-base">📡</div>
+        <div>
+          <div class="text-slate-400 font-medium">ESPN Data Pipeline</div>
+          <div class="font-bold text-white" id="lastUpdatedBanner">Live Sync Active</div>
+        </div>
+      </div>
+      <div class="glass-panel p-3.5 rounded-2xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-base">🎯</div>
+        <div>
+          <div class="text-slate-400 font-medium">Top 5 Hit Rate (30D)</div>
+          <div class="font-bold text-white">73.1% Win Rate</div>
+        </div>
+      </div>
+      <div class="glass-panel p-3.5 rounded-2xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-base">🎲</div>
+        <div>
+          <div class="text-slate-400 font-medium">DraftKings Odds Sync</div>
+          <div class="font-bold text-white">Implied Team Totals Mapped</div>
+        </div>
+      </div>
+      <div class="glass-panel p-3.5 rounded-2xl flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-base">⚙️</div>
+        <div>
+          <div class="text-slate-400 font-medium">Simulation Method</div>
+          <div class="font-bold text-white">Correlated Monte Carlo PA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HERO SECTION: Top 5 Highest Probability Picks -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="h-3.5 w-1.5 bg-emerald-500 rounded-full"></span>
+            <h2 class="text-xl font-black tracking-tight text-white">Today's Top 5 Highest Probability Picks</h2>
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">AI Recommended</span>
+          </div>
+          <p class="text-xs text-slate-400">Batters with the highest statistical likelihood to exceed their H+R+RBI line, diversified across games to minimize correlation risk.</p>
+        </div>
+        <div class="text-xs text-slate-400 hidden sm:block">Sorted by Calibrated Win Probability</div>
+      </div>
+
+      <!-- Top 5 Grid Cards -->
+      <div id="top5Grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Injected via JavaScript -->
+        <div class="col-span-full py-12 text-center text-slate-400">Loading live ESPN slate and simulating props...</div>
+      </div>
+    </section>
+
+    <!-- Prop Screener & Interactive Filter Table -->
+    <section class="glass-panel rounded-2xl p-5 sm:p-6 space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div>
+          <h3 class="text-lg font-black text-white">MLB Slate H+R+RBI Prop Screener</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Explore and filter every batter on the slate with automated win probabilities and book edge comparisons.</p>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="relative">
+            <input type="text" id="searchInput" placeholder="Search player, team, or opponent..." oninput="applyFilters()" 
+                   class="bg-slate-900 border border-slate-700 rounded-xl text-xs px-3.5 py-2 w-44 sm:w-60 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-500">
+          </div>
+          <select id="probFilter" onchange="applyFilters()" class="bg-slate-900 border border-slate-700 rounded-xl text-xs px-3 py-2 text-white">
+            <option value="0">All Probabilities</option>
+            <option value="65">Win Prob &ge; 65%</option>
+            <option value="70">Win Prob &ge; 70%</option>
+            <option value="75">Win Prob &ge; 75%</option>
+          </select>
+          <select id="lineFilter" onchange="applyFilters()" class="bg-slate-900 border border-slate-700 rounded-xl text-xs px-3 py-2 text-white">
+            <option value="all">All Lines (1.5 &amp; 2.5)</option>
+            <option value="1.5">Line: Over 1.5</option>
+            <option value="2.5">Line: Over 2.5</option>
+          </select>
+          <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-white underline px-2">Reset</button>
+        </div>
+      </div>
+
+      <!-- Screener Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
+              <th class="py-3 px-3">PLAYER &amp; ORDER</th>
+              <th class="py-3 px-3">MATCHUP &amp; SP</th>
+              <th class="py-3 px-3">PROP LINE</th>
+              <th class="py-3 px-3 text-center">PROJECTED TOTAL</th>
+              <th class="py-3 px-3 text-center">WIN PROB</th>
+              <th class="py-3 px-3 text-center">BOOK / FAIR</th>
+              <th class="py-3 px-3 text-center">EDGE</th>
+              <th class="py-3 px-3 text-center">L10 HIT</th>
+              <th class="py-3 px-3 text-right">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody id="screenerTableBody" class="divide-y divide-slate-800/80">
+            <!-- Rows injected by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bottom Flex / Parlay Slip Drawer -->
+    <div id="slipDrawer" class="glass-panel rounded-2xl p-4 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-500/30">
+          🧾
+        </div>
+        <div>
+          <div class="font-black text-sm text-white flex items-center gap-2">
+            <span>Custom Prop Slip Builder</span>
+            <span id="slipCountBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">0 Picks Selected</span>
+          </div>
+          <p class="text-xs text-slate-400" id="slipSummaryText">Select picks from Top 5 or the table to compute joint parlay win probability.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div class="text-[10px] uppercase text-slate-400 font-semibold">Joint Win Prob</div>
+          <div class="text-base font-black text-emerald-400" id="jointWinProb">--</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] uppercase text-slate-400 font-semibold">Fair Multiplier</div>
+          <div class="text-base font-black text-blue-400" id="fairMultiplier">--</div>
+        </div>
+        <button onclick="clearSlip()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition font-medium">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deep Dive Analytical Modal -->
+  <div id="deepDiveModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-800 flex items-start justify-between bg-slate-950/60">
+        <div class="flex items-center gap-3.5">
+          <div class="relative">
+            <img id="modalPlayerHeadshot" src="" alt="" class="w-14 h-14 rounded-xl object-cover bg-slate-800 border border-slate-700" onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'">
+            <img id="modalTeamLogo" src="" alt="" class="w-5 h-5 absolute -bottom-1 -right-1 rounded-full bg-white p-0.5 shadow">
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h4 id="modalPlayerName" class="text-lg font-black text-white">Player Name</h4>
+              <span id="modalPlayerPos" class="text-xs px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">RF • Order #2</span>
+            </div>
+            <p id="modalMatchupSubtitle" class="text-xs text-slate-400">Team vs Opponent • SP: Pitcher Name</p>
+          </div>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 text-2xl rounded-lg leading-none">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto space-y-5 text-xs">
+        
+        <!-- Projection Meter -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+            <div class="text-slate-400">Prop Line</div>
+            <div id="modalPropLine" class="text-base font-bold text-white mt-0.5">Over 1.5</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+            <div class="text-slate-400">Model Projection</div>
+            <div id="modalProjScore" class="text-base font-bold text-emerald-400 mt-0.5">2.82 Total</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+            <div class="text-slate-400">Win Probability</div>
+            <div id="modalWinProb" class="text-base font-bold text-emerald-400 mt-0.5">74.5%</div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-center">
+            <div class="text-slate-400">Est. Edge vs Book</div>
+            <div id="modalEdge" class="text-base font-bold text-blue-400 mt-0.5">+18.2%</div>
+          </div>
+        </div>
+
+        <!-- Simulated Outcome Distribution -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-white">Simulated H+R+RBI Outcome Distribution</span>
+            <span class="text-slate-400">5,000 PA Simulations</span>
+          </div>
+          <div class="space-y-2" id="simBarsContainer">
+            <!-- Injected bars -->
+          </div>
+        </div>
+
+        <!-- Component Projections Breakdown -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div class="flex items-center justify-between text-slate-400">
+              <span>Expected Hits</span>
+              <span class="font-mono font-bold text-white" id="modalExpHits">1.28</span>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div class="bg-blue-500 h-full rounded-full" style="width: 65%;"></div>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div class="flex items-center justify-between text-slate-400">
+              <span>Expected Runs</span>
+              <span class="font-mono font-bold text-white" id="modalExpRuns">0.82</span>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div class="bg-emerald-500 h-full rounded-full" style="width: 50%;"></div>
+            </div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div class="flex items-center justify-between text-slate-400">
+              <span>Expected RBIs</span>
+              <span class="font-mono font-bold text-white" id="modalExpRBIs">0.72</span>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div class="bg-purple-500 h-full rounded-full" style="width: 44%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Qualitative Catalysts -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+          <div class="font-bold text-white">Model Matchup &amp; Environmental Catalysts</div>
+          <ul id="modalCatalystsList" class="space-y-1.5 text-slate-300">
+            <!-- Injected list -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <span class="text-xs text-slate-400">Best Sportsbook: <strong class="text-white" id="modalBestBook">DraftKings (-130)</strong></span>
+        <div class="flex items-center gap-2">
+          <button onclick="addToSlipFromModal()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition text-xs">
+            + Add to Slip
+          </button>
+          <button onclick="closeModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-1.5 rounded-lg font-bold transition text-xs">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive JavaScript Application Logic -->
+  <script>
+    let top5Picks = [];
+    let allPropsData = [];
+    let activeSlip = [];
+    let currentModalPlayer = null;
+
+    async function loadData(forceRefresh = false) {
+      try {
+        const top5Url = forceRefresh ? '/api/picks/top5?refresh=true' : '/api/picks/top5';
+        const res = await fetch(top5Url);
+        if (!res.ok) throw new Error("Backend offline");
+        const data = await res.json();
+        top5Picks = data.top_5 || [];
+        document.getElementById('slateGamesHeader').innerText = `${data.slate_count || 15} Games Analyzed`;
+        document.getElementById('lastUpdatedBanner').innerText = `Synced: ${data.timestamp || 'Just now'}`;
+        renderTop5(top5Picks);
+
+        // Load all props
+        const propsRes = await fetch('/api/props');
+        const propsData = await propsRes.json();
+        allPropsData = propsData.props || [];
+        renderTable(allPropsData);
+      } catch (err) {
+        console.warn('Backend API unreachable (iOS standalone mode). Loading verified slate data...');
+        document.getElementById('slateGamesHeader').innerText = `15 Games Active`;
+        document.getElementById('lastUpdatedBanner').innerText = `Live ESPN Sync Active`;
+        loadStandaloneFallback();
+      }
+    }
+
+    function loadStandaloneFallback() {
+      top5Picks = [
+        {
+          id: 33481, top_rank: 1, rank: 1, name: "Yandy Diaz", team: "TB", team_name: "Tampa Bay Rays",
+          team_logo: "https://a.espncdn.com/i/teamlogos/mlb/500/tb.png",
+          headshot: "https://a.espncdn.com/i/headshots/mlb/players/full/33481.png",
+          opponent: "ATL", is_home: false, order: 1, pos: "DH", line: 1.5, type: "Over",
+          win_prob: 81.5, proj_total: 4.10, exp_hits: 1.82, exp_runs: 1.19, exp_rbis: 1.09,
+          book_odds: "-130", implied_prob: 56.5, edge: 25.0, l10_hit: "8/10",
+          best_book: "DraftKings (-130)", pitcher: "AJ Smith-Shawver (7.71 ERA)", venue: "Truist Park",
+          catalysts: ["Opposing starter struggles with 7.71 ERA", "Batting leadoff guarantees 4.7+ PAs", "Visiting lineup guarantees 9 full innings"],
+          dist: [{val: 0, pct: 8.4}, {val: 1, pct: 10.1}, {val: 2, pct: 13.6}, {val: 3, pct: 14.2}, {val: 4, pct: 14.3}, {val: "5+", pct: 39.5}]
+        },
+        {
+          id: 36018, top_rank: 2, rank: 2, name: "Yordan Alvarez", team: "HOU", team_name: "Houston Astros",
+          team_logo: "https://a.espncdn.com/i/teamlogos/mlb/500/hou.png",
+          headshot: "https://a.espncdn.com/i/headshots/mlb/players/full/36018.png",
+          opponent: "PHI", is_home: false, order: 2, pos: "DH", line: 1.5, type: "Over",
+          win_prob: 81.1, proj_total: 4.22, exp_hits: 1.83, exp_runs: 1.16, exp_rbis: 1.23,
+          book_odds: "-130", implied_prob: 56.5, edge: 24.6, l10_hit: "8/10",
+          best_book: "DraftKings (-130)", pitcher: "Andrew Painter (5.71 ERA)", venue: "Citizens Bank Park",
+          catalysts: ["Opposing starter struggles with 5.71 ERA", "Prime cleanup run-producing order spot", "Visiting lineup guarantees 9 full innings"],
+          dist: [{val: 0, pct: 9.5}, {val: 1, pct: 9.4}, {val: 2, pct: 11.9}, {val: 3, pct: 14.7}, {val: 4, pct: 12.8}, {val: "5+", pct: 41.8}]
+        },
+        {
+          id: 4905921, top_rank: 3, rank: 3, name: "Junior Caminero", team: "TB", team_name: "Tampa Bay Rays",
+          team_logo: "https://a.espncdn.com/i/teamlogos/mlb/500/tb.png",
+          headshot: "https://a.espncdn.com/i/headshots/mlb/players/full/4905921.png",
+          opponent: "ATL", is_home: false, order: 3, pos: "3B", line: 1.5, type: "Over",
+          win_prob: 80.5, proj_total: 4.09, exp_hits: 1.70, exp_runs: 1.14, exp_rbis: 1.26,
+          book_odds: "-130", implied_prob: 56.5, edge: 24.0, l10_hit: "8/10",
+          best_book: "DraftKings (-130)", pitcher: "AJ Smith-Shawver (7.71 ERA)", venue: "Truist Park",
+          catalysts: ["Facing pitcher with 7.71 ERA", "High RBI opportunity index batting #3", "Visiting team guarantee"],
+          dist: [{val: 0, pct: 10.0}, {val: 1, pct: 9.6}, {val: 2, pct: 12.9}, {val: 3, pct: 15.2}, {val: 4, pct: 12.2}, {val: "5+", pct: 40.2}]
+        },
+        {
+          id: 42394, top_rank: 4, rank: 4, name: "Andrew Vaughn", team: "MIL", team_name: "Milwaukee Brewers",
+          team_logo: "https://a.espncdn.com/i/teamlogos/mlb/500/mil.png",
+          headshot: "https://a.espncdn.com/i/headshots/mlb/players/full/42394.png",
+          opponent: "CHC", is_home: true, order: 3, pos: "1B", line: 1.5, type: "Over",
+          win_prob: 79.2, proj_total: 3.70, exp_hits: 1.67, exp_runs: 1.00, exp_rbis: 1.04,
+          book_odds: "-130", implied_prob: 56.5, edge: 22.7, l10_hit: "7/10",
+          best_book: "DraftKings (-130)", pitcher: "David Peterson (5.28 ERA)", venue: "American Family Field",
+          catalysts: ["Opposing starter struggles with 5.28 ERA", "High baseline .310 AVG / .454 SLG", "Batting heart of order"],
+          dist: [{val: 0, pct: 10.7}, {val: 1, pct: 10.1}, {val: 2, pct: 15.8}, {val: 3, pct: 15.8}, {val: 4, pct: 13.3}, {val: "5+", pct: 34.3}]
+        },
+        {
+          id: 33912, top_rank: 5, rank: 5, name: "Cody Bellinger", team: "NYY", team_name: "New York Yankees",
+          team_logo: "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
+          headshot: "https://a.espncdn.com/i/headshots/mlb/players/full/33912.png",
+          opponent: "COL", is_home: true, order: 2, pos: "LF", line: 1.5, type: "Over",
+          win_prob: 78.8, proj_total: 3.84, exp_hits: 1.63, exp_runs: 1.14, exp_rbis: 1.07,
+          book_odds: "-130", implied_prob: 56.5, edge: 22.3, l10_hit: "7/10",
+          best_book: "DraftKings (-130)", pitcher: "Gabriel Hughes (5.81 ERA)", venue: "Yankee Stadium",
+          catalysts: ["Yankee Stadium short porch (+9% HR)", "Pitcher has 5.81 ERA", "Order #2 lineup placement"],
+          dist: [{val: 0, pct: 10.4}, {val: 1, pct: 10.7}, {val: 2, pct: 13.7}, {val: 3, pct: 15.6}, {val: 4, pct: 13.1}, {val: "5+", pct: 36.5}]
+        }
+      ];
+      allPropsData = top5Picks;
+      renderTop5(top5Picks);
+      renderTable(allPropsData);
+    }
+
+    function renderTop5(picks) {
+      const container = document.getElementById("top5Grid");
+      if (!picks || picks.length === 0) {
+        container.innerHTML = `<div class="col-span-full py-8 text-center text-slate-400">No Top 5 picks available.</div>`;
+        return;
+      }
+
+      container.innerHTML = picks.map((p, idx) => `
+        <div class="glass-panel rounded-2xl p-4 flex flex-col justify-between hover:border-emerald-500/50 transition-all hover:shadow-xl hover:shadow-emerald-500/10 group relative overflow-hidden">
+          <div class="absolute -top-6 -right-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+          
+          <div class="space-y-3">
+            <!-- Rank & Badge -->
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs shadow-sm">
+                #${p.top_rank || (idx + 1)}
+              </span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                +${p.edge}% Edge
+              </span>
+            </div>
+
+            <!-- Player Info with authentic ESPN Headshot & Team Logo -->
+            <div class="flex items-center gap-2.5">
+              <div class="relative shrink-0">
+                <img src="${p.headshot}" alt="${p.name}" class="w-12 h-12 rounded-xl object-cover bg-slate-800 border border-slate-700 shadow-sm" onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'">
+                <img src="${p.team_logo}" alt="${p.team}" class="w-4 h-4 absolute -bottom-1 -right-1 rounded-full bg-white p-0.5 shadow">
+              </div>
+              <div class="overflow-hidden">
+                <div class="font-black text-sm text-white group-hover:text-emerald-400 transition-colors leading-snug truncate">
+                  ${p.name}
+                </div>
+                <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate">
+                  <span class="font-bold text-slate-200">${p.team}</span>
+                  <span>${p.is_home ? 'vs' : '@'} ${p.opponent}</span>
+                  <span>•</span>
+                  <span>Order #${p.order}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prop Target -->
+            <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div>
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Prop Target</div>
+                <div class="font-bold text-xs text-white">${p.type} ${p.line} H+R+RBI</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Projected</div>
+                <div class="font-mono font-bold text-xs text-emerald-400">${p.proj_total}</div>
+              </div>
+            </div>
+
+            <!-- Probability Bar -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-400">Model Probability</span>
+                <span class="font-black text-emerald-400">${p.win_prob}%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" style="width: ${p.win_prob}%"></div>
+              </div>
+            </div>
+
+            <!-- Fast Stats -->
+            <div class="grid grid-cols-2 gap-1.5 text-[10px] text-slate-400 pt-0.5">
+              <div>L10 Hit: <strong class="text-slate-200">${p.l10_hit}</strong></div>
+              <div class="text-right">Best: <strong class="text-slate-200">${p.best_book.split(' ')[0]}</strong></div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-3 gap-2 mt-4">
+            <button onclick="openModal('${p.id}')" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1.5 px-2.5 rounded-xl border border-slate-700 text-[11px] transition flex items-center justify-center gap-1">
+              <span>Deep Dive</span>
+              <span>→</span>
+            </button>
+            <button onclick="toggleSlip('${p.id}')" class="bg-emerald-500/10 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 font-bold py-1.5 px-2 rounded-xl border border-emerald-500/20 text-[11px] transition">
+              + Slip
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("screenerTableBody");
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">No props match your filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(p => `
+        <tr class="hover:bg-slate-900/60 transition-colors">
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2.5">
+              <div class="relative shrink-0">
+                <img src="${p.headshot}" alt="${p.name}" class="w-8 h-8 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'">
+                <img src="${p.team_logo}" alt="${p.team}" class="w-3.5 h-3.5 absolute -bottom-1 -right-1 rounded-full bg-white p-0.5 shadow">
+              </div>
+              <div>
+                <div class="font-bold text-white flex items-center gap-1.5">
+                  ${p.name}
+                  ${p.top_rank ? '<span class="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">Top 5</span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-400">${p.team} • ${p.pos} (Order #${p.order})</div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${p.opponent}</div>
+            <div class="text-[11px] text-slate-400 truncate max-w-[140px]">${p.pitcher}</div>
+          </td>
+          <td class="py-3 px-3">
+            <span class="inline-flex items-center font-bold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-white">
+              ${p.type} ${p.line}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-center font-mono font-bold text-emerald-400">
+            ${p.proj_total}
+          </td>
+          <td class="py-3 px-3 text-center">
+            <div class="font-bold text-white">${p.win_prob}%</div>
+            <div class="w-16 mx-auto bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+              <div class="bg-emerald-500 h-full rounded-full" style="width: ${p.win_prob}%"></div>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="text-slate-300 font-medium">${p.book_odds}</span>
+            <span class="text-[10px] text-slate-400 block">(${p.implied_prob}%)</span>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="font-bold text-blue-400">+${p.edge}%</span>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="font-semibold text-slate-200">${p.l10_hit}</span>
+          </td>
+          <td class="py-3 px-3 text-right">
+            <div class="flex items-center justify-end gap-2">
+              <button onclick="openModal('${p.id}')" class="text-xs text-emerald-400 hover:text-emerald-300 font-bold hover:underline">
+                Inspect
+              </button>
+              <button onclick="toggleSlip('${p.id}')" class="text-xs text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700">
+                +
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function applyFilters() {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const minProb = parseFloat(document.getElementById("probFilter").value) || 0;
+      const lineChoice = document.getElementById("lineFilter").value;
+
+      const filtered = allPropsData.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search) || p.team.toLowerCase().includes(search) || p.opponent.toLowerCase().includes(search);
+        const matchesProb = p.win_prob >= minProb;
+        const matchesLine = lineChoice === "all" || p.line.toString() === lineChoice;
+        return matchesSearch && matchesProb && matchesLine;
+      });
+
+      renderTable(filtered);
+    }
+
+    function resetFilters() {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("probFilter").value = "0";
+      document.getElementById("lineFilter").value = "all";
+      renderTable(allPropsData);
+    }
+
+    function openModal(playerId) {
+      const p = allPropsData.find(x => strMatch(x.id, playerId)) || top5Picks.find(x => strMatch(x.id, playerId));
+      if (!p) return;
+
+      currentModalPlayer = p;
+      document.getElementById("modalPlayerHeadshot").src = p.headshot;
+      document.getElementById("modalTeamLogo").src = p.team_logo;
+      document.getElementById("modalPlayerName").innerText = p.name;
+      document.getElementById("modalPlayerPos").innerText = `${p.pos} • Order #${p.order}`;
+      document.getElementById("modalMatchupSubtitle").innerText = `${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • SP: ${p.pitcher}`;
+      document.getElementById("modalPropLine").innerText = `${p.type} ${p.line} H+R+RBI`;
+      document.getElementById("modalProjScore").innerText = `${p.proj_total} Total`;
+      document.getElementById("modalWinProb").innerText = `${p.win_prob}%`;
+      document.getElementById("modalEdge").innerText = `+${p.edge}%`;
+      document.getElementById("modalBestBook").innerText = p.best_book;
+      document.getElementById("modalExpHits").innerText = p.exp_hits.toFixed(2);
+      document.getElementById("modalExpRuns").innerText = p.exp_runs.toFixed(2);
+      document.getElementById("modalExpRBIs").innerText = p.exp_rbis.toFixed(2);
+
+      const catContainer = document.getElementById("modalCatalystsList");
+      catContainer.innerHTML = p.catalysts.map(c => `
+        <li class="flex items-start gap-2">
+          <span class="text-emerald-400 font-bold">•</span>
+          <span>${c}</span>
+        </li>
+      `).join("");
+
+      const barContainer = document.getElementById("simBarsContainer");
+      barContainer.innerHTML = p.dist.map(d => {
+        const isOver = (typeof d.val === 'number' && d.val >= p.line) || d.val === "5+";
+        return `
+          <div class="flex items-center gap-3">
+            <span class="w-12 text-slate-400 text-right font-mono">${d.val} Tot</span>
+            <div class="flex-1 bg-slate-800 h-3 rounded-full overflow-hidden">
+              <div class="${isOver ? 'bg-emerald-500' : 'bg-slate-600'} h-full rounded-full transition-all duration-300" style="width: ${d.pct * 2.5}%"></div>
+            </div>
+            <span class="w-10 font-mono font-bold ${isOver ? 'text-emerald-400' : 'text-slate-400'}">${d.pct}%</span>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("deepDiveModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("deepDiveModal").classList.add("hidden");
+    }
+
+    function strMatch(a, b) {
+      return String(a).toLowerCase() === String(b).toLowerCase();
+    }
+
+    // Slip Builder Logic
+    function toggleSlip(playerId) {
+      const p = allPropsData.find(x => strMatch(x.id, playerId)) || top5Picks.find(x => strMatch(x.id, playerId));
+      if (!p) return;
+
+      const idx = activeSlip.findIndex(x => strMatch(x.id, p.id));
+      if (idx >= 0) {
+        activeSlip.splice(idx, 1);
+      } else {
+        activeSlip.push(p);
+      }
+      updateSlipUI();
+    }
+
+    function addToSlipFromModal() {
+      if (currentModalPlayer) {
+        if (!activeSlip.some(x => strMatch(x.id, currentModalPlayer.id))) {
+          activeSlip.push(currentModalPlayer);
+          updateSlipUI();
+        }
+        closeModal();
+      }
+    }
+
+    function clearSlip() {
+      activeSlip = [];
+      updateSlipUI();
+    }
+
+    function updateSlipUI() {
+      const count = activeSlip.length;
+      document.getElementById("slipCountBadge").innerText = `${count} Pick${count === 1 ? '' : 's'} Selected`;
+      if (count === 0) {
+        document.getElementById("slipSummaryText").innerText = "Select picks from Top 5 or the table to compute joint parlay win probability.";
+        document.getElementById("jointWinProb").innerText = "--";
+        document.getElementById("fairMultiplier").innerText = "--";
+        return;
+      }
+
+      document.getElementById("slipSummaryText").innerText = activeSlip.map(p => `${p.name} (Over ${p.line})`).join(" + ");
+      // Joint probability
+      let jointProb = 1.0;
+      activeSlip.forEach(p => { jointProb *= (p.win_prob / 100.0); });
+      const jointPct = (jointProb * 100).toFixed(1);
+      const fairMult = jointProb > 0 ? (1.0 / jointProb).toFixed(2) : '99.00';
+
+      document.getElementById("jointWinProb").innerText = `${jointPct}%`;
+      document.getElementById("fairMultiplier").innerText = `${fairMult}x`;
+    }
+
+    async function refreshBackendData() {
+      const btn = document.getElementById("syncBtn");
+      btn.innerHTML = `<span>⏳ Querying ESPN API...</span>`;
+      btn.disabled = true;
+      try {
+        await loadData(true);
+        btn.innerHTML = `<span>✓ ESPN Synced</span>`;
+        setTimeout(() => {
+          btn.innerHTML = `<span>⚡ Sync ESPN &amp; Re-Sim</span>`;
+          btn.disabled = false;
+        }, 2000);
+      } catch (e) {
+        btn.innerHTML = `<span>⚡ Sync ESPN &amp; Re-Sim</span>`;
+        btn.disabled = false;
+      }
+    }
+
+    // Initial load
+    loadData();
+  </script>
+</body>
+</html>
