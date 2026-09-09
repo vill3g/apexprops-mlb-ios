@@ -6,10 +6,17 @@ Serves REST API and hosts the graphical user interface.
 from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional, List, Dict, Any
 import os
 import time
+import json
+import pandas as pd
+
+from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown
+from backend.btc.indicators import add_all_indicators
+from backend.btc.pattern_detector import detect_candlestick_patterns
+from backend.btc.analyzer import analyze_btc
 
 from backend.data.espn_client import ESPNClient
 from backend.data.draftkings_client import DraftKingsClient
@@ -322,6 +329,156 @@ def live_poll():
         "live_count": len(live_games),
         "games": live_games
     }
+
+# =====================================================================
+# BITCOIN 15M PATTERN ANALYZER & CONFLUENCE ENGINE
+# =====================================================================
+btc_timeframe_cache: Dict[str, Any] = {}
+
+def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 15):
+    """Retrieve or compute BTC analysis with smart per-timeframe caching."""
+    now = time.time()
+    tf = timeframe.lower()
+    if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
+        return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+
+    try:
+        df = fetch_candles(timeframe=tf, limit=250)
+        analysis = analyze_btc(df, timeframe=tf)
+        btc_timeframe_cache[tf] = {
+            "df": df,
+            "analysis": analysis,
+            "last_fetched": now
+        }
+        return df, analysis
+    except Exception as e:
+        print(f"Error fetching live BTC candles for {tf}: {e}")
+        if tf in btc_timeframe_cache:
+            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        raise e
+
+def sanitize_btc_json(val):
+    """Recursively convert NumPy scalars/types to standard Python types for JSON serialization."""
+    if isinstance(val, dict):
+        return {k: sanitize_btc_json(v) for k, v in val.items()}
+    elif isinstance(val, (list, tuple)):
+        return [sanitize_btc_json(v) for v in val]
+    elif hasattr(val, "item"):
+        return val.item()
+    elif isinstance(val, pd.Timestamp):
+        return str(val)
+    return val
+
+@app.get("/api/btc/analyze")
+def api_btc_analyze(timeframe: str = "15m"):
+    """Returns comprehensive directional analysis, score, and trade setup for selected timeframe."""
+    try:
+        _, analysis = get_cached_btc_analysis(timeframe=timeframe)
+        return JSONResponse(sanitize_btc_json(analysis))
+    except Exception as e:
+        static_backup = os.path.join(STATIC_DIR, "data", "btc_analysis.json")
+        if os.path.exists(static_backup):
+            try:
+                with open(static_backup, "r", encoding="utf-8") as f:
+                    return JSONResponse(json.load(f))
+            except Exception:
+                pass
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/btc/ticker")
+def api_btc_ticker():
+    """Returns live 24h ticker info."""
+    try:
+        ticker = get_btc_ticker()
+        return JSONResponse(sanitize_btc_json(ticker))
+    except Exception as e:
+        static_backup = os.path.join(STATIC_DIR, "data", "btc_ticker.json")
+        if os.path.exists(static_backup):
+            try:
+                with open(static_backup, "r", encoding="utf-8") as f:
+                    return JSONResponse(json.load(f))
+            except Exception:
+                pass
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/btc/countdown")
+def api_btc_countdown(timeframe: str = "15m"):
+    """Returns countdown to current candle close for selected timeframe."""
+    try:
+        return JSONResponse(sanitize_btc_json(get_candle_countdown(timeframe=timeframe)))
+    except Exception as e:
+        return JSONResponse({"formatted": "--:--", "seconds_left": 0})
+
+@app.get("/api/btc/candles")
+def api_btc_candles(timeframe: str = "15m"):
+    """
+    Returns formatted candlestick data + indicators + pattern markers
+    for TradingView Lightweight Charts for the selected timeframe.
+    """
+    try:
+        df, analysis = get_cached_btc_analysis(timeframe=timeframe)
+        df_ind = add_all_indicators(df)
+
+        candles = []
+        ema9_data = []
+        ema21_data = []
+        ema50_data = []
+        ema200_data = []
+        markers = []
+
+        for i, row in df_ind.iterrows():
+            t = int(row["time"])
+            candles.append({
+                "time": t,
+                "open": round(float(row["open"]), 2),
+                "high": round(float(row["high"]), 2),
+                "low": round(float(row["low"]), 2),
+                "close": round(float(row["close"]), 2),
+            })
+
+            if not pd.isna(row.get("ema_9", None)):
+                ema9_data.append({"time": t, "value": round(float(row["ema_9"]), 2)})
+            if not pd.isna(row.get("ema_21", None)):
+                ema21_data.append({"time": t, "value": round(float(row["ema_21"]), 2)})
+            if not pd.isna(row.get("ema_50", None)):
+                ema50_data.append({"time": t, "value": round(float(row["ema_50"]), 2)})
+            if not pd.isna(row.get("ema_200", None)):
+                ema200_data.append({"time": t, "value": round(float(row["ema_200"]), 2)})
+
+        for j in range(max(0, len(df_ind) - 20), len(df_ind)):
+            sub = df_ind.iloc[: j + 1]
+            pats = detect_candlestick_patterns(sub)
+            if pats:
+                p = pats[-1]
+                t_pat = int(df_ind.iloc[j]["time"])
+                markers.append({
+                    "time": t_pat,
+                    "position": "belowBar" if p["type"] == "BULLISH" else "aboveBar",
+                    "color": "#00e676" if p["type"] == "BULLISH" else "#ff3d57",
+                    "shape": "arrowUp" if p["type"] == "BULLISH" else "arrowDown",
+                    "text": p["name"],
+                })
+
+        ticker = get_btc_ticker()
+
+        return JSONResponse(sanitize_btc_json({
+            "candles": candles,
+            "ema9": ema9_data,
+            "ema21": ema21_data,
+            "ema50": ema50_data,
+            "ema200": ema200_data,
+            "markers": markers,
+            "ticker": ticker
+        }))
+    except Exception as e:
+        static_backup = os.path.join(STATIC_DIR, "data", "btc_candles.json")
+        if os.path.exists(static_backup):
+            try:
+                with open(static_backup, "r", encoding="utf-8") as f:
+                    return JSONResponse(json.load(f))
+            except Exception:
+                pass
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # Mount static directory and route index
 if os.path.exists(STATIC_DIR):
