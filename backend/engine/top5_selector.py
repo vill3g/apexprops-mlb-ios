@@ -11,6 +11,7 @@ from backend.data.draftkings_client import DraftKingsClient
 from backend.engine.simulator import HRRBISimulator
 from backend.data.verified_mlb_client import VerifiedMLBClient
 from backend.data.injuries_client import InjuriesClient
+from backend.data.player_photos import photo_resolver
 
 FRANCHISE_CORNERSTONES = {
     "LAD": [
@@ -403,9 +404,7 @@ class Top5Selector:
             catalysts.append(f"Solid season baseline: .{int(avg*1000)} AVG / .{int(slg*1000)} SLG profile")
 
         athlete_id = batter.get("id")
-        headshot = batter.get("headshot")
-        if not headshot or "nophoto" in headshot:
-            headshot = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{athlete_id}/headshot/67/current.png" if athlete_id else "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png"
+        headshot = photo_resolver.get_headshot(batter.get("name"), athlete_id, team.get("abbreviation", ""))
         team_logo = f"https://a.espncdn.com/i/teamlogos/mlb/500/{team.get('abbreviation', '').lower()}.png"
 
         from backend.engine.bvp_weather import BvPWeatherModel
@@ -487,7 +486,7 @@ class Top5Selector:
             "pitcher": f"{pitcher_name} ({pitcher_era} ERA)",
             "pitcher_name": pitcher_name,
             "pitcher_era": pitcher_era,
-            "pitcher_headshot": pitcher.get("headshot", ""),
+            "pitcher_headshot": photo_resolver.get_headshot(pitcher_name, pitcher.get("id"), pitcher.get("team", "")),
             "venue": venue,
             "catalysts": catalysts[:4],
             "dist": res["dist"],
