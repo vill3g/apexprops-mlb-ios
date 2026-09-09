@@ -10,6 +10,7 @@ from backend.data.espn_client import ESPNClient
 from backend.data.draftkings_client import DraftKingsClient
 from backend.engine.simulator import HRRBISimulator
 from backend.data.verified_mlb_client import VerifiedMLBClient
+from backend.data.injuries_client import InjuriesClient
 
 FRANCHISE_CORNERSTONES = {
     "LAD": [
@@ -200,6 +201,7 @@ class Top5Selector:
         self.simulator = simulator or HRRBISimulator(num_simulations=5000)
         self.dk_client = DraftKingsClient()
         self.verified_client = VerifiedMLBClient()
+        self.injuries_client = InjuriesClient()
         self._cached_picks: Optional[Dict[str, Any]] = None
         self._cache_time: float = 0.0
         self._cache_ttl: float = 300.0 # 5 minutes
@@ -242,6 +244,8 @@ class Top5Selector:
             away_batters = game.get("away_lineup") or [b for b in lineups if b.get("team") == away_team["abbreviation"]]
             if not away_batters:
                 away_batters = FRANCHISE_CORNERSTONES.get(away_team["abbreviation"], [])
+            # Filter out any injured players
+            away_batters = [b for b in away_batters if not self.injuries_client.is_injured(b.get("name"), b.get("id"))]
 
             for b in away_batters[:5]:
                 prop = self._simulate_and_package(
@@ -268,6 +272,8 @@ class Top5Selector:
             home_batters = game.get("home_lineup") or [b for b in lineups if b.get("team") == home_team["abbreviation"]]
             if not home_batters:
                 home_batters = FRANCHISE_CORNERSTONES.get(home_team["abbreviation"], [])
+            # Filter out any injured players
+            home_batters = [b for b in home_batters if not self.injuries_client.is_injured(b.get("name"), b.get("id"))]
 
             for b in home_batters[:5]:
                 prop = self._simulate_and_package(
@@ -343,13 +349,18 @@ class Top5Selector:
         dk_event_url: str = "https://sportsbook.draftkings.com/leagues/baseball/mlb",
         dk_slip_link: str = ""
     ) -> Dict[str, Any]:
+        athlete_id = batter.get("id")
+        name = batter.get("name", "Batter")
+        if self.injuries_client.is_injured(name, athlete_id):
+            return None
+
         order = batter.get("order", 2)
         slg = batter.get("slg", 0.450)
         avg = batter.get("avg", 0.270)
         target_line = 1.0
 
         res = self.simulator.simulate_player_prop(
-            name=batter.get("name", "Batter"),
+            name=name,
             team=team.get("abbreviation", "TEAM"),
             order=order,
             is_home=is_home,
@@ -550,14 +561,14 @@ class Top5Selector:
                 "dist": [{"val": 0, "pct": 6}, {"val": 1, "pct": 19}, {"val": 2, "pct": 31}, {"val": 3, "pct": 22}, {"val": 4, "pct": 14}, {"val": "5+", "pct": 8}]
             },
             {
-                "id": 42403, "rank": 3, "name": "Gunnar Henderson", "team": "BAL", "team_name": "Baltimore Orioles",
-                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/bal.png",
-                "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/42403.png",
-                "opponent": "CWS", "is_home": False, "order": 1, "pos": "SS", "line": 1.5, "type": "Over",
-                "win_prob": 73.2, "proj_total": 2.76, "exp_hits": 1.30, "exp_runs": 0.88, "exp_rbis": 0.58,
-                "book_odds": "-135", "implied_prob": 57.4, "edge": 15.8, "l10_hit": "8/10",
-                "best_book": "PrizePicks (1.5)", "pitcher": "Chris Flexen (5.48 ERA)", "venue": "Guaranteed Rate Field",
-                "catalysts": ["Facing bottom-ranked pitching staff in MLB (WHIP 1.48)", "Guaranteed 9 innings of at-bats as visiting leadoff batter", "Hard hit rate 51.6% against low-spin fastballs"],
+                "id": 41020, "rank": 3, "name": "Juan Soto", "team": "NYY", "team_name": "New York Yankees",
+                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
+                "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41020.png",
+                "opponent": "BOS", "is_home": True, "order": 2, "pos": "RF", "line": 1.5, "type": "Over",
+                "win_prob": 74.2, "proj_total": 3.02, "exp_hits": 1.28, "exp_runs": 1.05, "exp_rbis": 0.69,
+                "book_odds": "-135", "implied_prob": 57.4, "edge": 16.8, "l10_hit": "8/10",
+                "best_book": "DraftKings (-135)", "pitcher": "Nick Pivetta (4.38 ERA)", "venue": "Yankee Stadium",
+                "catalysts": ["Elite .419 on-base percentage yields massive scoring volume", "Short porch right field target enhances extra-base potential", "Walk discipline guarantees deep counts and bullpen fatigue"],
                 "dist": [{"val": 0, "pct": 7}, {"val": 1, "pct": 20}, {"val": 2, "pct": 32}, {"val": 3, "pct": 23}, {"val": 4, "pct": 12}, {"val": "5+", "pct": 6}]
             },
             {
@@ -583,7 +594,9 @@ class Top5Selector:
                 "dist": [{"val": 0, "pct": 8}, {"val": 1, "pct": 21}, {"val": 2, "pct": 35}, {"val": 3, "pct": 21}, {"val": 4, "pct": 10}, {"val": "5+", "pct": 5}]
             }
         ]
-        for p in fallback:
+        # Strictly filter out any player on Injured List
+        active_fallback = [p for p in fallback if not self.injuries_client.is_injured(p["name"], p["id"])]
+        for p in active_fallback:
             p["game_date"] = "Today, Sep 9"
             p["game_time"] = "7:05 PM ET"
             p["game_datetime"] = "Today • 7:05 PM ET"
@@ -597,4 +610,4 @@ class Top5Selector:
             p["l10_hit"] = f"{sum(1 for g in p['game_log'] if g.get('hit_prop'))}/10"
             p["verified_source"] = "Official MLB & ESPN Verified"
             p["is_verified"] = any(g.get("verified", False) for g in p["game_log"])
-        return fallback
+        return active_fallback
