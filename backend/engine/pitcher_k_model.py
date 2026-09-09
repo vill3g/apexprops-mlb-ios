@@ -4,14 +4,16 @@ Calculates expected strikeouts and Over/Under win probabilities for starting pit
 Provides both Top 5 Daily Highest Probability Picks and Full Slate Screener.
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from backend.data.draftkings_client import DraftKingsClient
 from backend.data.verified_mlb_client import VerifiedMLBClient
+from backend.data.injuries_client import InjuriesClient
 
 class PitcherKModel:
     def __init__(self):
         self.dk_client = DraftKingsClient()
         self.verified_client = VerifiedMLBClient()
+        self.injuries_client = InjuriesClient()
 
     def get_pitcher_k_data(self, slate_games: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Returns both Top 5 highest probability pitcher K picks and the full slate."""
@@ -27,46 +29,50 @@ class PitcherKModel:
             # Process Home Pitcher
             hp = g.get("home_pitcher", {})
             if hp.get("name") and hp.get("name") != "Probable Pitcher":
-                era = self._safe_era(hp.get("era", 3.85))
-                prop = self._project_k(
-                    name=hp.get("name"),
-                    id=hp.get("id"),
-                    headshot=hp.get("headshot"),
-                    team=home_team,
-                    opponent=away_team,
-                    era=era,
-                    is_home=True,
-                    venue=venue,
-                    game_date=game_date,
-                    game_time=game_time,
-                    game_datetime=game_datetime,
-                    k9=hp.get("k9"),
-                    sw_str=hp.get("sw_str"),
-                    csw=hp.get("csw")
-                )
-                props.append(prop)
+                if not self.injuries_client.is_injured(hp.get("name"), hp.get("id")):
+                    era = self._safe_era(hp.get("era", 3.85))
+                    prop = self._project_k(
+                        name=hp.get("name"),
+                        id=hp.get("id"),
+                        headshot=hp.get("headshot"),
+                        team=home_team,
+                        opponent=away_team,
+                        era=era,
+                        is_home=True,
+                        venue=venue,
+                        game_date=game_date,
+                        game_time=game_time,
+                        game_datetime=game_datetime,
+                        k9=hp.get("k9"),
+                        sw_str=hp.get("sw_str"),
+                        csw=hp.get("csw")
+                    )
+                    if prop:
+                        props.append(prop)
 
             # Process Away Pitcher
             ap = g.get("away_pitcher", {})
             if ap.get("name") and ap.get("name") != "Probable Pitcher":
-                era = self._safe_era(ap.get("era", 3.85))
-                prop = self._project_k(
-                    name=ap.get("name"),
-                    id=ap.get("id"),
-                    headshot=ap.get("headshot"),
-                    team=away_team,
-                    opponent=home_team,
-                    era=era,
-                    is_home=False,
-                    venue=venue,
-                    game_date=game_date,
-                    game_time=game_time,
-                    game_datetime=game_datetime,
-                    k9=ap.get("k9"),
-                    sw_str=ap.get("sw_str"),
-                    csw=ap.get("csw")
-                )
-                props.append(prop)
+                if not self.injuries_client.is_injured(ap.get("name"), ap.get("id")):
+                    era = self._safe_era(ap.get("era", 3.85))
+                    prop = self._project_k(
+                        name=ap.get("name"),
+                        id=ap.get("id"),
+                        headshot=ap.get("headshot"),
+                        team=away_team,
+                        opponent=home_team,
+                        era=era,
+                        is_home=False,
+                        venue=venue,
+                        game_date=game_date,
+                        game_time=game_time,
+                        game_datetime=game_datetime,
+                        k9=ap.get("k9"),
+                        sw_str=ap.get("sw_str"),
+                        csw=ap.get("csw")
+                    )
+                    if prop:
+                        props.append(prop)
 
         # Only add fallback pitchers if today's slate has fewer than 5 active pitchers
         if len(props) < 5:
@@ -120,7 +126,10 @@ class PitcherKModel:
         k9: Any = None,
         sw_str: str = None,
         csw: str = None
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
+        if self.injuries_client.is_injured(name, id):
+            return None
+
         try:
             k9_val = float(k9) if k9 is not None else 8.5
         except (ValueError, TypeError):
@@ -365,27 +374,27 @@ class PitcherKModel:
                 ]
             },
             {
-                "id": 666142,
-                "name": "Cole Ragans",
-                "team": "KC",
-                "opponent": "DET",
-                "headshot": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/666142/headshot/67/current.png",
-                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/kc.png",
-                "k_line": 5.5,
+                "id": 41227,
+                "name": "Dylan Cease",
+                "team": "SD",
+                "opponent": "COL",
+                "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41227.png",
+                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/sd.png",
+                "k_line": 6.5,
                 "pick_type": "Over",
-                "proj_k": 6.6,
-                "win_prob": 78.7,
-                "book_odds": "-115",
-                "edge": 24.2,
-                "sw_str": "13.2%",
-                "csw": "30.1%",
-                "era": 3.19,
-                "venue": "Kauffman Stadium",
-                "is_home": False,
+                "proj_k": 7.7,
+                "win_prob": 82.8,
+                "book_odds": "-130",
+                "edge": 28.3,
+                "sw_str": "15.8%",
+                "csw": "33.6%",
+                "era": 3.42,
+                "venue": "Petco Park",
+                "is_home": True,
                 "catalysts": [
-                    "98 mph southpaw heater paired with plus slider",
-                    "Tigers rank 4th highest in team K% against left-handed starters",
-                    "Recorded 6+ Ks in 7 of his last 9 outings"
+                    "Wipeout slider generates extraordinary 43.1% whiff rate",
+                    "Padres home venue Petco Park enhances pitcher strikeout floor",
+                    "Projected 7.7 strikeouts against high-whiff Rockies lineup"
                 ]
             },
             {
@@ -413,27 +422,27 @@ class PitcherKModel:
                 ]
             },
             {
-                "id": 39635,
-                "name": "Hunter Greene",
-                "team": "CIN",
-                "opponent": "LAD",
-                "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/39635.png",
-                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/cin.png",
-                "k_line": 6.5,
+                "id": 41245,
+                "name": "Cristopher Sanchez",
+                "team": "PHI",
+                "opponent": "MIA",
+                "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41245.png",
+                "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/phi.png",
+                "k_line": 5.5,
                 "pick_type": "Over",
-                "proj_k": 7.5,
-                "win_prob": 79.8,
+                "proj_k": 6.9,
+                "win_prob": 80.2,
                 "book_odds": "-120",
-                "edge": 25.3,
-                "sw_str": "15.1%",
-                "csw": "33.0%",
-                "era": 2.75,
-                "venue": "Dodger Stadium",
-                "is_home": False,
+                "edge": 25.7,
+                "sw_str": "14.1%",
+                "csw": "31.8%",
+                "era": 3.29,
+                "venue": "Citizens Bank Park",
+                "is_home": True,
                 "catalysts": [
-                    "Averages 99.2 mph on fastball with elite induced vertical break",
-                    "10+ strikeouts in 5 separate starts this year",
-                    "Slider chase rate up to 37.4%"
+                    "Signature sinking fastball yields top groundball and strikeout rates",
+                    "Marlins batting order strikes out at 24.2% rate vs southpaw changeups",
+                    "Averages 6.2 innings pitched across last 6 home starts"
                 ]
             },
             {
@@ -485,7 +494,8 @@ class PitcherKModel:
                 ]
             }
         ]
-        for p in fallback:
+        active_fallback = [p for p in fallback if not self.injuries_client.is_injured(p["name"], p["id"])]
+        for p in active_fallback:
             p["game_date"] = "Today, Sep 9"
             p["game_time"] = "7:05 PM ET"
             p["game_datetime"] = "Today • 7:05 PM ET"
@@ -500,4 +510,4 @@ class PitcherKModel:
             )
             p["verified_source"] = "Official MLB & ESPN Verified"
             p["is_verified"] = any(g.get("verified", False) for g in p["game_log"])
-        return fallback
+        return active_fallback
