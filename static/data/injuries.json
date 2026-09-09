@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-09 15:21:20 ET",
-  "timestamp_epoch": 1788981680.7694204,
+  "timestamp": "2026-09-09 15:26:46 ET",
+  "timestamp_epoch": 1788982006.1580856,
   "total_injured": 276,
   "teams": [
     {
@@ -50534,7 +50534,7 @@
             "type": "Neck",
             "detail": "Pinched Nerve",
             "side": "Not Specified",
-            "returnDate": "2026-09-14"
+            "returnDate": "2026-09-16"
           }
         },
         {
@@ -86018,16 +86018,6 @@
             "name": "INJURY_STATUS_15DAYIL",
             "description": "15-day IL",
             "abbreviation": "IL15"
-          },
-          "details": {
-            "fantasyStatus": {
-              "description": "15-Day IL",
-              "abbreviation": "15-Day IL"
-            },
-            "type": "Hand",
-            "detail": "Pinched Nerve",
-            "side": "Right",
-            "returnDate": "2026-09-09"
           }
         },
         {
