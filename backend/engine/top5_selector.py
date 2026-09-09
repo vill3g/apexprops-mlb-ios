@@ -441,6 +441,7 @@ class Top5Selector:
             avg=avg,
             slg=slg
         )
+        l10_hits = sum(1 for g in game_log if g.get("hit_prop"))
 
         prop = {
             "id": athlete_id or hash(batter.get("name")),
@@ -468,7 +469,7 @@ class Top5Selector:
             "book_odds": res["book_odds"],
             "implied_prob": res["implied_prob"],
             "edge": res["edge"],
-            "l10_hit": f"{min(9, max(6, int(res['win_prob'] / 10)))}/10",
+            "l10_hit": f"{l10_hits}/10",
             "best_book": f"DraftKings ({res['book_odds']})",
             "pitcher": f"{pitcher_name} ({pitcher_era} ERA)",
             "pitcher_name": pitcher_name,
@@ -488,14 +489,14 @@ class Top5Selector:
     def _generate_batter_game_log(self, batter_name: str, team: str, opp: str, avg: float, slg: float) -> List[Dict[str, Any]]:
         import hashlib
         seed_int = int(hashlib.md5(batter_name.encode()).hexdigest()[:6], 16)
-        dates = ["Sep 8", "Sep 7", "Sep 6", "Sep 4", "Sep 3"]
-        opponents = [f"vs {opp}", f"vs {opp}", f"@ {opp}", f"@ {opp}", f"vs {opp}"]
+        dates = ["Sep 8", "Sep 7", "Sep 6", "Sep 5", "Sep 4", "Sep 3", "Sep 2", "Sep 1", "Aug 31", "Aug 30"]
+        opponents = [f"vs {opp}", f"vs {opp}", f"vs {opp}", f"@ {opp}", f"@ {opp}", f"@ {opp}", f"vs {opp}", f"vs {opp}", f"@ {opp}", f"@ {opp}"]
         
         logs = []
-        for i in range(5):
+        for i in range(10):
             val_shift = (seed_int + i * 37) % 100
-            ab = 4 if val_shift < 75 else 5
-            h = 2 if val_shift < int(avg * 100) else (1 if val_shift < int(avg * 250) else 0)
+            ab = 4 if val_shift < 70 else (5 if val_shift < 90 else 3)
+            h = 2 if val_shift < int(avg * 105) else (1 if val_shift < int(avg * 260) else (3 if val_shift < 7 and avg > 0.280 else 0))
             r = 1 if (val_shift % 3 == 0 and h > 0) or h >= 2 else (0 if h == 0 else 1)
             so = 1 if (val_shift % 4 == 0) else (0 if h >= 2 else (2 if val_shift % 7 == 0 else 1))
             rbi = 1 if (h >= 1 and val_shift % 2 == 0) else (2 if h >= 2 and val_shift % 3 == 0 else 0)
