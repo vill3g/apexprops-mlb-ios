@@ -1,1 +1,62 @@
-{"price":78554.87,"open_24h":78429.72,"high_24h":79752.73,"low_24h":78025.0,"volume_24h":5211.36425765,"change_24h":0.1595696121317202,"source":"Coinbase"}
+{
+  "price": 78239.0,
+  "target_price": 78212.95,
+  "delta": 26.05,
+  "delta_pct": 0.033,
+  "status": "ABOVE",
+  "change_24h": -0.31,
+  "high_24h": 79752.73,
+  "low_24h": 78025.0,
+  "volume_24h": 5188.77,
+  "seconds_left": 897,
+  "formatted_countdown": "14:57",
+  "last_5_targets": [
+    {
+      "time": "18:45",
+      "price": 78399.35,
+      "delta": -122.57,
+      "delta_pct": -0.16,
+      "direction": "LOWER",
+      "arrow": "\u25bc",
+      "color": "red"
+    },
+    {
+      "time": "19:00",
+      "price": 78470.38,
+      "delta": 71.03,
+      "delta_pct": 0.09,
+      "direction": "HIGHER",
+      "arrow": "\u25b2",
+      "color": "green"
+    },
+    {
+      "time": "19:15",
+      "price": 78512.5,
+      "delta": 42.12,
+      "delta_pct": 0.05,
+      "direction": "HIGHER",
+      "arrow": "\u25b2",
+      "color": "green"
+    },
+    {
+      "time": "19:30",
+      "price": 78279.42,
+      "delta": -233.08,
+      "delta_pct": -0.3,
+      "direction": "LOWER",
+      "arrow": "\u25bc",
+      "color": "red"
+    },
+    {
+      "time": "19:45",
+      "price": 78212.95,
+      "delta": -66.47,
+      "delta_pct": -0.08,
+      "direction": "LOWER",
+      "arrow": "\u25bc",
+      "color": "red"
+    }
+  ],
+  "streak_summary": "2 Higher / 3 Lower",
+  "timestamp": 1788984903
+}
