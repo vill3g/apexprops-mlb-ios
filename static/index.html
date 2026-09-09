@@ -155,9 +155,57 @@
     .matrix-item .m-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; }
     .matrix-item .m-val { font-size: 14px; font-weight: 800; font-family: monospace; margin-top: 2px; }
     .matrix-item .m-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    .log-table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace; }
-    .log-table th { text-align: left; padding: 6px 8px; color: #64748b; border-bottom: 1px solid #334155; font-weight: 600; }
-    .log-table td { padding: 6px 8px; border-bottom: 1px solid rgba(51, 65, 85, 0.4); }
+    .hero-price-card {
+      background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(16, 185, 129, 0.08);
+    }
+    .price-flash-up {
+      animation: flashGreen 0.4s ease-out;
+    }
+    .price-flash-down {
+      animation: flashRed 0.4s ease-out;
+    }
+    @keyframes flashGreen {
+      0% { color: #34d399; text-shadow: 0 0 15px rgba(52, 211, 153, 0.8); }
+      100% { color: #ffffff; text-shadow: none; }
+    }
+    @keyframes flashRed {
+      0% { color: #f87171; text-shadow: 0 0 15px rgba(248, 113, 113, 0.8); }
+      100% { color: #ffffff; text-shadow: none; }
+    }
+    .trend-box-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .trend-box-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .trend-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform 0.15s ease;
+    }
+    .trend-card:hover {
+      transform: translateY(-2px);
+    }
+    .trend-card.trend-up {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(to bottom, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.9));
+    }
+    .trend-card.trend-down {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: linear-gradient(to bottom, rgba(239, 68, 68, 0.08), rgba(15, 23, 42, 0.9));
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
@@ -345,7 +393,7 @@
     <!-- ============================================================= -->
     <div id="view_btc_analyzer" class="hidden space-y-6">
       
-      <!-- BTC Top Bar: Timeframes, Live Stats & Countdown -->
+      <!-- BTC Top Bar: Timeframes, Live Stream Indicator & Refresh Controls -->
       <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <!-- Brand & Timeframe Pills -->
         <div class="flex flex-wrap items-center gap-3">
@@ -364,36 +412,105 @@
           </div>
         </div>
 
-        <!-- Live Ticker Stats -->
-        <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-xs font-mono">
-          <div>
-            <div class="text-[10px] text-slate-500 uppercase font-sans">Live Price</div>
-            <div id="btcLStatPrice" class="text-base sm:text-lg font-black text-white">$--,---.--</div>
+        <!-- Controls & Audio -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="font-bold text-emerald-400">1s High-Freq Stream</span>
           </div>
-          <div>
-            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Change</div>
-            <div id="btcLStatChange" class="font-bold text-slate-400">--%</div>
+          <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/20 transition cursor-pointer" title="Re-analyze BTC">
+            <span id="btcRefreshIcon">&#x21bb;</span>
+          </button>
+          <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Sound Alert">
+            <span id="btcAudioIcon">🔇</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- HERO HUD: Standout Live BTC Price & 15M Target Benchmark Placed Close By -->
+      <div class="hero-price-card rounded-2xl p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
+        <!-- 1. Standout Current Live Price -->
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-[11px] font-black uppercase text-slate-400 tracking-wider">LIVE BITCOIN PRICE</span>
+            <span id="btcLivePulseTag" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s LIVE</span>
           </div>
-          <div class="hidden sm:block">
-            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Range</div>
-            <div id="btcLStatRange" class="font-bold text-slate-300">$-- / $--</div>
+          <div id="btcLStatPrice" class="text-3xl sm:text-4xl lg:text-5xl font-black text-white font-mono tracking-tight transition-colors">
+            $--,---.--
           </div>
-          <div class="hidden md:block">
-            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Vol</div>
-            <div id="btcLStatVol" class="font-bold text-slate-300">--,---</div>
+          <div class="flex items-center gap-2 text-xs font-mono">
+            <span id="btcLStatChange" class="font-bold text-slate-400">--%</span>
+            <span class="text-slate-600">•</span>
+            <span class="text-slate-400">24h Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
+            <span class="text-slate-600">•</span>
+            <span class="text-slate-400">Range: <strong id="btcLStatRange" class="text-slate-300">$-- / $--</strong></span>
+          </div>
+        </div>
+
+        <!-- 2. Target Benchmark (Previous 15M Close) Placed Right Beside It -->
+        <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-4 space-y-2 relative overflow-hidden shadow-lg shadow-amber-500/10">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+              <span>🎯</span> 15M PRICE TARGET
+            </span>
+            <span class="text-[9px] text-slate-400 font-sans">Previous 15M Close</span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <div id="btcTargetPriceHero" class="text-2xl sm:text-3xl font-black font-mono text-amber-400">
+              $--,---.--
+            </div>
+          </div>
+          <!-- Real-Time Spread Delta Badge -->
+          <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            <span>--</span> <span>Evaluating spread...</span>
+          </div>
+        </div>
+
+        <!-- 3. Resolution Expiry Countdown Box -->
+        <div class="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-4 flex flex-col justify-between space-y-2 shadow-lg shadow-cyan-500/5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1.5">
+              <span>⏱️</span> TIME TO 15M CLOSE
+            </span>
+            <span class="text-[9px] text-slate-400 font-mono">TARGET RESOLUTION</span>
+          </div>
+          <div class="flex items-baseline justify-between">
+            <div id="btcCountdown" class="text-3xl sm:text-4xl font-black font-mono text-cyan-400">
+              --:--
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 block">Auto-recalculating</span>
+              <span class="text-[11px] font-mono text-emerald-400 font-bold">1s Live Pulse</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TREND BOX FOR LAST 5 PRICE TARGETS -->
+      <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📈</span>
+            <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">15-Minute Target Trend (Last 5 Close Benchmarks)</h3>
           </div>
           <div class="flex items-center gap-2">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-center">
-              <div class="text-[9px] text-slate-500 uppercase font-sans">Next Close</div>
-              <div id="btcCountdown" class="text-cyan-400 font-bold">--:--</div>
-            </div>
-            <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/20 transition cursor-pointer" title="Re-analyze BTC">
-              <span id="btcRefreshIcon">&#x21bb;</span>
-            </button>
-            <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Sound Alert">
-              <span id="btcAudioIcon">🔇</span>
-            </button>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">Streak Status:</span>
+            <span id="btcTrendStreakBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono">
+              Loading streak...
+            </span>
           </div>
+        </div>
+
+        <!-- 5-Target Grid -->
+        <div id="btcTrendBoxGrid" class="trend-box-grid">
+          <!-- Injected via JavaScript -->
         </div>
       </div>
 
@@ -512,9 +629,55 @@
 
         </div>
 
-        <!-- Right Column: Confluence Meter + Trade Setup + Catalysts (1 col) -->
+        <!-- Right Column: Predictor + Confluence Meter + Trade Setup + Calculator (1 col) -->
         <div class="space-y-6">
           
+          <!-- 15M TARGET RESOLUTION PREDICTOR CARD -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3 border border-amber-500/40 shadow-lg shadow-amber-500/10">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🎯</span>
+                <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">15M Target Resolution Predictor</h3>
+              </div>
+              <span id="btcPredBadge" class="text-[10px] px-2 py-0.5 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
+                CALCULATING
+              </span>
+            </div>
+
+            <!-- Big Prediction Verdict Banner -->
+            <div id="btcPredBanner" class="p-4 rounded-xl text-center space-y-1.5 bg-slate-900/90 border border-slate-700">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Predicted 15M Close Outcome</div>
+              <div id="btcPredOutcomeText" class="text-xl sm:text-2xl font-black tracking-tight text-white font-mono">
+                INITIALIZING...
+              </div>
+              <div class="flex items-center justify-center gap-2 pt-1">
+                <span id="btcPredProbText" class="text-xs font-mono font-bold text-cyan-400">50% Probability</span>
+                <span class="text-slate-600">•</span>
+                <span id="btcPredConfidenceTag" class="text-[10px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
+              </div>
+            </div>
+
+            <!-- Probability Split Bar -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                <span class="text-red-400">Below Target</span>
+                <span class="text-emerald-400">Above Target</span>
+              </div>
+              <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                <div id="btcPredProbBarUnder" class="h-full bg-red-500 transition-all duration-500" style="width: 50%;"></div>
+                <div id="btcPredProbBarAbove" class="h-full bg-emerald-500 transition-all duration-500" style="width: 50%;"></div>
+              </div>
+            </div>
+
+            <!-- Decision Information & Criteria -->
+            <div class="space-y-1.5 pt-1">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Key Decision Criteria:</div>
+              <ul id="btcPredFactorsList" class="space-y-1.5 text-[11px] text-slate-300">
+                <li class="text-slate-500">Evaluating 15M candle momentum vs target...</li>
+              </ul>
+            </div>
+          </div>
+
           <!-- Direction & Confluence Meter Card -->
           <div class="glass-panel rounded-2xl p-5 text-center space-y-3">
             <div id="btcSignalBanner" class="signal-banner signal-neutral">INITIALIZING</div>
@@ -572,6 +735,53 @@
             <div class="rr-bar">
               <div class="rr-risk"></div>
               <div class="rr-reward"></div>
+            </div>
+          </div>
+
+          <!-- Position Sizing & Risk Management Calculator -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span>🧮</span> Position Sizing Calculator
+              </h3>
+              <span class="text-[10px] text-slate-400 font-mono">Risk Engine</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Account Balance ($)</label>
+                <input type="number" id="calcAccountSize" value="5000" step="500" oninput="calculatePositionSize()"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:border-amber-500">
+              </div>
+              <div>
+                <label class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Risk per Trade (%)</label>
+                <select id="calcRiskPct" onchange="calculatePositionSize()"
+                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:border-amber-500">
+                  <option value="0.5">0.5% (Conservative)</option>
+                  <option value="1.0" selected>1.0% (Standard)</option>
+                  <option value="2.0">2.0% (Aggressive)</option>
+                  <option value="3.0">3.0% (Max Risk)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+              <div>
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Max Risk ($)</div>
+                <div id="calcRiskDollar" class="font-bold text-red-400 font-mono mt-0.5">$50.00</div>
+              </div>
+              <div>
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Position (BTC)</div>
+                <div id="calcPosBtc" class="font-bold text-amber-400 font-mono mt-0.5">0.0000</div>
+              </div>
+              <div>
+                <div class="text-[9px] text-slate-400 uppercase font-semibold">Notional ($)</div>
+                <div id="calcPosNotional" class="font-bold text-white font-mono mt-0.5">$0.00</div>
+              </div>
+            </div>
+
+            <div id="calcBreakevenRule" class="text-[10px] text-cyan-300 font-mono bg-cyan-950/40 border border-cyan-500/20 p-2 rounded-lg text-center">
+              Move SL to Breakeven once TP1 (+1.5R) is achieved.
             </div>
           </div>
 
@@ -926,11 +1136,15 @@
       setInterval(async () => {
         updateLiveClock();
 
-        // 1-second silent background poll
+        // 1-second live stream poll
         try {
-          const res = await fetch('/api/live/poll');
-          if (res.ok) {
-            const data = await res.json();
+          if (activeMode === 'btc_analyzer') {
+            await pollBtcLive1s();
+          } else {
+            const res = await fetch('/api/live/poll');
+            if (res.ok) {
+              const data = await res.json();
+            }
           }
         } catch (e) {}
       }, 1000);
@@ -1781,12 +1995,19 @@
     // =====================================================================
     let btcChart = null;
     let btcCandleSeries = null;
+    let btcVolumeSeries = null;
     let btcEma9Series = null;
     let btcEma21Series = null;
     let btcEma50Series = null;
     let btcEma200Series = null;
     let btcSupportLine = null;
     let btcResistanceLine = null;
+    let btcTargetLine = null;
+    let btcEntryLine = null;
+    let btcSlLine = null;
+    let btcTp1Line = null;
+    let currentBtcSetup = null;
+    let lastBtcPrice = 0;
 
     let btcCurrentTimeframe = "15m";
     let btcAudioEnabled = false;
@@ -1833,7 +2054,7 @@
         },
         rightPriceScale: {
           borderColor: "#334155",
-          scaleMargins: { top: 0.1, bottom: 0.15 },
+          scaleMargins: { top: 0.1, bottom: 0.22 },
         },
         timeScale: {
           borderColor: "#334155",
@@ -1848,6 +2069,13 @@
         borderVisible: false,
         wickUpColor: "#10b981",
         wickDownColor: "#ef4444",
+      });
+
+      btcVolumeSeries = btcChart.addHistogramSeries({
+        color: "rgba(16, 185, 129, 0.45)",
+        priceFormat: { type: "volume" },
+        priceScaleId: "",
+        scaleMargins: { top: 0.82, bottom: 0 },
       });
 
       btcEma9Series = btcChart.addLineSeries({ color: "#22d3ee", lineWidth: 1.5, title: "EMA 9" });
@@ -2155,6 +2383,206 @@
       btcSignalHistory.unshift(data);
     }
 
+    function renderBtcHeroHud(d) {
+      if (!d) return;
+      const prEl = document.getElementById("btcLStatPrice");
+      const price = Number(d.price || 0);
+
+      if (prEl && price > 0) {
+        prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (lastBtcPrice && price !== lastBtcPrice) {
+          prEl.classList.remove("price-flash-up", "price-flash-down");
+          void prEl.offsetWidth;
+          prEl.classList.add(price > lastBtcPrice ? "price-flash-up" : "price-flash-down");
+        }
+      }
+      if (price > 0) lastBtcPrice = price;
+
+      const chgEl = document.getElementById("btcLStatChange");
+      if (chgEl && d.change_24h !== undefined) {
+        chgEl.innerText = `${d.change_24h >= 0 ? "+" : ""}${Number(d.change_24h).toFixed(2)}%`;
+        chgEl.className = "font-bold " + (d.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
+      }
+
+      const volEl = document.getElementById("btcLStatVol");
+      if (volEl && d.volume_24h !== undefined) {
+        volEl.innerText = Math.round(d.volume_24h).toLocaleString();
+      }
+
+      const rngEl = document.getElementById("btcLStatRange");
+      if (rngEl && d.low_24h && d.high_24h) {
+        rngEl.innerText = `$${Math.round(d.low_24h).toLocaleString()} / $${Math.round(d.high_24h).toLocaleString()}`;
+      }
+
+      // 15M Target Benchmark Display
+      const targetEl = document.getElementById("btcTargetPriceHero");
+      if (targetEl && d.target_price) {
+        targetEl.innerText = `$${Number(d.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+
+      // Target Delta Badge
+      const deltaBadge = document.getElementById("btcTargetDeltaBadge");
+      if (deltaBadge && d.delta !== undefined) {
+        const isAbove = d.delta >= 0;
+        const arrow = isAbove ? "▲" : "▼";
+        const sign = isAbove ? "+" : "-";
+        const absDelta = Math.abs(d.delta);
+        const absPct = Math.abs(d.delta_pct || 0);
+        const textStatus = isAbove ? "ABOVE TARGET" : "BELOW TARGET";
+
+        if (isAbove) {
+          deltaBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm shadow-emerald-500/20";
+        } else {
+          deltaBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/30 shadow-sm shadow-red-500/20";
+        }
+        deltaBadge.innerHTML = `<span>${arrow}</span> <span>${sign}$${absDelta.toFixed(2)} (${sign}${absPct.toFixed(2)}%) ${textStatus}</span>`;
+      }
+
+      // Countdown
+      const cdEl = document.getElementById("btcCountdown");
+      if (cdEl && d.formatted_countdown) {
+        cdEl.innerText = d.formatted_countdown;
+      }
+    }
+
+    function renderBtcTrendBox(last5, streak) {
+      const grid = document.getElementById("btcTrendBoxGrid");
+      const streakBadge = document.getElementById("btcTrendStreakBadge");
+      if (streakBadge && streak) {
+        streakBadge.innerText = streak;
+      }
+      if (!grid || !Array.isArray(last5) || last5.length === 0) return;
+
+      grid.innerHTML = last5.map(t => {
+        const isUp = t.direction === "HIGHER";
+        const cardClass = isUp ? "trend-card trend-up" : "trend-card trend-down";
+        const arrowColor = isUp ? "text-emerald-400" : "text-red-400";
+        const sign = isUp ? "+" : "-";
+        const absDelta = Math.abs(t.delta);
+        const absPct = Math.abs(t.delta_pct);
+
+        return `
+          <div class="${cardClass}">
+            <div class="flex items-center justify-between w-full text-[10px] text-slate-400 font-mono mb-1">
+              <span>${t.time}</span>
+              <span class="text-[9px] px-1.5 py-0.2 rounded ${isUp ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'} font-bold">15M CLOSE</span>
+            </div>
+            <div class="text-sm sm:text-base font-black font-mono text-white my-0.5">
+              $${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </div>
+            <div class="flex items-center gap-1 text-xs font-mono font-bold ${arrowColor} mt-1">
+              <span class="text-base leading-none">${t.arrow}</span>
+              <span>${sign}$${absDelta.toFixed(2)}</span>
+              <span class="text-[10px] opacity-80">(${sign}${absPct.toFixed(2)}%)</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderBtcPredictor(tb) {
+      if (!tb) return;
+      const outcomeText = document.getElementById("btcPredOutcomeText");
+      const badge = document.getElementById("btcPredBadge");
+      const probText = document.getElementById("btcPredProbText");
+      const confTag = document.getElementById("btcPredConfidenceTag");
+      const barUnder = document.getElementById("btcPredProbBarUnder");
+      const barAbove = document.getElementById("btcPredProbBarAbove");
+      const factorsList = document.getElementById("btcPredFactorsList");
+      const banner = document.getElementById("btcPredBanner");
+
+      const isAbove = (tb.predicted_outcome || "").includes("ABOVE");
+      const prob = Number(tb.probability_percent || 50);
+
+      if (outcomeText) {
+        outcomeText.innerText = tb.predicted_outcome || "--";
+        outcomeText.className = "text-xl sm:text-2xl font-black tracking-tight font-mono " + (isAbove ? "text-emerald-400" : "text-red-400");
+      }
+
+      if (banner) {
+        banner.style.background = isAbove ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
+        banner.style.borderColor = isAbove ? "#10b981" : "#ef4444";
+      }
+
+      if (badge) {
+        badge.innerText = tb.confidence_badge || "EVALUATING";
+        badge.style.background = isAbove ? "#10b981" : "#ef4444";
+        badge.style.color = isAbove ? "#020617" : "#ffffff";
+      }
+
+      if (probText) probText.innerText = `${prob}% Probability`;
+      if (confTag) confTag.innerText = tb.confidence_badge || "MODERATE EDGE";
+
+      if (barAbove && barUnder) {
+        if (isAbove) {
+          barAbove.style.width = `${prob}%`;
+          barUnder.style.width = `${100 - prob}%`;
+        } else {
+          barUnder.style.width = `${prob}%`;
+          barAbove.style.width = `${100 - prob}%`;
+        }
+      }
+
+      if (factorsList) {
+        factorsList.innerHTML = (tb.decision_factors || []).map(f => `
+          <li class="flex items-start gap-1.5">
+            <span class="text-amber-400 shrink-0">▸</span>
+            <span>${f}</span>
+          </li>
+        `).join("") || '<li class="text-slate-500">Evaluating 15M progression...</li>';
+      }
+    }
+
+    function calculatePositionSize() {
+      const accInput = document.getElementById("calcAccountSize");
+      const riskSelect = document.getElementById("calcRiskPct");
+      const riskDollarEl = document.getElementById("calcRiskDollar");
+      const posBtcEl = document.getElementById("calcPosBtc");
+      const posNotionalEl = document.getElementById("calcPosNotional");
+      const breakevenEl = document.getElementById("calcBreakevenRule");
+
+      const account = parseFloat(accInput ? accInput.value : 5000) || 5000;
+      const riskPct = parseFloat(riskSelect ? riskSelect.value : 1.0) || 1.0;
+      const riskDollar = account * (riskPct / 100);
+
+      if (riskDollarEl) riskDollarEl.innerText = `$${riskDollar.toFixed(2)}`;
+
+      if (currentBtcSetup && currentBtcSetup.risk_amount && currentBtcSetup.risk_amount > 0) {
+        const slDist = currentBtcSetup.risk_amount;
+        const entry = currentBtcSetup.entry_price || lastBtcPrice || 78000;
+        const posBtc = riskDollar / slDist;
+        const notional = posBtc * entry;
+
+        if (posBtcEl) posBtcEl.innerText = posBtc.toFixed(4);
+        if (posNotionalEl) posNotionalEl.innerText = `$${Math.round(notional).toLocaleString()}`;
+        if (breakevenEl && currentBtcSetup.breakeven_rule) {
+          breakevenEl.innerText = currentBtcSetup.breakeven_rule;
+        }
+      } else {
+        if (posBtcEl) posBtcEl.innerText = "0.0000";
+        if (posNotionalEl) posNotionalEl.innerText = "$0.00";
+      }
+    }
+
+    async function pollBtcLive1s() {
+      if (activeMode !== 'btc_analyzer') return;
+      try {
+        const res = await fetch('/api/btc/live');
+        if (res.ok) {
+          const liveData = await res.json();
+          renderBtcHeroHud(liveData);
+          if (liveData.last_5_targets && liveData.last_5_targets.length > 0) {
+            renderBtcTrendBox(liveData.last_5_targets, liveData.streak_summary);
+          }
+          if (liveData.seconds_left === 1) {
+            setTimeout(triggerBtcAnalysis, 1500);
+          }
+        }
+      } catch (err) {
+        // silent
+      }
+    }
+
     async function triggerBtcAnalysis() {
       const btn = document.getElementById("btnBtcRefresh");
       const icon = document.getElementById("btcRefreshIcon");
@@ -2195,9 +2623,10 @@
           } catch (e) {}
         }
 
-        // 3. Update Chart
+        // 3. Update Chart (Candles, Volume Histogram, Overlays)
         if (btcChart && btcCandleSeries && candlesData && candlesData.candles) {
           btcCandleSeries.setData(candlesData.candles);
+          if (candlesData.volume && btcVolumeSeries) btcVolumeSeries.setData(candlesData.volume);
           if (candlesData.ema9 && btcEma9Series) btcEma9Series.setData(candlesData.ema9);
           if (candlesData.ema21 && btcEma21Series) btcEma21Series.setData(candlesData.ema21);
           if (candlesData.ema50 && btcEma50Series) btcEma50Series.setData(candlesData.ema50);
@@ -2209,6 +2638,56 @@
 
           if (btcSupportLine) btcCandleSeries.removePriceLine(btcSupportLine);
           if (btcResistanceLine) btcCandleSeries.removePriceLine(btcResistanceLine);
+          if (btcTargetLine) btcCandleSeries.removePriceLine(btcTargetLine);
+          if (btcEntryLine) btcCandleSeries.removePriceLine(btcEntryLine);
+          if (btcSlLine) btcCandleSeries.removePriceLine(btcSlLine);
+          if (btcTp1Line) btcCandleSeries.removePriceLine(btcTp1Line);
+
+          // Plot 15M Target Benchmark Price Line
+          const targetPr = (analysisData && analysisData.target_benchmark && analysisData.target_benchmark.target_price) || (candlesData && candlesData.target_price);
+          if (targetPr) {
+            btcTargetLine = btcCandleSeries.createPriceLine({
+              price: targetPr,
+              color: "#f59e0b",
+              lineWidth: 2,
+              lineStyle: 0,
+              axisLabelVisible: true,
+              title: "15M TARGET",
+            });
+          }
+
+          // Plot Trade Setup Lines
+          const setupData = (analysisData && analysisData.trade_setup) || (candlesData && candlesData.trade_setup);
+          if (setupData && setupData.entry_price) {
+            btcEntryLine = btcCandleSeries.createPriceLine({
+              price: setupData.entry_price,
+              color: "#38bdf8",
+              lineWidth: 1.5,
+              lineStyle: 2,
+              axisLabelVisible: true,
+              title: "ENTRY",
+            });
+            if (setupData.stop_loss) {
+              btcSlLine = btcCandleSeries.createPriceLine({
+                price: setupData.stop_loss,
+                color: "#ef4444",
+                lineWidth: 1.5,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: "SL",
+              });
+            }
+            if (setupData.take_profit_1) {
+              btcTp1Line = btcCandleSeries.createPriceLine({
+                price: setupData.take_profit_1,
+                color: "#10b981",
+                lineWidth: 1.5,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: "TP1",
+              });
+            }
+          }
 
           if (analysisData && analysisData.market_structure) {
             if (analysisData.market_structure.nearest_support) {
@@ -2237,27 +2716,16 @@
           if (statusEl) statusEl.innerText = `${candlesData.candles.length} candles (${btcCurrentTimeframe.toUpperCase()})`;
         }
 
-        // 4. Update Header Stats
-        if (candlesData && candlesData.ticker) {
-          const t = candlesData.ticker;
-          const prEl = document.getElementById("btcLStatPrice");
-          if (prEl) prEl.innerText = `$${Number(t.price || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-
-          const chgEl = document.getElementById("btcLStatChange");
-          if (chgEl) {
-            chgEl.innerText = `${t.change_24h >= 0 ? "+" : ""}${Number(t.change_24h || 0).toFixed(2)}%`;
-            chgEl.className = "font-bold " + (t.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
-          }
-
-          const rngEl = document.getElementById("btcLStatRange");
-          if (rngEl) rngEl.innerText = `$${Math.round(t.low_24h || 0).toLocaleString()} / $${Math.round(t.high_24h || 0).toLocaleString()}`;
-
-          const volEl = document.getElementById("btcLStatVol");
-          if (volEl) volEl.innerText = Math.round(t.volume_24h || 0).toLocaleString();
-        }
-
-        // 5. Update Confluence Meter & Trade Setup
+        // 4. Update Analysis, HUD, Trend Box, Predictor & Calculator
         if (analysisData) {
+          if (analysisData.target_benchmark) {
+            renderBtcHeroHud(analysisData.target_benchmark);
+            renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
+            renderBtcPredictor(analysisData.target_benchmark);
+          }
+          currentBtcSetup = analysisData.trade_setup;
+          calculatePositionSize();
+
           updateBtcConfluenceGauge(analysisData.confluence_score || 0, analysisData.direction || "NEUTRAL", analysisData.confidence_percent || 50);
           renderBtcTradeSetup(analysisData.trade_setup);
           renderBtcIndicators(analysisData.indicators);
