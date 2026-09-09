@@ -432,6 +432,19 @@ def api_btc_countdown(timeframe: str = "15m"):
     except Exception as e:
         return JSONResponse({"formatted": "--:--", "seconds_left": 0})
 
+@app.get("/api/btc/kalshi")
+def api_btc_kalshi():
+    """Returns active Kalshi 15M target strike and market odds."""
+    try:
+        from backend.btc.kalshi_client import get_kalshi_15m_market
+        data = get_kalshi_15m_market()
+        if not data:
+            return JSONResponse({"status": "unavailable", "target_price": None})
+        return JSONResponse(data)
+    except Exception as e:
+        return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+
+
 @app.get("/api/btc/candles")
 def api_btc_candles(timeframe: str = "15m"):
     """
