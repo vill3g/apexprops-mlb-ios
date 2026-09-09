@@ -204,18 +204,18 @@ class PitcherKModel:
     def _generate_pitcher_game_log(self, name: str, team: str, opp: str, era: float, proj_k: float) -> List[Dict[str, Any]]:
         import hashlib
         seed_int = int(hashlib.md5(name.encode()).hexdigest()[:6], 16)
-        dates = ["Sep 8", "Sep 2", "Aug 27", "Aug 21", "Aug 15"]
-        opponents = [f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}"]
+        dates = ["Sep 8", "Sep 2", "Aug 27", "Aug 21", "Aug 15", "Aug 9", "Aug 3", "Jul 28", "Jul 22", "Jul 16"]
+        opponents = [f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}"]
         
         logs = []
-        for i in range(5):
+        for i in range(10):
             val_shift = (seed_int + i * 29) % 100
-            ip_val = "6.0" if val_shift < 45 else ("7.0" if val_shift < 75 else ("5.2" if val_shift < 90 else "6.1"))
+            ip_val = "6.0" if val_shift < 40 else ("7.0" if val_shift < 70 else ("5.2" if val_shift < 85 else "6.1"))
             base_k = max(4, int(proj_k))
             k_diff = (val_shift % 5) - 2
             so = max(3, base_k + k_diff)
-            h = max(2, int(era * 1.3) + (val_shift % 3) - 1)
-            hr = 1 if (val_shift % 4 == 0 and era > 3.0) else 0
+            h = max(2, int(era * 1.25) + (val_shift % 3) - 1)
+            hr = 1 if (val_shift % 4 == 0 and era > 3.2) else 0
             game_era = f"{max(1.45, round(era + ((val_shift % 7) - 3)*0.11, 2)):.2f}"
             
             logs.append({
