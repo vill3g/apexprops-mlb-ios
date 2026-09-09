@@ -11,9 +11,11 @@ import pandas as pd
 try:
     from backend.btc.indicators import add_all_indicators, extract_indicator_summary
     from backend.btc.pattern_detector import detect_candlestick_patterns, analyze_market_structure
+    from backend.btc.kalshi_client import get_kalshi_15m_market
 except ImportError:
     from indicators import add_all_indicators, extract_indicator_summary
     from pattern_detector import detect_candlestick_patterns, analyze_market_structure
+    from kalshi_client import get_kalshi_15m_market
 
 
 @dataclass
@@ -303,15 +305,27 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     # --- 5. 15-Minute Price Target Benchmark & Above/Below Predictor ---
     n_rows = len(df_ind)
     active_target = curr_price
+    target_source = "15M Candle Close"
     last_5_targets = []
     higher_count = 0
     lower_count = 0
     from datetime import datetime, timezone
 
-    if n_rows >= 7:
-        # Active target is previous completed 15m candle close (index n - 2)
+    # Check Kalshi live 15M contract strike
+    kalshi_m = None
+    try:
+        kalshi_m = get_kalshi_15m_market()
+    except Exception:
+        pass
+
+    if kalshi_m and kalshi_m.get("target_price"):
+        active_target = float(kalshi_m["target_price"])
+        target_source = "Kalshi KXBTC15M"
+    elif n_rows >= 7:
+        # Fallback: previous completed 15m candle close (index n - 2)
         active_target = round(float(df_ind.iloc[-2]["close"]), 2)
-        
+
+    if n_rows >= 7:
         # Last 5 completed targets (indices n - 6 to n - 2)
         for i in range(n_rows - 6, n_rows - 1):
             c = df_ind.iloc[i]
@@ -408,8 +422,14 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         pred_outcome = "ABOVE TARGET (OVER)" if target_delta >= 0 else "BELOW TARGET (UNDER)"
         pred_prob = 52
 
+    # Prepend Kalshi Market Odds factor if available
+    if kalshi_m and kalshi_m.get("yes_prob") is not None:
+        pred_factors.insert(0, f"Kalshi KXBTC15M Market Odds: {kalshi_m['yes_prob']}% Yes / {kalshi_m['no_prob']}% No (Target: ${kalshi_m['target_price']:,.2f})")
+
     target_benchmark = {
         "target_price": active_target,
+        "target_source": target_source,
+        "kalshi": kalshi_m,
         "current_price": curr_price,
         "delta": target_delta,
         "delta_pct": target_delta_pct,
