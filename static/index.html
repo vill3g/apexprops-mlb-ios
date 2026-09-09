@@ -913,14 +913,18 @@
           <span>✓</span> <span>Picks Copied to Clipboard! Ready to paste.</span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          <button id="btnModalCopySlip" onclick="copySlipModalAction()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+          <button id="btnModalCopySlip" onclick="copySlipModalAction()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 px-3 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
             <span id="btnModalCopyIcon">📋</span>
             <span id="btnModalCopyText">Copy Picks</span>
           </button>
-          <button onclick="launchDraftKingsAppDirect()" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black py-2 px-3 rounded-xl text-xs transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+          <button onclick="launchDraftKingsAppDirect(false)" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
             <span>👑</span>
-            <span>Open DraftKings ➔</span>
+            <span>Open App (dksb://)</span>
+          </button>
+          <button onclick="launchDraftKingsAppDirect(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold py-2.5 px-3 rounded-xl text-xs transition border border-emerald-500/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <span>🌐</span>
+            <span>In Browser ➔</span>
           </button>
         </div>
       </div>
@@ -1725,19 +1729,79 @@
       }, 2500);
     }
 
-    function launchDraftKingsAppDirect() {
-      let targetUrl = "https://sportsbook.draftkings.com/leagues/baseball/mlb";
-      if (activeSlip.length > 0 && activeSlip[0].dk_link) {
-        targetUrl = activeSlip[0].dk_link;
+    // ==========================================
+    // Outlier-Engineered DraftKings Link Builder
+    // ==========================================
+    const OUTLIER_DK_TEMPLATES = {
+      deeplink: {
+        baseTemplate: "dksb://sb/addbet/",
+        selectionTemplate: "[bookOutcomeId]",
+        selectionSeperator: ",",
+        templateSuffix: ""
+      },
+      webLink: {
+        baseTemplate: "https://sportsbook.draftkings.com/event/[bookEventId]?outcomes=",
+        baseAdministrativeAreaTemplate: "https://sportsbook.draftkings.com/event/[bookEventId]?state=[administrativeArea]&outcomes=",
+        selectionTemplate: "[bookOutcomeId]",
+        selectionSeperator: ",",
+        templateSuffix: ""
       }
+    };
+
+    function buildOutlierDraftKingsLinks(selections, adminArea = "") {
+      if (!selections || selections.length === 0) return null;
+
+      function render(tpl, sels) {
+        const hasAdmin = adminArea && tpl.baseAdministrativeAreaTemplate;
+        const baseStr = (hasAdmin ? tpl.baseAdministrativeAreaTemplate : tpl.baseTemplate) || tpl.baseTemplate;
+
+        function replaceTokens(str, sel, idx) {
+          let res = str
+            .replaceAll("[bookEventId]", sel.bookEventId || sel.event_id || "84240")
+            .replaceAll("[bookMarketId]", sel.bookMarketId || sel.market_id || "")
+            .replaceAll("[bookOutcomeId]", sel.bookOutcomeId || sel.outcome_id || "")
+            .replaceAll("[i]", idx.toString());
+          if (adminArea) res = res.replaceAll("[administrativeArea]", adminArea.toLowerCase());
+          return res;
+        }
+
+        const base = replaceTokens(baseStr, sels[0], 0);
+        const sep = tpl.selectionSeperator ? replaceTokens(tpl.selectionSeperator, sels[0], 0) : "";
+        let url = base + sels.map((s, i) => replaceTokens(tpl.selectionTemplate, s, i)).join(sep);
+        if (tpl.templateSuffix) url += tpl.templateSuffix;
+        return url;
+      }
+
+      return {
+        deeplink: render(OUTLIER_DK_TEMPLATES.deeplink, selections),
+        webLink: render(OUTLIER_DK_TEMPLATES.webLink, selections)
+      };
+    }
+
+    function launchDraftKingsAppDirect(forceWeb = false) {
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        window.location.href = "dksportsbook://leagues/baseball/mlb";
-        setTimeout(() => {
-          window.open(targetUrl, '_blank');
-        }, 500);
+      copySlipToClipboard(true);
+
+      const selections = activeSlip.map(p => ({
+        bookEventId: p.book_event_id || p.event_id || "84240",
+        bookMarketId: p.book_market_id || p.market_id || "",
+        bookOutcomeId: p.book_outcome_id || p.outcome_id || p.dk_outcome_id || ""
+      }));
+
+      const validOutcomes = selections.filter(s => s.bookOutcomeId);
+      const links = validOutcomes.length > 0 
+        ? buildOutlierDraftKingsLinks(validOutcomes) 
+        : { deeplink: "dksb://sb/addbet", webLink: "https://sportsbook.draftkings.com/leagues/baseball/mlb" };
+
+      if (forceWeb || !isMobile) {
+        window.open(links.webLink, '_blank');
       } else {
-        window.open(targetUrl, '_blank');
+        // Primary Outlier mobile launch: command DraftKings app directly via dksb://
+        window.location.href = links.deeplink;
+        setTimeout(() => {
+          // If DraftKings native app is not installed, fallback gracefully to universal browser link
+          window.open(links.webLink, '_blank');
+        }, 750);
       }
     }
 
@@ -2876,65 +2940,107 @@
       return secondsLeft;
     }
 
-    // Direct Public 15m Klines Fetcher (Binance Vision CORS: *)
+    // Direct Public 15m Klines Fetcher (Primary: Coinbase Exchange CORS: *, Fallback: Binance US / Vision)
     async function fetchBtcKlinesDirect() {
       if (isFetchingKlinesDirect) return;
       isFetchingKlinesDirect = true;
       try {
-        const url = 'https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=15';
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length >= 7) {
-            // Target benchmark is the close of previous completed candle
-            const prevCandle = data[data.length - 2];
-            window.cachedBtcTargetPrice = parseFloat(prevCandle[4]);
+        let rawCandles = null;
+        let isCoinbaseFormat = false;
 
-            const targetHero = document.getElementById("btcTargetPriceHero");
-            if (targetHero && window.cachedBtcTargetPrice) {
-              targetHero.innerText = `$${window.cachedBtcTargetPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        // 1. Primary: Coinbase Exchange 15m candles (CORS: *, 100% US & mobile friendly)
+        try {
+          const cbUrl = 'https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=900';
+          const cbRes = await fetch(cbUrl);
+          if (cbRes.ok) {
+            const cbData = await cbRes.json();
+            if (Array.isArray(cbData) && cbData.length >= 7) {
+              // Coinbase format: [time, low, high, open, close, volume] - sorted newest first
+              rawCandles = cbData.slice(0, 15).sort((a, b) => a[0] - b[0]);
+              isCoinbaseFormat = true;
             }
+          }
+        } catch (eCb) {
+          console.warn("Coinbase klines fetch error:", eCb);
+        }
 
-            // Extract last 5 completed targets
-            const last5Raw = data.slice(-7, -2);
-            let higherCount = 0;
-            let lowerCount = 0;
-            window.cachedBtcLast5Targets = last5Raw.map((c, idx) => {
-              const closeP = parseFloat(c[4]);
-              const priorIdx = data.length - 7 - 1 + idx;
-              const priorClose = parseFloat(data[priorIdx][4]);
-              const delta = closeP - priorClose;
-              const deltaPct = (delta / priorClose) * 100;
-              const isUp = delta >= 0;
-              if (isUp) { higherCount++; lowerCount = 0; } else { lowerCount++; higherCount = 0; }
-
-              const tSec = Math.floor(c[0] / 1000);
-              const dObj = new Date(tSec * 1000);
-              const timeStr = dObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-              return {
-                time: timeStr,
-                price: closeP,
-                direction: isUp ? "HIGHER" : "LOWER",
-                arrow: isUp ? "▲" : "▼",
-                delta: delta,
-                delta_pct: deltaPct
-              };
-            });
-
-            if (higherCount > 1) {
-              window.cachedBtcStreak = `🔥 ${higherCount} consecutive HIGHER closes`;
-            } else if (lowerCount > 1) {
-              window.cachedBtcStreak = `❄️ ${lowerCount} consecutive LOWER closes`;
-            } else {
-              window.cachedBtcStreak = "⚡ Neutral Interval Bias";
+        // 2. Fallback: Binance US / Binance Vision
+        if (!rawCandles) {
+          try {
+            const bUrl = 'https://api.binance.us/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=15';
+            const bRes = await fetch(bUrl);
+            if (bRes.ok) {
+              const bData = await bRes.json();
+              if (Array.isArray(bData) && bData.length >= 7) {
+                rawCandles = bData;
+                isCoinbaseFormat = false;
+              }
             }
+          } catch (eB) {
+            try {
+              const bvUrl = 'https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=15';
+              const bvRes = await fetch(bvUrl);
+              if (bvRes.ok) {
+                const bvData = await bvRes.json();
+                if (Array.isArray(bvData) && bvData.length >= 7) {
+                  rawCandles = bvData;
+                  isCoinbaseFormat = false;
+                }
+              }
+            } catch (eBv) {}
+          }
+        }
 
-            renderBtcTrendBox(window.cachedBtcLast5Targets, window.cachedBtcStreak);
+        if (rawCandles && rawCandles.length >= 7) {
+          // In chronological order, previous completed candle is at length - 2
+          const prevCandle = rawCandles[rawCandles.length - 2];
+          const targetClose = isCoinbaseFormat ? parseFloat(prevCandle[4]) : parseFloat(prevCandle[4]);
+          window.cachedBtcTargetPrice = targetClose;
 
-            if (lastBtcPrice && window.cachedBtcTargetPrice) {
-              evaluateClientTargetPrediction(lastBtcPrice, window.cachedBtcTargetPrice);
-            }
+          const targetHero = document.getElementById("btcTargetPriceHero");
+          if (targetHero && targetClose) {
+            targetHero.innerText = `$${targetClose.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          }
+
+          // Extract last 5 completed intervals
+          const last5Raw = rawCandles.slice(-7, -2);
+          let higherCount = 0;
+          let lowerCount = 0;
+          window.cachedBtcLast5Targets = last5Raw.map((c, idx) => {
+            const closeP = parseFloat(c[4]);
+            const priorIdx = rawCandles.length - 7 - 1 + idx;
+            const priorClose = parseFloat(rawCandles[priorIdx][4]);
+            const delta = closeP - priorClose;
+            const deltaPct = (delta / priorClose) * 100;
+            const isUp = delta >= 0;
+            if (isUp) { higherCount++; lowerCount = 0; } else { lowerCount++; higherCount = 0; }
+
+            const tSec = isCoinbaseFormat ? c[0] : Math.floor(c[0] / 1000);
+            const dObj = new Date(tSec * 1000);
+            const timeStr = dObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return {
+              time: timeStr,
+              price: closeP,
+              direction: isUp ? "HIGHER" : "LOWER",
+              arrow: isUp ? "▲" : "▼",
+              delta: delta,
+              delta_pct: deltaPct
+            };
+          });
+
+          if (higherCount > 1) {
+            window.cachedBtcStreak = `🔥 ${higherCount} consecutive HIGHER closes`;
+          } else if (lowerCount > 1) {
+            window.cachedBtcStreak = `❄️ ${lowerCount} consecutive LOWER closes`;
+          } else {
+            window.cachedBtcStreak = "⚡ Neutral Interval Bias";
+          }
+
+          renderBtcTrendBox(window.cachedBtcLast5Targets, window.cachedBtcStreak);
+
+          if (lastBtcPrice && window.cachedBtcTargetPrice) {
+            evaluateClientTargetPrediction(lastBtcPrice, window.cachedBtcTargetPrice);
           }
         }
       } catch (err) {
@@ -2978,8 +3084,8 @@
       updateBtcConfluenceGauge(meterScore, isAbove ? "BUY" : "SELL", prob);
     }
 
-    // Client-side Live Display Updater (for iPhone / standalone)
-    function updateClientBtcLive(price) {
+    // Client-side Live Display Updater (for Mobile, iPhone / Standalone)
+    function updateClientBtcLive(price, stats = null) {
       const prEl = document.getElementById("btcLStatPrice");
       if (prEl && price > 0) {
         prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -2990,6 +3096,25 @@
         }
       }
       lastBtcPrice = price;
+
+      // Update 24h stats if available on mobile
+      if (stats) {
+        if (stats.change_24h !== undefined) {
+          const chgEl = document.getElementById("btcLStatChange");
+          if (chgEl) {
+            chgEl.innerText = `${stats.change_24h >= 0 ? "+" : ""}${Number(stats.change_24h).toFixed(2)}%`;
+            chgEl.className = "font-bold " + (stats.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
+          }
+        }
+        if (stats.volume !== undefined) {
+          const volEl = document.getElementById("btcLStatVol");
+          if (volEl) volEl.innerText = Math.round(Number(stats.volume)).toLocaleString();
+        }
+        if (stats.low !== undefined && stats.high !== undefined) {
+          const rngEl = document.getElementById("btcLStatRange");
+          if (rngEl) rngEl.innerText = `$${Math.round(Number(stats.low)).toLocaleString()} / $${Math.round(Number(stats.high)).toLocaleString()}`;
+        }
+      }
 
       // Update Target Spread Delta
       const target = window.cachedBtcTargetPrice;
@@ -3013,6 +3138,11 @@
           deltaBadge.innerHTML = `<span>${arrow}</span> <span>${sign}$${absDelta.toFixed(2)} (${sign}${absPct.toFixed(2)}%) ${textStatus}</span>`;
         }
 
+        const tHero = document.getElementById("btcTargetPriceHero");
+        if (tHero && (!tHero.innerText || tHero.innerText.includes("--") || tHero.innerText === "$0.00")) {
+          tHero.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
         evaluateClientTargetPrediction(price, target);
       }
     }
@@ -3025,12 +3155,13 @@
       if (activeMode !== 'btc_analyzer') return;
 
       let livePrice = null;
+      let liveStats = null;
       let handledByServer = false;
 
-      // 2. Try local server first (desktop / dev environment)
+      // 2. Try local server first (generous 2500ms timeout so mobile Wi-Fi / LAN doesn't abort)
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 650);
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
         const res = await fetch('/api/btc/live', { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
@@ -3053,31 +3184,75 @@
           return;
         }
       } catch (err) {
-        // Local server unreachable -> Fallback for iPhone / standalone
+        // Local server unreachable or timed out -> Fallback for mobile / standalone
       }
 
       if (handledByServer) return;
 
-      // 3. Fallback: Direct Public Binance Vision Stream (CORS: *)
+      // 3. Primary Mobile Client Fallback: Coinbase Exchange Ticker (CORS: *, 100% US-friendly, no geoblock)
       try {
-        const pRes = await fetch('https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT');
-        if (pRes.ok) {
-          const pData = await pRes.json();
-          livePrice = parseFloat(pData.price);
+        const cbTickRes = await fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker');
+        if (cbTickRes.ok) {
+          const cbTick = await cbTickRes.json();
+          livePrice = parseFloat(cbTick.price);
+          liveStats = { volume: parseFloat(cbTick.volume) };
         }
       } catch (e1) {
-        // 4. Coinbase Public Fallback (CORS: *)
+        // 4. Coinbase v2 Spot
         try {
-          const cbRes = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
-          if (cbRes.ok) {
-            const cbData = await cbRes.json();
-            livePrice = parseFloat(cbData.data.amount);
+          const cbSpotRes = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+          if (cbSpotRes.ok) {
+            const cbSpot = await cbSpotRes.json();
+            livePrice = parseFloat(cbSpot.data.amount);
           }
-        } catch (e2) {}
+        } catch (e2) {
+          // 5. Binance US / Vision fallback
+          try {
+            const bRes = await fetch('https://api.binance.us/api/v3/ticker/price?symbol=BTCUSDT');
+            if (bRes.ok) {
+              const bData = await bRes.json();
+              livePrice = parseFloat(bData.price);
+            }
+          } catch (e3) {
+            try {
+              const bvRes = await fetch('https://data-api.binance.vision/api/v3/ticker/price?symbol=BTCUSDT');
+              if (bvRes.ok) {
+                const bvData = await bvRes.json();
+                livePrice = parseFloat(bvData.price);
+              }
+            } catch (e4) {}
+          }
+        }
+      }
+
+      // Fetch 24h stats from Coinbase if needed (every 20s)
+      if (livePrice && (!window._lastCbStatsTime || (Date.now() - window._lastCbStatsTime > 20000))) {
+        try {
+          const cbStatsRes = await fetch('https://api.exchange.coinbase.com/products/BTC-USD/stats');
+          if (cbStatsRes.ok) {
+            const st = await cbStatsRes.json();
+            const openP = parseFloat(st.open);
+            const highP = parseFloat(st.high);
+            const lowP = parseFloat(st.low);
+            const chgPct = openP > 0 ? ((livePrice - openP) / openP) * 100 : 0;
+            window._cachedCbStats = {
+              change_24h: chgPct,
+              open: openP,
+              high: highP,
+              low: lowP,
+              volume: parseFloat(st.volume)
+            };
+            window._lastCbStatsTime = Date.now();
+          }
+        } catch (eStats) {}
+      }
+
+      if (window._cachedCbStats) {
+        liveStats = { ...(liveStats || {}), ...window._cachedCbStats };
       }
 
       if (livePrice && livePrice > 0) {
-        updateClientBtcLive(livePrice);
+        updateClientBtcLive(livePrice, liveStats);
       }
 
       // If target benchmark is not loaded yet, fetch direct klines
@@ -3119,7 +3294,41 @@
           console.warn("Live BTC candles fetch failed, checking static fallback:", e);
         }
 
-        // Direct Public Kline Fallback for iPhone / standalone
+        // Direct Public Kline Fallback for iPhone / standalone (Primary: Coinbase CORS: *, Fallback: Binance)
+        if (!candlesData) {
+          try {
+            const cbGran = btcCurrentTimeframe === '1m' ? 60 : (btcCurrentTimeframe === '5m' ? 300 : (btcCurrentTimeframe === '1h' ? 3600 : 900));
+            const cbRes = await fetch(`https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=${cbGran}`);
+            if (cbRes.ok) {
+              const cbCandles = await cbRes.json();
+              if (Array.isArray(cbCandles) && cbCandles.length > 0) {
+                // Coinbase format: [time, low, high, open, close, volume] sorted newest first
+                const sorted = cbCandles.slice(0, 100).sort((a, b) => a[0] - b[0]);
+                const cArr = [];
+                const vArr = [];
+                for (const k of sorted) {
+                  const t = k[0];
+                  const lo = parseFloat(k[1]);
+                  const hi = parseFloat(k[2]);
+                  const op = parseFloat(k[3]);
+                  const cl = parseFloat(k[4]);
+                  const vo = parseFloat(k[5]);
+                  cArr.push({ time: t, open: op, high: hi, low: lo, close: cl });
+                  vArr.push({ time: t, value: vo, color: cl >= op ? '#10b98180' : '#ef444480' });
+                }
+                const targetPrev = sorted.length >= 2 ? parseFloat(sorted[sorted.length - 2][4]) : cArr[cArr.length - 1].close;
+                candlesData = {
+                  candles: cArr,
+                  volume: vArr,
+                  target_price: targetPrev
+                };
+              }
+            }
+          } catch (eCb) {
+            console.warn("Direct Coinbase candles fetch failed, trying Binance:", eCb);
+          }
+        }
+
         if (!candlesData) {
           try {
             const directKlineRes = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=${btcCurrentTimeframe}&limit=100`);
