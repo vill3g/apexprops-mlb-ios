@@ -25,7 +25,7 @@ class PitcherKModel:
             # Process Home Pitcher
             hp = g.get("home_pitcher", {})
             if hp.get("name") and hp.get("name") != "Probable Pitcher":
-                era = self._safe_era(hp.get("era", 4.0))
+                era = self._safe_era(hp.get("era", 3.85))
                 prop = self._project_k(
                     name=hp.get("name"),
                     id=hp.get("id"),
@@ -37,14 +37,17 @@ class PitcherKModel:
                     venue=venue,
                     game_date=game_date,
                     game_time=game_time,
-                    game_datetime=game_datetime
+                    game_datetime=game_datetime,
+                    k9=hp.get("k9"),
+                    sw_str=hp.get("sw_str"),
+                    csw=hp.get("csw")
                 )
                 props.append(prop)
 
             # Process Away Pitcher
             ap = g.get("away_pitcher", {})
             if ap.get("name") and ap.get("name") != "Probable Pitcher":
-                era = self._safe_era(ap.get("era", 4.0))
+                era = self._safe_era(ap.get("era", 3.85))
                 prop = self._project_k(
                     name=ap.get("name"),
                     id=ap.get("id"),
@@ -56,16 +59,22 @@ class PitcherKModel:
                     venue=venue,
                     game_date=game_date,
                     game_time=game_time,
-                    game_datetime=game_datetime
+                    game_datetime=game_datetime,
+                    k9=ap.get("k9"),
+                    sw_str=ap.get("sw_str"),
+                    csw=ap.get("csw")
                 )
                 props.append(prop)
 
-        # Always include premier MLB aces so the slate features premier strikeout arms
-        fallback_pitchers = [self.dk_client.enrich_prop_with_draftkings(p) for p in self._get_fallback_pitchers()]
-        existing_names = {p["name"].lower() for p in props}
-        for fb in fallback_pitchers:
-            if fb["name"].lower() not in existing_names:
-                props.append(fb)
+        # Only add fallback pitchers if today's slate has fewer than 5 active pitchers
+        if len(props) < 5:
+            fallback_pitchers = [self.dk_client.enrich_prop_with_draftkings(p) for p in self._get_fallback_pitchers()]
+            existing_names = {p["name"].lower() for p in props}
+            for fb in fallback_pitchers:
+                if fb["name"].lower() not in existing_names:
+                    props.append(fb)
+                if len(props) >= 5:
+                    break
 
         # Sort by highest win probability
         props.sort(key=lambda x: x["win_prob"], reverse=True)
@@ -105,36 +114,42 @@ class PitcherKModel:
         venue: str,
         game_date: str = "Today, Sep 9",
         game_time: str = "7:05 PM ET",
-        game_datetime: str = "Today • 7:05 PM ET"
+        game_datetime: str = "Today • 7:05 PM ET",
+        k9: Any = None,
+        sw_str: str = None,
+        csw: str = None
     ) -> Dict[str, Any]:
-        if era < 2.90:
+        try:
+            k9_val = float(k9) if k9 is not None else 8.5
+        except (ValueError, TypeError):
+            k9_val = 8.5
+
+        if not sw_str:
+            sw_str = f"{round(10.0 + (k9_val - 8.0) * 1.3, 1)}%"
+        if not csw:
+            csw = f"{round(27.5 + (k9_val - 8.0) * 1.5, 1)}%"
+
+        # Project expected strikeouts based on K/9 and typical starter IP (5.3 to 6.0 IP)
+        est_ip = 5.7 if era < 3.30 else (5.3 if era < 4.20 else 4.8)
+        base_proj_k = (k9_val / 9.0) * est_ip
+        proj_k = round(max(3.2, min(9.2, base_proj_k)), 1)
+
+        if k9_val >= 9.6 or era < 3.00:
             k_line = 6.5
-            proj_k = round(6.5 + (2.90 - era) * 0.9 + 0.4, 1)
-            pick_type = "Over"
-            win_prob = 83.8
-            sw_str = "15.4%"
-            csw = "33.2%"
-        elif era < 3.50:
+            pick_type = "Over" if proj_k >= 6.3 else "Under"
+            win_prob = round(min(84.5, 78.5 + (proj_k - 6.0) * 4.0), 1)
+        elif k9_val >= 8.5 or era < 3.70:
             k_line = 5.5
-            proj_k = round(5.5 + (3.50 - era) * 0.7 + 0.5, 1)
-            pick_type = "Over"
-            win_prob = 79.2
-            sw_str = "13.8%"
-            csw = "30.5%"
-        elif era < 4.40:
+            pick_type = "Over" if proj_k >= 5.3 else "Under"
+            win_prob = round(min(82.0, 76.0 + abs(proj_k - 5.5) * 4.2), 1)
+        elif k9_val >= 7.5 or era < 4.30:
             k_line = 5.5
-            proj_k = round(5.5 - (era - 3.50) * 0.6, 1)
-            pick_type = "Under" if proj_k < 5.5 else "Over"
-            win_prob = 75.6
-            sw_str = "11.2%"
-            csw = "27.6%"
+            pick_type = "Under" if proj_k < 5.4 else "Over"
+            win_prob = round(min(79.5, 74.5 + abs(proj_k - 5.5) * 3.8), 1)
         else:
             k_line = 4.5
-            proj_k = round(max(2.5, 4.5 - (era - 4.40) * 0.5), 1)
             pick_type = "Under"
-            win_prob = 78.4
-            sw_str = "9.1%"
-            csw = "24.5%"
+            win_prob = round(min(81.5, 76.0 + (4.5 - proj_k) * 3.5), 1)
 
         book_odds = "-125" if pick_type == "Over" else "-115"
         edge = round(win_prob - 54.5, 1)
@@ -147,13 +162,24 @@ class PitcherKModel:
             proj_k=proj_k
         )
 
+        if not headshot or "nophoto" in headshot:
+            headshot = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{id}/headshot/67/current.png" if id else "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png"
+
+        catalysts = [
+            f"Official starting pitcher for {team} ({'Home' if is_home else 'Away'} start at {venue})",
+            f"Projected {proj_k} strikeouts over {est_ip:.1f} estimated innings pitched",
+            f"SwStr% of {sw_str} with {csw} Called Strike + Whiff rate ({k9_val} K/9)",
+            f"Opposing {opponent} batting order strikeout tendencies match arsenal profile"
+        ]
+
         prop = {
             "id": id or hash(name),
             "name": name,
             "team": team,
             "opponent": opponent,
-            "headshot": headshot or "https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png",
+            "headshot": headshot,
             "team_logo": f"https://a.espncdn.com/i/teamlogos/mlb/500/{team.lower()}.png",
+            "pitcher_status": "Announced Starter",
             "game_date": game_date,
             "game_time": game_time,
             "game_datetime": game_datetime,
@@ -165,14 +191,11 @@ class PitcherKModel:
             "edge": edge,
             "sw_str": sw_str,
             "csw": csw,
+            "k9": k9_val,
             "era": era,
             "venue": venue,
             "is_home": is_home,
-            "catalysts": [
-                f"Projected {proj_k} strikeouts over 5.2 projected innings pitched",
-                f"Whiff rate of {sw_str} with {csw} Called Strike + Whiff rate",
-                f"Opposing {opponent} lineup strikeout rate matches pitch mix"
-            ],
+            "catalysts": catalysts,
             "game_log": game_log,
             "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
         }
