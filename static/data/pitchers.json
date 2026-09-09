@@ -79,6 +79,56 @@
           "so": 3,
           "era": "3.61",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ SF",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.72",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs SF",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 6,
+          "era": "3.61",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ SF",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.72",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs SF",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.83",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ SF",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.72",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -167,6 +217,56 @@
           "so": 4,
           "era": "2.92",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ CIN",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "3.03",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs CIN",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "3.14",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ CIN",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.25",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs CIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.14",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ CIN",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.25",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -209,9 +309,9 @@
         {
           "date": "Sep 8",
           "opp": "vs ATL",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 4,
-          "hr": 1,
+          "hr": 0,
           "so": 4,
           "era": "3.42",
           "hit_prop": false
@@ -251,9 +351,59 @@
           "opp": "vs ATL",
           "ip": "7.0",
           "h": 5,
-          "hr": 1,
+          "hr": 0,
           "so": 5,
           "era": "2.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ ATL",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "2.98",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs ATL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 8,
+          "era": "2.87",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ ATL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "2.98",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs ATL",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.09",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ ATL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.98",
           "hit_prop": false
         }
       ],
@@ -297,7 +447,7 @@
         {
           "date": "Sep 8",
           "opp": "vs MIN",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 4,
           "hr": 0,
           "so": 5,
@@ -307,7 +457,7 @@
         {
           "date": "Sep 2",
           "opp": "@ MIN",
-          "ip": "7.0",
+          "ip": "5.2",
           "h": 3,
           "hr": 1,
           "so": 4,
@@ -342,6 +492,56 @@
           "hr": 0,
           "so": 6,
           "era": "3.52",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ MIN",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 1,
+          "so": 5,
+          "era": "3.63",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs MIN",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.52",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ MIN",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.63",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs MIN",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.74",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ MIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.63",
           "hit_prop": true
         }
       ],
@@ -430,6 +630,56 @@
           "hr": 0,
           "so": 3,
           "era": "3.93",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ NYY",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.27",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs NYY",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.38",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ NYY",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.49",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs NYY",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.38",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ NYY",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.49",
           "hit_prop": false
         }
       ],
@@ -521,6 +771,56 @@
           "so": 3,
           "era": "3.61",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ SF",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.72",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs SF",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 6,
+          "era": "3.61",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ SF",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.72",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs SF",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.83",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ SF",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.72",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -609,6 +909,56 @@
           "so": 4,
           "era": "2.92",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ CIN",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "3.03",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs CIN",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "3.14",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ CIN",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.25",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs CIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.14",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ CIN",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.25",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -651,9 +1001,9 @@
         {
           "date": "Sep 8",
           "opp": "vs ATL",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 4,
-          "hr": 1,
+          "hr": 0,
           "so": 4,
           "era": "3.42",
           "hit_prop": false
@@ -693,9 +1043,59 @@
           "opp": "vs ATL",
           "ip": "7.0",
           "h": 5,
-          "hr": 1,
+          "hr": 0,
           "so": 5,
           "era": "2.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ ATL",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "2.98",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs ATL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 8,
+          "era": "2.87",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ ATL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "2.98",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs ATL",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.09",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ ATL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.98",
           "hit_prop": false
         }
       ],
@@ -739,7 +1139,7 @@
         {
           "date": "Sep 8",
           "opp": "vs MIN",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 4,
           "hr": 0,
           "so": 5,
@@ -749,7 +1149,7 @@
         {
           "date": "Sep 2",
           "opp": "@ MIN",
-          "ip": "7.0",
+          "ip": "5.2",
           "h": 3,
           "hr": 1,
           "so": 4,
@@ -784,6 +1184,56 @@
           "hr": 0,
           "so": 6,
           "era": "3.52",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ MIN",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 1,
+          "so": 5,
+          "era": "3.63",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs MIN",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.52",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ MIN",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.63",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs MIN",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.74",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ MIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.63",
           "hit_prop": true
         }
       ],
@@ -873,6 +1323,56 @@
           "so": 3,
           "era": "3.93",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ NYY",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.27",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs NYY",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.38",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ NYY",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.49",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs NYY",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.38",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ NYY",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.49",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -945,7 +1445,7 @@
         {
           "date": "Aug 21",
           "opp": "@ SD",
-          "ip": "5.2",
+          "ip": "6.1",
           "h": 5,
           "hr": 0,
           "so": 3,
@@ -960,6 +1460,56 @@
           "hr": 0,
           "so": 6,
           "era": "3.92",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ SD",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "4.03",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs SD",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 1,
+          "so": 4,
+          "era": "4.14",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ SD",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.03",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs SD",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.14",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ SD",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 6,
+          "era": "4.25",
           "hit_prop": true
         }
       ],
@@ -1049,6 +1599,56 @@
           "so": 5,
           "era": "4.42",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ CWS",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "4.53",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs CWS",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ CWS",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 3,
+          "era": "4.53",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs CWS",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.87",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ CWS",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.98",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -1101,7 +1701,7 @@
         {
           "date": "Sep 2",
           "opp": "@ TOR",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 5,
           "hr": 1,
           "so": 6,
@@ -1111,7 +1711,7 @@
         {
           "date": "Aug 27",
           "opp": "vs TOR",
-          "ip": "7.0",
+          "ip": "5.2",
           "h": 4,
           "hr": 0,
           "so": 5,
@@ -1136,6 +1736,56 @@
           "hr": 0,
           "so": 3,
           "era": "3.65",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ TOR",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 1,
+          "so": 3,
+          "era": "3.76",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs TOR",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.87",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ TOR",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.76",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs TOR",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ TOR",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "3.98",
           "hit_prop": false
         }
       ],
@@ -1199,7 +1849,7 @@
         {
           "date": "Aug 27",
           "opp": "vs OAK",
-          "ip": "5.2",
+          "ip": "6.1",
           "h": 4,
           "hr": 0,
           "so": 4,
@@ -1224,6 +1874,56 @@
           "hr": 0,
           "so": 3,
           "era": "4.10",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ OAK",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 6,
+          "era": "4.21",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs OAK",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "4.10",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ OAK",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 4,
+          "era": "4.21",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs OAK",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.32",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ OAK",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.43",
           "hit_prop": false
         }
       ],
@@ -1313,6 +2013,56 @@
           "so": 5,
           "era": "4.48",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ BAL",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "3.82",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs BAL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.48",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ BAL",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "3.82",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs BAL",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 6,
+          "era": "3.93",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ BAL",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "4.04",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -1400,6 +2150,56 @@
           "hr": 0,
           "so": 3,
           "era": "4.73",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ NYM",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "4.07",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs NYM",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "4.73",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ NYM",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "4.07",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs NYM",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.18",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ NYM",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "4.07",
           "hit_prop": false
         }
       ],
@@ -1489,6 +2289,56 @@
           "so": 3,
           "era": "3.40",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ LAD",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.51",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs LAD",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 5,
+          "era": "3.62",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ LAD",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.73",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs LAD",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.62",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ LAD",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.73",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -1532,7 +2382,7 @@
           "date": "Sep 8",
           "opp": "vs AZ",
           "ip": "6.0",
-          "h": 4,
+          "h": 3,
           "hr": 0,
           "so": 3,
           "era": "3.74",
@@ -1542,7 +2392,7 @@
           "date": "Sep 2",
           "opp": "@ AZ",
           "ip": "7.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 6,
           "era": "3.85",
@@ -1551,8 +2401,8 @@
         {
           "date": "Aug 27",
           "opp": "vs AZ",
-          "ip": "5.2",
-          "h": 5,
+          "ip": "6.1",
+          "h": 4,
           "hr": 1,
           "so": 5,
           "era": "3.96",
@@ -1562,7 +2412,7 @@
           "date": "Aug 21",
           "opp": "@ AZ",
           "ip": "6.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 4,
           "era": "3.85",
@@ -1572,10 +2422,60 @@
           "date": "Aug 15",
           "opp": "vs AZ",
           "ip": "7.0",
-          "h": 5,
+          "h": 4,
           "hr": 0,
           "so": 3,
           "era": "3.96",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ AZ",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "4.07",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs AZ",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.96",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ AZ",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "4.07",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs AZ",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.18",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ AZ",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.52",
           "hit_prop": false
         }
       ],
@@ -1665,6 +2565,56 @@
           "so": 5,
           "era": "3.21",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ SEA",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs SEA",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.21",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ SEA",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 7,
+          "era": "3.32",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs SEA",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.43",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ SEA",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.32",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -1753,6 +2703,56 @@
           "so": 4,
           "era": "4.08",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ MIA",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.97",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs MIA",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.08",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ MIA",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "4.19",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs MIA",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 5,
+          "era": "4.08",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ MIA",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.19",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -1815,7 +2815,7 @@
         {
           "date": "Aug 27",
           "opp": "vs PIT",
-          "ip": "5.2",
+          "ip": "6.1",
           "h": 6,
           "hr": 0,
           "so": 6,
@@ -1840,6 +2840,56 @@
           "hr": 0,
           "so": 4,
           "era": "4.32",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ PIT",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 1,
+          "so": 3,
+          "era": "4.43",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs PIT",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.32",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ PIT",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "4.43",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs PIT",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.77",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ PIT",
+          "ip": "6.1",
+          "h": 6,
+          "hr": 1,
+          "so": 4,
+          "era": "3.88",
           "hit_prop": false
         }
       ],
@@ -1893,7 +2943,7 @@
         {
           "date": "Sep 2",
           "opp": "@ DET",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 4,
           "hr": 0,
           "so": 6,
@@ -1903,7 +2953,7 @@
         {
           "date": "Aug 27",
           "opp": "vs DET",
-          "ip": "7.0",
+          "ip": "5.2",
           "h": 3,
           "hr": 1,
           "so": 5,
@@ -1928,6 +2978,56 @@
           "hr": 0,
           "so": 3,
           "era": "3.69",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ DET",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.80",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs DET",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.91",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ DET",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.80",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs DET",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.91",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ DET",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "4.02",
           "hit_prop": false
         }
       ],
@@ -2017,6 +3117,56 @@
           "so": 7,
           "era": "3.52",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ CLE",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 1,
+          "so": 6,
+          "era": "3.63",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs CLE",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "2.97",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ CLE",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.63",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs CLE",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "2.97",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ CLE",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 7,
+          "era": "3.08",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2060,7 +3210,7 @@
           "date": "Sep 8",
           "opp": "vs BOS",
           "ip": "5.2",
-          "h": 6,
+          "h": 5,
           "hr": 1,
           "so": 3,
           "era": "3.90",
@@ -2070,7 +3220,7 @@
           "date": "Sep 2",
           "opp": "@ BOS",
           "ip": "6.0",
-          "h": 4,
+          "h": 3,
           "hr": 0,
           "so": 7,
           "era": "3.79",
@@ -2080,7 +3230,7 @@
           "date": "Aug 27",
           "opp": "vs BOS",
           "ip": "6.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 6,
           "era": "3.90",
@@ -2090,7 +3240,7 @@
           "date": "Aug 21",
           "opp": "@ BOS",
           "ip": "7.0",
-          "h": 5,
+          "h": 4,
           "hr": 0,
           "so": 5,
           "era": "4.01",
@@ -2100,10 +3250,60 @@
           "date": "Aug 15",
           "opp": "vs BOS",
           "ip": "6.1",
-          "h": 4,
+          "h": 3,
           "hr": 1,
           "so": 4,
           "era": "4.12",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ BOS",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.01",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs BOS",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "4.12",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ BOS",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "4.23",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs BOS",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 5,
+          "era": "4.12",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ BOS",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.23",
           "hit_prop": false
         }
       ],
@@ -2193,6 +3393,56 @@
           "so": 7,
           "era": "3.53",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ STL",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.64",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs STL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.53",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ STL",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.64",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs STL",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 1,
+          "so": 3,
+          "era": "3.75",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ STL",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "3.64",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2281,6 +3531,56 @@
           "so": 5,
           "era": "3.59",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ TEX",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 4,
+          "era": "3.70",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs TEX",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.81",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ TEX",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.70",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs TEX",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.81",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ TEX",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 5,
+          "era": "3.92",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2324,7 +3624,7 @@
           "date": "Sep 8",
           "opp": "vs HOU",
           "ip": "6.0",
-          "h": 5,
+          "h": 4,
           "hr": 0,
           "so": 6,
           "era": "4.07",
@@ -2334,7 +3634,7 @@
           "date": "Sep 2",
           "opp": "@ HOU",
           "ip": "7.0",
-          "h": 4,
+          "h": 3,
           "hr": 1,
           "so": 5,
           "era": "4.18",
@@ -2344,7 +3644,7 @@
           "date": "Aug 27",
           "opp": "vs HOU",
           "ip": "5.2",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 4,
           "era": "3.52",
@@ -2354,7 +3654,7 @@
           "date": "Aug 21",
           "opp": "@ HOU",
           "ip": "6.0",
-          "h": 4,
+          "h": 3,
           "hr": 0,
           "so": 3,
           "era": "4.18",
@@ -2364,10 +3664,60 @@
           "date": "Aug 15",
           "opp": "vs HOU",
           "ip": "6.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 3,
           "era": "3.52",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ HOU",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.63",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs HOU",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.74",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ HOU",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.63",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs HOU",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.74",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ HOU",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 1,
+          "so": 3,
+          "era": "3.85",
           "hit_prop": false
         }
       ],
@@ -2412,7 +3762,7 @@
           "date": "Sep 8",
           "opp": "vs WSH",
           "ip": "7.0",
-          "h": 4,
+          "h": 3,
           "hr": 0,
           "so": 3,
           "era": "3.95",
@@ -2422,7 +3772,7 @@
           "date": "Sep 2",
           "opp": "@ WSH",
           "ip": "6.1",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 3,
           "era": "4.06",
@@ -2432,7 +3782,7 @@
           "date": "Aug 27",
           "opp": "vs WSH",
           "ip": "6.0",
-          "h": 4,
+          "h": 3,
           "hr": 1,
           "so": 6,
           "era": "3.95",
@@ -2442,7 +3792,7 @@
           "date": "Aug 21",
           "opp": "@ WSH",
           "ip": "7.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 5,
           "era": "4.06",
@@ -2452,10 +3802,60 @@
           "date": "Aug 15",
           "opp": "vs WSH",
           "ip": "5.2",
-          "h": 5,
+          "h": 4,
           "hr": 0,
           "so": 4,
           "era": "4.17",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ WSH",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.06",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs WSH",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "4.17",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ WSH",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "4.28",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs WSH",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.62",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ WSH",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "4.28",
           "hit_prop": false
         }
       ],
@@ -2500,7 +3900,7 @@
           "date": "Sep 8",
           "opp": "vs LAA",
           "ip": "6.0",
-          "h": 4,
+          "h": 3,
           "hr": 1,
           "so": 3,
           "era": "3.63",
@@ -2510,7 +3910,7 @@
           "date": "Sep 2",
           "opp": "@ LAA",
           "ip": "7.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 3,
           "era": "3.74",
@@ -2520,7 +3920,7 @@
           "date": "Aug 27",
           "opp": "vs LAA",
           "ip": "6.1",
-          "h": 5,
+          "h": 4,
           "hr": 0,
           "so": 6,
           "era": "3.85",
@@ -2530,7 +3930,7 @@
           "date": "Aug 21",
           "opp": "@ LAA",
           "ip": "6.0",
-          "h": 6,
+          "h": 5,
           "hr": 0,
           "so": 5,
           "era": "3.74",
@@ -2540,10 +3940,60 @@
           "date": "Aug 15",
           "opp": "vs LAA",
           "ip": "7.0",
-          "h": 5,
+          "h": 4,
           "hr": 1,
           "so": 4,
           "era": "3.85",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ LAA",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.96",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs LAA",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.85",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ LAA",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.96",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs LAA",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 5,
+          "era": "4.07",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ LAA",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "4.18",
           "hit_prop": false
         }
       ],
@@ -2633,6 +4083,56 @@
           "so": 7,
           "era": "3.98",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ KC",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.32",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs KC",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 1,
+          "so": 5,
+          "era": "3.43",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ KC",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.32",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs KC",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.43",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ KC",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "3.54",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2675,7 +4175,7 @@
         {
           "date": "Sep 8",
           "opp": "vs PHI",
-          "ip": "6.0",
+          "ip": "7.0",
           "h": 5,
           "hr": 0,
           "so": 4,
@@ -2685,7 +4185,7 @@
         {
           "date": "Sep 2",
           "opp": "@ PHI",
-          "ip": "7.0",
+          "ip": "5.2",
           "h": 4,
           "hr": 0,
           "so": 3,
@@ -2720,6 +4220,56 @@
           "hr": 0,
           "so": 5,
           "era": "3.27",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ PHI",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.38",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs PHI",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.27",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ PHI",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 7,
+          "era": "3.38",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs PHI",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "3.49",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ PHI",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.38",
           "hit_prop": false
         }
       ],
@@ -2809,6 +4359,56 @@
           "so": 7,
           "era": "3.69",
           "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ COL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.80",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs COL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.91",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ COL",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 1,
+          "so": 4,
+          "era": "4.02",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs COL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "3.91",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ COL",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "4.02",
+          "hit_prop": true
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2897,6 +4497,56 @@
           "so": 4,
           "era": "3.71",
           "hit_prop": false
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ CHC",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "3.82",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs CHC",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "3.93",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ CHC",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.27",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs CHC",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.93",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ CHC",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 4,
+          "era": "3.27",
+          "hit_prop": false
         }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
@@ -2984,6 +4634,56 @@
           "hr": 0,
           "so": 7,
           "era": "3.72",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 9",
+          "opp": "@ MIL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 1,
+          "so": 6,
+          "era": "3.61",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 3",
+          "opp": "vs MIL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.72",
+          "hit_prop": true
+        },
+        {
+          "date": "Jul 28",
+          "opp": "@ MIL",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.83",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 22",
+          "opp": "vs MIL",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.94",
+          "hit_prop": false
+        },
+        {
+          "date": "Jul 16",
+          "opp": "@ MIL",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 7,
+          "era": "3.83",
           "hit_prop": true
         }
       ],
