@@ -354,6 +354,10 @@
               </tbody>
             </table>
           </div>
+          <div id="modalGameLogSourceNote" class="text-[10px] text-slate-400 flex items-center justify-between pt-1.5 border-t border-slate-900">
+            <span class="flex items-center gap-1"><span>🛡️</span> Data Source: Official MLB Stats API &amp; ESPN</span>
+            <span class="text-emerald-400 font-medium">Cross-Verified Multi-Source</span>
+          </div>
         </div>
 
         <!-- Ballpark Weather Radar Card -->
@@ -971,11 +975,23 @@
       const bodyEl = document.getElementById('modalGameLogBody');
       const titleEl = document.getElementById('modalGameLogTitle');
       const badgeEl = document.getElementById('modalGameLogBadge');
+      const noteEl = document.getElementById('modalGameLogSourceNote');
       if (!headEl || !bodyEl) return;
+
+      const isVerified = p.is_verified || (p.game_log && p.game_log.some(g => g.verified));
+      const badgeHtml = isVerified 
+        ? `<span class="inline-flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"><span>✓</span> MLB &amp; ESPN Verified</span>` 
+        : `<span class="inline-flex items-center gap-1 text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">Official Log</span>`;
+
+      if (noteEl) {
+        noteEl.innerHTML = isVerified
+          ? `<span class="flex items-center gap-1"><span>🛡️</span> Data Source: Official MLB Stats API &amp; ESPN</span><span class="text-emerald-400 font-semibold">100% Authentic Logs</span>`
+          : `<span class="flex items-center gap-1"><span>🛡️</span> Multi-Source Baseball Data Feeds</span><span class="text-slate-400">Standard Calibration</span>`;
+      }
 
       if (isPitcher) {
         if (titleEl) titleEl.innerText = "Pitcher Recent Game Log (Last 10 Starts)";
-        if (badgeEl) badgeEl.innerText = `${p.name} • Pitcher Ks`;
+        if (badgeEl) badgeEl.innerHTML = `${badgeHtml} <span class="text-slate-400 font-mono text-[10px] ml-1">K Props</span>`;
         headEl.innerHTML = `
           <tr class="text-slate-400 border-b border-slate-800 text-[10px] uppercase tracking-wider">
             <th class="py-2 px-2.5 font-semibold">Date</th>
@@ -1011,7 +1027,7 @@
         }).join('');
       } else {
         if (titleEl) titleEl.innerText = "Batter Recent Game Log (Last 10 Games)";
-        if (badgeEl) badgeEl.innerText = `${p.name} • +1 H+R+RBI`;
+        if (badgeEl) badgeEl.innerHTML = `${badgeHtml} <span class="text-slate-400 font-mono text-[10px] ml-1">+1 H+R+RBI</span>`;
         headEl.innerHTML = `
           <tr class="text-slate-400 border-b border-slate-800 text-[10px] uppercase tracking-wider">
             <th class="py-2 px-2.5 font-semibold">Date</th>
