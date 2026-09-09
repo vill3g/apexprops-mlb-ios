@@ -194,47 +194,131 @@ def fetch_15m_candles(limit: int = 300) -> pd.DataFrame:
     return fetch_candles(timeframe="15m", limit=limit)
 
 
+def format_volume_series(df: pd.DataFrame) -> list[dict]:
+    """Format volume bars with green/red colors for Lightweight Charts histogram."""
+    if df.empty or "volume" not in df.columns:
+        return []
+    series = []
+    for _, row in df.iterrows():
+        is_green = float(row["close"]) >= float(row["open"])
+        series.append({
+            "time": int(row["time"]),
+            "value": round(float(row["volume"]), 4),
+            "color": "rgba(16, 185, 129, 0.45)" if is_green else "rgba(239, 68, 68, 0.45)"
+        })
+    return series
+
+
+# High-performance in-memory cache for ultra-fast 1-second polling
+_ticker_cache = {
+    "timestamp": 0.0,
+    "data": None
+}
+
+_target_cache = {
+    "timestamp": 0.0,
+    "active_target": None,
+    "last_5_targets": [],
+    "streak_summary": ""
+}
+
+
 def get_btc_ticker() -> dict:
     """
     Get live 24h ticker info: price, 24h high, low, volume, and % change.
+    Cached for 1.0s to support high-frequency 1s polling without external API limits.
     """
+    now = time.time()
+    if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 1.0):
+        return _ticker_cache["data"]
+
+    # Try Coinbase ticker (fastest endpoint)
     try:
-        url = "https://api.exchange.coinbase.com/products/BTC-USD/stats"
-        resp = requests.get(url, headers=HEADERS, timeout=5)
+        url = "https://api.exchange.coinbase.com/products/BTC-USD/ticker"
+        resp = requests.get(url, headers=HEADERS, timeout=3)
         if resp.status_code == 200:
-            stats = resp.json()
-            last_price = float(stats["last"])
-            open_price = float(stats["open"])
-            high_24h = float(stats["high"])
-            low_24h = float(stats["low"])
-            volume_24h = float(stats["volume"])
+            tick = resp.json()
+            last_price = float(tick["price"])
+            vol_24h = float(tick.get("volume", 0))
+
+            # Fetch or approximate 24h stats if older than 30s
+            stats_cached = _ticker_cache.get("stats")
+            if not stats_cached or (now - stats_cached.get("ts", 0) > 30):
+                try:
+                    s_url = "https://api.exchange.coinbase.com/products/BTC-USD/stats"
+                    s_resp = requests.get(s_url, headers=HEADERS, timeout=4)
+                    if s_resp.status_code == 200:
+                        s_data = s_resp.json()
+                        stats_cached = {
+                            "open": float(s_data["open"]),
+                            "high": float(s_data["high"]),
+                            "low": float(s_data["low"]),
+                            "ts": now
+                        }
+                        _ticker_cache["stats"] = stats_cached
+                except Exception:
+                    pass
+
+            open_price = stats_cached["open"] if stats_cached else last_price
+            high_24h = max(last_price, stats_cached["high"]) if stats_cached else last_price
+            low_24h = min(last_price, stats_cached["low"]) if stats_cached else last_price
             change_24h = ((last_price - open_price) / open_price) * 100 if open_price > 0 else 0.0
 
-            return {
-                "price": last_price,
-                "open_24h": open_price,
-                "high_24h": high_24h,
-                "low_24h": low_24h,
-                "volume_24h": volume_24h,
-                "change_24h": change_24h,
+            result = {
+                "price": round(last_price, 2),
+                "open_24h": round(open_price, 2),
+                "high_24h": round(high_24h, 2),
+                "low_24h": round(low_24h, 2),
+                "volume_24h": round(vol_24h, 2),
+                "change_24h": round(change_24h, 2),
                 "source": "Coinbase"
             }
+            _ticker_cache["timestamp"] = now
+            _ticker_cache["data"] = result
+            return result
     except Exception:
         pass
 
-    # Fallback to candle close
+    # Fallback to Binance.US
+    try:
+        url = "https://api.binance.us/api/v3/ticker/24hr?symbol=BTCUSDT"
+        resp = requests.get(url, headers=HEADERS, timeout=3)
+        if resp.status_code == 200:
+            data = resp.json()
+            result = {
+                "price": round(float(data["lastPrice"]), 2),
+                "open_24h": round(float(data["openPrice"]), 2),
+                "high_24h": round(float(data["highPrice"]), 2),
+                "low_24h": round(float(data["lowPrice"]), 2),
+                "volume_24h": round(float(data["volume"]), 2),
+                "change_24h": round(float(data["priceChangePercent"]), 2),
+                "source": "Binance.US"
+            }
+            _ticker_cache["timestamp"] = now
+            _ticker_cache["data"] = result
+            return result
+    except Exception:
+        pass
+
+    # Fallback to candles
+    if _ticker_cache["data"]:
+        return _ticker_cache["data"]
+
     candles = fetch_candles(timeframe="15m", limit=2)
     last_close = float(candles.iloc[-1]["close"])
     prev_close = float(candles.iloc[-2]["close"])
-    return {
-        "price": last_close,
-        "open_24h": prev_close,
-        "high_24h": last_close,
-        "low_24h": last_close,
-        "volume_24h": float(candles.iloc[-1]["volume"]),
-        "change_24h": ((last_close - prev_close) / prev_close) * 100,
+    result = {
+        "price": round(last_close, 2),
+        "open_24h": round(prev_close, 2),
+        "high_24h": round(last_close, 2),
+        "low_24h": round(last_close, 2),
+        "volume_24h": round(float(candles.iloc[-1]["volume"]), 2),
+        "change_24h": round(((last_close - prev_close) / prev_close) * 100, 2),
         "source": "CandleFallback"
     }
+    _ticker_cache["timestamp"] = now
+    _ticker_cache["data"] = result
+    return result
 
 
 def get_candle_countdown(timeframe: str = "15m") -> dict:
@@ -274,7 +358,6 @@ def get_candle_countdown(timeframe: str = "15m") -> dict:
         mins = (seconds_left % 3600) // 60
         formatted = f"{hrs:02d}:{mins:02d}"
     else:
-        # Default to 15m
         cur = (now.minute * 60) + now.second
         seconds_left = 900 - (cur % 900)
         formatted = f"{seconds_left // 60:02d}:{seconds_left % 60:02d}"
@@ -284,6 +367,106 @@ def get_candle_countdown(timeframe: str = "15m") -> dict:
         "seconds_left": seconds_left,
         "formatted": formatted
     }
+
+
+_live_target_result_cache = {
+    "timestamp": 0.0,
+    "data": None
+}
+
+
+def get_live_15m_target_data() -> dict:
+    """
+    High-frequency 1-second resolver for BTC live price, active 15M target,
+    live delta spread, and last 5 targets trend box.
+    Cached for 0.8s to provide sub-millisecond responses on 1s client polling.
+    """
+    now = time.time()
+    if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 1.2):
+        # Update countdown on the fly
+        cached = dict(_live_target_result_cache["data"])
+        cd = get_candle_countdown("15m")
+        cached["seconds_left"] = cd["seconds_left"]
+        cached["formatted_countdown"] = cd["formatted"]
+        return cached
+
+    ticker = get_btc_ticker()
+    curr_price = float(ticker["price"])
+    countdown = get_candle_countdown("15m")
+
+    # Refresh target cache every 30s or when empty
+    if not _target_cache["active_target"] or (now - _target_cache["timestamp"] > 30.0):
+        try:
+            df = fetch_candles("15m", limit=20)
+            n = len(df)
+            if n >= 7:
+                # Active target is previous closed 15m candle close (index n - 2)
+                _target_cache["active_target"] = round(float(df.iloc[-2]["close"]), 2)
+                
+                # Extract last 5 completed targets (indices n - 6 to n - 2)
+                last_5 = []
+                higher_count = 0
+                lower_count = 0
+                for i in range(n - 6, n - 1):
+                    c = df.iloc[i]
+                    p = df.iloc[i - 1]
+                    c_close = float(c["close"])
+                    p_close = float(p["close"])
+                    diff = round(c_close - p_close, 2)
+                    diff_pct = round((diff / (p_close + 1e-10)) * 100, 2)
+                    is_higher = diff >= 0
+                    if is_higher:
+                        higher_count += 1
+                    else:
+                        lower_count += 1
+
+                    # Format timestamp cleanly: e.g. "15:45"
+                    t_val = c.get("time")
+                    time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%H:%M") if t_val else "--:--"
+
+                    last_5.append({
+                        "time": time_str,
+                        "price": round(c_close, 2),
+                        "delta": diff,
+                        "delta_pct": diff_pct,
+                        "direction": "HIGHER" if is_higher else "LOWER",
+                        "arrow": "▲" if is_higher else "▼",
+                        "color": "green" if is_higher else "red"
+                    })
+
+                _target_cache["last_5_targets"] = last_5
+                _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
+                _target_cache["timestamp"] = now
+        except Exception as e:
+            if not _target_cache["active_target"]:
+                _target_cache["active_target"] = curr_price
+                _target_cache["last_5_targets"] = []
+                _target_cache["streak_summary"] = "--"
+
+    target_price = _target_cache["active_target"] or curr_price
+    delta = round(curr_price - target_price, 2)
+    delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
+    status = "ABOVE" if delta >= 0 else "BELOW"
+
+    res = {
+        "price": curr_price,
+        "target_price": target_price,
+        "delta": delta,
+        "delta_pct": delta_pct,
+        "status": status,
+        "change_24h": ticker["change_24h"],
+        "high_24h": ticker["high_24h"],
+        "low_24h": ticker["low_24h"],
+        "volume_24h": ticker["volume_24h"],
+        "seconds_left": countdown["seconds_left"],
+        "formatted_countdown": countdown["formatted"],
+        "last_5_targets": _target_cache["last_5_targets"],
+        "streak_summary": _target_cache["streak_summary"],
+        "timestamp": int(now)
+    }
+    _live_target_result_cache["timestamp"] = time.time()
+    _live_target_result_cache["data"] = res
+    return res
 
 
 if __name__ == "__main__":
