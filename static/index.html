@@ -12,6 +12,7 @@
   <link rel="manifest" href="/static/manifest.json">
   <link rel="apple-touch-icon" href="/static/assets/logo_monogram.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
       --sat: env(safe-area-inset-top, 0px);
@@ -49,6 +50,114 @@
       bottom: 1rem;
       z-index: 40;
     }
+    /* BTC 15M Analyzer Styling */
+    .btc-tf-btn {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btc-tf-btn:hover {
+      color: #fff;
+      border-color: #f59e0b;
+    }
+    .btc-tf-btn.active {
+      background: #f59e0b;
+      color: #020617;
+      border-color: #f59e0b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+    }
+    .signal-banner {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .signal-up { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+    .signal-down { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+    .signal-neutral { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
+    .meter-wrapper {
+      position: relative;
+      width: 220px;
+      height: 115px;
+      margin: 0 auto 8px auto;
+    }
+    .meter-svg { width: 100%; height: 100%; overflow: visible; }
+    .meter-score-display {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 26px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+    .meter-score-display.positive { color: #10b981; }
+    .meter-score-display.negative { color: #ef4444; }
+    .meter-score-display.neutral { color: #f59e0b; }
+    .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .setup-box {
+      background: #0f172a;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .setup-box.highlight-entry { border-color: #38bdf8; }
+    .setup-box.highlight-sl { border-color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+    .setup-box.highlight-tp { border-color: #10b981; background: rgba(16, 185, 129, 0.12); }
+    .rr-bar {
+      height: 6px;
+      background: #334155;
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+      display: flex;
+    }
+    .rr-risk { width: 30%; background: #ef4444; }
+    .rr-reward { width: 70%; background: #10b981; }
+    .factors-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .factor-item {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.35;
+    }
+    .factor-item.bull { background: rgba(16, 185, 129, 0.12); border-left: 3px solid #10b981; color: #a7f3d0; }
+    .factor-item.bear { background: rgba(239, 68, 68, 0.12); border-left: 3px solid #ef4444; color: #fecaca; }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .matrix-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .matrix-item .m-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+    .matrix-item .m-val { font-size: 14px; font-weight: 800; font-family: monospace; margin-top: 2px; }
+    .matrix-item .m-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: monospace; }
+    .log-table th { text-align: left; padding: 6px 8px; color: #64748b; border-bottom: 1px solid #334155; font-weight: 600; }
+    .log-table td { padding: 6px 8px; border-bottom: 1px solid rgba(51, 65, 85, 0.4); }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
@@ -103,10 +212,16 @@
             <span>🔥</span>
             <span class="whitespace-nowrap">Pitcher Strikeouts (Ks)</span>
           </button>
+          <button id="tabBtnBtc" onclick="switchMode('btc_analyzer')" 
+                  class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
+            <span class="text-amber-400 font-bold">₿</span>
+            <span class="whitespace-nowrap">BTC 15M Pattern Analyzer</span>
+          </button>
         </div>
         <select id="modeDropdown" onchange="switchMode(this.value)" class="sr-only">
           <option value="mlb_hrrbi" selected>⚾ MLB Hits + Runs + RBIs (+1 Line)</option>
           <option value="pitcher_ks">🔥 Pitcher Strikeouts (K Props)</option>
+          <option value="btc_analyzer">₿ BTC 15M Pattern Analyzer</option>
         </select>
       </div>
     </header>
@@ -223,6 +338,266 @@
           </table>
         </div>
       </section>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
+    <!-- ============================================================= -->
+    <div id="view_btc_analyzer" class="hidden space-y-6">
+      
+      <!-- BTC Top Bar: Timeframes, Live Stats & Countdown -->
+      <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Brand & Timeframe Pills -->
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-sm shadow-md shadow-amber-500/20">₿</div>
+            <h2 class="text-sm sm:text-base font-black text-white whitespace-nowrap">BTC Pattern Analyzer</h2>
+            <span id="btcActiveTfBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono font-bold">15M</span>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+            <button class="btc-tf-btn" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
+            <button class="btc-tf-btn" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
+            <button class="btc-tf-btn active" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
+            <button class="btc-tf-btn" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
+            <button class="btc-tf-btn" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
+            <button class="btc-tf-btn" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
+          </div>
+        </div>
+
+        <!-- Live Ticker Stats -->
+        <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-xs font-mono">
+          <div>
+            <div class="text-[10px] text-slate-500 uppercase font-sans">Live Price</div>
+            <div id="btcLStatPrice" class="text-base sm:text-lg font-black text-white">$--,---.--</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Change</div>
+            <div id="btcLStatChange" class="font-bold text-slate-400">--%</div>
+          </div>
+          <div class="hidden sm:block">
+            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Range</div>
+            <div id="btcLStatRange" class="font-bold text-slate-300">$-- / $--</div>
+          </div>
+          <div class="hidden md:block">
+            <div class="text-[10px] text-slate-500 uppercase font-sans">24h Vol</div>
+            <div id="btcLStatVol" class="font-bold text-slate-300">--,---</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1 text-center">
+              <div class="text-[9px] text-slate-500 uppercase font-sans">Next Close</div>
+              <div id="btcCountdown" class="text-cyan-400 font-bold">--:--</div>
+            </div>
+            <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/20 transition cursor-pointer" title="Re-analyze BTC">
+              <span id="btcRefreshIcon">&#x21bb;</span>
+            </button>
+            <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Sound Alert">
+              <span id="btcAudioIcon">🔇</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main BTC Grid: Left (Chart + Indicators + Structure) & Right (Confluence Gauge + Setup + Catalysts) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Chart & Technical Deep Dive (2 cols on large screen) -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Lightweight Charts Candlestick Container -->
+          <div class="glass-panel rounded-2xl p-4 sm:p-5 flex flex-col" style="height: 520px;">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <h3 id="btcChartTitle" class="text-sm sm:text-base font-black text-white">BTC/USD 15M Candlestick Chart</h3>
+                <span id="btcChartStatus" class="text-[11px] text-slate-400">Loading candles...</span>
+              </div>
+              <div class="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400 inline-block"></span> EMA 9</div>
+                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> EMA 21</div>
+                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-400 inline-block"></span> EMA 50</div>
+                <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-fuchsia-400 inline-block"></span> EMA 200</div>
+              </div>
+            </div>
+            <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 420px;">
+              <!-- Lightweight chart renders here -->
+            </div>
+          </div>
+
+          <!-- Technical Indicators Matrix -->
+          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Technical Indicator Matrix</h3>
+              <span id="btcIndTfLabel" class="text-[10px] text-slate-400">15M Calculation</span>
+            </div>
+            <div class="matrix-grid">
+              <div class="matrix-item">
+                <div class="m-label">RSI (14)</div>
+                <div id="btcIndRsi" class="m-val text-white">--</div>
+                <div id="btcIndRsiStatus" class="m-sub">Neutral</div>
+              </div>
+              <div class="matrix-item">
+                <div class="m-label">MACD (12, 26, 9)</div>
+                <div id="btcIndMacd" class="m-val text-white">--</div>
+                <div id="btcIndMacdStatus" class="m-sub">--</div>
+              </div>
+              <div class="matrix-item">
+                <div class="m-label">EMA Ribbon</div>
+                <div id="btcIndRibbon" class="m-val text-white">--</div>
+                <div id="btcIndRibbonStatus" class="m-sub">EMA 9/21/50</div>
+              </div>
+              <div class="matrix-item">
+                <div class="m-label">Bollinger Bands</div>
+                <div id="btcIndBb" class="m-val text-xs text-white">--</div>
+                <div id="btcIndBbSqueeze" class="m-sub">Bandwidth: --</div>
+              </div>
+              <div class="matrix-item">
+                <div class="m-label">Volatility (ATR 14)</div>
+                <div id="btcIndAtr" class="m-val text-white">$--</div>
+                <div id="btcIndAtrLabel" class="m-sub">15m Volatility</div>
+              </div>
+              <div class="matrix-item">
+                <div class="m-label">Volume Surge</div>
+                <div id="btcIndVol" class="m-val text-white">--x</div>
+                <div id="btcIndVolStatus" class="m-sub">vs 20-SMA</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Market Structure & Key Levels -->
+          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Market Structure & Key S/R Zones</h3>
+              <span id="btcStructTrendBadge" class="text-[10px] px-2 py-0.5 rounded font-black uppercase text-white bg-slate-800">--</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <div class="text-slate-400 mb-1">Trend Bias & Structure:</div>
+                <div id="btcStructSummary" class="text-sm font-bold text-white">Evaluating swings...</div>
+                <div id="btcStructBos" class="text-[11px] text-cyan-400 mt-1 font-mono"></div>
+              </div>
+              <div class="font-mono space-y-1">
+                <div class="text-slate-400 font-sans mb-1">Immediate S/R Levels:</div>
+                <div class="flex justify-between">
+                  <span class="text-red-400">Resistance:</span>
+                  <span id="btcStructRes" class="font-bold text-white">$--,---</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-emerald-400">Support:</span>
+                  <span id="btcStructSup" class="font-bold text-white">$--,---</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Signal Activity Log -->
+          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Recent Signal Activity</h3>
+            <div class="overflow-x-auto">
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>TF</th>
+                    <th>Direction</th>
+                    <th>Score</th>
+                    <th>Price</th>
+                    <th>Primary Catalyst</th>
+                  </tr>
+                </thead>
+                <tbody id="btcLogTbody">
+                  <tr><td colspan="6" class="text-center text-slate-500 py-3">No signals recorded yet</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right Column: Confluence Meter + Trade Setup + Catalysts (1 col) -->
+        <div class="space-y-6">
+          
+          <!-- Direction & Confluence Meter Card -->
+          <div class="glass-panel rounded-2xl p-5 text-center space-y-3">
+            <div id="btcSignalBanner" class="signal-banner signal-neutral">INITIALIZING</div>
+            
+            <div class="meter-wrapper">
+              <svg class="meter-svg" viewBox="0 0 200 110">
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
+                <path id="btcMeterArc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#btcMeterGradient)" stroke-width="14" stroke-dasharray="251.2" stroke-dashoffset="125.6" stroke-linecap="round"/>
+                <line id="btcMeterNeedle" x1="100" y1="100" x2="100" y2="30" stroke="#f8fafc" stroke-width="3.5" stroke-linecap="round" style="transform-origin: 100px 100px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
+                <circle cx="100" cy="100" r="7" fill="#f8fafc"/>
+                <defs>
+                  <linearGradient id="btcMeterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ef4444"/>
+                    <stop offset="50%" stop-color="#f59e0b"/>
+                    <stop offset="100%" stop-color="#10b981"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div id="btcMeterScore" class="meter-score-display neutral">0</div>
+            </div>
+
+            <div id="btcConfidenceText" class="text-xs text-slate-400">Confluence Score: <strong>0 / 100</strong> (50% Conf.)</div>
+          </div>
+
+          <!-- Actionable Trade Plan Card -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 id="btcPlanTitleText" class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Actionable Trade Plan</h3>
+              <span id="btcPlanType" class="text-[10px] px-2.5 py-0.5 rounded font-black text-slate-950 bg-amber-400 uppercase">BUY SETUP</span>
+            </div>
+
+            <div class="setup-grid">
+              <div class="setup-box highlight-entry">
+                <div class="text-[10px] text-slate-400 uppercase font-bold">Entry Price</div>
+                <div id="btcPlanEntry" class="text-sm sm:text-base font-black font-mono text-cyan-300 mt-0.5">$--,---.--</div>
+              </div>
+              <div class="setup-box highlight-sl">
+                <div class="text-[10px] text-red-400 uppercase font-bold">Stop Loss</div>
+                <div id="btcPlanSl" class="text-sm sm:text-base font-black font-mono text-red-400 mt-0.5">$--,---.--</div>
+              </div>
+              <div class="setup-box highlight-tp">
+                <div class="text-[10px] text-emerald-400 uppercase font-bold">TP 1 (1.5R)</div>
+                <div id="btcPlanTp1" class="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
+              </div>
+              <div class="setup-box highlight-tp">
+                <div class="text-[10px] text-emerald-400 uppercase font-bold">TP 2 (2.5R)</div>
+                <div id="btcPlanTp2" class="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
+              </div>
+            </div>
+
+            <div class="flex justify-between text-[11px] text-slate-400 pt-1">
+              <span>Risk: <strong id="btcPlanRiskAmt" class="text-white">$0.00</strong> (<span id="btcPlanRiskPct">0.0%</span>)</span>
+              <span>R:R: <strong class="text-emerald-400">1 : 1.5 - 2.5</strong></span>
+            </div>
+            <div class="rr-bar">
+              <div class="rr-risk"></div>
+              <div class="rr-reward"></div>
+            </div>
+          </div>
+
+          <!-- Detected Candlestick Patterns -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3">
+            <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Detected Patterns</h3>
+            <div id="btcPatternsList" class="flex flex-col gap-2">
+              <div class="text-xs text-slate-500 py-1">No prominent patterns on recent candle</div>
+            </div>
+          </div>
+
+          <!-- Confluence Catalysts -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Confluence Catalysts</h3>
+              <span id="btcFactorsCount" class="text-[10px] text-slate-400">0 active</span>
+            </div>
+            <div id="btcFactorsList" class="factors-container">
+              <div class="text-xs text-slate-500">Analyzing market drivers...</div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
     <!-- Bottom Quick Slip Bar (Sticky on mobile) -->
@@ -434,9 +809,9 @@
       window.scrollTo(0, savedScrollY);
     }
 
-    // Mode Switcher (Between MLB +1 H+R+RBI & Pitcher Strikeouts)
+    // Mode Switcher (Between MLB +1 H+R+RBI, Pitcher Strikeouts, & BTC 15M Pattern Analyzer)
     function switchMode(mode) {
-      if (mode !== 'mlb_hrrbi' && mode !== 'pitcher_ks') mode = 'mlb_hrrbi';
+      if (mode !== 'mlb_hrrbi' && mode !== 'pitcher_ks' && mode !== 'btc_analyzer') mode = 'mlb_hrrbi';
       const dd = document.getElementById('modeDropdown');
       if (dd) {
         dd.value = mode;
@@ -446,28 +821,57 @@
       
       const vHrrbi = document.getElementById('view_mlb_hrrbi');
       const vKs = document.getElementById('view_pitcher_ks');
+      const vBtc = document.getElementById('view_btc_analyzer');
       const btnHrrbi = document.getElementById('tabBtnHrrbi');
       const btnKs = document.getElementById('tabBtnKs');
+      const btnBtc = document.getElementById('tabBtnBtc');
+      const bottomSlipBar = document.getElementById('bottomSlipBar');
 
       if (mode === 'mlb_hrrbi') {
         if (vHrrbi) vHrrbi.classList.remove('hidden');
         if (vKs) vKs.classList.add('hidden');
+        if (vBtc) vBtc.classList.add('hidden');
+        if (bottomSlipBar) bottomSlipBar.classList.remove('hidden');
         if (btnHrrbi) {
           btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 flex items-center gap-1.5";
         }
         if (btnKs) {
           btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
         }
-      } else {
+        if (btnBtc) {
+          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        }
+      } else if (mode === 'pitcher_ks') {
         if (vHrrbi) vHrrbi.classList.add('hidden');
         if (vKs) vKs.classList.remove('hidden');
+        if (vBtc) vBtc.classList.add('hidden');
+        if (bottomSlipBar) bottomSlipBar.classList.remove('hidden');
         if (btnKs) {
           btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20 flex items-center gap-1.5";
         }
         if (btnHrrbi) {
           btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
         }
+        if (btnBtc) {
+          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        }
         loadPitcherKs();
+      } else if (mode === 'btc_analyzer') {
+        if (vHrrbi) vHrrbi.classList.add('hidden');
+        if (vKs) vKs.classList.add('hidden');
+        if (vBtc) vBtc.classList.remove('hidden');
+        if (bottomSlipBar) bottomSlipBar.classList.add('hidden');
+        if (btnBtc) {
+          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 flex items-center gap-1.5";
+        }
+        if (btnHrrbi) {
+          btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        }
+        if (btnKs) {
+          btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
+        }
+        initBtcChartOnce();
+        triggerBtcAnalysis();
       }
 
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1333,6 +1737,526 @@
       });
     }
 
+    // =====================================================================
+    // BITCOIN 15M PATTERN ANALYZER & CONFLUENCE CLIENT
+    // =====================================================================
+    let btcChart = null;
+    let btcCandleSeries = null;
+    let btcEma9Series = null;
+    let btcEma21Series = null;
+    let btcEma50Series = null;
+    let btcEma200Series = null;
+    let btcSupportLine = null;
+    let btcResistanceLine = null;
+
+    let btcCurrentTimeframe = "15m";
+    let btcAudioEnabled = false;
+    let btcLastSignal = null;
+    const btcSignalHistory = [];
+    let btcCountdownInterval = null;
+
+    function initBtcChartOnce() {
+      const container = document.getElementById("btc-chart-container");
+      if (!container) return;
+
+      if (btcChart) {
+        setTimeout(() => {
+          if (btcChart && container) {
+            btcChart.applyOptions({
+              width: container.clientWidth,
+              height: container.clientHeight || 420
+            });
+          }
+        }, 60);
+        return;
+      }
+
+      if (typeof LightweightCharts === "undefined") {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500">TradingView Lightweight Charts loading...</div>`;
+        return;
+      }
+
+      container.innerHTML = "";
+      btcChart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight || 420,
+        layout: {
+          background: { color: "#0f172a" },
+          textColor: "#94a3b8",
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+        },
+        grid: {
+          vertLines: { color: "rgba(51, 65, 85, 0.4)" },
+          horzLines: { color: "rgba(51, 65, 85, 0.4)" },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: "#334155",
+          scaleMargins: { top: 0.1, bottom: 0.15 },
+        },
+        timeScale: {
+          borderColor: "#334155",
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      });
+
+      btcCandleSeries = btcChart.addCandlestickSeries({
+        upColor: "#10b981",
+        downColor: "#ef4444",
+        borderVisible: false,
+        wickUpColor: "#10b981",
+        wickDownColor: "#ef4444",
+      });
+
+      btcEma9Series = btcChart.addLineSeries({ color: "#22d3ee", lineWidth: 1.5, title: "EMA 9" });
+      btcEma21Series = btcChart.addLineSeries({ color: "#f59e0b", lineWidth: 1.5, title: "EMA 21" });
+      btcEma50Series = btcChart.addLineSeries({ color: "#c084fc", lineWidth: 1.5, title: "EMA 50" });
+      btcEma200Series = btcChart.addLineSeries({ color: "#e879f9", lineWidth: 2, title: "EMA 200" });
+
+      window.addEventListener("resize", () => {
+        if (btcChart && container) {
+          btcChart.applyOptions({
+            width: container.clientWidth,
+            height: container.clientHeight || 420,
+          });
+        }
+      });
+
+      if (!btcCountdownInterval) {
+        btcCountdownInterval = setInterval(updateBtcCountdown, 1000);
+      }
+    }
+
+    function setBtcTimeframe(tf) {
+      if (btcCurrentTimeframe === tf) return;
+      btcCurrentTimeframe = tf;
+
+      document.querySelectorAll(".btc-tf-btn").forEach(btn => {
+        if (btn.getAttribute("data-tf") === tf) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      const tfUpper = tf.toUpperCase();
+      const badge = document.getElementById("btcActiveTfBadge");
+      if (badge) badge.innerText = tfUpper;
+
+      const chartTitle = document.getElementById("btcChartTitle");
+      if (chartTitle) chartTitle.innerText = `BTC/USD ${tfUpper} Candlestick Chart`;
+
+      const indLabel = document.getElementById("btcIndTfLabel");
+      if (indLabel) indLabel.innerText = `${tfUpper} Calculation`;
+
+      const chartStatus = document.getElementById("btcChartStatus");
+      if (chartStatus) chartStatus.innerText = `Switching to ${tfUpper}...`;
+
+      triggerBtcAnalysis();
+      updateBtcCountdown();
+    }
+
+    function playBtcAlertSound(isBullish) {
+      if (!btcAudioEnabled) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (isBullish) {
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+        } else {
+          osc.frequency.setValueAtTime(600, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3);
+        }
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+    }
+
+    function toggleBtcAudio() {
+      btcAudioEnabled = !btcAudioEnabled;
+      const icon = document.getElementById("btcAudioIcon");
+      if (btcAudioEnabled) {
+        if (icon) icon.innerText = "🔊";
+        playBtcAlertSound(true);
+      } else {
+        if (icon) icon.innerText = "🔇";
+      }
+    }
+
+    function updateBtcConfluenceGauge(score, direction, confidence) {
+      const scoreElem = document.getElementById("btcMeterScore");
+      const banner = document.getElementById("btcSignalBanner");
+      const needle = document.getElementById("btcMeterNeedle");
+      const confText = document.getElementById("btcConfidenceText");
+
+      if (scoreElem) scoreElem.innerText = (score > 0 ? `+${score}` : `${score}`);
+      if (confText) confText.innerHTML = `Confluence Score: <strong>${score} / 100</strong> (${confidence}% Confidence)`;
+
+      const angle = (score / 100) * 90;
+      if (needle) needle.style.transform = `rotate(${angle}deg)`;
+
+      if (banner && scoreElem) {
+        banner.className = "signal-banner";
+        scoreElem.className = "meter-score-display";
+
+        if (direction.includes("BULLISH")) {
+          banner.innerText = direction;
+          banner.classList.add("signal-up");
+          scoreElem.classList.add("positive");
+        } else if (direction.includes("BEARISH")) {
+          banner.innerText = direction;
+          banner.classList.add("signal-down");
+          scoreElem.classList.add("negative");
+        } else {
+          banner.innerText = direction;
+          banner.classList.add("signal-neutral");
+          scoreElem.classList.add("neutral");
+        }
+      }
+    }
+
+    function renderBtcTradeSetup(setup) {
+      if (!setup) return;
+      const planType = document.getElementById("btcPlanType");
+      const planEntry = document.getElementById("btcPlanEntry");
+      const planSl = document.getElementById("btcPlanSl");
+      const planTp1 = document.getElementById("btcPlanTp1");
+      const planTp2 = document.getElementById("btcPlanTp2");
+      const planRiskAmt = document.getElementById("btcPlanRiskAmt");
+      const planRiskPct = document.getElementById("btcPlanRiskPct");
+      const planTitle = document.getElementById("btcPlanTitleText");
+
+      if (planTitle && setup.timeframe) {
+        planTitle.innerText = `Actionable ${setup.timeframe.toUpperCase()} Trade Plan`;
+      }
+
+      if (planType) {
+        planType.innerText = setup.direction;
+        if (setup.direction.includes("BUY")) {
+          planType.style.background = "#10b981";
+          planType.style.color = "#020617";
+        } else if (setup.direction.includes("SELL")) {
+          planType.style.background = "#ef4444";
+          planType.style.color = "#ffffff";
+        } else {
+          planType.style.background = "#f59e0b";
+          planType.style.color = "#020617";
+        }
+      }
+
+      if (planEntry) planEntry.innerText = `$${Number(setup.entry_price || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      if (planSl) planSl.innerText = `$${Number(setup.stop_loss || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      if (planTp1) planTp1.innerText = `$${Number(setup.take_profit_1 || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      if (planTp2) planTp2.innerText = `$${Number(setup.take_profit_2 || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
+      if (planRiskAmt) planRiskAmt.innerText = `$${Number(setup.risk_amount || 0).toFixed(2)}`;
+      if (planRiskPct) planRiskPct.innerText = `${setup.risk_percent || 0}%`;
+    }
+
+    function renderBtcIndicators(ind) {
+      if (!ind) return;
+
+      const rsiElem = document.getElementById("btcIndRsi");
+      const rsiStat = document.getElementById("btcIndRsiStatus");
+      if (rsiElem) {
+        rsiElem.innerText = ind.rsi;
+        rsiElem.className = "m-val " + (ind.rsi <= 30 ? "text-emerald-400" : (ind.rsi >= 70 ? "text-red-400" : "text-white"));
+      }
+      if (rsiStat) rsiStat.innerText = ind.rsi_status || "Neutral";
+
+      const macdElem = document.getElementById("btcIndMacd");
+      const macdStat = document.getElementById("btcIndMacdStatus");
+      if (macdElem) {
+        macdElem.innerText = `${ind.macd_hist > 0 ? "+" : ""}${ind.macd_hist}`;
+        macdElem.className = "m-val " + (ind.macd_hist > 0 ? "text-emerald-400" : "text-red-400");
+      }
+      if (macdStat) macdStat.innerText = ind.macd_cross ? ind.macd_cross : ind.macd_hist_direction;
+
+      const ribElem = document.getElementById("btcIndRibbon");
+      const ribStat = document.getElementById("btcIndRibbonStatus");
+      if (ribElem) {
+        if (ind.bullish_ribbon) {
+          ribElem.innerText = "BULLISH";
+          ribElem.className = "m-val text-emerald-400";
+        } else if (ind.bearish_ribbon) {
+          ribElem.innerText = "BEARISH";
+          ribElem.className = "m-val text-red-400";
+        } else {
+          ribElem.innerText = "MIXED";
+          ribElem.className = "m-val text-amber-400";
+        }
+      }
+      if (ribStat) ribStat.innerText = (ind.bullish_ribbon || ind.bearish_ribbon) ? "EMA 9/21/50" : "Crossing / Squeeze";
+
+      const bbElem = document.getElementById("btcIndBb");
+      const bbSqueeze = document.getElementById("btcIndBbSqueeze");
+      if (bbElem) bbElem.innerText = `$${ind.bb_upper} / $${ind.bb_lower}`;
+      if (bbSqueeze) bbSqueeze.innerText = ind.bb_squeeze ? "SQUEEZE ACTIVE" : "Normal Bandwidth";
+
+      const atrElem = document.getElementById("btcIndAtr");
+      const atrLbl = document.getElementById("btcIndAtrLabel");
+      if (atrElem) atrElem.innerText = `$${ind.atr}`;
+      if (atrLbl) atrLbl.innerText = `${btcCurrentTimeframe.toUpperCase()} Volatility`;
+
+      const volElem = document.getElementById("btcIndVol");
+      const volStat = document.getElementById("btcIndVolStatus");
+      if (volElem) {
+        volElem.innerText = `${ind.vol_ratio}x`;
+        volElem.className = "m-val " + (ind.vol_surge ? "text-emerald-400" : "text-white");
+      }
+      if (volStat) volStat.innerText = ind.vol_surge ? "SURGE (>1.5x SMA)" : "Normal Volume";
+    }
+
+    function renderBtcStructure(struct) {
+      if (!struct) return;
+      const badge = document.getElementById("btcStructTrendBadge");
+      if (badge) {
+        badge.innerText = struct.trend_bias || "--";
+        badge.style.background = struct.trend_bias === "BULLISH" ? "#10b981" : (struct.trend_bias === "BEARISH" ? "#ef4444" : "#f59e0b");
+      }
+
+      const summary = document.getElementById("btcStructSummary");
+      if (summary) summary.innerText = struct.trend || "Neutral structure";
+
+      const bosElem = document.getElementById("btcStructBos");
+      if (bosElem) {
+        bosElem.innerText = struct.bos ? `BOS: ${struct.bos.description}` : "";
+      }
+
+      const resElem = document.getElementById("btcStructRes");
+      if (resElem && struct.nearest_resistance) {
+        resElem.innerText = `$${Number(struct.nearest_resistance).toLocaleString()}`;
+      }
+      const supElem = document.getElementById("btcStructSup");
+      if (supElem && struct.nearest_support) {
+        supElem.innerText = `$${Number(struct.nearest_support).toLocaleString()}`;
+      }
+    }
+
+    function renderBtcCatalystsAndPatterns(data) {
+      const factorsList = document.getElementById("btcFactorsList");
+      const factorsCount = document.getElementById("btcFactorsCount");
+      if (factorsList) factorsList.innerHTML = "";
+
+      const allFactors = [
+        ...(data.reasons_bullish || []).map(r => ({ text: r, type: "bull" })),
+        ...(data.reasons_bearish || []).map(r => ({ text: r, type: "bear" }))
+      ];
+
+      if (factorsCount) factorsCount.innerText = `${allFactors.length} active`;
+
+      if (factorsList) {
+        if (allFactors.length === 0) {
+          factorsList.innerHTML = `<div class="text-xs text-slate-500 py-1">No major confluence factors active</div>`;
+        } else {
+          allFactors.forEach(f => {
+            const item = document.createElement("div");
+            item.className = `factor-item ${f.type}`;
+            item.innerHTML = `<span>${f.type === "bull" ? "▲" : "▼"}</span> <span>${f.text}</span>`;
+            factorsList.appendChild(item);
+          });
+        }
+      }
+
+      const patList = document.getElementById("btcPatternsList");
+      if (patList) {
+        patList.innerHTML = "";
+        if (!data.detected_patterns || data.detected_patterns.length === 0) {
+          patList.innerHTML = `<div class="text-xs text-slate-500 py-1">No prominent patterns on recent candle</div>`;
+        } else {
+          data.detected_patterns.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "text-xs p-2 rounded-lg";
+            const isBull = p.type === "BULLISH";
+            item.style.background = isBull ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
+            item.style.border = `1px solid ${isBull ? "#10b981" : "#ef4444"}`;
+            item.innerHTML = `<strong class="${isBull ? 'text-emerald-400' : 'text-red-400'}">${p.name}</strong> (${p.type}): ${p.description}`;
+            patList.appendChild(item);
+          });
+        }
+      }
+    }
+
+    function addBtcLogEntry(data) {
+      const tbody = document.getElementById("btcLogTbody");
+      if (!tbody) return;
+      const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const primeReason = (data.reasons_bullish && data.reasons_bullish[0]) || (data.reasons_bearish && data.reasons_bearish[0]) || "Neutral consolidation";
+      const tf = data.timeframe || btcCurrentTimeframe.toUpperCase();
+
+      const biasClass = data.primary_bias === 'UP' ? 'text-emerald-400 font-bold' : (data.primary_bias === 'DOWN' ? 'text-red-400 font-bold' : 'text-amber-400 font-bold');
+      const row = `<tr>
+        <td class="text-slate-400">${timeStr}</td>
+        <td><span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 text-[10px] font-bold">${tf}</span></td>
+        <td><span class="${biasClass}">${data.direction}</span></td>
+        <td class="font-bold text-white">${data.confluence_score > 0 ? '+' : ''}${data.confluence_score}</td>
+        <td class="font-bold text-white">$${Number(data.price || 0).toLocaleString()}</td>
+        <td class="text-slate-400 text-[10px]">${primeReason}</td>
+      </tr>`;
+
+      if (btcSignalHistory.length === 0) {
+        tbody.innerHTML = row;
+      } else {
+        tbody.insertAdjacentHTML("afterbegin", row);
+      }
+      btcSignalHistory.unshift(data);
+    }
+
+    async function triggerBtcAnalysis() {
+      const btn = document.getElementById("btnBtcRefresh");
+      const icon = document.getElementById("btcRefreshIcon");
+      if (btn) btn.disabled = true;
+      if (icon) icon.innerHTML = '<span class="inline-block animate-spin">⟳</span>';
+
+      try {
+        let analysisData = null;
+        let candlesData = null;
+
+        // 1. Fetch analysis
+        try {
+          const resp = await fetch(`/api/btc/analyze?timeframe=${btcCurrentTimeframe}`);
+          if (resp.ok) analysisData = await resp.json();
+        } catch (e) {
+          console.warn("Live BTC analysis fetch failed, checking static fallback:", e);
+        }
+
+        if (!analysisData) {
+          try {
+            const fallbackResp = await fetch(`data/btc_analysis.json`);
+            if (fallbackResp.ok) analysisData = await fallbackResp.json();
+          } catch (e) {}
+        }
+
+        // 2. Fetch candles
+        try {
+          const candleResp = await fetch(`/api/btc/candles?timeframe=${btcCurrentTimeframe}`);
+          if (candleResp.ok) candlesData = await candleResp.json();
+        } catch (e) {
+          console.warn("Live BTC candles fetch failed, checking static fallback:", e);
+        }
+
+        if (!candlesData) {
+          try {
+            const fallbackCandles = await fetch(`data/btc_candles.json`);
+            if (fallbackCandles.ok) candlesData = await fallbackCandles.json();
+          } catch (e) {}
+        }
+
+        // 3. Update Chart
+        if (btcChart && btcCandleSeries && candlesData && candlesData.candles) {
+          btcCandleSeries.setData(candlesData.candles);
+          if (candlesData.ema9 && btcEma9Series) btcEma9Series.setData(candlesData.ema9);
+          if (candlesData.ema21 && btcEma21Series) btcEma21Series.setData(candlesData.ema21);
+          if (candlesData.ema50 && btcEma50Series) btcEma50Series.setData(candlesData.ema50);
+          if (candlesData.ema200 && btcEma200Series) btcEma200Series.setData(candlesData.ema200);
+
+          if (candlesData.markers) {
+            btcCandleSeries.setMarkers(candlesData.markers);
+          }
+
+          if (btcSupportLine) btcCandleSeries.removePriceLine(btcSupportLine);
+          if (btcResistanceLine) btcCandleSeries.removePriceLine(btcResistanceLine);
+
+          if (analysisData && analysisData.market_structure) {
+            if (analysisData.market_structure.nearest_support) {
+              btcSupportLine = btcCandleSeries.createPriceLine({
+                price: analysisData.market_structure.nearest_support,
+                color: "#10b981",
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: "SUP",
+              });
+            }
+            if (analysisData.market_structure.nearest_resistance) {
+              btcResistanceLine = btcCandleSeries.createPriceLine({
+                price: analysisData.market_structure.nearest_resistance,
+                color: "#ef4444",
+                lineWidth: 1,
+                lineStyle: 2,
+                axisLabelVisible: true,
+                title: "RES",
+              });
+            }
+          }
+
+          const statusEl = document.getElementById("btcChartStatus");
+          if (statusEl) statusEl.innerText = `${candlesData.candles.length} candles (${btcCurrentTimeframe.toUpperCase()})`;
+        }
+
+        // 4. Update Header Stats
+        if (candlesData && candlesData.ticker) {
+          const t = candlesData.ticker;
+          const prEl = document.getElementById("btcLStatPrice");
+          if (prEl) prEl.innerText = `$${Number(t.price || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+
+          const chgEl = document.getElementById("btcLStatChange");
+          if (chgEl) {
+            chgEl.innerText = `${t.change_24h >= 0 ? "+" : ""}${Number(t.change_24h || 0).toFixed(2)}%`;
+            chgEl.className = "font-bold " + (t.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
+          }
+
+          const rngEl = document.getElementById("btcLStatRange");
+          if (rngEl) rngEl.innerText = `$${Math.round(t.low_24h || 0).toLocaleString()} / $${Math.round(t.high_24h || 0).toLocaleString()}`;
+
+          const volEl = document.getElementById("btcLStatVol");
+          if (volEl) volEl.innerText = Math.round(t.volume_24h || 0).toLocaleString();
+        }
+
+        // 5. Update Confluence Meter & Trade Setup
+        if (analysisData) {
+          updateBtcConfluenceGauge(analysisData.confluence_score || 0, analysisData.direction || "NEUTRAL", analysisData.confidence_percent || 50);
+          renderBtcTradeSetup(analysisData.trade_setup);
+          renderBtcIndicators(analysisData.indicators);
+          renderBtcStructure(analysisData.market_structure);
+          renderBtcCatalystsAndPatterns(analysisData);
+          addBtcLogEntry(analysisData);
+
+          if (btcLastSignal && btcLastSignal !== analysisData.direction && Math.abs(analysisData.confluence_score || 0) >= 20) {
+            playBtcAlertSound(analysisData.primary_bias === "UP");
+          }
+          btcLastSignal = analysisData.direction;
+        }
+
+      } catch (err) {
+        console.error("BTC Analysis error:", err);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (icon) icon.innerHTML = "&#x21bb;";
+      }
+    }
+
+    async function updateBtcCountdown() {
+      if (activeMode !== 'btc_analyzer') return;
+      try {
+        const res = await fetch(`/api/btc/countdown?timeframe=${btcCurrentTimeframe}`);
+        if (res.ok) {
+          const d = await res.json();
+          const cd = document.getElementById("btcCountdown");
+          if (cd) cd.innerText = d.formatted;
+          if (d.seconds_left === 1) {
+            setTimeout(triggerBtcAnalysis, 1500);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     async function refreshAllData() {
       updateLiveClock();
       try {
@@ -1340,6 +2264,8 @@
           await loadMLBData();
         } else if (activeMode === 'pitcher_ks') {
           await loadPitcherKs();
+        } else if (activeMode === 'btc_analyzer') {
+          await triggerBtcAnalysis();
         }
         fetch('/api/live/poll').catch(() => {});
       } catch (err) {
