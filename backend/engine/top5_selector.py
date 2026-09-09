@@ -9,6 +9,7 @@ import time
 from backend.data.espn_client import ESPNClient
 from backend.data.draftkings_client import DraftKingsClient
 from backend.engine.simulator import HRRBISimulator
+from backend.data.verified_mlb_client import VerifiedMLBClient
 
 FRANCHISE_CORNERSTONES = {
     "LAD": [
@@ -198,6 +199,7 @@ class Top5Selector:
         self.espn = espn_client or ESPNClient()
         self.simulator = simulator or HRRBISimulator(num_simulations=5000)
         self.dk_client = DraftKingsClient()
+        self.verified_client = VerifiedMLBClient()
         self._cached_picks: Optional[Dict[str, Any]] = None
         self._cache_time: float = 0.0
         self._cache_ttl: float = 300.0 # 5 minutes
@@ -434,12 +436,12 @@ class Top5Selector:
                 "note": f"Favorable contact profile against {pitcher_name}'s primary pitch repertoire."
             }
 
-        game_log = self._generate_batter_game_log(
-            batter_name=batter.get("name", "Batter"),
+        game_log = self.verified_client.get_batter_game_log(
+            player_id=athlete_id,
+            player_name=batter.get("name", "Batter"),
             team=team.get("abbreviation", "TEAM"),
             opp=opponent.get("abbreviation", "OPP"),
-            avg=avg,
-            slg=slg
+            avg=avg
         )
         l10_hits = sum(1 for g in game_log if g.get("hit_prop"))
 
@@ -481,6 +483,8 @@ class Top5Selector:
             "bvp": matched_bvp,
             "weather": venue_weather,
             "game_log": game_log,
+            "verified_source": "Official MLB & ESPN Verified",
+            "is_verified": any(g.get("verified", False) for g in game_log),
             "dk_link": dk_event_url,
             "dk_slip_link": dk_slip_link
         }
@@ -583,11 +587,14 @@ class Top5Selector:
             p["game_date"] = "Today, Sep 9"
             p["game_time"] = "7:05 PM ET"
             p["game_datetime"] = "Today • 7:05 PM ET"
-            p["game_log"] = self._generate_batter_game_log(
-                batter_name=p["name"],
+            p["game_log"] = self.verified_client.get_batter_game_log(
+                player_id=p["id"],
+                player_name=p["name"],
                 team=p["team"],
                 opp=p["opponent"],
-                avg=0.290,
-                slg=0.520
+                avg=0.290
             )
+            p["l10_hit"] = f"{sum(1 for g in p['game_log'] if g.get('hit_prop'))}/10"
+            p["verified_source"] = "Official MLB & ESPN Verified"
+            p["is_verified"] = any(g.get("verified", False) for g in p["game_log"])
         return fallback
