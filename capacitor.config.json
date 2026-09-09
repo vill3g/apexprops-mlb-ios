@@ -1,0 +1,13 @@
+{
+  "appId": "com.apexprops.mlb",
+  "appName": "ApexProps MLB",
+  "webDir": "static",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always"
+  },
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  }
+}
