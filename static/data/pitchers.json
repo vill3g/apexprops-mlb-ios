@@ -1,6 +1,90 @@
 {
   "top5": [
     {
+      "id": 41234,
+      "name": "Tarik Skubal",
+      "team": "DET",
+      "opponent": "KC",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41234.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/det.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 7.8,
+      "win_prob": 84.6,
+      "book_odds": "DK -188",
+      "edge": 19.4,
+      "sw_str": "16.1%",
+      "csw": "34.5%",
+      "era": 2.24,
+      "venue": "Comerica Park",
+      "is_home": true,
+      "catalysts": [
+        "League leader in SwStr% (16.1%) and CSW (34.5%)",
+        "Opposing Royals order strikes out at 23.8% against southpaw changeups",
+        "Averages 7.6 innings pitched over last 5 starts"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 5,
+          "era": "2.24",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ KC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.35",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs KC",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.46",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ KC",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.57",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "2.46",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-188",
+      "dk_decimal": 1.53,
+      "dk_implied_prob": 65.2,
+      "dk_edge": 19.4,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
       "id": "42359",
       "name": "Cristopher Sanchez",
       "team": "PHI",
@@ -25,6 +109,58 @@
         "Projected 7.2 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing HOU lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs HOU",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.36",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ HOU",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.25",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs HOU",
+          "ip": "7.0",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.36",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ HOU",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.47",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs HOU",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 5,
+          "era": "2.36",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
@@ -59,6 +195,58 @@
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing CHC lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CHC",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.59",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CHC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.48",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CHC",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "2.59",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CHC",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "2.70",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CHC",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.59",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
       "dk_decimal": 1.55,
@@ -92,6 +280,58 @@
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing CIN lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CIN",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 9,
+          "era": "2.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "2.56",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CIN",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "2.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CIN",
+          "ip": "5.2",
+          "h": 2,
+          "hr": 0,
+          "so": 6,
+          "era": "2.78",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CIN",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "2.67",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
       "dk_decimal": 1.55,
@@ -100,74 +340,176 @@
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
     },
     {
-      "id": "41318",
-      "name": "Braydon Fisher",
-      "team": "TOR",
-      "opponent": "ATH",
-      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41318.png",
-      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/tor.png",
-      "game_date": "Today, Sep 09",
-      "game_time": "3:05 PM ET",
-      "game_datetime": "Today \u2022 3:05 PM ET",
-      "k_line": 5.5,
+      "id": 30948,
+      "name": "Chris Sale",
+      "team": "ATL",
+      "opponent": "WSH",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/30948.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
+      "k_line": 7.5,
       "pick_type": "Over",
-      "proj_k": 6.2,
-      "win_prob": 79.2,
-      "book_odds": "DK -159",
-      "edge": 17.8,
-      "sw_str": "13.8%",
-      "csw": "30.5%",
-      "era": 3.2,
-      "venue": "Sutter Health Park",
-      "is_home": false,
+      "proj_k": 8.4,
+      "win_prob": 83.2,
+      "book_odds": "DK -180",
+      "edge": 19.0,
+      "sw_str": "16.8%",
+      "csw": "35.2%",
+      "era": 2.38,
+      "venue": "Truist Park",
+      "is_home": true,
       "catalysts": [
-        "Projected 6.2 strikeouts over 5.2 projected innings pitched",
-        "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
-        "Opposing ATH lineup strikeout rate matches pitch mix"
+        "NL Cy Young frontrunner with 32.1% strikeout rate",
+        "Signature wipeout slider holds opponents to .152 batting average",
+        "8+ strikeouts in 9 of his last 12 starts"
       ],
-      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
-      "dk_odds": "-159",
-      "dk_decimal": 1.63,
-      "dk_implied_prob": 61.4,
-      "dk_edge": 17.8,
-      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
-    },
-    {
-      "id": "33773",
-      "name": "Foster Griffin",
-      "team": "CLE",
-      "opponent": "BAL",
-      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/33773.png",
-      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/cle.png",
-      "game_date": "Today, Sep 09",
-      "game_time": "6:35 PM ET",
-      "game_datetime": "Today \u2022 6:35 PM ET",
-      "k_line": 5.5,
-      "pick_type": "Over",
-      "proj_k": 6.2,
-      "win_prob": 79.2,
-      "book_odds": "DK -159",
-      "edge": 17.8,
-      "sw_str": "13.8%",
-      "csw": "30.5%",
-      "era": 3.26,
-      "venue": "Oriole Park at Camden Yards",
-      "is_home": false,
-      "catalysts": [
-        "Projected 6.2 strikeouts over 5.2 projected innings pitched",
-        "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
-        "Opposing BAL lineup strikeout rate matches pitch mix"
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs WSH",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.71",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ WSH",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.05",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs WSH",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 10,
+          "era": "2.16",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ WSH",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.27",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs WSH",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.16",
+          "hit_prop": true
+        }
       ],
-      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
-      "dk_odds": "-159",
-      "dk_decimal": 1.63,
-      "dk_implied_prob": 61.4,
-      "dk_edge": 17.8,
+      "dk_odds": "-180",
+      "dk_decimal": 1.56,
+      "dk_implied_prob": 64.2,
+      "dk_edge": 19.0,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
     }
   ],
   "props": [
     {
+      "id": 41234,
+      "name": "Tarik Skubal",
+      "team": "DET",
+      "opponent": "KC",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41234.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/det.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 7.8,
+      "win_prob": 84.6,
+      "book_odds": "DK -188",
+      "edge": 19.4,
+      "sw_str": "16.1%",
+      "csw": "34.5%",
+      "era": 2.24,
+      "venue": "Comerica Park",
+      "is_home": true,
+      "catalysts": [
+        "League leader in SwStr% (16.1%) and CSW (34.5%)",
+        "Opposing Royals order strikes out at 23.8% against southpaw changeups",
+        "Averages 7.6 innings pitched over last 5 starts"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 5,
+          "era": "2.24",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ KC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.35",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs KC",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.46",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ KC",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.57",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "2.46",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-188",
+      "dk_decimal": 1.53,
+      "dk_implied_prob": 65.2,
+      "dk_edge": 19.4,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
       "id": "42359",
       "name": "Cristopher Sanchez",
       "team": "PHI",
@@ -192,6 +534,58 @@
         "Projected 7.2 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing HOU lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs HOU",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.36",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ HOU",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.25",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs HOU",
+          "ip": "7.0",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.36",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ HOU",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.47",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs HOU",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 5,
+          "era": "2.36",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
@@ -226,6 +620,58 @@
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing CHC lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CHC",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.59",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CHC",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.48",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CHC",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "2.59",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CHC",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "2.70",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CHC",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.59",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
       "dk_decimal": 1.55,
@@ -259,11 +705,567 @@
         "Whiff rate of 15.4% with 33.2% Called Strike + Whiff rate",
         "Opposing CIN lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CIN",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 9,
+          "era": "2.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "2.56",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CIN",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "2.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CIN",
+          "ip": "5.2",
+          "h": 2,
+          "hr": 0,
+          "so": 6,
+          "era": "2.78",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CIN",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "2.67",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-183",
       "dk_decimal": 1.55,
       "dk_implied_prob": 64.7,
       "dk_edge": 19.1,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 30948,
+      "name": "Chris Sale",
+      "team": "ATL",
+      "opponent": "WSH",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/30948.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
+      "k_line": 7.5,
+      "pick_type": "Over",
+      "proj_k": 8.4,
+      "win_prob": 83.2,
+      "book_odds": "DK -180",
+      "edge": 19.0,
+      "sw_str": "16.8%",
+      "csw": "35.2%",
+      "era": 2.38,
+      "venue": "Truist Park",
+      "is_home": true,
+      "catalysts": [
+        "NL Cy Young frontrunner with 32.1% strikeout rate",
+        "Signature wipeout slider holds opponents to .152 batting average",
+        "8+ strikeouts in 9 of his last 12 starts"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs WSH",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "2.71",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ WSH",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.05",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs WSH",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 10,
+          "era": "2.16",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ WSH",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "2.27",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs WSH",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.16",
+          "hit_prop": true
+        }
+      ],
+      "dk_odds": "-180",
+      "dk_decimal": 1.56,
+      "dk_implied_prob": 64.2,
+      "dk_edge": 19.0,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 31267,
+      "name": "Zack Wheeler",
+      "team": "PHI",
+      "opponent": "NYM",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/31267.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/phi.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 7.4,
+      "win_prob": 82.3,
+      "book_odds": "DK -175",
+      "edge": 18.7,
+      "sw_str": "14.8%",
+      "csw": "32.4%",
+      "era": 2.57,
+      "venue": "Citizens Bank Park",
+      "is_home": true,
+      "catalysts": [
+        "Elite 97 mph four-seamer generates 31% chase rate",
+        "7+ strikeouts in 8 of his last 10 home starts",
+        "Mets order bottom 5 in contact rate against upper-zone velocity"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs NYM",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 9,
+          "era": "2.68",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ NYM",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "2.79",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs NYM",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "2.90",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ NYM",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "2.24",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs NYM",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.90",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-175",
+      "dk_decimal": 1.57,
+      "dk_implied_prob": 63.6,
+      "dk_edge": 18.7,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 4719507,
+      "name": "Paul Skenes",
+      "team": "PIT",
+      "opponent": "MIA",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/4719507.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/pit.png",
+      "k_line": 7.5,
+      "pick_type": "Over",
+      "proj_k": 8.6,
+      "win_prob": 82.1,
+      "book_odds": "DK -174",
+      "edge": 18.6,
+      "sw_str": "17.2%",
+      "csw": "35.8%",
+      "era": 1.99,
+      "venue": "PNC Park",
+      "is_home": true,
+      "catalysts": [
+        "Triple-digit 101 mph heater paired with wipeout 'splinker'",
+        "34.8% strikeout rate leads all Major League starters",
+        "Marlins lineup strikes out at 26.1% rate versus high heat"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs MIA",
+          "ip": "5.2",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "1.99",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ MIA",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 7,
+          "era": "1.88",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs MIA",
+          "ip": "7.0",
+          "h": 2,
+          "hr": 0,
+          "so": 6,
+          "era": "1.99",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ MIA",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 10,
+          "era": "2.10",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs MIA",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 9,
+          "era": "1.99",
+          "hit_prop": true
+        }
+      ],
+      "dk_odds": "-174",
+      "dk_decimal": 1.57,
+      "dk_implied_prob": 63.5,
+      "dk_edge": 18.6,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 669203,
+      "name": "Corbin Burnes",
+      "team": "BAL",
+      "opponent": "TB",
+      "headshot": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/669203/headshot/67/current.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/bal.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 7.2,
+      "win_prob": 80.9,
+      "book_odds": "DK -168",
+      "edge": 18.3,
+      "sw_str": "14.4%",
+      "csw": "31.9%",
+      "era": 2.92,
+      "venue": "Oriole Park",
+      "is_home": true,
+      "catalysts": [
+        "Signature cutter inducing 36% whiff rate this season",
+        "Rays strikeout at 24.6% clip against right-handed cut fastballs",
+        "Pitch count efficiency guarantees 6+ innings"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs TB",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.59",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ TB",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 9,
+          "era": "2.70",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs TB",
+          "ip": "6.1",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "2.81",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ TB",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "2.70",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs TB",
+          "ip": "7.0",
+          "h": 2,
+          "hr": 0,
+          "so": 6,
+          "era": "2.81",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-168",
+      "dk_decimal": 1.6,
+      "dk_implied_prob": 62.6,
+      "dk_edge": 18.3,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 39635,
+      "name": "Hunter Greene",
+      "team": "CIN",
+      "opponent": "LAD",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/39635.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/cin.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 7.5,
+      "win_prob": 79.8,
+      "book_odds": "DK -162",
+      "edge": 17.9,
+      "sw_str": "15.1%",
+      "csw": "33.0%",
+      "era": 2.75,
+      "venue": "Dodger Stadium",
+      "is_home": false,
+      "catalysts": [
+        "Averages 99.2 mph on fastball with elite induced vertical break",
+        "10+ strikeouts in 5 separate starts this year",
+        "Slider chase rate up to 37.4%"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs LAD",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 9,
+          "era": "2.75",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ LAD",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.86",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs LAD",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "2.75",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ LAD",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "2.86",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs LAD",
+          "ip": "5.2",
+          "h": 2,
+          "hr": 0,
+          "so": 5,
+          "era": "2.97",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-162",
+      "dk_decimal": 1.62,
+      "dk_implied_prob": 61.9,
+      "dk_edge": 17.9,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 41221,
+      "name": "Logan Gilbert",
+      "team": "SEA",
+      "opponent": "TEX",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/41221.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/sea.png",
+      "k_line": 5.5,
+      "pick_type": "Over",
+      "proj_k": 6.8,
+      "win_prob": 79.5,
+      "book_odds": "DK -161",
+      "edge": 17.8,
+      "sw_str": "13.5%",
+      "csw": "30.8%",
+      "era": 3.09,
+      "venue": "T-Mobile Park",
+      "is_home": true,
+      "catalysts": [
+        "T-Mobile Park suppression factor enhances pitcher-friendly strike zone",
+        "Splitter whiff rate up to 38.2% post-All Star break",
+        "Projected 6.8 strikeouts against free-swinging Rangers order"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs TEX",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "2.87",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ TEX",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "2.98",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs TEX",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 1,
+          "so": 4,
+          "era": "3.09",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ TEX",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "2.98",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs TEX",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.09",
+          "hit_prop": true
+        }
+      ],
+      "dk_odds": "-161",
+      "dk_decimal": 1.62,
+      "dk_implied_prob": 61.7,
+      "dk_edge": 17.8,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
     },
     {
@@ -291,6 +1293,58 @@
         "Projected 6.2 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
         "Opposing ATH lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs ATH",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 8,
+          "era": "2.98",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ ATH",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "3.09",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs ATH",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.20",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ ATH",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 5,
+          "era": "3.09",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs ATH",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.20",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-159",
@@ -324,6 +1378,58 @@
         "Projected 6.2 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
         "Opposing BAL lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs BAL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 1,
+          "so": 6,
+          "era": "3.37",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ BAL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.48",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs BAL",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.59",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ BAL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "3.48",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs BAL",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 1,
+          "so": 7,
+          "era": "3.59",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-159",
@@ -358,6 +1464,58 @@
         "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
         "Opposing PHI lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs PHI",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.64",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ PHI",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "2.98",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs PHI",
+          "ip": "6.1",
+          "h": 3,
+          "hr": 0,
+          "so": 8,
+          "era": "3.09",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ PHI",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 7,
+          "era": "2.98",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs PHI",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.09",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-159",
       "dk_decimal": 1.63,
@@ -391,11 +1549,231 @@
         "Whiff rate of 13.8% with 30.5% Called Strike + Whiff rate",
         "Opposing LAA lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs LAA",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 5,
+          "era": "3.12",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ LAA",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.23",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs LAA",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 8,
+          "era": "3.34",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ LAA",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.23",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs LAA",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.34",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-159",
       "dk_decimal": 1.63,
       "dk_implied_prob": 61.4,
       "dk_edge": 17.8,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 4917849,
+      "name": "Shota Imanaga",
+      "team": "CHC",
+      "opponent": "PIT",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/4917849.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/chc.png",
+      "k_line": 6.5,
+      "pick_type": "Over",
+      "proj_k": 6.9,
+      "win_prob": 78.9,
+      "book_odds": "DK -158",
+      "edge": 17.7,
+      "sw_str": "13.6%",
+      "csw": "30.5%",
+      "era": 2.91,
+      "venue": "Wrigley Field",
+      "is_home": true,
+      "catalysts": [
+        "Elite rising four-seam fastball induces 26% pop-up / flyball chase",
+        "Pirates order struggles against left-handed deception",
+        "Under 1.5 walks per 9 innings maintains deep pitch counts"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs PIT",
+          "ip": "5.2",
+          "h": 2,
+          "hr": 0,
+          "so": 8,
+          "era": "2.58",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ PIT",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "3.24",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs PIT",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 6,
+          "era": "2.58",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ PIT",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "2.69",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs PIT",
+          "ip": "6.0",
+          "h": 2,
+          "hr": 0,
+          "so": 4,
+          "era": "2.58",
+          "hit_prop": false
+        }
+      ],
+      "dk_odds": "-158",
+      "dk_decimal": 1.63,
+      "dk_implied_prob": 61.2,
+      "dk_edge": 17.7,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+    },
+    {
+      "id": 666142,
+      "name": "Cole Ragans",
+      "team": "KC",
+      "opponent": "DET",
+      "headshot": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/666142/headshot/67/current.png",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/kc.png",
+      "k_line": 5.5,
+      "pick_type": "Over",
+      "proj_k": 6.6,
+      "win_prob": 78.7,
+      "book_odds": "DK -157",
+      "edge": 17.6,
+      "sw_str": "13.2%",
+      "csw": "30.1%",
+      "era": 3.19,
+      "venue": "Kauffman Stadium",
+      "is_home": false,
+      "catalysts": [
+        "98 mph southpaw heater paired with plus slider",
+        "Tigers rank 4th highest in team K% against left-handed starters",
+        "Recorded 6+ Ks in 7 of his last 9 outings"
+      ],
+      "game_date": "Today, Sep 9",
+      "game_time": "7:05 PM ET",
+      "game_datetime": "Today \u2022 7:05 PM ET",
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs DET",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.19",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ DET",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.30",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs DET",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.41",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ DET",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 8,
+          "era": "3.30",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs DET",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "3.41",
+          "hit_prop": true
+        }
+      ],
+      "dk_odds": "-157",
+      "dk_decimal": 1.64,
+      "dk_implied_prob": 61.1,
+      "dk_edge": 17.6,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
     },
     {
@@ -423,6 +1801,58 @@
         "Projected 4.4 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing DET lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs DET",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 6,
+          "era": "4.36",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ DET",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 5,
+          "era": "4.47",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs DET",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 4,
+          "era": "4.58",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ DET",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.47",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs DET",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.58",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -457,6 +1887,58 @@
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing STL lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs STL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 5,
+          "era": "4.76",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ STL",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "4.10",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs STL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.76",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ STL",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.10",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs STL",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 6,
+          "era": "4.21",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
       "dk_decimal": 1.64,
@@ -489,6 +1971,58 @@
         "Projected 4.0 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing TEX lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs TEX",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 4,
+          "era": "5.07",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ TEX",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 3,
+          "era": "5.18",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs TEX",
+          "ip": "7.0",
+          "h": 8,
+          "hr": 0,
+          "so": 3,
+          "era": "5.29",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ TEX",
+          "ip": "6.1",
+          "h": 7,
+          "hr": 0,
+          "so": 6,
+          "era": "5.40",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs TEX",
+          "ip": "6.0",
+          "h": 8,
+          "hr": 0,
+          "so": 5,
+          "era": "5.29",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -523,6 +2057,58 @@
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing SEA lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs SEA",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.67",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ SEA",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.78",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs SEA",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "4.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ SEA",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 5,
+          "era": "4.78",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs SEA",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "4.12",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
       "dk_decimal": 1.64,
@@ -555,6 +2141,58 @@
         "Projected 4.4 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing WSH lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs WSH",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.56",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ WSH",
+          "ip": "6.1",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.67",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs WSH",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "4.56",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ WSH",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 5,
+          "era": "4.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs WSH",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.78",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -589,6 +2227,58 @@
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing SD lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs SD",
+          "ip": "6.1",
+          "h": 8,
+          "hr": 0,
+          "so": 5,
+          "era": "5.22",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ SD",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "5.88",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs SD",
+          "ip": "7.0",
+          "h": 8,
+          "hr": 1,
+          "so": 3,
+          "era": "5.22",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ SD",
+          "ip": "5.2",
+          "h": 7,
+          "hr": 0,
+          "so": 3,
+          "era": "5.33",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs SD",
+          "ip": "6.0",
+          "h": 8,
+          "hr": 0,
+          "so": 6,
+          "era": "5.22",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
       "dk_decimal": 1.64,
@@ -621,6 +2311,58 @@
         "Projected 3.8 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing MIA lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs MIA",
+          "ip": "5.2",
+          "h": 7,
+          "hr": 1,
+          "so": 3,
+          "era": "6.14",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ MIA",
+          "ip": "6.0",
+          "h": 8,
+          "hr": 0,
+          "so": 3,
+          "era": "6.03",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs MIA",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 6,
+          "era": "6.14",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ MIA",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 5,
+          "era": "5.48",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs MIA",
+          "ip": "6.1",
+          "h": 8,
+          "hr": 1,
+          "so": 4,
+          "era": "5.59",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -655,6 +2397,58 @@
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing BOS lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs BOS",
+          "ip": "5.2",
+          "h": 7,
+          "hr": 1,
+          "so": 3,
+          "era": "5.17",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ BOS",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "5.06",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs BOS",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 5,
+          "era": "5.17",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ BOS",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "5.28",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs BOS",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 1,
+          "so": 3,
+          "era": "5.39",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
       "dk_decimal": 1.64,
@@ -687,6 +2481,58 @@
         "Projected 4.1 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing NYY lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs NYY",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "5.52",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ NYY",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 6,
+          "era": "5.41",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs NYY",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 5,
+          "era": "5.52",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ NYY",
+          "ip": "5.2",
+          "h": 7,
+          "hr": 0,
+          "so": 4,
+          "era": "4.86",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs NYY",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "5.52",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -721,6 +2567,58 @@
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing KC lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 5,
+          "era": "6.45",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ KC",
+          "ip": "7.0",
+          "h": 9,
+          "hr": 0,
+          "so": 4,
+          "era": "6.56",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs KC",
+          "ip": "5.2",
+          "h": 8,
+          "hr": 1,
+          "so": 3,
+          "era": "6.67",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ KC",
+          "ip": "6.0",
+          "h": 9,
+          "hr": 0,
+          "so": 3,
+          "era": "6.56",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs KC",
+          "ip": "6.0",
+          "h": 8,
+          "hr": 0,
+          "so": 6,
+          "era": "6.67",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
       "dk_decimal": 1.64,
@@ -753,6 +2651,58 @@
         "Projected 4.0 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 9.1% with 24.5% Called Strike + Whiff rate",
         "Opposing LAD lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs LAD",
+          "ip": "6.1",
+          "h": 7,
+          "hr": 0,
+          "so": 6,
+          "era": "5.43",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ LAD",
+          "ip": "6.0",
+          "h": 8,
+          "hr": 0,
+          "so": 5,
+          "era": "5.32",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs LAD",
+          "ip": "7.0",
+          "h": 7,
+          "hr": 1,
+          "so": 4,
+          "era": "5.43",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ LAD",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "5.54",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs LAD",
+          "ip": "6.0",
+          "h": 7,
+          "hr": 0,
+          "so": 3,
+          "era": "5.43",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-156",
@@ -787,6 +2737,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing MIN lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs MIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "3.30",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ MIN",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 1,
+          "so": 5,
+          "era": "3.41",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs MIN",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.30",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ MIN",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.41",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs MIN",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.52",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -819,6 +2821,58 @@
         "Projected 5.0 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing TOR lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs TOR",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.10",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ TOR",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 7,
+          "era": "4.21",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs TOR",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "4.32",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ TOR",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 5,
+          "era": "4.21",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs TOR",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.32",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
@@ -853,6 +2907,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing SF lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs SF",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "3.29",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ SF",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "3.40",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs SF",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 1,
+          "so": 6,
+          "era": "3.29",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ SF",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 5,
+          "era": "3.40",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs SF",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 4,
+          "era": "3.51",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -885,6 +2991,58 @@
         "Projected 5.3 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing CLE lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CLE",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "3.91",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CLE",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 1,
+          "so": 5,
+          "era": "4.02",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CLE",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.13",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CLE",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 3,
+          "era": "4.24",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CLE",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "4.13",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
@@ -919,6 +3077,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing NYM lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs NYM",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "4.11",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ NYM",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 1,
+          "so": 6,
+          "era": "4.22",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs NYM",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "4.33",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ NYM",
+          "ip": "6.0",
+          "h": 6,
+          "hr": 0,
+          "so": 4,
+          "era": "4.22",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs NYM",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 3,
+          "era": "4.33",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -951,6 +3161,58 @@
         "Projected 5.1 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing COL lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs COL",
+          "ip": "6.1",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "4.05",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ COL",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.94",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs COL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "4.05",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ COL",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 1,
+          "so": 3,
+          "era": "4.16",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs COL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 7,
+          "era": "4.05",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
@@ -985,6 +3247,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing TB lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs TB",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "3.97",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ TB",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "3.31",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs TB",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "3.42",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ TB",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 1,
+          "so": 3,
+          "era": "3.31",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs TB",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.42",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -1017,6 +3331,58 @@
         "Projected 5.3 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing ATL lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs ATL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "4.04",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ ATL",
+          "ip": "7.0",
+          "h": 3,
+          "hr": 0,
+          "so": 7,
+          "era": "4.15",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs ATL",
+          "ip": "6.1",
+          "h": 5,
+          "hr": 0,
+          "so": 6,
+          "era": "3.49",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ ATL",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 5,
+          "era": "4.15",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs ATL",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 1,
+          "so": 4,
+          "era": "3.49",
+          "hit_prop": false
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
@@ -1051,6 +3417,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing ARI lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs ARI",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.40",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ ARI",
+          "ip": "7.0",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "3.51",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs ARI",
+          "ip": "5.2",
+          "h": 4,
+          "hr": 1,
+          "so": 6,
+          "era": "3.62",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ ARI",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.51",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs ARI",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.62",
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -1083,6 +3501,58 @@
         "Projected 5.0 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing MIL lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs MIL",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "4.05",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ MIL",
+          "ip": "6.1",
+          "h": 6,
+          "hr": 1,
+          "so": 5,
+          "era": "4.16",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs MIL",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "4.05",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ MIL",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 3,
+          "era": "4.16",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs MIL",
+          "ip": "5.2",
+          "h": 5,
+          "hr": 0,
+          "so": 7,
+          "era": "4.27",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
@@ -1117,6 +3587,58 @@
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing PIT lineup strikeout rate matches pitch mix"
       ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs PIT",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 4,
+          "era": "4.13",
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ PIT",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 1,
+          "so": 3,
+          "era": "4.24",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs PIT",
+          "ip": "5.2",
+          "h": 6,
+          "hr": 0,
+          "so": 7,
+          "era": "4.35",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ PIT",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 0,
+          "so": 6,
+          "era": "4.24",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs PIT",
+          "ip": "7.0",
+          "h": 6,
+          "hr": 0,
+          "so": 5,
+          "era": "4.35",
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
       "dk_decimal": 1.7,
@@ -1149,6 +3671,58 @@
         "Projected 5.4 strikeouts over 5.2 projected innings pitched",
         "Whiff rate of 11.2% with 27.6% Called Strike + Whiff rate",
         "Opposing CHW lineup strikeout rate matches pitch mix"
+      ],
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CHW",
+          "ip": "6.0",
+          "h": 5,
+          "hr": 0,
+          "so": 5,
+          "era": "3.59",
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 2",
+          "opp": "@ CHW",
+          "ip": "7.0",
+          "h": 4,
+          "hr": 0,
+          "so": 4,
+          "era": "3.70",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 27",
+          "opp": "vs CHW",
+          "ip": "5.2",
+          "h": 3,
+          "hr": 0,
+          "so": 3,
+          "era": "3.81",
+          "hit_prop": false
+        },
+        {
+          "date": "Aug 21",
+          "opp": "@ CHW",
+          "ip": "6.0",
+          "h": 4,
+          "hr": 1,
+          "so": 7,
+          "era": "3.70",
+          "hit_prop": true
+        },
+        {
+          "date": "Aug 15",
+          "opp": "vs CHW",
+          "ip": "6.0",
+          "h": 3,
+          "hr": 0,
+          "so": 6,
+          "era": "3.81",
+          "hit_prop": true
+        }
       ],
       "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb",
       "dk_odds": "-143",
