@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-09 15:26:46 ET",
-  "timestamp_epoch": 1788982006.1580856,
+  "timestamp": "2026-09-09 15:51:03 ET",
+  "timestamp_epoch": 1788983463.0169363,
   "total_injured": 276,
   "teams": [
     {
@@ -1782,10 +1782,10 @@
               ]
             },
             "status": {
-              "id": "10",
-              "name": "Injured/60",
-              "type": "injured60",
-              "abbreviation": "IL60"
+              "id": "1",
+              "name": "Active",
+              "type": "active",
+              "abbreviation": "Active"
             }
           },
           "source": {
@@ -85430,597 +85430,6 @@
           }
         },
         {
-          "id": "1024398",
-          "longComment": "Fairbanks has been shelved for nearly two weeks of action with medial nerve irritation in his right hand. He was administered multiple injections to combat the issue, and the shots appear to have achieved the desired goal. Fairbanks should be thrown right back into the Marlins' closer role upon activation.",
-          "shortComment": "Fairbanks (hand) will throw another bullpen session Monday and is expected to be reinstated from the 15-day injured list Wednesday, Christina De Nicola of MLB.com reports.",
-          "status": "15-Day-IL",
-          "date": "2026-09-07T15:30Z",
-          "athlete": {
-            "firstName": "Pete",
-            "lastName": "Fairbanks",
-            "displayName": "Pete Fairbanks",
-            "shortName": "P. Fairbanks",
-            "links": [
-              {
-                "language": "en-US",
-                "rel": [
-                  "playercard",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/_/id/42180",
-                "text": "Player Card",
-                "shortText": "Player Card",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "stats",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/stats/_/id/42180/pete-fairbanks",
-                "text": "Stats",
-                "shortText": "Stats",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "stats",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:42180&section=stats",
-                "text": "Stats",
-                "shortText": "Stats",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "splits",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/splits/_/id/42180/pete-fairbanks",
-                "text": "Splits",
-                "shortText": "Splits",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "gamelog",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/gamelog/_/id/42180/pete-fairbanks",
-                "text": "Game Log",
-                "shortText": "Game Log",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "gamelog",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:42180&section=gamelog",
-                "text": "Game Log",
-                "shortText": "Game Log",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "news",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/news/_/id/42180/pete-fairbanks",
-                "text": "News",
-                "shortText": "News",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "news",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:42180&section=news",
-                "text": "News",
-                "shortText": "News",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "bio",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/bio/_/id/42180/pete-fairbanks",
-                "text": "Bio",
-                "shortText": "Bio",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "bio",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:42180&section=bio",
-                "text": "Bio",
-                "shortText": "Bio",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "overview",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/_/id/42180/pete-fairbanks",
-                "text": "Overview",
-                "shortText": "Overview",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "overview",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:42180",
-                "text": "Overview",
-                "shortText": "Overview",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "batvspitch",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/batvspitch/_/id/42180/pete-fairbanks",
-                "text": "Bat vs Pitch",
-                "shortText": "Bat vs Pitch",
-                "isExternal": false,
-                "isPremium": false
-              }
-            ],
-            "headshot": {
-              "href": "https://a.espncdn.com/i/headshots/mlb/players/full/42180.png",
-              "alt": "Pete Fairbanks"
-            },
-            "position": {
-              "id": "0",
-              "name": "Relief Pitcher",
-              "displayName": "Relief Pitcher",
-              "abbreviation": "RP",
-              "leaf": true
-            },
-            "team": {
-              "id": "28",
-              "uid": "s:1~l:10~t:28",
-              "slug": "miami-marlins",
-              "name": "Marlins",
-              "abbreviation": "MIA",
-              "displayName": "Miami Marlins",
-              "logos": [
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/mia.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "default"
-                  ],
-                  "lastUpdated": "2024-07-01T17:48Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/mia.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "dark"
-                  ],
-                  "lastUpdated": "2024-07-01T17:49Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/mia.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "scoreboard"
-                  ],
-                  "lastUpdated": "2024-07-01T17:48Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/scoreboard/mia.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "scoreboard",
-                    "dark"
-                  ],
-                  "lastUpdated": "2024-07-01T17:49Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_on_white_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_white_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_on_black_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_black_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_on_primary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_primary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_on_secondary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_secondary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_black.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_black"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/primary_logo_white.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_white"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_on_white_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_white_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_on_black_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_black_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_on_primary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_primary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_on_secondary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_secondary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_black.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_black"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/74909d10-eacb-1376-ef1e-d0f37d7c67ca/logos/secondary_logo_white.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_white"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                }
-              ],
-              "links": [
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "clubhouse",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/_/name/mia/miami-marlins",
-                  "text": "Clubhouse",
-                  "shortText": "Clubhouse",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "roster",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/roster/_/name/mia/miami-marlins",
-                  "text": "Roster",
-                  "shortText": "Roster",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "roster",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:28&section=roster",
-                  "text": "Roster",
-                  "shortText": "Roster",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "stats",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/stats/_/name/mia/miami-marlins",
-                  "text": "Statistics",
-                  "shortText": "Statistics",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "stats",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:28&section=stats",
-                  "text": "Statistics",
-                  "shortText": "Statistics",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "schedule",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/schedule/_/name/mia",
-                  "text": "Schedule",
-                  "shortText": "Schedule",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "schedule",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:28&section=scores",
-                  "text": "Schedule",
-                  "shortText": "Schedule",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "photos",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/photos/_/name/mia",
-                  "text": "photos",
-                  "shortText": "photos",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "tickets",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.vividseats.com/miami-marlins-tickets--sports-mlb-baseball/performer/293?wsUser=717",
-                  "text": "Tickets",
-                  "shortText": "Tickets",
-                  "isExternal": true,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "transactions",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/transactions/_/name/mia",
-                  "text": "Transactions",
-                  "shortText": "Transactions",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "injuries",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/injuries/_/name/mia",
-                  "text": "Injuries",
-                  "shortText": "Injuries",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "depthchart",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/depth/_/name/mia",
-                  "text": "Depth Chart",
-                  "shortText": "Depth Chart",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "depthchart",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:28&section=depthchart",
-                  "text": "Depth Chart",
-                  "shortText": "Depth Chart",
-                  "isExternal": false,
-                  "isPremium": false
-                }
-              ]
-            },
-            "notes": {
-              "items": [
-                {
-                  "id": "1024398",
-                  "type": "news",
-                  "date": "2026-09-07T15:30Z",
-                  "headline": "Fairbanks (hand) will throw another bullpen session Monday and is expected to be reinstated from the 15-day injured list Wednesday, Christina De Nicola of MLB.com reports.",
-                  "text": "Fairbanks has been shelved for nearly two weeks of action with medial nerve irritation in his right hand. He was administered multiple injections to combat the issue, and the shots appear to have achieved the desired goal. Fairbanks should be thrown right back into the Marlins' closer role upon activation.",
-                  "source": "RotoWire"
-                }
-              ]
-            },
-            "status": {
-              "id": "1",
-              "name": "Active",
-              "type": "active",
-              "abbreviation": "Active"
-            }
-          },
-          "source": {
-            "id": "1",
-            "description": "basic/manual",
-            "state": "basic"
-          },
-          "type": {
-            "id": "10",
-            "name": "INJURY_STATUS_15DAYIL",
-            "description": "15-day IL",
-            "abbreviation": "IL15"
-          }
-        },
-        {
           "id": "1021974",
           "longComment": "Arm specialist Dr. Keith Meister will perform Nardi's surgery, but the Marlins aren't expected to provide specifics on the procedure until the operation is completed. If Nardi requires a UCL repair or reconstruction rather than something less significant such as a flexor tendon surgery, he'll likely wind up missing the entire 2027 season. Nardi posted a 5.16 ERA, 1.41 WHIP and 27:11 K:BB while collecting three wins and eight holds over 22.2 innings with Miami this season before hitting the shelf May 30.",
           "shortComment": "Nardi (elbow) is slated to undergo season-ending surgery Friday, Christina De Nicola of MLB.com reports.",
@@ -89625,7 +89034,7 @@
             "type": "Shoulder",
             "detail": "Strain",
             "side": "Left",
-            "returnDate": "2026-09-12"
+            "returnDate": "2026-09-22"
           }
         },
         {
@@ -135948,6 +135357,607 @@
       "id": "24",
       "displayName": "St. Louis Cardinals",
       "injuries": [
+        {
+          "id": "1024768",
+          "longComment": "Winn just returned from the 10-day injured list Tuesday after missing more than two weeks with a left thumb fracture, so it's fair to assume he encountered a setback. Jose Fermin will enter the lineup in Winn's place. The Cardinals should update Winn's condition soon.",
+          "shortComment": "Winn was scratched from the lineup for Wednesday's game in San Francisco, Derrick Goold of the St. Louis Post-Dispatch reports.",
+          "status": "Day-To-Day",
+          "date": "2026-09-09T19:33Z",
+          "athlete": {
+            "firstName": "Masyn",
+            "lastName": "Winn",
+            "displayName": "Masyn Winn",
+            "shortName": "M. Winn",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/_/id/4683365",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "stats",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/stats/_/id/4683365/masyn-winn",
+                "text": "Stats",
+                "shortText": "Stats",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "stats",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4683365&section=stats",
+                "text": "Stats",
+                "shortText": "Stats",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "splits",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/splits/_/id/4683365/masyn-winn",
+                "text": "Splits",
+                "shortText": "Splits",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "gamelog",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/gamelog/_/id/4683365/masyn-winn",
+                "text": "Game Log",
+                "shortText": "Game Log",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "gamelog",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4683365&section=gamelog",
+                "text": "Game Log",
+                "shortText": "Game Log",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "news",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/news/_/id/4683365/masyn-winn",
+                "text": "News",
+                "shortText": "News",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "news",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4683365&section=news",
+                "text": "News",
+                "shortText": "News",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "bio",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/bio/_/id/4683365/masyn-winn",
+                "text": "Bio",
+                "shortText": "Bio",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "bio",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4683365&section=bio",
+                "text": "Bio",
+                "shortText": "Bio",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/_/id/4683365/masyn-winn",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4683365",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "batvspitch",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/batvspitch/_/id/4683365/masyn-winn",
+                "text": "Bat vs Pitch",
+                "shortText": "Bat vs Pitch",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/mlb/players/full/4683365.png",
+              "alt": "Masyn Winn"
+            },
+            "position": {
+              "id": "6",
+              "name": "Shortstop",
+              "displayName": "Shortstop",
+              "abbreviation": "SS",
+              "leaf": true
+            },
+            "team": {
+              "id": "24",
+              "uid": "s:1~l:10~t:24",
+              "slug": "st-louis-cardinals",
+              "name": "Cardinals",
+              "abbreviation": "STL",
+              "displayName": "St. Louis Cardinals",
+              "logos": [
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/stl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "default"
+                  ],
+                  "lastUpdated": "2024-07-01T17:48Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/stl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "dark"
+                  ],
+                  "lastUpdated": "2024-07-01T17:49Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/stl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "scoreboard"
+                  ],
+                  "lastUpdated": "2024-07-01T17:48Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/scoreboard/stl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "scoreboard",
+                    "dark"
+                  ],
+                  "lastUpdated": "2024-07-01T17:49Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_on_white_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_white_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_on_black_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_black_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_on_primary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_primary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_on_secondary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_secondary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_black.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_black"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/primary_logo_white.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_white"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_on_white_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_white_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_on_black_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_black_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_on_primary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_primary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_on_secondary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_secondary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_black.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_black"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/c781e7c6-2c5b-beaf-55b8-999c76f76661/logos/secondary_logo_white.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_white"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                }
+              ],
+              "links": [
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "clubhouse",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/_/name/stl/st-louis-cardinals",
+                  "text": "Clubhouse",
+                  "shortText": "Clubhouse",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "roster",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/roster/_/name/stl/st-louis-cardinals",
+                  "text": "Roster",
+                  "shortText": "Roster",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "roster",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:24&section=roster",
+                  "text": "Roster",
+                  "shortText": "Roster",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "stats",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/stats/_/name/stl/st-louis-cardinals",
+                  "text": "Statistics",
+                  "shortText": "Statistics",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "stats",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:24&section=stats",
+                  "text": "Statistics",
+                  "shortText": "Statistics",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "schedule",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/schedule/_/name/stl",
+                  "text": "Schedule",
+                  "shortText": "Schedule",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "schedule",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:24&section=scores",
+                  "text": "Schedule",
+                  "shortText": "Schedule",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "photos",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/photos/_/name/stl",
+                  "text": "photos",
+                  "shortText": "photos",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "tickets",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.vividseats.com/st-louis-cardinals-tickets--sports-mlb-baseball/performer/807?wsUser=717",
+                  "text": "Tickets",
+                  "shortText": "Tickets",
+                  "isExternal": true,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "transactions",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/transactions/_/name/stl",
+                  "text": "Transactions",
+                  "shortText": "Transactions",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "injuries",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/injuries/_/name/stl",
+                  "text": "Injuries",
+                  "shortText": "Injuries",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "depthchart",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/depth/_/name/stl",
+                  "text": "Depth Chart",
+                  "shortText": "Depth Chart",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "depthchart",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:24&section=depthchart",
+                  "text": "Depth Chart",
+                  "shortText": "Depth Chart",
+                  "isExternal": false,
+                  "isPremium": false
+                }
+              ]
+            },
+            "notes": {
+              "items": [
+                {
+                  "id": "1024768",
+                  "type": "news",
+                  "date": "2026-09-09T19:33Z",
+                  "headline": "Winn was scratched from the lineup for Wednesday's game in San Francisco due to left thumb soreness, Derrick Goold of the St. Louis Post-Dispatch reports.",
+                  "text": "Winn just returned from the 10-day injured list Tuesday after missing more than two weeks with a left thumb fracture, and it seems he might have been activated too soon. If Winn needs to go back on the IL, it would likely end his season. The Cardinals could offer more on the shortstop's status after Wednesday's contest. Jose Fermin will enter the lineup in Winn's place and will play second base, while Thomas Saggese will shift over to shortstop.",
+                  "source": "RotoWire"
+                }
+              ]
+            },
+            "status": {
+              "id": "1",
+              "name": "Active",
+              "type": "active",
+              "abbreviation": "Active"
+            }
+          },
+          "source": {
+            "id": "1",
+            "description": "basic/manual",
+            "state": "basic"
+          },
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_DAYTODAY",
+            "description": "day-to-day",
+            "abbreviation": "DD"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Day-To-Day",
+              "abbreviation": "Day-To-Day"
+            },
+            "type": "Thumb",
+            "detail": "Fracture",
+            "side": "Left",
+            "returnDate": "2026-09-11"
+          }
+        },
         {
           "id": "1024551",
           "longComment": "Strzelecki landed on the 15-day injured list nearly two weeks ago with right forearm extensor inflammation. Because his absence has been brief, the reliever shouldn't require many rehab appearances. He's eligible for activation Friday and has a chance to be ready by that date.",
