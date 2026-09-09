@@ -1,1 +1,2692 @@
-{"count":15,"provider":"DraftKings","logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","games":[{"game_id":"401816854","matchup":"CLE @ BAL","home_team":"Baltimore Orioles","away_team":"Cleveland Guardians","venue":"Oriole Park at Camden Yards","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"BAL -125","over_under":8.0,"spread":-1.5,"over_odds":-104.0,"under_odds":-116.0,"home_ml":-125,"away_ml":104,"over_line":"o8","over_close_odds":"-104","under_line":"u8","under_close_odds":"-116","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0ML86206568_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0ML86206568_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0HC86206568N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0HC86206568P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0OU86206568O800_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031%3Foutcomes%3D0OU86206568U800_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635031","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816856","matchup":"HOU @ PHI","home_team":"Philadelphia Phillies","away_team":"Houston Astros","venue":"Citizens Bank Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"PHI -135","over_under":8.5,"spread":-1.5,"over_odds":-120.0,"under_odds":100.0,"home_ml":-135,"away_ml":112,"over_line":"o8.5","over_close_odds":"-120","under_line":"u8.5","under_close_odds":"+100","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0ML86206571_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0ML86206571_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0HC86206571N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0HC86206571P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0OU86206571O850_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034%3Foutcomes%3D0OU86206571U850_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635034","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816857","matchup":"MIN @ DET","home_team":"Detroit Tigers","away_team":"Minnesota Twins","venue":"Comerica Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"DET -136","over_under":8.5,"spread":-1.5,"over_odds":-105.0,"under_odds":-115.0,"home_ml":-136,"away_ml":113,"over_line":"o8.5","over_close_odds":"-105","under_line":"u8.5","under_close_odds":"-115","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0ML86206569_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0ML86206569_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0HC86206569N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0HC86206569P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0OU86206569O850_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032%3Foutcomes%3D0OU86206569U850_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635032","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816858","matchup":"NYM @ MIA","home_team":"Miami Marlins","away_team":"New York Mets","venue":"loanDepot park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"MIA -115","over_under":8.0,"spread":1.5,"over_odds":-114.0,"under_odds":-105.0,"home_ml":-115,"away_ml":-105,"over_line":"o8","over_close_odds":"-114","under_line":"u8","under_close_odds":"-105","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0ML86206570_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0ML86206570_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0HC86206570P150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0HC86206570N150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0OU86206570O800_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033%3Foutcomes%3D0OU86206570U800_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635033","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816853","matchup":"LAA @ BOS","home_team":"Boston Red Sox","away_team":"Los Angeles Angels","venue":"Fenway Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"BOS -149","over_under":7.5,"spread":-1.5,"over_odds":-109.0,"under_odds":-111.0,"home_ml":-149,"away_ml":123,"over_line":"o7.5","over_close_odds":"-109","under_line":"u7.5","under_close_odds":"-111","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0ML86206572_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0ML86206572_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0HC86206572N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0HC86206572P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0OU86206572O750_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035%3Foutcomes%3D0OU86206572U750_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635035","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816855","matchup":"COL @ NYY","home_team":"New York Yankees","away_team":"Colorado Rockies","venue":"Yankee Stadium","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"NYY -354","over_under":7.5,"spread":-1.5,"over_odds":-113.0,"under_odds":-107.0,"home_ml":-354,"away_ml":277,"over_line":"o7.5","over_close_odds":"-113","under_line":"u7.5","under_close_odds":"-107","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0ML86206573_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0ML86206573_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0HC86206573N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0HC86206573P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0OU86206573O750_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036%3Foutcomes%3D0OU86206573U750_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635036","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816859","matchup":"TB @ ATL","home_team":"Atlanta Braves","away_team":"Tampa Bay Rays","venue":"Truist Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"ATL -117","over_under":8.5,"spread":1.5,"over_odds":-115.0,"under_odds":-105.0,"home_ml":-117,"away_ml":-103,"over_line":"o8.5","over_close_odds":"-115","under_line":"u8.5","under_close_odds":"-105","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0ML86206574_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0ML86206574_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0HC86206574P150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0HC86206574N150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0OU86206574O850_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037%3Foutcomes%3D0OU86206574U850_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635037","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816860","matchup":"ARI @ KC","home_team":"Kansas City Royals","away_team":"Arizona Diamondbacks","venue":"Kauffman Stadium","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"KC -114","over_under":9.0,"spread":1.5,"over_odds":-110.0,"under_odds":-110.0,"home_ml":-114,"away_ml":-106,"over_line":"o9","over_close_odds":"-110","under_line":"u9","under_close_odds":"-110","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0ML86206576_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0ML86206576_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0HC86206576P150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0HC86206576N150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0OU86206576O900_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039%3Foutcomes%3D0OU86206576U900_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635039","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816861","matchup":"CHC @ MIL","home_team":"Milwaukee Brewers","away_team":"Chicago Cubs","venue":"American Family Field","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"MIL -199","over_under":7.0,"spread":-1.5,"over_odds":-122.0,"under_odds":102.0,"home_ml":-199,"away_ml":163,"over_line":"o7","over_close_odds":"-122","under_line":"u7","under_close_odds":"+102","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0ML86206577_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0ML86206577_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0HC86206577N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0HC86206577P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0OU86206577O700_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040%3Foutcomes%3D0OU86206577U700_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635040","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816862","matchup":"PIT @ CHW","home_team":"Chicago White Sox","away_team":"Pittsburgh Pirates","venue":"Rate Field","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"CHW -144","over_under":8.5,"spread":-1.5,"over_odds":-105.0,"under_odds":-114.0,"home_ml":-144,"away_ml":119,"over_line":"o8.5","over_close_odds":"-105","under_line":"u8.5","under_close_odds":"-114","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0ML86206575_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0ML86206575_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0HC86206575N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0HC86206575P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0OU86206575O850_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038%3Foutcomes%3D0OU86206575U850_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635038","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816865","matchup":"TEX @ SEA","home_team":"Seattle Mariners","away_team":"Texas Rangers","venue":"T-Mobile Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"SEA -126","over_under":7.5,"spread":-1.5,"over_odds":-104.0,"under_odds":-116.0,"home_ml":-126,"away_ml":104,"over_line":"o7.5","over_close_odds":"-104","under_line":"u7.5","under_close_odds":"-116","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0ML86206589_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0ML86206589_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0HC86206589N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0HC86206589P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0OU86206589O750_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046%3Foutcomes%3D0OU86206589U750_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635046","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816866","matchup":"TOR @ ATH","home_team":"Athletics","away_team":"Toronto Blue Jays","venue":"Sutter Health Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"TOR -185","over_under":9.0,"spread":1.5,"over_odds":-115.0,"under_odds":-105.0,"home_ml":152,"away_ml":-185,"over_line":"o9","over_close_odds":"-115","under_line":"u9","under_close_odds":"-105","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0ML86206585_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0ML86206585_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0HC86206585P150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0HC86206585N150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0OU86206585O900_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042%3Foutcomes%3D0OU86206585U900_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635042","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816867","matchup":"WSH @ SD","home_team":"San Diego Padres","away_team":"Washington Nationals","venue":"Petco Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"SD -193","over_under":8.0,"spread":-1.5,"over_odds":-117.0,"under_odds":-103.0,"home_ml":-193,"away_ml":158,"over_line":"o8","over_close_odds":"-117","under_line":"u8","under_close_odds":"-103","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0ML86206586_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0ML86206586_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0HC86206586N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0HC86206586P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0OU86206586O800_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043%3Foutcomes%3D0OU86206586U800_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635043","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816864","matchup":"STL @ SF","home_team":"San Francisco Giants","away_team":"St. Louis Cardinals","venue":"Oracle Park","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"SF -110","over_under":7.5,"spread":1.5,"over_odds":-118.0,"under_odds":-102.0,"home_ml":-110,"away_ml":-110,"over_line":"o7.5","over_close_odds":"-118","under_line":"u7.5","under_close_odds":"-102","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0ML86206607_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0ML86206607_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0HC86206607P150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0HC86206607N150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0OU86206607O750_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050%3Foutcomes%3D0OU86206607U750_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635050","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}},{"game_id":"401816863","matchup":"CIN @ LAD","home_team":"Los Angeles Dodgers","away_team":"Cincinnati Reds","venue":"Dodger Stadium","draftkings":{"provider":"DraftKings","provider_logo":"https://a.espncdn.com/i/betting/Draftkings_Light.svg","details":"LAD -314","over_under":8.0,"spread":-1.5,"over_odds":-107.0,"under_odds":-113.0,"home_ml":-314,"away_ml":249,"over_line":"o8","over_close_odds":"-107","under_line":"u8","under_close_odds":"-113","links":[{"language":"en-US","rel":["home","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0ML86206618_1","text":"Home Bet","shortText":"Home Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["away","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0ML86206618_3","text":"Away Bet","shortText":"Away Bet","isExternal":true,"isPremium":false},{"language":"en-US","rel":["homeSpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0HC86206618N150_1","text":"Home Point Spread","shortText":"Home Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["awaySpread","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0HC86206618P150_3","text":"Away Point Spread","shortText":"Away Point Spread","isExternal":true,"isPremium":false},{"language":"en-US","rel":["over","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0OU86206618O800_1","text":"Over Odds","shortText":"Over Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["under","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053%3Foutcomes%3D0OU86206618U800_3","text":"Under Odds","shortText":"Under Odds","isExternal":true,"isPremium":false},{"language":"en-US","rel":["game","desktop","bets"],"href":"https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34635053","text":"Game","shortText":"Game","isExternal":true,"isPremium":false}]}}]}
+{
+  "count": 15,
+  "provider": "DraftKings",
+  "logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+  "games": [
+    {
+      "game_id": "401816872",
+      "matchup": "MIN @ DET",
+      "home_team": "Detroit Tigers",
+      "away_team": "Minnesota Twins",
+      "venue": "Comerica Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "DET -131",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -113.0,
+        "under_odds": -107.0,
+        "home_ml": -131,
+        "away_ml": 108,
+        "over_line": "o8.5",
+        "over_close_odds": "-113",
+        "under_line": "u8.5",
+        "under_close_odds": "-107",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0ML86220089_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0ML86220089_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0HC86220089N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:DET-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0HC86220089P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:MIN+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0OU86220089O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826%3Foutcomes%3D0OU86220089U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816872,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639826",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816881",
+      "matchup": "TOR @ ATH",
+      "home_team": "Athletics",
+      "away_team": "Toronto Blue Jays",
+      "venue": "Sutter Health Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "TOR -193",
+        "over_under": 9.0,
+        "spread": 1.5,
+        "over_odds": -115.0,
+        "under_odds": -105.0,
+        "home_ml": 159,
+        "away_ml": -193,
+        "over_line": "o9",
+        "over_close_odds": "-115",
+        "under_line": "u9",
+        "under_close_odds": "-105",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0ML86220090_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0ML86220090_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0HC86220090P150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:ATH+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0HC86220090N150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:TOR-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0OU86220090O900_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827%3Foutcomes%3D0OU86220090U900_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816881,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639827",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816879",
+      "matchup": "STL @ SF",
+      "home_team": "San Francisco Giants",
+      "away_team": "St. Louis Cardinals",
+      "venue": "Oracle Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "STL -124",
+        "over_under": 8.0,
+        "spread": 1.5,
+        "over_odds": -113.0,
+        "under_odds": -107.0,
+        "home_ml": 103,
+        "away_ml": -124,
+        "over_line": "o8",
+        "over_close_odds": "-113",
+        "under_line": "u8",
+        "under_close_odds": "-107",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0ML86220091_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0ML86220091_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0HC86220091P150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:SF+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0HC86220091N150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:STL-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0OU86220091O800_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828%3Foutcomes%3D0OU86220091U800_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816879,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639828",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816880",
+      "matchup": "TEX @ SEA",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "venue": "T-Mobile Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "SEA -156",
+        "over_under": 8.0,
+        "spread": -1.5,
+        "over_odds": -101.0,
+        "under_odds": -120.0,
+        "home_ml": -156,
+        "away_ml": 129,
+        "over_line": "o8",
+        "over_close_odds": "-101",
+        "under_line": "u8",
+        "under_close_odds": "-120",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0ML86220096_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0ML86220096_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0HC86220096N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:SEA-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0HC86220096P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:TEX+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0OU86220096O800_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833%3Foutcomes%3D0OU86220096U800_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816880,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639833",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816882",
+      "matchup": "WSH @ SD",
+      "home_team": "San Diego Padres",
+      "away_team": "Washington Nationals",
+      "venue": "Petco Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "SD -183",
+        "over_under": 8.0,
+        "spread": -1.5,
+        "over_odds": -116.0,
+        "under_odds": -103.0,
+        "home_ml": -183,
+        "away_ml": 150,
+        "over_line": "o8",
+        "over_close_odds": "-116",
+        "under_line": "u8",
+        "under_close_odds": "-103",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0ML86220095_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0ML86220095_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0HC86220095N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:SD-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0HC86220095P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:WSH+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0OU86220095O800_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832%3Foutcomes%3D0OU86220095U800_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816882,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639832",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816869",
+      "matchup": "CLE @ BAL",
+      "home_team": "Baltimore Orioles",
+      "away_team": "Cleveland Guardians",
+      "venue": "Oriole Park at Camden Yards",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "CLE -112",
+        "over_under": 9.0,
+        "spread": 1.5,
+        "over_odds": -101.0,
+        "under_odds": -119.0,
+        "home_ml": -108,
+        "away_ml": -112,
+        "over_line": "o9",
+        "over_close_odds": "-101",
+        "under_line": "u9",
+        "under_close_odds": "-119",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0ML86220097_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0ML86220097_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0HC86220097P150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:BAL+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0HC86220097N150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:CLE-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0OU86220097O900_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834%3Foutcomes%3D0OU86220097U900_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816869,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639834",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816871",
+      "matchup": "HOU @ PHI",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "venue": "Citizens Bank Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "PHI -167",
+        "over_under": 8.0,
+        "spread": -1.5,
+        "over_odds": -114.0,
+        "under_odds": -106.0,
+        "home_ml": -167,
+        "away_ml": 137,
+        "over_line": "o8",
+        "over_close_odds": "-114",
+        "under_line": "u8",
+        "under_close_odds": "-106",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0ML86220123_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0ML86220123_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0HC86220123N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:PHI-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0HC86220123P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:HOU+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0OU86220123O800_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851%3Foutcomes%3D0OU86220123U800_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816871,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639851",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816873",
+      "matchup": "NYM @ MIA",
+      "home_team": "Miami Marlins",
+      "away_team": "New York Mets",
+      "venue": "loanDepot park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "MIA -126",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -115.0,
+        "under_odds": -105.0,
+        "home_ml": -126,
+        "away_ml": 104,
+        "over_line": "o8.5",
+        "over_close_odds": "-115",
+        "under_line": "u8.5",
+        "under_close_odds": "-105",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0ML86220122_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0ML86220122_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0HC86220122N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:MIA-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0HC86220122P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:NYM+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0OU86220122O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850%3Foutcomes%3D0OU86220122U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816873,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639850",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816868",
+      "matchup": "LAA @ BOS",
+      "home_team": "Boston Red Sox",
+      "away_team": "Los Angeles Angels",
+      "venue": "Fenway Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "BOS -217",
+        "over_under": 9.0,
+        "spread": -1.5,
+        "over_odds": -117.0,
+        "under_odds": -103.0,
+        "home_ml": -217,
+        "away_ml": 177,
+        "over_line": "o9",
+        "over_close_odds": "-117",
+        "under_line": "u9",
+        "under_close_odds": "-103",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0ML86220133_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0ML86220133_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0HC86220133N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:BOS-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0HC86220133P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:LAA+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0OU86220133O900_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0OU86220133U900_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816868,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816870",
+      "matchup": "COL @ NYY",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "venue": "Yankee Stadium",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "NYY -250",
+        "over_under": 9.0,
+        "spread": -1.5,
+        "over_odds": -111.0,
+        "under_odds": -109.0,
+        "home_ml": -250,
+        "away_ml": 202,
+        "over_line": "o9",
+        "over_close_odds": "-111",
+        "under_line": "u9",
+        "under_close_odds": "-109",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0ML86220139_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0ML86220139_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0HC86220139N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:NYY-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0HC86220139P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:COL+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0OU86220139O900_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0OU86220139U900_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816870,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:9"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816874",
+      "matchup": "TB @ ATL",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "venue": "Truist Park",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "ATL -125",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -105.0,
+        "under_odds": -115.0,
+        "home_ml": -125,
+        "away_ml": 103,
+        "over_line": "o8.5",
+        "over_close_odds": "-105",
+        "under_line": "u8.5",
+        "under_close_odds": "-115",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0ML86220140_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0ML86220140_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0HC86220140N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:ATL-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0HC86220140P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:TB+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0OU86220140O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865%3Foutcomes%3D0OU86220140U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816874,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639865",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816875",
+      "matchup": "ARI @ KC",
+      "home_team": "Kansas City Royals",
+      "away_team": "Arizona Diamondbacks",
+      "venue": "Kauffman Stadium",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "ARI -115",
+        "over_under": 8.5,
+        "spread": 1.5,
+        "over_odds": -120.0,
+        "under_odds": 100.0,
+        "home_ml": -105,
+        "away_ml": -115,
+        "over_line": "o8.5",
+        "over_close_odds": "-120",
+        "under_line": "u8.5",
+        "under_close_odds": "+100",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0ML86220142_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0ML86220142_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0HC86220142P150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:KC+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0HC86220142N150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:ARI-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0OU86220142O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0OU86220142U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816875,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816876",
+      "matchup": "CHC @ MIL",
+      "home_team": "Milwaukee Brewers",
+      "away_team": "Chicago Cubs",
+      "venue": "American Family Field",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "MIL -131",
+        "over_under": 7.5,
+        "spread": -1.5,
+        "over_odds": -112.0,
+        "under_odds": -108.0,
+        "home_ml": -131,
+        "away_ml": 109,
+        "over_line": "o7.5",
+        "over_close_odds": "-112",
+        "under_line": "u7.5",
+        "under_close_odds": "-108",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0ML86220143_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0ML86220143_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0HC86220143N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:MIL-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0HC86220143P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:CHC+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0OU86220143O750_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:7.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868%3Foutcomes%3D0OU86220143U750_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816876,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:7.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639868",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816877",
+      "matchup": "PIT @ CHW",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "venue": "Rate Field",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "CHW -156",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -102.0,
+        "under_odds": -118.0,
+        "home_ml": -156,
+        "away_ml": 129,
+        "over_line": "o8.5",
+        "over_close_odds": "-102",
+        "under_line": "u8.5",
+        "under_close_odds": "-118",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0ML86220141_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0ML86220141_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0HC86220141N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:CHW-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0HC86220141P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:PIT+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0OU86220141O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866%3Foutcomes%3D0OU86220141U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816877,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639866",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    },
+    {
+      "game_id": "401816878",
+      "matchup": "CIN @ LAD",
+      "home_team": "Los Angeles Dodgers",
+      "away_team": "Cincinnati Reds",
+      "venue": "Dodger Stadium",
+      "draftkings": {
+        "provider": "DraftKings",
+        "provider_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+        "details": "LAD -291",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -115.0,
+        "under_odds": -105.0,
+        "home_ml": -291,
+        "away_ml": 232,
+        "over_line": "o8.5",
+        "over_close_odds": "-115",
+        "under_line": "u8.5",
+        "under_close_odds": "-105",
+        "links": [
+          {
+            "language": "en-US",
+            "rel": [
+              "home",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0ML86220145_1",
+            "text": "Home Bet",
+            "shortText": "Home Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "home",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "away",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0ML86220145_3",
+            "text": "Away Bet",
+            "shortText": "Away Bet",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "away",
+                "betType": "straight"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "homeSpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0HC86220145N150_1",
+            "text": "Home Point Spread",
+            "shortText": "Home Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:LAD-1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "awaySpread",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0HC86220145P150_3",
+            "text": "Away Point Spread",
+            "shortText": "Away Point Spread",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "none",
+                "betType": "straight",
+                "betDetails": "Spread:CIN+1.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "over",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0OU86220145O850_1",
+            "text": "Over Odds",
+            "shortText": "Over Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "over",
+                "betType": "straight",
+                "betDetails": "Over:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "under",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0OU86220145U850_3",
+            "text": "Under Odds",
+            "shortText": "Under Odds",
+            "isExternal": true,
+            "isPremium": false,
+            "tracking": {
+              "campaign": "betting-integrations",
+              "tags": {
+                "league": "mlb",
+                "sport": "baseball",
+                "gameId": 401816878,
+                "betSide": "under",
+                "betType": "straight",
+                "betDetails": "Under:8.5"
+              }
+            }
+          },
+          {
+            "language": "en-US",
+            "rel": [
+              "game",
+              "desktop",
+              "bets"
+            ],
+            "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870",
+            "text": "Game",
+            "shortText": "Game",
+            "isExternal": true,
+            "isPremium": false
+          }
+        ]
+      }
+    }
+  ]
+}
