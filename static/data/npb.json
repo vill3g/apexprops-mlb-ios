@@ -1,1 +1,992 @@
-{"league":"Japan NPB","count":6,"games":[{"game_id":"npb-1","league":"NPB (Central League)","home_team":{"name":"Yomiuri Giants","jp_name":"巨人","abbr":"YOM","logo":"https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png","score":"2"},"away_team":{"name":"Chunichi Dragons","jp_name":"中日","abbr":"CHU","logo":"https://r2.thesportsdb.com/images/media/team/badge/jli5jv1576009060.png","score":"1"},"venue":"Tokyo Dome","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Shosei Togo (RHP, 2.14 ERA)","away_pitcher":"Shinnosuke Ogasawara (LHP, 2.95 ERA)","last_10_home":"5-5 (W4)","last_10_away":"4-6 (L3)","h2h":"Giants lead 12-9 this season","h2h_history":{"opponent":"Chunichi Dragons","league":"Japan NPB","series_summary":{"record":"Yomiuri Giants lead 12-9 this season (21 Games)","home_record":"7-4 at Tokyo Dome","away_record":"5-5 at Vantelin Dome Nagoya","run_diff":"+16 (Giants 88, Dragons 72)","avg_total_runs":7.6,"ou_record":"11 Overs, 9 Unders, 1 Push (Line: 5.5)"},"team_splits":{"home":{"team":"Yomiuri Giants","avg":".268","era":"2.85","runs":88,"hr":16,"k":168,"whip":"1.06"},"away":{"team":"Chunichi Dragons","avg":".228","era":"3.72","runs":72,"hr":8,"k":142,"whip":"1.28"}},"recent_games":[{"date":"Aug 24, 2026","matchup":"Dragons 2 @ Giants 5","winner":"Giants","win_sp":"Shosei Togo (W, 7.0 IP, 2 ER, 8 K)","loss_sp":"Shinnosuke Ogasawara (L, 5.2 IP, 4 ER)","save":"Taisei Ota (S)","venue":"Tokyo Dome","total_runs":7,"ou":"Over 5.5"},{"date":"Aug 23, 2026","matchup":"Dragons 1 @ Giants 4","winner":"Giants","win_sp":"Tomoyuki Sugano (W, 6.2 IP, 1 ER, 6 K)","loss_sp":"Hiroto Takahashi (L, 6.0 IP, 3 ER)","save":"Taisei Ota (S)","venue":"Tokyo Dome","total_runs":5,"ou":"Under 5.5"},{"date":"Aug 22, 2026","matchup":"Dragons 4 @ Giants 2","winner":"Dragons","win_sp":"Yuya Yanagi (W, 7.1 IP, 2 ER, 7 K)","loss_sp":"Iori Yamasaki (L, 5.0 IP, 4 ER)","save":"Raidel Martinez (S)","venue":"Tokyo Dome","total_runs":6,"ou":"Over 5.5"},{"date":"Jul 15, 2026","matchup":"Giants 3 @ Dragons 1","winner":"Giants","win_sp":"Shosei Togo (W, 8.0 IP, 1 ER, 9 K)","loss_sp":"Shinnosuke Ogasawara (L, 7.0 IP, 2 ER)","save":"Taisei Ota (S)","venue":"Vantelin Dome","total_runs":4,"ou":"Under 5.5"},{"date":"Jul 14, 2026","matchup":"Giants 2 @ Dragons 3","winner":"Dragons","win_sp":"Hideaki Wakui (W, 6.0 IP, 2 ER)","loss_sp":"Yuji Akahoshi (L, 5.0 IP, 3 ER)","save":"Raidel Martinez (S)","venue":"Vantelin Dome","total_runs":5,"ou":"Under 5.5"},{"date":"Jun 28, 2026","matchup":"Dragons 3 @ Giants 6","winner":"Giants","win_sp":"Tomoyuki Sugano (W, 6.0 IP, 3 ER)","loss_sp":"Katsuki Umetsu (L, 4.1 IP, 5 ER)","save":"Taisei Ota (S)","venue":"Tokyo Dome","total_runs":9,"ou":"Over 5.5"}],"trends":["Giants have won 7 of 11 head-to-head meetings at Tokyo Dome this season.","Ace Shosei Togo is 3-0 with a 1.69 ERA in 4 head-to-head starts vs Chunichi in 2026.","Under has cashed in 5 of the last 7 games between these two rotation stalwarts."]},"ml_prediction":{"pick":"Yomiuri Giants","home_win_prob":64.7,"away_win_prob":35.3,"fair_odds":"-183 / +183","dk_odds":"DK -183","dk_home_odds":"-183","dk_away_odds":"+183","dk_implied_prob":64.7,"confidence":"HIGH"},"total_runs":{"line":5.5,"projected":5.8,"pick":"Over 5.5","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+2.2%"},"analysis":"Giants hold a 12-9 season edge over Dragons. Togo's 0.98 WHIP anchors home mound edge at Tokyo Dome."},{"game_id":"npb-2","league":"NPB (Central League)","home_team":{"name":"Yokohama DeNA BayStars","jp_name":"DeNA","abbr":"YOK","logo":"https://r2.thesportsdb.com/images/media/team/badge/fuhqf21576013789.png","score":"2"},"away_team":{"name":"Tokyo Yakult Swallows","jp_name":"ヤクルト","abbr":"YAK","logo":"https://r2.thesportsdb.com/images/media/team/badge/ryyku01576013231.png","score":"1"},"venue":"Yokohama Stadium","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Katsuki Azuma (LHP, 2.20 ERA)","away_pitcher":"Keiji Takahashi (LHP, 3.42 ERA)","last_10_home":"5-5 (W2)","last_10_away":"4-6 (L2)","h2h":"BayStars lead 11-10 this season","h2h_history":{"opponent":"Tokyo Yakult Swallows","league":"Japan NPB","series_summary":{"record":"Yokohama BayStars lead 11-10 this season (21 Games)","home_record":"6-4 at Yokohama Stadium","away_record":"5-6 at Meiji Jingu Stadium","run_diff":"+8 (BayStars 94, Swallows 86)","avg_total_runs":8.5,"ou_record":"13 Overs, 7 Unders, 1 Push (Line: 6.5)"},"team_splits":{"home":{"team":"Yokohama DeNA BayStars","avg":".274","era":"3.60","runs":94,"hr":22,"k":155,"whip":"1.21"},"away":{"team":"Tokyo Yakult Swallows","avg":".258","era":"4.15","runs":86,"hr":19,"k":140,"whip":"1.34"}},"recent_games":[{"date":"Aug 25, 2026","matchup":"Swallows 4 @ BayStars 7","winner":"BayStars","win_sp":"Katsuki Azuma (W, 7.0 IP, 3 ER, 6 K)","loss_sp":"Keiji Takahashi (L, 4.2 IP, 6 ER)","save":"Yasuaki Yamasaki (S)","venue":"Yokohama Stadium","total_runs":11,"ou":"Over 6.5"},{"date":"Aug 24, 2026","matchup":"Swallows 6 @ BayStars 5","winner":"Swallows","win_sp":"Masanori Ishikawa (W, 5.0 IP, 3 ER)","loss_sp":"Andre Jackson (L, 5.1 IP, 5 ER)","save":"Taichi Ishiyama (S)","venue":"Yokohama Stadium","total_runs":11,"ou":"Over 6.5"},{"date":"Aug 23, 2026","matchup":"Swallows 2 @ BayStars 5","winner":"BayStars","win_sp":"Anthony Kay (W, 6.0 IP, 2 ER, 7 K)","loss_sp":"Hirotoshi Takanashi (L, 5.0 IP, 4 ER)","save":"Yasuaki Yamasaki (S)","venue":"Yokohama Stadium","total_runs":7,"ou":"Over 6.5"},{"date":"Jul 19, 2026","matchup":"BayStars 8 @ Swallows 4","winner":"BayStars","win_sp":"Katsuki Azuma (W, 8.0 IP, 2 ER)","loss_sp":"Cy Sneed (L, 4.0 IP, 7 ER)","save":"None","venue":"Meiji Jingu Stadium","total_runs":12,"ou":"Over 6.5"},{"date":"Jul 18, 2026","matchup":"BayStars 3 @ Swallows 5","winner":"Swallows","win_sp":"Keiji Takahashi (W, 6.1 IP, 2 ER)","loss_sp":"Shinichi Ohnuki (L, 5.0 IP, 4 ER)","save":"Taichi Ishiyama (S)","venue":"Meiji Jingu Stadium","total_runs":8,"ou":"Over 6.5"}],"trends":["Over 6.5 has hit in 8 of the last 10 meetings between BayStars and Swallows.","Short porches at Yokohama Stadium have yielded 2.4 home runs per H2H game.","Katsuki Azuma is 3-0 with a 2.10 ERA against Yakult this season."]},"ml_prediction":{"pick":"Yokohama DeNA BayStars","home_win_prob":56.4,"away_win_prob":43.6,"fair_odds":"-129 / +129","dk_odds":"DK -129","dk_home_odds":"-129","dk_away_odds":"+129","dk_implied_prob":56.3,"confidence":"MED"},"total_runs":{"line":6.5,"projected":6.6,"pick":"Over 6.5","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+0.7%"},"analysis":"Yokohama Stadium features short fences (+18% HR factor). BayStars slugging core gives offensive advantage."},{"game_id":"npb-3","league":"NPB (Central League)","home_team":{"name":"Hanshin Tigers","jp_name":"阪神","abbr":"HAN","logo":"https://r2.thesportsdb.com/images/media/team/badge/h2jhos1576009994.png","score":"0"},"away_team":{"name":"Hiroshima Toyo Carp","jp_name":"広島","abbr":"HIR","logo":"https://r2.thesportsdb.com/images/media/team/badge/bv50e51576010505.png","score":"0"},"venue":"Koshien Stadium","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Koyo Aoyagi (RHP, 2.88 ERA)","away_pitcher":"Daichi Ohsera (RHP, 3.12 ERA)","last_10_home":"6-4 (W2)","last_10_away":"4-6 (L2)","h2h":"Tigers lead 13-8 this season","h2h_history":{"opponent":"Hiroshima Toyo Carp","league":"Japan NPB","series_summary":{"record":"Hanshin Tigers lead 13-8 this season (21 Games)","home_record":"8-3 at Koshien Stadium","away_record":"5-5 at Mazda Stadium Hiroshima","run_diff":"+24 (Tigers 79, Carp 55)","avg_total_runs":6.3,"ou_record":"8 Overs, 12 Unders, 1 Push (Line: 5.5)"},"team_splits":{"home":{"team":"Hanshin Tigers","avg":".252","era":"2.28","runs":79,"hr":11,"k":182,"whip":"1.02"},"away":{"team":"Hiroshima Toyo Carp","avg":".230","era":"3.18","runs":55,"hr":9,"k":158,"whip":"1.18"}},"recent_games":[{"date":"Aug 26, 2026","matchup":"Carp 1 @ Tigers 3","winner":"Tigers","win_sp":"Koyo Aoyagi (W, 7.0 IP, 1 ER, 6 K)","loss_sp":"Daichi Ohsera (L, 6.2 IP, 3 ER)","save":"Suguru Iwazaki (S)","venue":"Koshien Stadium","total_runs":4,"ou":"Under 5.5"},{"date":"Aug 25, 2026","matchup":"Carp 0 @ Tigers 2","winner":"Tigers","win_sp":"Hiroto Saiki (W, 8.0 IP, 0 ER, 9 K)","loss_sp":"Hiroki Tokoda (L, 7.0 IP, 2 ER)","save":"Suguru Iwazaki (S)","venue":"Koshien Stadium","total_runs":2,"ou":"Under 5.5"},{"date":"Aug 24, 2026","matchup":"Carp 4 @ Tigers 2","winner":"Carp","win_sp":"Aren Kuri (W, 7.0 IP, 2 ER)","loss_sp":"Masashi Itoh (L, 5.0 IP, 4 ER)","save":"Ryoji Kuribayashi (S)","venue":"Koshien Stadium","total_runs":6,"ou":"Over 5.5"},{"date":"Jul 22, 2026","matchup":"Tigers 4 @ Carp 2","winner":"Tigers","win_sp":"Koyo Aoyagi (W, 6.0 IP, 2 ER)","loss_sp":"Daichi Ohsera (L, 6.0 IP, 3 ER)","save":"Suguru Iwazaki (S)","venue":"Mazda Stadium","total_runs":6,"ou":"Over 5.5"},{"date":"Jul 21, 2026","matchup":"Tigers 1 @ Carp 0","winner":"Tigers","win_sp":"Shoki Murakami (W, 9.0 IP, 0 ER, 11 K)","loss_sp":"Hiroki Tokoda (L, 8.0 IP, 1 ER)","save":"None","venue":"Mazda Stadium","total_runs":1,"ou":"Under 5.5"}],"trends":["Tigers hold a dominant 8-3 record at Koshien Stadium against Hiroshima in 2026.","Under 5.5 has cashed in 7 of the last 9 games between both elite pitching staffs.","Hanshin starting rotation has allowed only 1.95 earned runs per game vs Hiroshima."]},"ml_prediction":{"pick":"Hanshin Tigers","home_win_prob":68.0,"away_win_prob":32.0,"fair_odds":"-212 / +212","dk_odds":"DK -212","dk_home_odds":"-212","dk_away_odds":"+212","dk_implied_prob":67.9,"confidence":"HIGH"},"total_runs":{"line":5.5,"projected":6.0,"pick":"Over 5.5","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+3.8%"},"analysis":"Tigers hold 1st place in Central League (69-52) with league-best 2.86 team ERA. Pitching duel favors low scoring."},{"game_id":"npb-4","league":"NPB (Pacific League)","home_team":{"name":"Chiba Lotte Marines","jp_name":"ロッテ","abbr":"LOT","logo":"https://r2.thesportsdb.com/images/media/team/badge/na10tn1576008207.png","score":"1"},"away_team":{"name":"Tohoku Rakuten Golden Eagles","jp_name":"楽天","abbr":"RAK","logo":"https://r2.thesportsdb.com/images/media/team/badge/qx24pm1576012656.png","score":"4"},"venue":"ZOZO Marine Stadium","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Roki Sasaki (RHP, 1.95 ERA)","away_pitcher":"Takahiro Norimoto (RHP, 3.05 ERA)","last_10_home":"5-5 (W4)","last_10_away":"4-6 (L1)","h2h":"Marines lead 11-10 this season","h2h_history":{"opponent":"Tohoku Rakuten Golden Eagles","league":"Japan NPB","series_summary":{"record":"Chiba Lotte Marines lead 11-10 this season (21 Games)","home_record":"6-4 at ZOZO Marine Stadium","away_record":"5-6 at Rakuten Mobile Park","run_diff":"+6 (Marines 82, Eagles 76)","avg_total_runs":7.5,"ou_record":"10 Overs, 10 Unders, 1 Push (Line: 5.5)"},"team_splits":{"home":{"team":"Chiba Lotte Marines","avg":".250","era":"2.95","runs":82,"hr":14,"k":185,"whip":"1.09"},"away":{"team":"Tohoku Rakuten Golden Eagles","avg":".242","era":"3.42","runs":76,"hr":12,"k":150,"whip":"1.24"}},"recent_games":[{"date":"Aug 27, 2026","matchup":"Eagles 1 @ Marines 4","winner":"Marines","win_sp":"Roki Sasaki (W, 8.0 IP, 1 ER, 12 K)","loss_sp":"Takahiro Norimoto (L, 6.0 IP, 3 ER)","save":"Naoya Masuda (S)","venue":"ZOZO Marine Stadium","total_runs":5,"ou":"Under 5.5"},{"date":"Aug 26, 2026","matchup":"Eagles 5 @ Marines 3","winner":"Eagles","win_sp":"Takayuki Kishi (W, 6.2 IP, 2 ER)","loss_sp":"Kazuya Ojima (L, 5.1 IP, 4 ER)","save":"Yuki Matsui (S)","venue":"ZOZO Marine Stadium","total_runs":8,"ou":"Over 5.5"},{"date":"Aug 25, 2026","matchup":"Eagles 2 @ Marines 6","winner":"Marines","win_sp":"Atsuki Taneichi (W, 7.0 IP, 2 ER, 9 K)","loss_sp":"Masaru Fujii (L, 4.0 IP, 5 ER)","save":"None","venue":"ZOZO Marine Stadium","total_runs":8,"ou":"Over 5.5"},{"date":"Jul 25, 2026","matchup":"Marines 2 @ Eagles 1","winner":"Marines","win_sp":"Roki Sasaki (W, 7.0 IP, 0 ER, 11 K)","loss_sp":"Takahiro Norimoto (L, 7.0 IP, 2 ER)","save":"Naoya Masuda (S)","venue":"Rakuten Mobile Park","total_runs":3,"ou":"Under 5.5"}],"trends":["Ace Roki Sasaki has recorded 35 strikeouts across 22.0 innings against Rakuten in 2026.","Wind blowing in from Tokyo Bay at ZOZO Marine suppresses deep fly balls by 14%.","Marines are 4-1 in their last 5 home games versus Rakuten."]},"ml_prediction":{"pick":"Chiba Lotte Marines","home_win_prob":62.1,"away_win_prob":37.9,"fair_odds":"-164 / +164","dk_odds":"DK -164","dk_home_odds":"-164","dk_away_odds":"+164","dk_implied_prob":62.1,"confidence":"HIGH"},"total_runs":{"line":5.5,"projected":7.1,"pick":"Over 5.5","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+12.0%"},"analysis":"Ace Roki Sasaki features 100+ mph fastball with 33% K rate at windy ZOZO Marine Stadium."},{"game_id":"npb-5","league":"NPB (Pacific League)","home_team":{"name":"Orix Buffaloes","jp_name":"オリックス","abbr":"ORX","logo":"https://r2.thesportsdb.com/images/media/team/badge/53lv6f1576011517.png","score":"0"},"away_team":{"name":"Saitama Seibu Lions","jp_name":"西武","abbr":"SEI","logo":"https://r2.thesportsdb.com/images/media/team/badge/onmvow1576012163.png","score":"3"},"venue":"Kyocera Dome Osaka","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Hiroya Miyagi (LHP, 2.30 ERA)","away_pitcher":"Kona Takahashi (RHP, 3.15 ERA)","last_10_home":"5-5 (W4)","last_10_away":"6-4 (L2)","h2h":"Buffaloes lead 12-9 this season","h2h_history":{"opponent":"Saitama Seibu Lions","league":"Japan NPB","series_summary":{"record":"Orix Buffaloes lead 12-9 this season (21 Games)","home_record":"7-3 at Kyocera Dome Osaka","away_record":"5-6 at Belluna Dome","run_diff":"+18 (Buffaloes 78, Lions 60)","avg_total_runs":6.5,"ou_record":"9 Overs, 11 Unders, 1 Push (Line: 6.0)"},"team_splits":{"home":{"team":"Orix Buffaloes","avg":".256","era":"2.68","runs":78,"hr":13,"k":175,"whip":"1.05"},"away":{"team":"Saitama Seibu Lions","avg":".218","era":"3.35","runs":60,"hr":9,"k":148,"whip":"1.20"}},"recent_games":[{"date":"Aug 28, 2026","matchup":"Lions 1 @ Buffaloes 4","winner":"Buffaloes","win_sp":"Hiroya Miyagi (W, 7.1 IP, 1 ER, 8 K)","loss_sp":"Kona Takahashi (L, 6.0 IP, 3 ER)","save":"Andres Machado (S)","venue":"Kyocera Dome Osaka","total_runs":5,"ou":"Under 6.0"},{"date":"Aug 27, 2026","matchup":"Lions 2 @ Buffaloes 5","winner":"Buffaloes","win_sp":"Shunpeita Yamashita (W, 6.0 IP, 2 ER, 7 K)","loss_sp":"Tatsuya Imai (L, 5.0 IP, 4 ER)","save":"Andres Machado (S)","venue":"Kyocera Dome Osaka","total_runs":7,"ou":"Over 6.0"},{"date":"Aug 26, 2026","matchup":"Lions 3 @ Buffaloes 1","winner":"Lions","win_sp":"Kona Takahashi (W, 8.0 IP, 1 ER)","loss_sp":"Daiki Tajima (L, 6.0 IP, 3 ER)","save":"Albert Abreu (S)","venue":"Kyocera Dome Osaka","total_runs":4,"ou":"Under 6.0"},{"date":"Jul 29, 2026","matchup":"Buffaloes 6 @ Lions 2","winner":"Buffaloes","win_sp":"Hiroya Miyagi (W, 7.0 IP, 2 ER)","loss_sp":"Katsunori Hirai (L, 4.2 IP, 5 ER)","save":"None","venue":"Belluna Dome","total_runs":8,"ou":"Over 6.0"}],"trends":["Buffaloes are 7-3 at Kyocera Dome against Lions in 2026.","Southpaw Hiroya Miyagi has held Seibu batters to a .188 batting average this year.","Seibu Lions have struggled with runners in scoring position (.204 RISP vs Orix)."]},"ml_prediction":{"pick":"Saitama Seibu Lions","home_win_prob":43.5,"away_win_prob":56.5,"fair_odds":"+130 / -130","dk_odds":"DK -130","dk_home_odds":"+130","dk_away_odds":"-130","dk_implied_prob":43.5,"confidence":"MED"},"total_runs":{"line":6.0,"projected":6.4,"pick":"Over 6.0","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+3.0%"},"analysis":"Kyocera Dome limits home runs. Miyagi's breaking stuff suppresses Lions contact."},{"game_id":"npb-6","league":"NPB (Pacific League)","home_team":{"name":"Fukuoka SoftBank Hawks","jp_name":"ソフトバンク","abbr":"SOF","logo":"https://r2.thesportsdb.com/images/media/team/badge/ampozy1576009547.png","score":"4"},"away_team":{"name":"Hokkaido Nippon-Ham Fighters","jp_name":"日本ハム","abbr":"HAM","logo":"https://r2.thesportsdb.com/images/media/team/badge/qxgzq01576011016.png","score":"3"},"venue":"Mizuho PayPay Dome","start_time":"6:00 PM JST (5:00 AM ET)","status":"LIVE","is_live":true,"home_pitcher":"Kohei Arihara (RHP, 2.45 ERA)","away_pitcher":"Hiromi Itoh (RHP, 2.75 ERA)","last_10_home":"6-4 (W1)","last_10_away":"6-4 (L1)","h2h":"Hawks lead 13-8 this season","h2h_history":{"opponent":"Hokkaido Nippon-Ham Fighters","league":"Japan NPB","series_summary":{"record":"SoftBank Hawks lead 13-8 this season (21 Games)","home_record":"8-2 at Mizuho PayPay Dome","away_record":"5-6 at Es Con Field Hokkaido","run_diff":"+28 (Hawks 98, Fighters 70)","avg_total_runs":8.0,"ou_record":"12 Overs, 8 Unders, 1 Push (Line: 6.5)"},"team_splits":{"home":{"team":"Fukuoka SoftBank Hawks","avg":".278","era":"2.75","runs":98,"hr":26,"k":190,"whip":"1.04"},"away":{"team":"Hokkaido Nippon-Ham Fighters","avg":".245","era":"3.85","runs":70,"hr":15,"k":160,"whip":"1.26"}},"recent_games":[{"date":"Aug 29, 2026","matchup":"Fighters 3 @ Hawks 6","winner":"Hawks","win_sp":"Kohei Arihara (W, 7.0 IP, 2 ER, 7 K)","loss_sp":"Hiromi Itoh (L, 5.2 IP, 5 ER)","save":"Roberto Osuna (S)","venue":"Mizuho PayPay Dome","total_runs":9,"ou":"Over 6.5"},{"date":"Aug 28, 2026","matchup":"Fighters 2 @ Hawks 5","winner":"Hawks","win_sp":"Livan Moinelo (W, 8.0 IP, 1 ER, 10 K)","loss_sp":"Sachiya Yamasaki (L, 6.0 IP, 4 ER)","save":"Roberto Osuna (S)","venue":"Mizuho PayPay Dome","total_runs":7,"ou":"Over 6.5"},{"date":"Aug 27, 2026","matchup":"Fighters 4 @ Hawks 2","winner":"Fighters","win_sp":"Hiromi Itoh (W, 7.2 IP, 2 ER)","loss_sp":"Carter Stewart Jr. (L, 5.0 IP, 4 ER)","save":"Seigi Tanaka (S)","venue":"Mizuho PayPay Dome","total_runs":6,"ou":"Under 6.5"},{"date":"Aug 02, 2026","matchup":"Hawks 7 @ Fighters 3","winner":"Hawks","win_sp":"Kohei Arihara (W, 6.2 IP, 2 ER)","loss_sp":"Cody Ponce (L, 4.1 IP, 6 ER)","save":"None","venue":"Es Con Field Hokkaido","total_runs":10,"ou":"Over 6.5"}],"trends":["SoftBank Hawks have won 8 of their last 10 home games against Nippon-Ham at PayPay Dome.","Closer Roberto Osuna has converted all 6 save opportunities vs Fighters with a 0.00 ERA.","Kensuke Kondoh and Hotaka Yamakawa have combined for 11 home runs against Nippon-Ham pitching."]},"ml_prediction":{"pick":"Fukuoka SoftBank Hawks","home_win_prob":59.7,"away_win_prob":40.3,"fair_odds":"-148 / +148","dk_odds":"DK -148","dk_home_odds":"-148","dk_away_odds":"+148","dk_implied_prob":59.7,"confidence":"HIGH"},"total_runs":{"line":6.5,"projected":5.9,"pick":"Under 6.5","dk_odds":"DK -110","dk_implied_prob":52.4,"prob":63.5,"edge":"+4.5%"},"analysis":"Hawks lead Pacific League with 76 wins and 600 runs scored. Home dominance at PayPay Dome."}]}
+{
+  "league": "Japan NPB",
+  "count": 6,
+  "games": [
+    {
+      "game_id": "npb-1",
+      "league": "NPB (Central League)",
+      "home_team": {
+        "name": "Yomiuri Giants",
+        "jp_name": "\u5de8\u4eba",
+        "abbr": "YOM",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png",
+        "score": "2"
+      },
+      "away_team": {
+        "name": "Chunichi Dragons",
+        "jp_name": "\u4e2d\u65e5",
+        "abbr": "CHU",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/jli5jv1576009060.png",
+        "score": "1"
+      },
+      "venue": "Tokyo Dome",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Shosei Togo (RHP, 2.14 ERA)",
+      "away_pitcher": "Shinnosuke Ogasawara (LHP, 2.95 ERA)",
+      "last_10_home": "5-5 (W4)",
+      "last_10_away": "4-6 (L3)",
+      "h2h": "Giants lead 12-9 this season",
+      "h2h_history": {
+        "opponent": "Chunichi Dragons",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "Yomiuri Giants lead 12-9 this season (21 Games)",
+          "home_record": "7-4 at Tokyo Dome",
+          "away_record": "5-5 at Vantelin Dome Nagoya",
+          "run_diff": "+16 (Giants 88, Dragons 72)",
+          "avg_total_runs": 7.6,
+          "ou_record": "11 Overs, 9 Unders, 1 Push (Line: 5.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Yomiuri Giants",
+            "avg": ".268",
+            "era": "2.85",
+            "runs": 88,
+            "hr": 16,
+            "k": 168,
+            "whip": "1.06"
+          },
+          "away": {
+            "team": "Chunichi Dragons",
+            "avg": ".228",
+            "era": "3.72",
+            "runs": 72,
+            "hr": 8,
+            "k": 142,
+            "whip": "1.28"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Dragons 2 @ Giants 5",
+            "winner": "Giants",
+            "win_sp": "Shosei Togo (W, 7.0 IP, 2 ER, 8 K)",
+            "loss_sp": "Shinnosuke Ogasawara (L, 5.2 IP, 4 ER)",
+            "save": "Taisei Ota (S)",
+            "venue": "Tokyo Dome",
+            "total_runs": 7,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Aug 23, 2026",
+            "matchup": "Dragons 1 @ Giants 4",
+            "winner": "Giants",
+            "win_sp": "Tomoyuki Sugano (W, 6.2 IP, 1 ER, 6 K)",
+            "loss_sp": "Hiroto Takahashi (L, 6.0 IP, 3 ER)",
+            "save": "Taisei Ota (S)",
+            "venue": "Tokyo Dome",
+            "total_runs": 5,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Aug 22, 2026",
+            "matchup": "Dragons 4 @ Giants 2",
+            "winner": "Dragons",
+            "win_sp": "Yuya Yanagi (W, 7.1 IP, 2 ER, 7 K)",
+            "loss_sp": "Iori Yamasaki (L, 5.0 IP, 4 ER)",
+            "save": "Raidel Martinez (S)",
+            "venue": "Tokyo Dome",
+            "total_runs": 6,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Jul 15, 2026",
+            "matchup": "Giants 3 @ Dragons 1",
+            "winner": "Giants",
+            "win_sp": "Shosei Togo (W, 8.0 IP, 1 ER, 9 K)",
+            "loss_sp": "Shinnosuke Ogasawara (L, 7.0 IP, 2 ER)",
+            "save": "Taisei Ota (S)",
+            "venue": "Vantelin Dome",
+            "total_runs": 4,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Jul 14, 2026",
+            "matchup": "Giants 2 @ Dragons 3",
+            "winner": "Dragons",
+            "win_sp": "Hideaki Wakui (W, 6.0 IP, 2 ER)",
+            "loss_sp": "Yuji Akahoshi (L, 5.0 IP, 3 ER)",
+            "save": "Raidel Martinez (S)",
+            "venue": "Vantelin Dome",
+            "total_runs": 5,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Jun 28, 2026",
+            "matchup": "Dragons 3 @ Giants 6",
+            "winner": "Giants",
+            "win_sp": "Tomoyuki Sugano (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Katsuki Umetsu (L, 4.1 IP, 5 ER)",
+            "save": "Taisei Ota (S)",
+            "venue": "Tokyo Dome",
+            "total_runs": 9,
+            "ou": "Over 5.5"
+          }
+        ],
+        "trends": [
+          "Giants have won 7 of 11 head-to-head meetings at Tokyo Dome this season.",
+          "Ace Shosei Togo is 3-0 with a 1.69 ERA in 4 head-to-head starts vs Chunichi in 2026.",
+          "Under has cashed in 5 of the last 7 games between these two rotation stalwarts."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Yomiuri Giants",
+        "home_win_prob": 64.7,
+        "away_win_prob": 35.3,
+        "fair_odds": "-183 / +183",
+        "dk_odds": "DK -183",
+        "dk_home_odds": "-183",
+        "dk_away_odds": "+183",
+        "dk_implied_prob": 64.7,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 5.5,
+        "projected": 5.8,
+        "pick": "Over 5.5",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+2.2%"
+      },
+      "analysis": "Giants hold a 12-9 season edge over Dragons. Togo's 0.98 WHIP anchors home mound edge at Tokyo Dome."
+    },
+    {
+      "game_id": "npb-2",
+      "league": "NPB (Central League)",
+      "home_team": {
+        "name": "Yokohama DeNA BayStars",
+        "jp_name": "DeNA",
+        "abbr": "YOK",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/fuhqf21576013789.png",
+        "score": "2"
+      },
+      "away_team": {
+        "name": "Tokyo Yakult Swallows",
+        "jp_name": "\u30e4\u30af\u30eb\u30c8",
+        "abbr": "YAK",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/ryyku01576013231.png",
+        "score": "2"
+      },
+      "venue": "Yokohama Stadium",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Katsuki Azuma (LHP, 2.20 ERA)",
+      "away_pitcher": "Keiji Takahashi (LHP, 3.42 ERA)",
+      "last_10_home": "5-5 (W2)",
+      "last_10_away": "4-6 (L2)",
+      "h2h": "BayStars lead 11-10 this season",
+      "h2h_history": {
+        "opponent": "Tokyo Yakult Swallows",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "Yokohama BayStars lead 11-10 this season (21 Games)",
+          "home_record": "6-4 at Yokohama Stadium",
+          "away_record": "5-6 at Meiji Jingu Stadium",
+          "run_diff": "+8 (BayStars 94, Swallows 86)",
+          "avg_total_runs": 8.5,
+          "ou_record": "13 Overs, 7 Unders, 1 Push (Line: 6.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Yokohama DeNA BayStars",
+            "avg": ".274",
+            "era": "3.60",
+            "runs": 94,
+            "hr": 22,
+            "k": 155,
+            "whip": "1.21"
+          },
+          "away": {
+            "team": "Tokyo Yakult Swallows",
+            "avg": ".258",
+            "era": "4.15",
+            "runs": 86,
+            "hr": 19,
+            "k": 140,
+            "whip": "1.34"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 25, 2026",
+            "matchup": "Swallows 4 @ BayStars 7",
+            "winner": "BayStars",
+            "win_sp": "Katsuki Azuma (W, 7.0 IP, 3 ER, 6 K)",
+            "loss_sp": "Keiji Takahashi (L, 4.2 IP, 6 ER)",
+            "save": "Yasuaki Yamasaki (S)",
+            "venue": "Yokohama Stadium",
+            "total_runs": 11,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Swallows 6 @ BayStars 5",
+            "winner": "Swallows",
+            "win_sp": "Masanori Ishikawa (W, 5.0 IP, 3 ER)",
+            "loss_sp": "Andre Jackson (L, 5.1 IP, 5 ER)",
+            "save": "Taichi Ishiyama (S)",
+            "venue": "Yokohama Stadium",
+            "total_runs": 11,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Aug 23, 2026",
+            "matchup": "Swallows 2 @ BayStars 5",
+            "winner": "BayStars",
+            "win_sp": "Anthony Kay (W, 6.0 IP, 2 ER, 7 K)",
+            "loss_sp": "Hirotoshi Takanashi (L, 5.0 IP, 4 ER)",
+            "save": "Yasuaki Yamasaki (S)",
+            "venue": "Yokohama Stadium",
+            "total_runs": 7,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Jul 19, 2026",
+            "matchup": "BayStars 8 @ Swallows 4",
+            "winner": "BayStars",
+            "win_sp": "Katsuki Azuma (W, 8.0 IP, 2 ER)",
+            "loss_sp": "Cy Sneed (L, 4.0 IP, 7 ER)",
+            "save": "None",
+            "venue": "Meiji Jingu Stadium",
+            "total_runs": 12,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Jul 18, 2026",
+            "matchup": "BayStars 3 @ Swallows 5",
+            "winner": "Swallows",
+            "win_sp": "Keiji Takahashi (W, 6.1 IP, 2 ER)",
+            "loss_sp": "Shinichi Ohnuki (L, 5.0 IP, 4 ER)",
+            "save": "Taichi Ishiyama (S)",
+            "venue": "Meiji Jingu Stadium",
+            "total_runs": 8,
+            "ou": "Over 6.5"
+          }
+        ],
+        "trends": [
+          "Over 6.5 has hit in 8 of the last 10 meetings between BayStars and Swallows.",
+          "Short porches at Yokohama Stadium have yielded 2.4 home runs per H2H game.",
+          "Katsuki Azuma is 3-0 with a 2.10 ERA against Yakult this season."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Yokohama DeNA BayStars",
+        "home_win_prob": 56.4,
+        "away_win_prob": 43.6,
+        "fair_odds": "-129 / +129",
+        "dk_odds": "DK -129",
+        "dk_home_odds": "-129",
+        "dk_away_odds": "+129",
+        "dk_implied_prob": 56.3,
+        "confidence": "MED"
+      },
+      "total_runs": {
+        "line": 6.5,
+        "projected": 6.6,
+        "pick": "Over 6.5",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+0.7%"
+      },
+      "analysis": "Yokohama Stadium features short fences (+18% HR factor). BayStars slugging core gives offensive advantage."
+    },
+    {
+      "game_id": "npb-3",
+      "league": "NPB (Central League)",
+      "home_team": {
+        "name": "Hanshin Tigers",
+        "jp_name": "\u962a\u795e",
+        "abbr": "HAN",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/h2jhos1576009994.png",
+        "score": "0"
+      },
+      "away_team": {
+        "name": "Hiroshima Toyo Carp",
+        "jp_name": "\u5e83\u5cf6",
+        "abbr": "HIR",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/bv50e51576010505.png",
+        "score": "0"
+      },
+      "venue": "Koshien Stadium",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Koyo Aoyagi (RHP, 2.88 ERA)",
+      "away_pitcher": "Daichi Ohsera (RHP, 3.12 ERA)",
+      "last_10_home": "6-4 (W2)",
+      "last_10_away": "4-6 (L2)",
+      "h2h": "Tigers lead 13-8 this season",
+      "h2h_history": {
+        "opponent": "Hiroshima Toyo Carp",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "Hanshin Tigers lead 13-8 this season (21 Games)",
+          "home_record": "8-3 at Koshien Stadium",
+          "away_record": "5-5 at Mazda Stadium Hiroshima",
+          "run_diff": "+24 (Tigers 79, Carp 55)",
+          "avg_total_runs": 6.3,
+          "ou_record": "8 Overs, 12 Unders, 1 Push (Line: 5.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Hanshin Tigers",
+            "avg": ".252",
+            "era": "2.28",
+            "runs": 79,
+            "hr": 11,
+            "k": 182,
+            "whip": "1.02"
+          },
+          "away": {
+            "team": "Hiroshima Toyo Carp",
+            "avg": ".230",
+            "era": "3.18",
+            "runs": 55,
+            "hr": 9,
+            "k": 158,
+            "whip": "1.18"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 26, 2026",
+            "matchup": "Carp 1 @ Tigers 3",
+            "winner": "Tigers",
+            "win_sp": "Koyo Aoyagi (W, 7.0 IP, 1 ER, 6 K)",
+            "loss_sp": "Daichi Ohsera (L, 6.2 IP, 3 ER)",
+            "save": "Suguru Iwazaki (S)",
+            "venue": "Koshien Stadium",
+            "total_runs": 4,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Aug 25, 2026",
+            "matchup": "Carp 0 @ Tigers 2",
+            "winner": "Tigers",
+            "win_sp": "Hiroto Saiki (W, 8.0 IP, 0 ER, 9 K)",
+            "loss_sp": "Hiroki Tokoda (L, 7.0 IP, 2 ER)",
+            "save": "Suguru Iwazaki (S)",
+            "venue": "Koshien Stadium",
+            "total_runs": 2,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Carp 4 @ Tigers 2",
+            "winner": "Carp",
+            "win_sp": "Aren Kuri (W, 7.0 IP, 2 ER)",
+            "loss_sp": "Masashi Itoh (L, 5.0 IP, 4 ER)",
+            "save": "Ryoji Kuribayashi (S)",
+            "venue": "Koshien Stadium",
+            "total_runs": 6,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Jul 22, 2026",
+            "matchup": "Tigers 4 @ Carp 2",
+            "winner": "Tigers",
+            "win_sp": "Koyo Aoyagi (W, 6.0 IP, 2 ER)",
+            "loss_sp": "Daichi Ohsera (L, 6.0 IP, 3 ER)",
+            "save": "Suguru Iwazaki (S)",
+            "venue": "Mazda Stadium",
+            "total_runs": 6,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Jul 21, 2026",
+            "matchup": "Tigers 1 @ Carp 0",
+            "winner": "Tigers",
+            "win_sp": "Shoki Murakami (W, 9.0 IP, 0 ER, 11 K)",
+            "loss_sp": "Hiroki Tokoda (L, 8.0 IP, 1 ER)",
+            "save": "None",
+            "venue": "Mazda Stadium",
+            "total_runs": 1,
+            "ou": "Under 5.5"
+          }
+        ],
+        "trends": [
+          "Tigers hold a dominant 8-3 record at Koshien Stadium against Hiroshima in 2026.",
+          "Under 5.5 has cashed in 7 of the last 9 games between both elite pitching staffs.",
+          "Hanshin starting rotation has allowed only 1.95 earned runs per game vs Hiroshima."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Hanshin Tigers",
+        "home_win_prob": 68.0,
+        "away_win_prob": 32.0,
+        "fair_odds": "-212 / +212",
+        "dk_odds": "DK -212",
+        "dk_home_odds": "-212",
+        "dk_away_odds": "+212",
+        "dk_implied_prob": 67.9,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 5.5,
+        "projected": 6.0,
+        "pick": "Over 5.5",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+3.8%"
+      },
+      "analysis": "Tigers hold 1st place in Central League (69-52) with league-best 2.86 team ERA. Pitching duel favors low scoring."
+    },
+    {
+      "game_id": "npb-4",
+      "league": "NPB (Pacific League)",
+      "home_team": {
+        "name": "Chiba Lotte Marines",
+        "jp_name": "\u30ed\u30c3\u30c6",
+        "abbr": "LOT",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/na10tn1576008207.png",
+        "score": "4"
+      },
+      "away_team": {
+        "name": "Tohoku Rakuten Golden Eagles",
+        "jp_name": "\u697d\u5929",
+        "abbr": "RAK",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/qx24pm1576012656.png",
+        "score": "4"
+      },
+      "venue": "ZOZO Marine Stadium",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Roki Sasaki (RHP, 1.95 ERA)",
+      "away_pitcher": "Takahiro Norimoto (RHP, 3.05 ERA)",
+      "last_10_home": "5-5 (W4)",
+      "last_10_away": "4-6 (L1)",
+      "h2h": "Marines lead 11-10 this season",
+      "h2h_history": {
+        "opponent": "Tohoku Rakuten Golden Eagles",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "Chiba Lotte Marines lead 11-10 this season (21 Games)",
+          "home_record": "6-4 at ZOZO Marine Stadium",
+          "away_record": "5-6 at Rakuten Mobile Park",
+          "run_diff": "+6 (Marines 82, Eagles 76)",
+          "avg_total_runs": 7.5,
+          "ou_record": "10 Overs, 10 Unders, 1 Push (Line: 5.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Chiba Lotte Marines",
+            "avg": ".250",
+            "era": "2.95",
+            "runs": 82,
+            "hr": 14,
+            "k": 185,
+            "whip": "1.09"
+          },
+          "away": {
+            "team": "Tohoku Rakuten Golden Eagles",
+            "avg": ".242",
+            "era": "3.42",
+            "runs": 76,
+            "hr": 12,
+            "k": 150,
+            "whip": "1.24"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 27, 2026",
+            "matchup": "Eagles 1 @ Marines 4",
+            "winner": "Marines",
+            "win_sp": "Roki Sasaki (W, 8.0 IP, 1 ER, 12 K)",
+            "loss_sp": "Takahiro Norimoto (L, 6.0 IP, 3 ER)",
+            "save": "Naoya Masuda (S)",
+            "venue": "ZOZO Marine Stadium",
+            "total_runs": 5,
+            "ou": "Under 5.5"
+          },
+          {
+            "date": "Aug 26, 2026",
+            "matchup": "Eagles 5 @ Marines 3",
+            "winner": "Eagles",
+            "win_sp": "Takayuki Kishi (W, 6.2 IP, 2 ER)",
+            "loss_sp": "Kazuya Ojima (L, 5.1 IP, 4 ER)",
+            "save": "Yuki Matsui (S)",
+            "venue": "ZOZO Marine Stadium",
+            "total_runs": 8,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Aug 25, 2026",
+            "matchup": "Eagles 2 @ Marines 6",
+            "winner": "Marines",
+            "win_sp": "Atsuki Taneichi (W, 7.0 IP, 2 ER, 9 K)",
+            "loss_sp": "Masaru Fujii (L, 4.0 IP, 5 ER)",
+            "save": "None",
+            "venue": "ZOZO Marine Stadium",
+            "total_runs": 8,
+            "ou": "Over 5.5"
+          },
+          {
+            "date": "Jul 25, 2026",
+            "matchup": "Marines 2 @ Eagles 1",
+            "winner": "Marines",
+            "win_sp": "Roki Sasaki (W, 7.0 IP, 0 ER, 11 K)",
+            "loss_sp": "Takahiro Norimoto (L, 7.0 IP, 2 ER)",
+            "save": "Naoya Masuda (S)",
+            "venue": "Rakuten Mobile Park",
+            "total_runs": 3,
+            "ou": "Under 5.5"
+          }
+        ],
+        "trends": [
+          "Ace Roki Sasaki has recorded 35 strikeouts across 22.0 innings against Rakuten in 2026.",
+          "Wind blowing in from Tokyo Bay at ZOZO Marine suppresses deep fly balls by 14%.",
+          "Marines are 4-1 in their last 5 home games versus Rakuten."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Chiba Lotte Marines",
+        "home_win_prob": 62.1,
+        "away_win_prob": 37.9,
+        "fair_odds": "-164 / +164",
+        "dk_odds": "DK -164",
+        "dk_home_odds": "-164",
+        "dk_away_odds": "+164",
+        "dk_implied_prob": 62.1,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 5.5,
+        "projected": 7.1,
+        "pick": "Over 5.5",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+12.0%"
+      },
+      "analysis": "Ace Roki Sasaki features 100+ mph fastball with 33% K rate at windy ZOZO Marine Stadium."
+    },
+    {
+      "game_id": "npb-5",
+      "league": "NPB (Pacific League)",
+      "home_team": {
+        "name": "Orix Buffaloes",
+        "jp_name": "\u30aa\u30ea\u30c3\u30af\u30b9",
+        "abbr": "ORX",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/53lv6f1576011517.png",
+        "score": "0"
+      },
+      "away_team": {
+        "name": "Saitama Seibu Lions",
+        "jp_name": "\u897f\u6b66",
+        "abbr": "SEI",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/onmvow1576012163.png",
+        "score": "6"
+      },
+      "venue": "Kyocera Dome Osaka",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Hiroya Miyagi (LHP, 2.30 ERA)",
+      "away_pitcher": "Kona Takahashi (RHP, 3.15 ERA)",
+      "last_10_home": "5-5 (W4)",
+      "last_10_away": "6-4 (L2)",
+      "h2h": "Buffaloes lead 12-9 this season",
+      "h2h_history": {
+        "opponent": "Saitama Seibu Lions",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "Orix Buffaloes lead 12-9 this season (21 Games)",
+          "home_record": "7-3 at Kyocera Dome Osaka",
+          "away_record": "5-6 at Belluna Dome",
+          "run_diff": "+18 (Buffaloes 78, Lions 60)",
+          "avg_total_runs": 6.5,
+          "ou_record": "9 Overs, 11 Unders, 1 Push (Line: 6.0)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Orix Buffaloes",
+            "avg": ".256",
+            "era": "2.68",
+            "runs": 78,
+            "hr": 13,
+            "k": 175,
+            "whip": "1.05"
+          },
+          "away": {
+            "team": "Saitama Seibu Lions",
+            "avg": ".218",
+            "era": "3.35",
+            "runs": 60,
+            "hr": 9,
+            "k": 148,
+            "whip": "1.20"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 28, 2026",
+            "matchup": "Lions 1 @ Buffaloes 4",
+            "winner": "Buffaloes",
+            "win_sp": "Hiroya Miyagi (W, 7.1 IP, 1 ER, 8 K)",
+            "loss_sp": "Kona Takahashi (L, 6.0 IP, 3 ER)",
+            "save": "Andres Machado (S)",
+            "venue": "Kyocera Dome Osaka",
+            "total_runs": 5,
+            "ou": "Under 6.0"
+          },
+          {
+            "date": "Aug 27, 2026",
+            "matchup": "Lions 2 @ Buffaloes 5",
+            "winner": "Buffaloes",
+            "win_sp": "Shunpeita Yamashita (W, 6.0 IP, 2 ER, 7 K)",
+            "loss_sp": "Tatsuya Imai (L, 5.0 IP, 4 ER)",
+            "save": "Andres Machado (S)",
+            "venue": "Kyocera Dome Osaka",
+            "total_runs": 7,
+            "ou": "Over 6.0"
+          },
+          {
+            "date": "Aug 26, 2026",
+            "matchup": "Lions 3 @ Buffaloes 1",
+            "winner": "Lions",
+            "win_sp": "Kona Takahashi (W, 8.0 IP, 1 ER)",
+            "loss_sp": "Daiki Tajima (L, 6.0 IP, 3 ER)",
+            "save": "Albert Abreu (S)",
+            "venue": "Kyocera Dome Osaka",
+            "total_runs": 4,
+            "ou": "Under 6.0"
+          },
+          {
+            "date": "Jul 29, 2026",
+            "matchup": "Buffaloes 6 @ Lions 2",
+            "winner": "Buffaloes",
+            "win_sp": "Hiroya Miyagi (W, 7.0 IP, 2 ER)",
+            "loss_sp": "Katsunori Hirai (L, 4.2 IP, 5 ER)",
+            "save": "None",
+            "venue": "Belluna Dome",
+            "total_runs": 8,
+            "ou": "Over 6.0"
+          }
+        ],
+        "trends": [
+          "Buffaloes are 7-3 at Kyocera Dome against Lions in 2026.",
+          "Southpaw Hiroya Miyagi has held Seibu batters to a .188 batting average this year.",
+          "Seibu Lions have struggled with runners in scoring position (.204 RISP vs Orix)."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Saitama Seibu Lions",
+        "home_win_prob": 43.5,
+        "away_win_prob": 56.5,
+        "fair_odds": "+130 / -130",
+        "dk_odds": "DK -130",
+        "dk_home_odds": "+130",
+        "dk_away_odds": "-130",
+        "dk_implied_prob": 43.5,
+        "confidence": "MED"
+      },
+      "total_runs": {
+        "line": 6.0,
+        "projected": 6.4,
+        "pick": "Over 6.0",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+3.0%"
+      },
+      "analysis": "Kyocera Dome limits home runs. Miyagi's breaking stuff suppresses Lions contact."
+    },
+    {
+      "game_id": "npb-6",
+      "league": "NPB (Pacific League)",
+      "home_team": {
+        "name": "Fukuoka SoftBank Hawks",
+        "jp_name": "\u30bd\u30d5\u30c8\u30d0\u30f3\u30af",
+        "abbr": "SOF",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/ampozy1576009547.png",
+        "score": "5"
+      },
+      "away_team": {
+        "name": "Hokkaido Nippon-Ham Fighters",
+        "jp_name": "\u65e5\u672c\u30cf\u30e0",
+        "abbr": "HAM",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/qxgzq01576011016.png",
+        "score": "3"
+      },
+      "venue": "Mizuho PayPay Dome",
+      "start_time": "6:00 PM JST (5:00 AM ET)",
+      "status": "LIVE",
+      "is_live": true,
+      "home_pitcher": "Kohei Arihara (RHP, 2.45 ERA)",
+      "away_pitcher": "Hiromi Itoh (RHP, 2.75 ERA)",
+      "last_10_home": "6-4 (W1)",
+      "last_10_away": "6-4 (L1)",
+      "h2h": "Hawks lead 13-8 this season",
+      "h2h_history": {
+        "opponent": "Hokkaido Nippon-Ham Fighters",
+        "league": "Japan NPB",
+        "series_summary": {
+          "record": "SoftBank Hawks lead 13-8 this season (21 Games)",
+          "home_record": "8-2 at Mizuho PayPay Dome",
+          "away_record": "5-6 at Es Con Field Hokkaido",
+          "run_diff": "+28 (Hawks 98, Fighters 70)",
+          "avg_total_runs": 8.0,
+          "ou_record": "12 Overs, 8 Unders, 1 Push (Line: 6.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Fukuoka SoftBank Hawks",
+            "avg": ".278",
+            "era": "2.75",
+            "runs": 98,
+            "hr": 26,
+            "k": 190,
+            "whip": "1.04"
+          },
+          "away": {
+            "team": "Hokkaido Nippon-Ham Fighters",
+            "avg": ".245",
+            "era": "3.85",
+            "runs": 70,
+            "hr": 15,
+            "k": 160,
+            "whip": "1.26"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 29, 2026",
+            "matchup": "Fighters 3 @ Hawks 6",
+            "winner": "Hawks",
+            "win_sp": "Kohei Arihara (W, 7.0 IP, 2 ER, 7 K)",
+            "loss_sp": "Hiromi Itoh (L, 5.2 IP, 5 ER)",
+            "save": "Roberto Osuna (S)",
+            "venue": "Mizuho PayPay Dome",
+            "total_runs": 9,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Aug 28, 2026",
+            "matchup": "Fighters 2 @ Hawks 5",
+            "winner": "Hawks",
+            "win_sp": "Livan Moinelo (W, 8.0 IP, 1 ER, 10 K)",
+            "loss_sp": "Sachiya Yamasaki (L, 6.0 IP, 4 ER)",
+            "save": "Roberto Osuna (S)",
+            "venue": "Mizuho PayPay Dome",
+            "total_runs": 7,
+            "ou": "Over 6.5"
+          },
+          {
+            "date": "Aug 27, 2026",
+            "matchup": "Fighters 4 @ Hawks 2",
+            "winner": "Fighters",
+            "win_sp": "Hiromi Itoh (W, 7.2 IP, 2 ER)",
+            "loss_sp": "Carter Stewart Jr. (L, 5.0 IP, 4 ER)",
+            "save": "Seigi Tanaka (S)",
+            "venue": "Mizuho PayPay Dome",
+            "total_runs": 6,
+            "ou": "Under 6.5"
+          },
+          {
+            "date": "Aug 02, 2026",
+            "matchup": "Hawks 7 @ Fighters 3",
+            "winner": "Hawks",
+            "win_sp": "Kohei Arihara (W, 6.2 IP, 2 ER)",
+            "loss_sp": "Cody Ponce (L, 4.1 IP, 6 ER)",
+            "save": "None",
+            "venue": "Es Con Field Hokkaido",
+            "total_runs": 10,
+            "ou": "Over 6.5"
+          }
+        ],
+        "trends": [
+          "SoftBank Hawks have won 8 of their last 10 home games against Nippon-Ham at PayPay Dome.",
+          "Closer Roberto Osuna has converted all 6 save opportunities vs Fighters with a 0.00 ERA.",
+          "Kensuke Kondoh and Hotaka Yamakawa have combined for 11 home runs against Nippon-Ham pitching."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Fukuoka SoftBank Hawks",
+        "home_win_prob": 59.7,
+        "away_win_prob": 40.3,
+        "fair_odds": "-148 / +148",
+        "dk_odds": "DK -148",
+        "dk_home_odds": "-148",
+        "dk_away_odds": "+148",
+        "dk_implied_prob": 59.7,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 6.5,
+        "projected": 5.9,
+        "pick": "Under 6.5",
+        "dk_odds": "DK -110",
+        "dk_implied_prob": 52.4,
+        "prob": 63.5,
+        "edge": "+4.5%"
+      },
+      "analysis": "Hawks lead Pacific League with 76 wins and 600 runs scored. Home dominance at PayPay Dome."
+    }
+  ],
+  "props": [
+    {
+      "id": "npb-p1",
+      "league": "Japan NPB",
+      "name": "Munetaka Murakami",
+      "team": "SWA",
+      "team_name": "Tokyo Yakult Swallows",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/7f7w4m1576014442.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/41159.png",
+      "opponent": "DeNA BayStars",
+      "pos": "3B",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.84,
+      "win_prob": 82.4,
+      "dk_odds": "-195",
+      "dk_decimal": 1.51,
+      "dk_implied_prob": 66.1,
+      "dk_edge": 16.3,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:00 PM JST (5:00 AM ET)",
+      "game_datetime": "Today \u2022 5:00 AM ET",
+      "venue": "Meiji Jingu Stadium",
+      "pitcher": "Katsuki Azuma (2.20 ERA)",
+      "catalysts": [
+        "Triple Crown caliber slugger with elite .415 on-base percentage",
+        "Batting .345 with 5 home runs over last 10 games",
+        "Hitter-friendly Jingu Stadium dimensions (+15% extra-base hits)"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "npb-p2",
+      "league": "Japan NPB",
+      "name": "Kazuma Okamoto",
+      "team": "YOM",
+      "team_name": "Yomiuri Giants",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/41160.png",
+      "opponent": "Chunichi Dragons",
+      "pos": "1B",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.72,
+      "win_prob": 81.1,
+      "dk_odds": "-185",
+      "dk_decimal": 1.54,
+      "dk_implied_prob": 64.9,
+      "dk_edge": 16.2,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:00 PM JST (5:00 AM ET)",
+      "game_datetime": "Today \u2022 5:00 AM ET",
+      "venue": "Tokyo Dome",
+      "pitcher": "Shinnosuke Ogasawara (2.95 ERA)",
+      "catalysts": [
+        "Giants team captain with 28 HRs and 84 RBIs this season",
+        "Batting .382 at home at Tokyo Dome",
+        "Dominating LHP fastballs (.390 wOBA)"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "npb-p3",
+      "league": "Japan NPB",
+      "name": "Kensuke Kondo",
+      "team": "HAW",
+      "team_name": "Fukuoka SoftBank Hawks",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/vsqstx1576014526.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/41161.png",
+      "opponent": "Nippon-Ham Fighters",
+      "pos": "OF",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.95,
+      "win_prob": 83.5,
+      "dk_odds": "-205",
+      "dk_decimal": 1.49,
+      "dk_implied_prob": 67.2,
+      "dk_edge": 16.3,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:00 PM JST (5:00 AM ET)",
+      "game_datetime": "Today \u2022 5:00 AM ET",
+      "venue": "Mizuho PayPay Dome",
+      "pitcher": "Hiromi Itoh (2.75 ERA)",
+      "catalysts": [
+        "Leads Pacific League in batting average (.318) and OBP (.435)",
+        "Reached base in 18 consecutive games",
+        "Protected in lethal Hawks lineup averaging 5.2 runs/game"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "npb-p4",
+      "league": "Japan NPB",
+      "name": "Shosei Togo",
+      "team": "YOM",
+      "team_name": "Yomiuri Giants",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/42415.png",
+      "opponent": "Chunichi Dragons",
+      "pos": "SP",
+      "line": "Over 6.5 Ks",
+      "pick_type": "Over",
+      "k_line": 6.5,
+      "proj_k": 7.8,
+      "proj_total": 7.8,
+      "win_prob": 82.6,
+      "dk_odds": "-180",
+      "dk_decimal": 1.56,
+      "dk_implied_prob": 64.3,
+      "dk_edge": 18.3,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:00 PM JST (5:00 AM ET)",
+      "game_datetime": "Today \u2022 5:00 AM ET",
+      "venue": "Tokyo Dome",
+      "pitcher": "Chunichi Dragons Lineup",
+      "catalysts": [
+        "2.14 ERA with 168 strikeouts this season",
+        "3-0 with 1.69 ERA and 23 Ks in 3 starts vs Chunichi in 2026",
+        "Averaging 7.1 innings pitched per home start"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "npb-p5",
+      "league": "Japan NPB",
+      "name": "Roki Sasaki",
+      "team": "LOT",
+      "team_name": "Chiba Lotte Marines",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/qtsvvr1576014493.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/43872.png",
+      "opponent": "Rakuten Eagles",
+      "pos": "SP",
+      "line": "Over 7.5 Ks",
+      "pick_type": "Over",
+      "k_line": 7.5,
+      "proj_k": 9.2,
+      "proj_total": 9.2,
+      "win_prob": 85.2,
+      "dk_odds": "-190",
+      "dk_decimal": 1.53,
+      "dk_implied_prob": 65.5,
+      "dk_edge": 19.7,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:00 PM JST (5:00 AM ET)",
+      "game_datetime": "Today \u2022 5:00 AM ET",
+      "venue": "ZOZO Marine Stadium",
+      "pitcher": "Rakuten Eagles Lineup",
+      "catalysts": [
+        "Generational arm reaching 102 mph with elite 91 mph splitter",
+        "34.2% strikeout rate over last 6 starts",
+        "Eagles lineup striking out 24.8% vs high-velocity RHP"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    }
+  ]
+}
