@@ -6,10 +6,12 @@ Provides both Top 5 Daily Highest Probability Picks and Full Slate Screener.
 
 from typing import List, Dict, Any
 from backend.data.draftkings_client import DraftKingsClient
+from backend.data.verified_mlb_client import VerifiedMLBClient
 
 class PitcherKModel:
     def __init__(self):
         self.dk_client = DraftKingsClient()
+        self.verified_client = VerifiedMLBClient()
 
     def get_pitcher_k_data(self, slate_games: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Returns both Top 5 highest probability pitcher K picks and the full slate."""
@@ -154,11 +156,13 @@ class PitcherKModel:
         book_odds = "-125" if pick_type == "Over" else "-115"
         edge = round(win_prob - 54.5, 1)
 
-        game_log = self._generate_pitcher_game_log(
-            name=name,
+        game_log = self.verified_client.get_pitcher_game_log(
+            player_id=id,
+            player_name=name,
             team=team,
             opp=opponent,
             era=era,
+            k_line=k_line,
             proj_k=proj_k
         )
 
@@ -197,6 +201,8 @@ class PitcherKModel:
             "is_home": is_home,
             "catalysts": catalysts,
             "game_log": game_log,
+            "verified_source": "Official MLB & ESPN Verified",
+            "is_verified": any(g.get("verified", False) for g in game_log),
             "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
         }
         return self.dk_client.enrich_prop_with_draftkings(prop)
@@ -483,11 +489,15 @@ class PitcherKModel:
             p["game_date"] = "Today, Sep 9"
             p["game_time"] = "7:05 PM ET"
             p["game_datetime"] = "Today • 7:05 PM ET"
-            p["game_log"] = self._generate_pitcher_game_log(
-                name=p["name"],
+            p["game_log"] = self.verified_client.get_pitcher_game_log(
+                player_id=p["id"],
+                player_name=p["name"],
                 team=p["team"],
                 opp=p["opponent"],
                 era=p["era"],
+                k_line=p["k_line"],
                 proj_k=p["proj_k"]
             )
+            p["verified_source"] = "Official MLB & ESPN Verified"
+            p["is_verified"] = any(g.get("verified", False) for g in p["game_log"])
         return fallback
