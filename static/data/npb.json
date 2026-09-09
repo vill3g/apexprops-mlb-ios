@@ -10,23 +10,23 @@
         "jp_name": "\u5de8\u4eba",
         "abbr": "YOM",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png",
-        "score": "2"
+        "score": "0"
       },
       "away_team": {
         "name": "Chunichi Dragons",
         "jp_name": "\u4e2d\u65e5",
         "abbr": "CHU",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/jli5jv1576009060.png",
-        "score": "1"
+        "score": "0"
       },
       "venue": "Tokyo Dome",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Shosei Togo (RHP, 2.14 ERA)",
       "away_pitcher": "Shinnosuke Ogasawara (LHP, 2.95 ERA)",
-      "last_10_home": "5-5 (W4)",
-      "last_10_away": "4-6 (L3)",
+      "last_10_home": "5-5 (W1)",
+      "last_10_away": "4-6 (L1)",
       "h2h": "Giants lead 12-9 this season",
       "h2h_history": {
         "opponent": "Chunichi Dragons",
@@ -135,13 +135,13 @@
       },
       "ml_prediction": {
         "pick": "Yomiuri Giants",
-        "home_win_prob": 64.7,
-        "away_win_prob": 35.3,
-        "fair_odds": "-183 / +183",
-        "dk_odds": "DK -183",
-        "dk_home_odds": "-183",
-        "dk_away_odds": "+183",
-        "dk_implied_prob": 64.7,
+        "home_win_prob": 65.2,
+        "away_win_prob": 34.8,
+        "fair_odds": "-187 / +187",
+        "dk_odds": "DK -187",
+        "dk_home_odds": "-187",
+        "dk_away_odds": "+187",
+        "dk_implied_prob": 65.2,
         "confidence": "HIGH"
       },
       "total_runs": {
@@ -163,23 +163,23 @@
         "jp_name": "DeNA",
         "abbr": "YOK",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/fuhqf21576013789.png",
-        "score": "2"
+        "score": "0"
       },
       "away_team": {
         "name": "Tokyo Yakult Swallows",
         "jp_name": "\u30e4\u30af\u30eb\u30c8",
         "abbr": "YAK",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/ryyku01576013231.png",
-        "score": "2"
+        "score": "0"
       },
       "venue": "Yokohama Stadium",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Katsuki Azuma (LHP, 2.20 ERA)",
       "away_pitcher": "Keiji Takahashi (LHP, 3.42 ERA)",
-      "last_10_home": "5-5 (W2)",
-      "last_10_away": "4-6 (L2)",
+      "last_10_home": "5-5 (W3)",
+      "last_10_away": "4-6 (L3)",
       "h2h": "BayStars lead 11-10 this season",
       "h2h_history": {
         "opponent": "Tokyo Yakult Swallows",
@@ -277,23 +277,23 @@
       },
       "ml_prediction": {
         "pick": "Yokohama DeNA BayStars",
-        "home_win_prob": 56.4,
-        "away_win_prob": 43.6,
-        "fair_odds": "-129 / +129",
-        "dk_odds": "DK -129",
-        "dk_home_odds": "-129",
-        "dk_away_odds": "+129",
-        "dk_implied_prob": 56.3,
+        "home_win_prob": 57.1,
+        "away_win_prob": 42.9,
+        "fair_odds": "-133 / +133",
+        "dk_odds": "DK -133",
+        "dk_home_odds": "-133",
+        "dk_away_odds": "+133",
+        "dk_implied_prob": 57.1,
         "confidence": "MED"
       },
       "total_runs": {
         "line": 6.5,
-        "projected": 6.6,
+        "projected": 6.7,
         "pick": "Over 6.5",
         "dk_odds": "DK -110",
         "dk_implied_prob": 52.4,
         "prob": 63.5,
-        "edge": "+0.7%"
+        "edge": "+1.5%"
       },
       "analysis": "Yokohama Stadium features short fences (+18% HR factor). BayStars slugging core gives offensive advantage."
     },
@@ -317,7 +317,7 @@
       "venue": "Koshien Stadium",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Koyo Aoyagi (RHP, 2.88 ERA)",
       "away_pitcher": "Daichi Ohsera (RHP, 3.12 ERA)",
       "last_10_home": "6-4 (W2)",
@@ -419,23 +419,23 @@
       },
       "ml_prediction": {
         "pick": "Hanshin Tigers",
-        "home_win_prob": 68.0,
-        "away_win_prob": 32.0,
-        "fair_odds": "-212 / +212",
-        "dk_odds": "DK -212",
-        "dk_home_odds": "-212",
-        "dk_away_odds": "+212",
-        "dk_implied_prob": 67.9,
+        "home_win_prob": 67.1,
+        "away_win_prob": 32.9,
+        "fair_odds": "-204 / +204",
+        "dk_odds": "DK -204",
+        "dk_home_odds": "-204",
+        "dk_away_odds": "+204",
+        "dk_implied_prob": 67.1,
         "confidence": "HIGH"
       },
       "total_runs": {
         "line": 5.5,
-        "projected": 6.0,
+        "projected": 5.9,
         "pick": "Over 5.5",
         "dk_odds": "DK -110",
         "dk_implied_prob": 52.4,
         "prob": 63.5,
-        "edge": "+3.8%"
+        "edge": "+3.0%"
       },
       "analysis": "Tigers hold 1st place in Central League (69-52) with league-best 2.86 team ERA. Pitching duel favors low scoring."
     },
@@ -447,23 +447,23 @@
         "jp_name": "\u30ed\u30c3\u30c6",
         "abbr": "LOT",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/na10tn1576008207.png",
-        "score": "4"
+        "score": "0"
       },
       "away_team": {
         "name": "Tohoku Rakuten Golden Eagles",
         "jp_name": "\u697d\u5929",
         "abbr": "RAK",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/qx24pm1576012656.png",
-        "score": "4"
+        "score": "0"
       },
       "venue": "ZOZO Marine Stadium",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Roki Sasaki (RHP, 1.95 ERA)",
       "away_pitcher": "Takahiro Norimoto (RHP, 3.05 ERA)",
-      "last_10_home": "5-5 (W4)",
-      "last_10_away": "4-6 (L1)",
+      "last_10_home": "5-5 (W1)",
+      "last_10_away": "4-6 (L2)",
       "h2h": "Marines lead 11-10 this season",
       "h2h_history": {
         "opponent": "Tohoku Rakuten Golden Eagles",
@@ -550,23 +550,23 @@
       },
       "ml_prediction": {
         "pick": "Chiba Lotte Marines",
-        "home_win_prob": 62.1,
-        "away_win_prob": 37.9,
-        "fair_odds": "-164 / +164",
-        "dk_odds": "DK -164",
-        "dk_home_odds": "-164",
-        "dk_away_odds": "+164",
-        "dk_implied_prob": 62.1,
+        "home_win_prob": 62.9,
+        "away_win_prob": 37.1,
+        "fair_odds": "-170 / +170",
+        "dk_odds": "DK -170",
+        "dk_home_odds": "-170",
+        "dk_away_odds": "+170",
+        "dk_implied_prob": 63.0,
         "confidence": "HIGH"
       },
       "total_runs": {
         "line": 5.5,
-        "projected": 7.1,
+        "projected": 7.2,
         "pick": "Over 5.5",
         "dk_odds": "DK -110",
         "dk_implied_prob": 52.4,
         "prob": 63.5,
-        "edge": "+12.0%"
+        "edge": "+12.8%"
       },
       "analysis": "Ace Roki Sasaki features 100+ mph fastball with 33% K rate at windy ZOZO Marine Stadium."
     },
@@ -585,12 +585,12 @@
         "jp_name": "\u897f\u6b66",
         "abbr": "SEI",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/onmvow1576012163.png",
-        "score": "6"
+        "score": "0"
       },
       "venue": "Kyocera Dome Osaka",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Hiroya Miyagi (LHP, 2.30 ERA)",
       "away_pitcher": "Kona Takahashi (RHP, 3.15 ERA)",
       "last_10_home": "5-5 (W4)",
@@ -681,13 +681,13 @@
       },
       "ml_prediction": {
         "pick": "Saitama Seibu Lions",
-        "home_win_prob": 43.5,
-        "away_win_prob": 56.5,
-        "fair_odds": "+130 / -130",
-        "dk_odds": "DK -130",
-        "dk_home_odds": "+130",
-        "dk_away_odds": "-130",
-        "dk_implied_prob": 43.5,
+        "home_win_prob": 42.7,
+        "away_win_prob": 57.3,
+        "fair_odds": "+134 / -134",
+        "dk_odds": "DK -134",
+        "dk_home_odds": "+134",
+        "dk_away_odds": "-134",
+        "dk_implied_prob": 42.7,
         "confidence": "MED"
       },
       "total_runs": {
@@ -709,23 +709,23 @@
         "jp_name": "\u30bd\u30d5\u30c8\u30d0\u30f3\u30af",
         "abbr": "SOF",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/ampozy1576009547.png",
-        "score": "5"
+        "score": "0"
       },
       "away_team": {
         "name": "Hokkaido Nippon-Ham Fighters",
         "jp_name": "\u65e5\u672c\u30cf\u30e0",
         "abbr": "HAM",
         "logo": "https://r2.thesportsdb.com/images/media/team/badge/qxgzq01576011016.png",
-        "score": "3"
+        "score": "0"
       },
       "venue": "Mizuho PayPay Dome",
       "start_time": "6:00 PM JST (5:00 AM ET)",
       "status": "LIVE",
-      "is_live": true,
+      "is_live": false,
       "home_pitcher": "Kohei Arihara (RHP, 2.45 ERA)",
       "away_pitcher": "Hiromi Itoh (RHP, 2.75 ERA)",
-      "last_10_home": "6-4 (W1)",
-      "last_10_away": "6-4 (L1)",
+      "last_10_home": "6-4 (W2)",
+      "last_10_away": "6-4 (L2)",
       "h2h": "Hawks lead 13-8 this season",
       "h2h_history": {
         "opponent": "Hokkaido Nippon-Ham Fighters",
@@ -812,23 +812,23 @@
       },
       "ml_prediction": {
         "pick": "Fukuoka SoftBank Hawks",
-        "home_win_prob": 59.7,
-        "away_win_prob": 40.3,
-        "fair_odds": "-148 / +148",
-        "dk_odds": "DK -148",
-        "dk_home_odds": "-148",
-        "dk_away_odds": "+148",
-        "dk_implied_prob": 59.7,
+        "home_win_prob": 60.5,
+        "away_win_prob": 39.5,
+        "fair_odds": "-153 / +153",
+        "dk_odds": "DK -153",
+        "dk_home_odds": "-153",
+        "dk_away_odds": "+153",
+        "dk_implied_prob": 60.5,
         "confidence": "HIGH"
       },
       "total_runs": {
         "line": 6.5,
-        "projected": 5.9,
+        "projected": 6.0,
         "pick": "Under 6.5",
         "dk_odds": "DK -110",
         "dk_implied_prob": 52.4,
         "prob": 63.5,
-        "edge": "+4.5%"
+        "edge": "+3.8%"
       },
       "analysis": "Hawks lead Pacific League with 76 wins and 600 runs scored. Home dominance at PayPay Dome."
     }
