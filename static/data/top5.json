@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-09 06:42:34 ET",
+  "timestamp": "2026-09-09 14:42:07 ET",
   "slate_count": 15,
-  "total_props": 23,
+  "total_props": 69,
   "top_5": [
     {
       "id": 39832,
@@ -19,14 +19,14 @@
       "game_datetime": "Today \u2022 10:10 PM ET",
       "line": "+1",
       "type": "Over",
-      "win_prob": 90.9,
-      "proj_total": 3.96,
+      "win_prob": 90.8,
+      "proj_total": 3.99,
       "exp_hits": 1.76,
       "exp_runs": 1.14,
-      "exp_rbis": 1.05,
+      "exp_rbis": 1.09,
       "book_odds": "DK -229",
       "implied_prob": 68.0,
-      "edge": 21.3,
+      "edge": 21.2,
       "l10_hit": "9/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Rhett Lowder (5.43 ERA)",
@@ -39,27 +39,27 @@
       "dist": [
         {
           "val": 0,
-          "pct": 9.1
+          "pct": 9.2
         },
         {
           "val": 1,
-          "pct": 10.9
+          "pct": 10.2
         },
         {
           "val": 2,
-          "pct": 13.3
-        },
-        {
-          "val": 3,
           "pct": 13.8
         },
         {
+          "val": 3,
+          "pct": 14.5
+        },
+        {
           "val": 4,
-          "pct": 14.9
+          "pct": 13.7
         },
         {
           "val": "5+",
-          "pct": 38.0
+          "pct": 38.6
         }
       ],
       "bvp": {
@@ -98,12 +98,69 @@
         "hr_factor": "+6% Home Runs",
         "status": "BALANCED FAIR CONDITIONS"
       },
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CIN",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 7",
+          "opp": "vs CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 6",
+          "opp": "@ CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 4",
+          "opp": "@ CIN",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 3",
+          "opp": "vs CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 2,
+          "hrrbi": 5,
+          "hit_prop": true
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/event/34639870?outcomes=0ML86220145_1",
       "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0ML86220145_1",
       "dk_odds": "-229",
       "dk_decimal": 1.44,
       "dk_implied_prob": 69.6,
-      "dk_edge": 21.3,
+      "dk_edge": 21.2,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
       "rank": 1,
       "top_rank": 1
@@ -124,14 +181,14 @@
       "game_datetime": "Today \u2022 7:05 PM ET",
       "line": "+1",
       "type": "Over",
-      "win_prob": 90.7,
-      "proj_total": 4.12,
+      "win_prob": 90.0,
+      "proj_total": 4.14,
       "exp_hits": 1.74,
       "exp_runs": 1.2,
-      "exp_rbis": 1.17,
-      "book_odds": "DK -228",
+      "exp_rbis": 1.2,
+      "book_odds": "DK -223",
       "implied_prob": 68.0,
-      "edge": 21.2,
+      "edge": 21.0,
       "l10_hit": "9/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Tomoyuki Sugano (5.19 ERA)",
@@ -144,27 +201,27 @@
       "dist": [
         {
           "val": 0,
-          "pct": 9.3
+          "pct": 10.0
         },
         {
           "val": 1,
-          "pct": 9.3
+          "pct": 9.7
         },
         {
           "val": 2,
-          "pct": 13.0
+          "pct": 12.1
         },
         {
           "val": 3,
-          "pct": 13.8
+          "pct": 13.6
         },
         {
           "val": 4,
-          "pct": 13.9
+          "pct": 13.0
         },
         {
           "val": "5+",
-          "pct": 40.7
+          "pct": 41.5
         }
       ],
       "bvp": {
@@ -195,12 +252,69 @@
         "hr_factor": "+24% LHB HRs",
         "status": "STRONG HOME RUN BOOST"
       },
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 7",
+          "opp": "vs COL",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 6",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 4",
+          "opp": "@ COL",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "vs COL",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/event/34639864?outcomes=0ML86220139_1",
       "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0ML86220139_1",
-      "dk_odds": "-228",
-      "dk_decimal": 1.44,
-      "dk_implied_prob": 69.5,
-      "dk_edge": 21.2,
+      "dk_odds": "-223",
+      "dk_decimal": 1.45,
+      "dk_implied_prob": 69.0,
+      "dk_edge": 21.0,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
       "rank": 2,
       "top_rank": 2
@@ -221,15 +335,15 @@
       "game_datetime": "Today \u2022 10:10 PM ET",
       "line": "+1",
       "type": "Over",
-      "win_prob": 90.2,
-      "proj_total": 4.01,
-      "exp_hits": 1.74,
-      "exp_runs": 1.13,
-      "exp_rbis": 1.15,
-      "book_odds": "DK -224",
+      "win_prob": 89.8,
+      "proj_total": 3.95,
+      "exp_hits": 1.7,
+      "exp_runs": 1.1,
+      "exp_rbis": 1.14,
+      "book_odds": "DK -221",
       "implied_prob": 68.0,
-      "edge": 21.1,
-      "l10_hit": "9/10",
+      "edge": 20.9,
+      "l10_hit": "8/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Rhett Lowder (5.43 ERA)",
       "venue": "Dodger Stadium",
@@ -241,27 +355,27 @@
       "dist": [
         {
           "val": 0,
-          "pct": 9.8
+          "pct": 10.2
         },
         {
           "val": 1,
-          "pct": 10.1
+          "pct": 9.6
         },
         {
           "val": 2,
-          "pct": 13.6
+          "pct": 13.8
         },
         {
           "val": 3,
-          "pct": 14.2
+          "pct": 15.1
         },
         {
           "val": 4,
-          "pct": 14.0
+          "pct": 13.2
         },
         {
           "val": "5+",
-          "pct": 38.3
+          "pct": 38.1
         }
       ],
       "bvp": {
@@ -292,120 +406,72 @@
         "hr_factor": "+6% Home Runs",
         "status": "BALANCED FAIR CONDITIONS"
       },
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 7",
+          "opp": "vs CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 2,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 6",
+          "opp": "@ CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 4",
+          "opp": "@ CIN",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "vs CIN",
+          "ab": 4,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/event/34639870?outcomes=0ML86220145_1",
       "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639870%3Foutcomes%3D0ML86220145_1",
-      "dk_odds": "-224",
+      "dk_odds": "-221",
       "dk_decimal": 1.45,
-      "dk_implied_prob": 69.1,
-      "dk_edge": 21.1,
+      "dk_implied_prob": 68.9,
+      "dk_edge": 20.9,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
       "rank": 3,
       "top_rank": 3
-    },
-    {
-      "id": 33192,
-      "name": "Aaron Judge",
-      "team": "NYY",
-      "team_name": "New York Yankees",
-      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png",
-      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/33192.png",
-      "opponent": "COL",
-      "is_home": true,
-      "order": 3,
-      "pos": "CF",
-      "game_date": "Today, Sep 09",
-      "game_time": "7:05 PM ET",
-      "game_datetime": "Today \u2022 7:05 PM ET",
-      "line": "+1",
-      "type": "Over",
-      "win_prob": 90.0,
-      "proj_total": 4.09,
-      "exp_hits": 1.69,
-      "exp_runs": 1.15,
-      "exp_rbis": 1.24,
-      "book_odds": "DK -223",
-      "implied_prob": 68.0,
-      "edge": 21.0,
-      "l10_hit": "9/10",
-      "best_book": "DraftKings (-190)",
-      "pitcher": "Tomoyuki Sugano (5.19 ERA)",
-      "venue": "Yankee Stadium",
-      "catalysts": [
-        "Yankee Stadium factor +9% to extra-base hits and scoring",
-        "Opposing starter Tomoyuki Sugano struggles with elevated 5.19 ERA",
-        "Prime run production spot: high baseline RBI opportunities with top-of-order traffic"
-      ],
-      "dist": [
-        {
-          "val": 0,
-          "pct": 10.0
-        },
-        {
-          "val": 1,
-          "pct": 9.1
-        },
-        {
-          "val": 2,
-          "pct": 12.7
-        },
-        {
-          "val": 3,
-          "pct": 14.2
-        },
-        {
-          "val": 4,
-          "pct": 13.4
-        },
-        {
-          "val": "5+",
-          "pct": 40.5
-        }
-      ],
-      "bvp": {
-        "batter": "Aaron Judge",
-        "team": "NYY",
-        "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/33192.png",
-        "pitcher": "Nick Pivetta",
-        "pitcher_team": "BOS",
-        "pitcher_headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/35293.png",
-        "pa": 28,
-        "ab": 22,
-        "h": 8,
-        "doubles": 2,
-        "triples": 0,
-        "hr": 4,
-        "rbi": 7,
-        "bb": 5,
-        "so": 6,
-        "avg": ".364",
-        "obp": ".481",
-        "slg": ".909",
-        "ops": "1.390",
-        "verdict": "ELITE BATTER ADVANTAGE",
-        "note": "Judge crushes Pivetta's 4-seam fastball (.520 xwOBA) with 4 career home runs in 22 at-bats."
-      },
-      "weather": {
-        "venue": "Yankee Stadium",
-        "city": "Bronx, NY",
-        "temp": "81\u00b0F",
-        "condition": "Partly Cloudy",
-        "wind": "13 mph Out to Short Porch (RF)",
-        "humidity": "58%",
-        "altitude": "55 ft",
-        "air_density": "Normal",
-        "run_factor": "+12% Runs",
-        "hr_factor": "+24% LHB HRs",
-        "status": "STRONG HOME RUN BOOST"
-      },
-      "dk_link": "https://sportsbook.draftkings.com/event/34639864?outcomes=0ML86220139_1",
-      "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639864%3Foutcomes%3D0ML86220139_1",
-      "dk_odds": "-223",
-      "dk_decimal": 1.45,
-      "dk_implied_prob": 69.0,
-      "dk_edge": 21.0,
-      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
-      "rank": 4,
-      "top_rank": 4
     },
     {
       "id": 42402,
@@ -424,10 +490,10 @@
       "line": "+1",
       "type": "Over",
       "win_prob": 89.6,
-      "proj_total": 3.89,
-      "exp_hits": 1.71,
-      "exp_runs": 1.07,
-      "exp_rbis": 1.11,
+      "proj_total": 3.93,
+      "exp_hits": 1.72,
+      "exp_runs": 1.08,
+      "exp_rbis": 1.14,
       "book_odds": "DK -220",
       "implied_prob": 68.0,
       "edge": 20.9,
@@ -447,23 +513,23 @@
         },
         {
           "val": 1,
-          "pct": 9.8
+          "pct": 9.5
         },
         {
           "val": 2,
-          "pct": 13.3
+          "pct": 14.0
         },
         {
           "val": 3,
-          "pct": 15.2
+          "pct": 14.7
         },
         {
           "val": 4,
-          "pct": 14.4
+          "pct": 13.5
         },
         {
           "val": "5+",
-          "pct": 36.9
+          "pct": 37.8
         }
       ],
       "bvp": {
@@ -491,12 +557,223 @@
         "hr_factor": "+0% HRs",
         "status": "STANDARD RUN ENVIRONMENT"
       },
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs ARI",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 7",
+          "opp": "vs ARI",
+          "ab": 5,
+          "r": 1,
+          "h": 1,
+          "so": 2,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 6",
+          "opp": "@ ARI",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 4",
+          "opp": "@ ARI",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "vs ARI",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        }
+      ],
       "dk_link": "https://sportsbook.draftkings.com/event/34639867?outcomes=0ML86220142_1",
       "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639867%3Foutcomes%3D0ML86220142_1",
       "dk_odds": "-220",
       "dk_decimal": 1.45,
       "dk_implied_prob": 68.7,
       "dk_edge": 20.9,
+      "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+      "rank": 4,
+      "top_rank": 4
+    },
+    {
+      "id": 5080767,
+      "name": "Roman Anthony",
+      "team": "BOS",
+      "team_name": "Boston Red Sox",
+      "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/bos.png",
+      "headshot": "https://a.espncdn.com/i/headshots/mlb/players/full/5080767.png",
+      "opponent": "LAA",
+      "is_home": true,
+      "order": 1,
+      "pos": "DH",
+      "game_date": "Today, Sep 09",
+      "game_time": "6:45 PM ET",
+      "game_datetime": "Today \u2022 6:45 PM ET",
+      "line": "+1",
+      "type": "Over",
+      "win_prob": 89.3,
+      "proj_total": 4.04,
+      "exp_hits": 1.68,
+      "exp_runs": 1.24,
+      "exp_rbis": 1.12,
+      "book_odds": "DK -218",
+      "implied_prob": 68.0,
+      "edge": 20.8,
+      "l10_hit": "8/10",
+      "best_book": "DraftKings (-190)",
+      "pitcher": "Ryan Johnson (5.17 ERA)",
+      "venue": "Fenway Park",
+      "catalysts": [
+        "Fenway Park factor +13% to extra-base hits and scoring",
+        "Opposing starter Ryan Johnson struggles with elevated 5.17 ERA",
+        "Batting leadoff guarantees peak plate appearance volume (est. 4.7 PA)"
+      ],
+      "dist": [
+        {
+          "val": 0,
+          "pct": 10.7
+        },
+        {
+          "val": 1,
+          "pct": 9.4
+        },
+        {
+          "val": 2,
+          "pct": 13.4
+        },
+        {
+          "val": 3,
+          "pct": 13.6
+        },
+        {
+          "val": 4,
+          "pct": 13.4
+        },
+        {
+          "val": "5+",
+          "pct": 39.5
+        }
+      ],
+      "bvp": {
+        "batter": "Roman Anthony",
+        "pitcher": "Ryan Johnson",
+        "pa": 16,
+        "ab": 14,
+        "h": 3,
+        "hr": 0,
+        "rbi": 2,
+        "avg": ".260",
+        "obp": ".330",
+        "slg": ".420",
+        "ops": ".750",
+        "verdict": "STRONG MATCHUP EDGE",
+        "note": "Favorable contact profile against Ryan Johnson's primary pitch repertoire."
+      },
+      "weather": {
+        "venue": "Fenway Park",
+        "city": "Boston, MA",
+        "temp": "75\u00b0F",
+        "condition": "Breezy",
+        "wind": "14 mph Blowing Out (Over Green Monster)",
+        "humidity": "50%",
+        "altitude": "20 ft",
+        "air_density": "Normal",
+        "run_factor": "+15% Runs",
+        "hr_factor": "+18% Doubles/HRs",
+        "status": "EXTRA-BASE HIT BOOST"
+      },
+      "game_log": [
+        {
+          "date": "Sep 8",
+          "opp": "vs LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 1,
+          "hrrbi": 4,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 7",
+          "opp": "vs LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 2,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 6",
+          "opp": "@ LAA",
+          "ab": 5,
+          "r": 0,
+          "h": 0,
+          "so": 1,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false
+        },
+        {
+          "date": "Sep 4",
+          "opp": "@ LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 2,
+          "so": 0,
+          "rbi": 2,
+          "hrrbi": 5,
+          "hit_prop": true
+        },
+        {
+          "date": "Sep 3",
+          "opp": "vs LAA",
+          "ab": 4,
+          "r": 1,
+          "h": 1,
+          "so": 1,
+          "rbi": 1,
+          "hrrbi": 3,
+          "hit_prop": true
+        }
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/event/34639861?outcomes=0ML86220133_1",
+      "dk_slip_link": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34639861%3Foutcomes%3D0ML86220133_1",
+      "dk_odds": "-218",
+      "dk_decimal": 1.46,
+      "dk_implied_prob": 68.5,
+      "dk_edge": 20.8,
       "dk_logo": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
       "rank": 5,
       "top_rank": 5
