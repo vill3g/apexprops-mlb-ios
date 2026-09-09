@@ -357,11 +357,11 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     target_delta_pct = round((target_delta / (active_target + 1e-10)) * 100, 3)
     target_status = "ABOVE" if target_delta >= 0 else "BELOW"
 
-    # Evaluate Above vs Below Probability & Decision Criteria
+    # Evaluate Above vs Below Probability & Decision Criteria (Enhanced Engine)
     pred_weight = 0
     pred_factors = []
 
-    # A. Current Spread vs Target
+    # A. Current Spread vs Target Benchmark
     if abs(target_delta) > (atr * 0.1):
         if target_delta > 0:
             pred_weight += 25
@@ -372,7 +372,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     else:
         pred_factors.append(f"Price testing target level within narrow range (Spread: ${target_delta:+.2f})")
 
-    # B. 15m EMA Alignment
+    # B. 15m EMA Alignment & Micro Trend
     if ind_summary.get("bullish_ribbon"):
         pred_weight += 20
         pred_factors.append("Bullish EMA 9 > 21 ribbon providing upward thrust")
@@ -386,7 +386,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         pred_weight -= 8
         pred_factors.append("Short-term EMA 9 sloping below EMA 21")
 
-    # C. Candle Progression & RSI
+    # C. Candle Progression & RSI Momentum
     last_candle = df_ind.iloc[-1]
     candle_green = float(last_candle["close"]) >= float(last_candle["open"])
     if candle_green:
@@ -404,7 +404,57 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         pred_weight -= 12
         pred_factors.append(f"RSI momentum weak at {rsi_val:.1f} (favors resolving below target)")
 
-    # D. Key Support / Resistance vs Target
+    # D. Detected Candlestick Chart Patterns
+    for p in patterns:
+        p_name = p.get("name")
+        p_type = p.get("type")
+        p_str = p.get("strength", 1)
+        pts = p_str * 6
+        if p_type == "BULLISH":
+            pred_weight += pts
+            pred_factors.append(f"Chart Pattern: {p_name} detected (+{pts} pts bullish reversal)")
+        elif p_type == "BEARISH":
+            pred_weight -= pts
+            pred_factors.append(f"Chart Pattern: {p_name} detected (-{pts} pts bearish reversal)")
+
+    # E. Market Structure (BOS, CHoCH, Double Formations)
+    bos_info = structure.get("bos")
+    if bos_info:
+        if bos_info.get("type") == "BULLISH_BOS":
+            pred_weight += 15
+            pred_factors.append("Market Structure: Bullish Break of Structure (BOS) confirmed")
+        elif bos_info.get("type") == "BEARISH_BOS":
+            pred_weight -= 15
+            pred_factors.append("Market Structure: Bearish Break of Structure (BOS) confirmed")
+
+    choch_info = structure.get("choch")
+    if choch_info:
+        if choch_info.get("type") == "BULLISH_CHOCH":
+            pred_weight += 12
+            pred_factors.append("Market Structure: Bullish Change of Character (CHoCH)")
+        elif choch_info.get("type") == "BEARISH_CHOCH":
+            pred_weight -= 12
+            pred_factors.append("Market Structure: Bearish Change of Character (CHoCH)")
+
+    dbl_pattern = structure.get("double_pattern")
+    if dbl_pattern:
+        if dbl_pattern.get("type") == "DOUBLE_BOTTOM":
+            pred_weight += 12
+            pred_factors.append("Chart Pattern: Double Bottom support zone established")
+        elif dbl_pattern.get("type") == "DOUBLE_TOP":
+            pred_weight -= 12
+            pred_factors.append("Chart Pattern: Double Top resistance ceiling established")
+
+    # F. Volume Profile & Surge
+    if ind_summary.get("vol_surge"):
+        if candle_green:
+            pred_weight += 10
+            pred_factors.append("Institutional Volume Surge detected on Green candle")
+        else:
+            pred_weight -= 10
+            pred_factors.append("Institutional Volume Surge detected on Red candle")
+
+    # G. Key Support / Resistance vs Target Benchmark
     if near_support and near_support >= active_target:
         pred_weight += 12
         pred_factors.append(f"Key structural support (${near_support:.1f}) sits ABOVE target, forming a price floor")
@@ -412,12 +462,13 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         pred_weight -= 12
         pred_factors.append(f"Key structural resistance (${near_resistance:.1f}) sits BELOW target, capping recovery")
 
+    # Final Probability & Outcome Determination
     if pred_weight >= 12:
         pred_outcome = "ABOVE TARGET (OVER)"
-        pred_prob = min(92, max(56, int(52 + (abs(pred_weight) / 80.0) * 38)))
+        pred_prob = min(94, max(56, int(52 + (abs(pred_weight) / 100.0) * 40)))
     elif pred_weight <= -12:
         pred_outcome = "BELOW TARGET (UNDER)"
-        pred_prob = min(92, max(56, int(52 + (abs(pred_weight) / 80.0) * 38)))
+        pred_prob = min(94, max(56, int(52 + (abs(pred_weight) / 100.0) * 40)))
     else:
         pred_outcome = "ABOVE TARGET (OVER)" if target_delta >= 0 else "BELOW TARGET (UNDER)"
         pred_prob = 52
@@ -436,7 +487,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         "status": target_status,
         "predicted_outcome": pred_outcome,
         "probability_percent": pred_prob,
-        "confidence_badge": "HIGH CONVICTION" if pred_prob >= 70 else ("MODERATE EDGE" if pred_prob >= 60 else "TIGHT PIVOT BATTLE"),
+        "confidence_badge": "HIGH CONVICTION" if pred_prob >= 72 else ("MODERATE EDGE" if pred_prob >= 62 else "TIGHT PIVOT BATTLE"),
         "decision_factors": pred_factors,
         "last_5_targets": last_5_targets,
         "streak_summary": f"{higher_count} Higher / {lower_count} Lower"
