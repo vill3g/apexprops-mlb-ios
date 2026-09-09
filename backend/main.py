@@ -104,10 +104,21 @@ def get_pitcher_k_props():
 @app.get("/api/international/npb")
 def get_npb_predictions():
     games = intl_model.get_npb_slate()
+    props = intl_model.get_npb_props()
     return {
         "league": "Japan NPB",
         "count": len(games),
-        "games": games
+        "games": games,
+        "props": props
+    }
+
+@app.get("/api/international/npb/props")
+def get_npb_props_endpoint():
+    props = intl_model.get_npb_props()
+    return {
+        "league": "Japan NPB",
+        "count": len(props),
+        "props": props
     }
 
 @app.get("/api/international/npb/standings")
@@ -122,10 +133,21 @@ def get_npb_standings():
 @app.get("/api/international/kbo")
 def get_kbo_predictions():
     games = intl_model.get_kbo_slate()
+    props = intl_model.get_kbo_props()
     return {
         "league": "Korea KBO",
         "count": len(games),
-        "games": games
+        "games": games,
+        "props": props
+    }
+
+@app.get("/api/international/kbo/props")
+def get_kbo_props_endpoint():
+    props = intl_model.get_kbo_props()
+    return {
+        "league": "Korea KBO",
+        "count": len(props),
+        "props": props
     }
 
 @app.get("/api/international/kbo/standings")
