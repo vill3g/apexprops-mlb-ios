@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-09 18:39:06 ET",
+  "timestamp": "2026-09-09 18:50:40 ET",
   "slate_count": 11,
   "total_props": 110,
   "top_5": [
@@ -29,7 +29,7 @@
       "book_odds": "DK -205",
       "implied_prob": 68.0,
       "edge": 20.2,
-      "l10_hit": "7/10",
+      "l10_hit": "6/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Janson Junk (4.4 ERA)",
       "pitcher_name": "Janson Junk",
@@ -94,6 +94,19 @@
         "status": "STANDARD RUN ENVIRONMENT"
       },
       "game_log": [
+        {
+          "date": "Sep 09",
+          "opp": "@ MIA",
+          "ab": 1,
+          "r": 0,
+          "h": 0,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
         {
           "date": "Sep 08",
           "opp": "@ MIA",
@@ -210,19 +223,6 @@
           "hit_prop": true,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Aug 29",
-          "opp": "vs HOU",
-          "ab": 4,
-          "r": 1,
-          "h": 1,
-          "so": 0,
-          "rbi": 1,
-          "hrrbi": 3,
-          "hit_prop": true,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
         }
       ],
       "verified_source": "Official MLB & ESPN Verified",
@@ -329,6 +329,19 @@
         "status": "STANDARD RUN ENVIRONMENT"
       },
       "game_log": [
+        {
+          "date": "Sep 09",
+          "opp": "@ MIA",
+          "ab": 0,
+          "r": 0,
+          "h": 0,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
         {
           "date": "Sep 08",
           "opp": "@ MIA",
@@ -445,19 +458,6 @@
           "hit_prop": true,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Aug 29",
-          "opp": "vs HOU",
-          "ab": 4,
-          "r": 0,
-          "h": 0,
-          "so": 1,
-          "rbi": 0,
-          "hrrbi": 0,
-          "hit_prop": false,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
         }
       ],
       "verified_source": "Official MLB & ESPN Verified",
@@ -567,6 +567,19 @@
         "status": "EXTRA-BASE HIT BOOST"
       },
       "game_log": [
+        {
+          "date": "Sep 09",
+          "opp": "@ BOS",
+          "ab": 1,
+          "r": 0,
+          "h": 0,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
         {
           "date": "Sep 08",
           "opp": "@ BOS",
@@ -683,19 +696,6 @@
           "hit_prop": true,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Aug 29",
-          "opp": "vs PHI",
-          "ab": 4,
-          "r": 0,
-          "h": 0,
-          "so": 2,
-          "rbi": 0,
-          "hrrbi": 0,
-          "hit_prop": false,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
         }
       ],
       "verified_source": "Official MLB & ESPN Verified",
@@ -737,7 +737,7 @@
       "book_odds": "DK -179",
       "implied_prob": 68.0,
       "edge": 18.9,
-      "l10_hit": "6/10",
+      "l10_hit": "5/10",
       "best_book": "DraftKings (-190)",
       "pitcher": "Robert Stock (4.3 ERA)",
       "pitcher_name": "Robert Stock",
@@ -801,6 +801,19 @@
         "status": "STANDARD RUN ENVIRONMENT"
       },
       "game_log": [
+        {
+          "date": "Sep 09",
+          "opp": "vs NYM",
+          "ab": 0,
+          "r": 0,
+          "h": 0,
+          "so": 0,
+          "rbi": 0,
+          "hrrbi": 0,
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
         {
           "date": "Sep 08",
           "opp": "vs NYM",
@@ -912,19 +925,6 @@
           "r": 1,
           "h": 0,
           "so": 0,
-          "rbi": 0,
-          "hrrbi": 1,
-          "hit_prop": true,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Aug 30",
-          "opp": "@ WSH",
-          "ab": 4,
-          "r": 1,
-          "h": 0,
-          "so": 3,
           "rbi": 0,
           "hrrbi": 1,
           "hit_prop": true,

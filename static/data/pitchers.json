@@ -1643,6 +1643,18 @@
       ],
       "game_log": [
         {
+          "date": "Sep 09",
+          "opp": "@ BAL",
+          "ip": "0.1",
+          "h": 0,
+          "hr": 0,
+          "so": 0,
+          "era": "3.25",
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
+        {
           "date": "Sep 04",
           "opp": "vs DET",
           "ip": "6.0",
@@ -1749,18 +1761,6 @@
           "hit_prop": false,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Jul 08",
-          "opp": "vs HOU",
-          "ip": "7.0",
-          "h": 5,
-          "hr": 0,
-          "so": 9,
-          "era": "2.77",
-          "hit_prop": true,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
         }
       ],
       "verified_source": "Official MLB & ESPN Verified",
@@ -1803,6 +1803,18 @@
         "Opposing NYM batting order strikeout tendencies match arsenal profile"
       ],
       "game_log": [
+        {
+          "date": "Sep 09",
+          "opp": "vs NYM",
+          "ip": "1.0",
+          "h": 0,
+          "hr": 0,
+          "so": 0,
+          "era": "3.96",
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
         {
           "date": "Sep 04",
           "opp": "vs CHC",
@@ -1908,18 +1920,6 @@
           "so": 6,
           "era": "4.89",
           "hit_prop": true,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Jul 20",
-          "opp": "@ HOU",
-          "ip": "4.0",
-          "h": 5,
-          "hr": 2,
-          "so": 3,
-          "era": "5.09",
-          "hit_prop": false,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
         }
@@ -2287,6 +2287,18 @@
       ],
       "game_log": [
         {
+          "date": "Sep 09",
+          "opp": "@ MIA",
+          "ip": "0.1",
+          "h": 0,
+          "hr": 0,
+          "so": 0,
+          "era": "5.74",
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
+        {
           "date": "Sep 04",
           "opp": "vs SF",
           "ip": "0.1",
@@ -2369,18 +2381,6 @@
           "hit_prop": false,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Jul 28",
-          "opp": "@ MIA",
-          "ip": "5.2",
-          "h": 5,
-          "hr": 0,
-          "so": 6,
-          "era": "4.19",
-          "hit_prop": true,
-          "verified": false,
-          "source": "Calibrated Multi-Source Baseline"
         },
         {
           "date": "Jul 22",
@@ -2611,11 +2611,11 @@
         {
           "date": "Sep 09",
           "opp": "vs CLE",
-          "ip": "0.0",
-          "h": 1,
-          "hr": 0,
+          "ip": "1.0",
+          "h": 2,
+          "hr": 1,
           "so": 0,
-          "era": "3.91",
+          "era": "4.00",
           "hit_prop": false,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
@@ -2931,6 +2931,18 @@
       ],
       "game_log": [
         {
+          "date": "Sep 09",
+          "opp": "vs HOU",
+          "ip": "1.0",
+          "h": 1,
+          "hr": 0,
+          "so": 1,
+          "era": "2.57",
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
+        {
           "date": "Sep 04",
           "opp": "vs ATL",
           "ip": "6.0",
@@ -3034,18 +3046,6 @@
           "hr": 0,
           "so": 7,
           "era": "2.65",
-          "hit_prop": true,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Jul 11",
-          "opp": "@ DET",
-          "ip": "7.0",
-          "h": 10,
-          "hr": 1,
-          "so": 7,
-          "era": "2.62",
           "hit_prop": true,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
@@ -3414,6 +3414,18 @@
       ],
       "game_log": [
         {
+          "date": "Sep 09",
+          "opp": "vs LAA",
+          "ip": "0.2",
+          "h": 1,
+          "hr": 0,
+          "so": 0,
+          "era": "3.32",
+          "hit_prop": false,
+          "verified": true,
+          "source": "Official MLB & ESPN Verified"
+        },
+        {
           "date": "Sep 03",
           "opp": "@ BAL",
           "ip": "6.0",
@@ -3517,18 +3529,6 @@
           "hr": 0,
           "so": 3,
           "era": "2.35",
-          "hit_prop": false,
-          "verified": true,
-          "source": "Official MLB & ESPN Verified"
-        },
-        {
-          "date": "Jul 08",
-          "opp": "@ CWS",
-          "ip": "7.0",
-          "h": 4,
-          "hr": 0,
-          "so": 4,
-          "era": "2.64",
           "hit_prop": false,
           "verified": true,
           "source": "Official MLB & ESPN Verified"
