@@ -101,6 +101,34 @@ def get_pitcher_k_props():
         "props": k_data["props"]
     }
 
+@app.get("/api/player/{player_id}/gamelog")
+def get_player_gamelog(player_id: str, type: Optional[str] = "hitting"):
+    """Returns official 5-game recent logs for the requested athlete."""
+    # Check batter props
+    picks = selector.generate_daily_picks(force_refresh=False)
+    for p in picks.get("all_props", []):
+        if str(p.get("id")) == str(player_id) or str(p.get("name")).lower() == str(player_id).lower():
+            return {
+                "player_id": player_id,
+                "name": p.get("name"),
+                "type": "hitting",
+                "game_log": p.get("game_log", [])
+            }
+    
+    # Check pitcher props
+    slate = espn_client.get_todays_slate()
+    k_data = pitcher_k_model.get_pitcher_k_data(slate)
+    for p in k_data.get("props", []):
+        if str(p.get("id")) == str(player_id) or str(p.get("name")).lower() == str(player_id).lower():
+            return {
+                "player_id": player_id,
+                "name": p.get("name"),
+                "type": "pitching",
+                "game_log": p.get("game_log", [])
+            }
+
+    return {"player_id": player_id, "type": type, "game_log": []}
+
 @app.get("/api/international/npb")
 def get_npb_predictions():
     games = intl_model.get_npb_slate()
