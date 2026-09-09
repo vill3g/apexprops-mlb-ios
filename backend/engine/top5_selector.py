@@ -358,7 +358,7 @@ class Top5Selector:
         order = batter.get("order", 2)
         slg = batter.get("slg", 0.450)
         avg = batter.get("avg", 0.270)
-        target_line = 1.0
+        target_line = 1.5
 
         res = self.simulator.simulate_player_prop(
             name=name,
@@ -471,7 +471,7 @@ class Top5Selector:
             "game_date": game_date,
             "game_time": game_time,
             "game_datetime": game_datetime,
-            "line": "+1",
+            "line": "Over 1.5",
             "type": "Over",
             "win_prob": res["win_prob"],
             "proj_total": res["proj_total"],

@@ -247,7 +247,7 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-2xl font-black tracking-tight text-white">APEX<span class="text-emerald-400">PROPS</span></h1>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center gap-1">👑 DraftKings Live</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1 shadow-sm shadow-emerald-500/20">👑 DraftKings Live</span>
           </div>
           <div class="flex items-center gap-2 mt-0.5">
             <span class="relative flex h-2 w-2">
@@ -447,63 +447,63 @@
       <!-- ========================================================================= -->
       <!-- 1. LIVE BITCOIN PRICE (WITH INTEGRATED MARKET STRUCTURE - NEAT AND CLEAN)  -->
       <!-- ========================================================================= -->
-      <div class="hero-price-card rounded-2xl p-3 sm:p-4 space-y-3">
+      <div class="hero-price-card rounded-2xl p-2.5 sm:p-3 space-y-2">
         <!-- Top Row: Standout Live BTC Price, 15M Target Card & Countdown -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-center">
           <!-- 1A: Standout Live BTC Price -->
-          <div class="space-y-1">
+          <div class="space-y-0.5">
             <div class="flex items-center gap-2">
               <span class="relative flex h-2 w-2">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">LIVE BITCOIN PRICE</span>
-              <span id="btcLivePulseTag" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s LIVE</span>
+              <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">LIVE BITCOIN PRICE</span>
+              <span id="btcLivePulseTag" class="text-[8px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s LIVE</span>
             </div>
-            <div id="btcLStatPrice" class="text-2xl sm:text-3xl lg:text-4xl font-black text-white font-mono tracking-tight transition-colors">
+            <div id="btcLStatPrice" class="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight transition-colors">
               $--,---.--
             </div>
-            <div class="flex items-center gap-2 text-[11px] font-mono">
+            <div class="flex items-center gap-2 text-[10px] font-mono">
               <span id="btcLStatChange" class="font-bold text-slate-400">--%</span>
               <span class="text-slate-600">•</span>
               <span class="text-slate-400">24h Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
             </div>
           </div>
 
-          <!-- 1B: 15M Price Target (Previous 15M Close) -->
-          <div class="bg-slate-900/95 border border-amber-500/40 rounded-xl p-3 space-y-1.5 relative overflow-hidden shadow-lg shadow-amber-500/10">
+          <!-- 1B: 15M Price Target (Robinhood 15M Target) -->
+          <div class="bg-slate-900/95 border border-emerald-500/40 rounded-xl p-2.5 space-y-1 relative overflow-hidden shadow-lg shadow-emerald-500/10">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+              <span class="text-[9px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
                 <span>🎯</span> 15M PRICE TARGET
               </span>
-              <span id="btcTargetSourceLabel" class="text-[9px] text-amber-400/90 font-mono font-bold">Kalshi KXBTC15M</span>
+              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">Robinhood 15M Target</span>
             </div>
             <div class="flex items-baseline justify-between gap-2">
-              <div id="btcTargetPriceHero" class="text-xl sm:text-2xl font-black font-mono text-amber-400">
+              <div id="btcTargetPriceHero" class="text-xl sm:text-2xl font-black font-mono text-emerald-400">
                 $--,---.--
               </div>
             </div>
             <!-- Real-Time Spread Delta Badge -->
-            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center">
+            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center">
               <span>--</span> <span>Evaluating spread...</span>
             </div>
           </div>
 
           <!-- 1C: Target Resolution Expiry Countdown Box -->
-          <div class="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-3 flex flex-col justify-between space-y-1.5 shadow-lg shadow-cyan-500/5">
+          <div class="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-2.5 flex flex-col justify-between space-y-1 shadow-lg shadow-cyan-500/5">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1.5">
+              <span class="text-[9px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
                 <span>⏱️</span> TIME TO 15M CLOSE
               </span>
-              <span class="text-[9px] text-slate-400 font-mono">TARGET RESOLUTION</span>
+              <span class="text-[8px] text-slate-400 font-mono">TARGET RESOLUTION</span>
             </div>
             <div class="flex items-baseline justify-between">
               <div id="btcCountdown" class="text-2xl sm:text-3xl font-black font-mono text-cyan-400">
                 --:--
               </div>
               <div class="text-right">
-                <span class="text-[9px] text-slate-400 block">Auto-countdown</span>
-                <span class="text-[10px] font-mono text-emerald-400 font-bold">1s Live Pulse</span>
+                <span class="text-[8px] text-slate-400 block">Auto-countdown</span>
+                <span class="text-[9px] font-mono text-emerald-400 font-bold">1s Live Pulse</span>
               </div>
             </div>
             <!-- Progress Bar -->
@@ -514,30 +514,30 @@
         </div>
 
         <!-- Integrated Market Structure Sub-Pane (Neat, Clean, Integrated) -->
-        <div class="pt-2 border-t border-slate-800/80">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
-            <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <div class="flex items-center justify-between text-[9px] text-slate-400 font-sans mb-0.5">
+        <div class="pt-1.5 border-t border-slate-800/80">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-[8px] text-slate-400 font-sans mb-0.5">
                 <span>Structure & Bias</span>
                 <span id="btcStructTrendBadge" class="px-1 py-0.2 rounded font-black text-[8px] uppercase bg-slate-800 text-cyan-400">--</span>
               </div>
-              <div id="btcStructSummary" class="text-[11px] font-bold text-white truncate">Evaluating swings...</div>
-              <div id="btcStructBos" class="text-[9px] text-cyan-400 font-bold truncate mt-0.5"></div>
+              <div id="btcStructSummary" class="text-[10px] font-bold text-white truncate">Evaluating swings...</div>
+              <div id="btcStructBos" class="text-[8px] text-cyan-400 font-bold truncate mt-0.5"></div>
             </div>
-            <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[9px] text-slate-400 font-sans mb-0.5">Immediate Resistance</span>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Immediate Resistance</span>
               <div id="btcStructRes" class="text-xs sm:text-sm font-black text-red-400">$--,---.--</div>
-              <span class="text-[8px] text-slate-500 font-sans">Upper Invalidation</span>
+              <span class="text-[7px] text-slate-500 font-sans">Upper Invalidation</span>
             </div>
-            <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[9px] text-slate-400 font-sans mb-0.5">Immediate Support</span>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Immediate Support</span>
               <div id="btcStructSup" class="text-xs sm:text-sm font-black text-emerald-400">$--,---.--</div>
-              <span class="text-[8px] text-slate-500 font-sans">Lower Cushion</span>
+              <span class="text-[7px] text-slate-500 font-sans">Lower Cushion</span>
             </div>
-            <div class="p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[9px] text-slate-400 font-sans mb-0.5">Session VWAP</span>
+            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Session VWAP</span>
               <div id="btcStructVwap" class="text-xs sm:text-sm font-black text-amber-400">$--,---.--</div>
-              <span id="btcStructVwapStatus" class="text-[8px] text-slate-500 font-sans">Institutional Mean</span>
+              <span id="btcStructVwapStatus" class="text-[7px] text-slate-500 font-sans">Institutional Mean</span>
             </div>
           </div>
         </div>
@@ -546,28 +546,28 @@
       <!-- ========================================================================= -->
       <!-- 2. SPEEDOMETER (WITH INTEGRATED TARGET RESOLUTION PREDICTOR PANE)          -->
       <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-3 border border-slate-800">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-          <div class="flex items-center gap-2">
-            <span class="text-sm">⚡</span>
+      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 space-y-2 border border-slate-800">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs">⚡</span>
             <h3 class="text-xs font-black text-white uppercase tracking-wider">Confluence Speedometer & Target Resolution</h3>
           </div>
-          <span id="btcPredBadge" class="text-[9px] px-2 py-0.5 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
+          <span id="btcPredBadge" class="text-[8px] px-2 py-0.5 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
             EVALUATING
           </span>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-center">
           <!-- Left Sub-Pane: Speedometer Gauge -->
-          <div class="flex flex-col items-center justify-center text-center p-2.5 bg-slate-900/50 rounded-xl border border-slate-800/60">
-            <div id="btcSignalBanner" class="signal-banner signal-neutral">INITIALIZING</div>
+          <div class="flex flex-col items-center justify-center text-center p-2 bg-slate-900/50 rounded-xl border border-slate-800/60">
+            <div id="btcSignalBanner" class="signal-banner signal-neutral text-[10px] py-0.5 px-2">INITIALIZING</div>
             
-            <div class="meter-wrapper">
-              <svg class="meter-svg" viewBox="0 0 200 110">
-                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#1e293b" stroke-width="14" stroke-linecap="round"/>
-                <path id="btcMeterArc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#btcMeterGradient)" stroke-width="14" stroke-dasharray="251.2" stroke-dashoffset="125.6" stroke-linecap="round"/>
-                <line id="btcMeterNeedle" x1="100" y1="100" x2="100" y2="30" stroke="#f8fafc" stroke-width="3.5" stroke-linecap="round" style="transform-origin: 100px 100px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
-                <circle cx="100" cy="100" r="7" fill="#f8fafc"/>
+            <div class="meter-wrapper" style="max-height: 95px; margin: 2px 0;">
+              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 90px;">
+                <path d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="#1e293b" stroke-width="13" stroke-linecap="round"/>
+                <path id="btcMeterArc" d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="url(#btcMeterGradient)" stroke-width="13" stroke-dasharray="235.6" stroke-dashoffset="117.8" stroke-linecap="round"/>
+                <line id="btcMeterNeedle" x1="100" y1="95" x2="100" y2="28" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" style="transform-origin: 100px 95px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
+                <circle cx="100" cy="95" r="6" fill="#f8fafc"/>
                 <defs>
                   <linearGradient id="btcMeterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                     <stop offset="0%" stop-color="#ef4444"/>
@@ -576,28 +576,28 @@
                   </linearGradient>
                 </defs>
               </svg>
-              <div id="btcMeterScore" class="meter-score-display neutral">0</div>
+              <div id="btcMeterScore" class="meter-score-display neutral text-xl font-black">0</div>
             </div>
 
-            <div id="btcConfidenceText" class="text-[11px] text-slate-400 font-mono">Confluence Score: <strong>0 / 100</strong> (50% Conf.)</div>
+            <div id="btcConfidenceText" class="text-[10px] text-slate-400 font-mono">Confluence Score: <strong>0 / 100</strong> (50% Conf.)</div>
           </div>
 
           <!-- Right Sub-Pane: Integrated Target Resolution Predictor -->
-          <div class="flex flex-col justify-between space-y-2.5 p-3 bg-slate-900/70 rounded-xl border border-slate-800">
+          <div class="flex flex-col justify-between space-y-1.5 p-2 bg-slate-900/70 rounded-xl border border-slate-800">
             <!-- Big Prediction Verdict Banner -->
-            <div id="btcPredBanner" class="p-2.5 rounded-xl text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
-              <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Predicted 15M Close Outcome</div>
-              <div id="btcPredOutcomeText" class="text-base sm:text-lg font-black tracking-tight text-white font-mono">
+            <div id="btcPredBanner" class="p-2 rounded-xl text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
+              <div class="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Predicted 15M Close Outcome</div>
+              <div id="btcPredOutcomeText" class="text-sm sm:text-base font-black tracking-tight text-white font-mono">
                 INITIALIZING...
               </div>
               <div class="flex items-center justify-center gap-2 pt-0.5">
-                <span id="btcPredProbText" class="text-[11px] font-mono font-bold text-cyan-400">50% Probability</span>
+                <span id="btcPredProbText" class="text-[10px] font-mono font-bold text-cyan-400">50% Probability</span>
                 <span class="text-slate-600">•</span>
-                <span id="btcPredConfidenceTag" class="text-[9px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
+                <span id="btcPredConfidenceTag" class="text-[8px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
               </div>
               <!-- Kalshi Market Odds vs Model Prediction Comparison -->
-              <div id="btcKalshiOddsContainer" class="pt-1 flex items-center justify-center">
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[10px] font-mono">
+              <div id="btcKalshiOddsContainer" class="pt-0.5 flex items-center justify-center">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[9px] font-mono">
                   <span class="text-slate-400 font-sans font-semibold">🏛️ Kalshi Odds:</span>
                   <span id="btcKalshiYesProb" class="text-emerald-400 font-bold">--% Yes</span>
                   <span class="text-slate-600">/</span>
@@ -608,7 +608,7 @@
 
             <!-- Probability Split Bar -->
             <div class="space-y-0.5">
-              <div class="flex justify-between text-[9px] text-slate-400 font-mono">
+              <div class="flex justify-between text-[8px] text-slate-400 font-mono">
                 <span class="text-red-400">▼ Below Target</span>
                 <span class="text-emerald-400">▲ Above Target</span>
               </div>
@@ -620,8 +620,8 @@
 
             <!-- Key Decision Criteria -->
             <div class="space-y-0.5">
-              <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Key Decision Catalysts:</div>
-              <ul id="btcPredFactorsList" class="space-y-0.5 text-[10px] text-slate-300 max-h-24 overflow-y-auto">
+              <div class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Key Decision Catalysts:</div>
+              <ul id="btcPredFactorsList" class="space-y-0.5 text-[9px] text-slate-300 max-h-16 overflow-y-auto">
                 <li class="text-slate-500">Evaluating 15M candle momentum vs target...</li>
               </ul>
             </div>
@@ -632,20 +632,20 @@
       <!-- ========================================================================= -->
       <!-- 3. CHART CONTAINER (TRADINGVIEW LIGHTWEIGHT CANDLESTICKS)                 -->
       <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col" style="height: 340px;">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2 pb-1.5 border-b border-slate-800">
+      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col" style="height: 220px;">
+        <div class="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-800">
           <div class="flex items-center gap-2">
-            <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white">BTC/USD 15M Candlestick Chart</h3>
-            <span id="btcChartStatus" class="text-[10px] text-slate-400">Loading candles...</span>
+            <h3 id="btcChartTitle" class="text-xs font-black text-white">BTC/USD 15M Chart</h3>
+            <span id="btcChartStatus" class="text-[9px] text-slate-400">Loading candles...</span>
           </div>
-          <div class="flex items-center gap-2 text-[9px] font-mono text-slate-400">
+          <div class="flex items-center gap-2 text-[8px] font-mono text-slate-400">
             <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span> EMA 9</div>
             <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span> EMA 21</div>
             <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span> EMA 50</div>
             <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 inline-block"></span> EMA 200</div>
           </div>
         </div>
-        <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 250px;">
+        <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 175px;">
           <!-- Lightweight chart renders here -->
         </div>
       </div>
@@ -653,15 +653,15 @@
       <!-- ========================================================================= -->
       <!-- 4. 15 MIN TREND (SHOW IN ONE ROW, SHOW LESS INFO IF SPACE IS NEEDED)      -->
       <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-3.5 sm:p-4 space-y-2.5">
-        <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 space-y-1.5">
+        <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
           <div class="flex items-center gap-2">
-            <span class="text-sm sm:text-base">📈</span>
-            <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">15M Target Trend</h3>
-            <span class="text-[10px] text-slate-500 hidden sm:inline">(Last 5 Closes)</span>
+            <span class="text-xs">📈</span>
+            <h3 class="text-xs font-black text-white uppercase tracking-wider">15M Target Trend</h3>
+            <span class="text-[9px] text-slate-500 hidden sm:inline">(Last 5 Closes)</span>
           </div>
           <div class="flex items-center gap-2">
-            <span id="btcTrendStreakBadge" class="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono">
+            <span id="btcTrendStreakBadge" class="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono">
               Loading streak...
             </span>
           </div>
@@ -676,173 +676,190 @@
       <!-- ========================================================================= -->
       <!-- 5. AUXILIARY: TRADE PLAN, POSITION CALCULATOR, INDICATORS & ACTIVITY       -->
       <!-- ========================================================================= -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        
-        <!-- Left: Actionable Trade Plan & Calculator -->
-        <div class="space-y-5">
-          <!-- Actionable Trade Plan Card -->
-          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 id="btcPlanTitleText" class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Actionable Trade Plan</h3>
-              <span id="btcPlanType" class="text-[10px] px-2.5 py-0.5 rounded font-black text-slate-950 bg-amber-400 uppercase">BUY SETUP</span>
-            </div>
-
-            <div class="setup-grid">
-              <div class="setup-box highlight-entry">
-                <div class="text-[10px] text-slate-400 uppercase font-bold">Entry Price</div>
-                <div id="btcPlanEntry" class="text-sm sm:text-base font-black font-mono text-cyan-300 mt-0.5">$--,---.--</div>
-              </div>
-              <div class="setup-box highlight-sl">
-                <div class="text-[10px] text-red-400 uppercase font-bold">Stop Loss</div>
-                <div id="btcPlanSl" class="text-sm sm:text-base font-black font-mono text-red-400 mt-0.5">$--,---.--</div>
-              </div>
-              <div class="setup-box highlight-tp">
-                <div class="text-[10px] text-emerald-400 uppercase font-bold">TP 1 (1.5R)</div>
-                <div id="btcPlanTp1" class="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
-              </div>
-              <div class="setup-box highlight-tp">
-                <div class="text-[10px] text-emerald-400 uppercase font-bold">TP 2 (2.5R)</div>
-                <div id="btcPlanTp2" class="text-sm sm:text-base font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
-              </div>
-            </div>
-
-            <div class="flex justify-between text-[11px] text-slate-400 pt-1">
-              <span>Risk: <strong id="btcPlanRiskAmt" class="text-white">$0.00</strong> (<span id="btcPlanRiskPct">0.0%</span>)</span>
-              <span>R:R: <strong class="text-emerald-400">1 : 1.5 - 2.5</strong></span>
-            </div>
-            <div class="rr-bar">
-              <div class="rr-risk"></div>
-              <div class="rr-reward"></div>
-            </div>
+      <div class="space-y-2">
+        <!-- Sub-panel toggle buttons for iPad Mini / mobile compact view -->
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+          <div class="flex items-center gap-1.5 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-[10px]">
+            <button type="button" onclick="switchBtcAuxTab('plan')" id="btnAuxPlan" class="btc-aux-btn active px-2.5 py-1 rounded-lg font-bold transition text-white bg-slate-800 shadow-sm cursor-pointer">
+              🎯 Trade Plan & Sizing
+            </button>
+            <button type="button" onclick="switchBtcAuxTab('matrix')" id="btnAuxMatrix" class="btc-aux-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white cursor-pointer">
+              📊 Technical Matrix
+            </button>
+            <button type="button" onclick="switchBtcAuxTab('all')" id="btnAuxAll" class="btc-aux-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white cursor-pointer">
+              👁️ View All Side-by-Side
+            </button>
           </div>
-
-          <!-- Position Sizing & Risk Management Calculator -->
-          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                <span>🧮</span> Position Sizing Calculator
-              </h3>
-              <span class="text-[10px] text-slate-400 font-mono">Risk Engine</span>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <label class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Account Balance ($)</label>
-                <input type="number" id="calcAccountSize" value="5000" step="500" oninput="calculatePositionSize()"
-                       class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:border-amber-500">
-              </div>
-              <div>
-                <label class="text-[10px] text-slate-400 uppercase font-bold block mb-1">Risk per Trade (%)</label>
-                <select id="calcRiskPct" onchange="calculatePositionSize()"
-                        class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono font-bold focus:outline-none focus:border-amber-500">
-                  <option value="0.5">0.5% (Conservative)</option>
-                  <option value="1.0" selected>1.0% (Standard)</option>
-                  <option value="2.0">2.0% (Aggressive)</option>
-                  <option value="3.0">3.0% (Max Risk)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-              <div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold">Max Risk ($)</div>
-                <div id="calcRiskDollar" class="font-bold text-red-400 font-mono mt-0.5">$50.00</div>
-              </div>
-              <div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold">Position (BTC)</div>
-                <div id="calcPosBtc" class="font-bold text-amber-400 font-mono mt-0.5">0.0000</div>
-              </div>
-              <div>
-                <div class="text-[9px] text-slate-400 uppercase font-semibold">Notional ($)</div>
-                <div id="calcPosNotional" class="font-bold text-white font-mono mt-0.5">$0.00</div>
-              </div>
-            </div>
-
-            <div id="calcBreakevenRule" class="text-[10px] text-cyan-300 font-mono bg-cyan-950/40 border border-cyan-500/20 p-2 rounded-lg text-center">
-              Move SL to Breakeven once TP1 (+1.5R) is achieved.
-            </div>
-          </div>
+          <span class="text-[9px] text-slate-500 font-mono hidden sm:inline">iPad Mini Friendly</span>
         </div>
 
-        <!-- Right: Technical Matrix, Detected Patterns & Signal Log -->
-        <div class="space-y-5">
-          <!-- Technical Indicators Matrix -->
-          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Technical Indicator Matrix</h3>
-              <span id="btcIndTfLabel" class="text-[10px] text-slate-400">15M Calculation</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5" id="btcAuxContainer">
+          <!-- Left: Actionable Trade Plan & Calculator -->
+          <div id="btcAuxColLeft" class="space-y-2.5">
+            <!-- Actionable Trade Plan Card -->
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <h3 id="btcPlanTitleText" class="text-xs font-black text-white uppercase tracking-wider">Actionable Trade Plan</h3>
+                <span id="btcPlanType" class="text-[9px] px-2 py-0.5 rounded font-black text-slate-950 bg-amber-400 uppercase">BUY SETUP</span>
+              </div>
+
+              <div class="setup-grid">
+                <div class="setup-box highlight-entry">
+                  <div class="text-[9px] text-slate-400 uppercase font-bold">Entry Price</div>
+                  <div id="btcPlanEntry" class="text-xs sm:text-sm font-black font-mono text-cyan-300 mt-0.5">$--,---.--</div>
+                </div>
+                <div class="setup-box highlight-sl">
+                  <div class="text-[9px] text-red-400 uppercase font-bold">Stop Loss</div>
+                  <div id="btcPlanSl" class="text-xs sm:text-sm font-black font-mono text-red-400 mt-0.5">$--,---.--</div>
+                </div>
+                <div class="setup-box highlight-tp">
+                  <div class="text-[9px] text-emerald-400 uppercase font-bold">TP 1 (1.5R)</div>
+                  <div id="btcPlanTp1" class="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
+                </div>
+                <div class="setup-box highlight-tp">
+                  <div class="text-[9px] text-emerald-400 uppercase font-bold">TP 2 (2.5R)</div>
+                  <div id="btcPlanTp2" class="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
+                </div>
+              </div>
+
+              <div class="flex justify-between text-[10px] text-slate-400 pt-0.5">
+                <span>Risk: <strong id="btcPlanRiskAmt" class="text-white">$0.00</strong> (<span id="btcPlanRiskPct">0.0%</span>)</span>
+                <span>R:R: <strong class="text-emerald-400">1 : 1.5 - 2.5</strong></span>
+              </div>
+              <div class="rr-bar">
+                <div class="rr-risk"></div>
+                <div class="rr-reward"></div>
+              </div>
             </div>
-            <div class="matrix-grid">
-              <div class="matrix-item">
-                <div class="m-label">RSI (14)</div>
-                <div id="btcIndRsi" class="m-val text-white">--</div>
-                <div id="btcIndRsiStatus" class="m-sub">Neutral</div>
+
+            <!-- Position Sizing & Risk Management Calculator -->
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🧮</span> Position Sizing Calculator
+                </h3>
+                <span class="text-[9px] text-slate-400 font-mono">Risk Engine</span>
               </div>
-              <div class="matrix-item">
-                <div class="m-label">MACD (12, 26, 9)</div>
-                <div id="btcIndMacd" class="m-val text-white">--</div>
-                <div id="btcIndMacdStatus" class="m-sub">--</div>
+              
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <label class="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Account Balance ($)</label>
+                  <input type="number" id="calcAccountSize" value="5000" step="500" oninput="calculatePositionSize()"
+                         class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono font-bold text-xs focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                  <label class="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Risk per Trade (%)</label>
+                  <select id="calcRiskPct" onchange="calculatePositionSize()"
+                          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono font-bold text-xs focus:outline-none focus:border-amber-500">
+                    <option value="0.5">0.5% (Conservative)</option>
+                    <option value="1.0" selected>1.0% (Standard)</option>
+                    <option value="2.0">2.0% (Aggressive)</option>
+                    <option value="3.0">3.0% (Max Risk)</option>
+                  </select>
+                </div>
               </div>
-              <div class="matrix-item">
-                <div class="m-label">EMA Ribbon</div>
-                <div id="btcIndRibbon" class="m-val text-white">--</div>
-                <div id="btcIndRibbonStatus" class="m-sub">EMA 9/21/50</div>
+
+              <div class="grid grid-cols-3 gap-2 text-center p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+                <div>
+                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Max Risk ($)</div>
+                  <div id="calcRiskDollar" class="font-bold text-red-400 font-mono mt-0.5">$50.00</div>
+                </div>
+                <div>
+                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Position (BTC)</div>
+                  <div id="calcPosBtc" class="font-bold text-amber-400 font-mono mt-0.5">0.0000</div>
+                </div>
+                <div>
+                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Notional ($)</div>
+                  <div id="calcPosNotional" class="font-bold text-white font-mono mt-0.5">$0.00</div>
+                </div>
               </div>
-              <div class="matrix-item">
-                <div class="m-label">Bollinger Bands</div>
-                <div id="btcIndBb" class="m-val text-xs text-white">--</div>
-                <div id="btcIndBbSqueeze" class="m-sub">Bandwidth: --</div>
-              </div>
-              <div class="matrix-item">
-                <div class="m-label">Volatility (ATR 14)</div>
-                <div id="btcIndAtr" class="m-val text-white">$--</div>
-                <div id="btcIndAtrLabel" class="m-sub">15m Volatility</div>
-              </div>
-              <div class="matrix-item">
-                <div class="m-label">Volume Surge</div>
-                <div id="btcIndVol" class="m-val text-white">--x</div>
-                <div id="btcIndVolStatus" class="m-sub">vs 20-SMA</div>
+
+              <div id="calcBreakevenRule" class="text-[9px] text-cyan-300 font-mono bg-cyan-950/40 border border-cyan-500/20 p-1.5 rounded-lg text-center">
+                Move SL to Breakeven once TP1 (+1.5R) is achieved.
               </div>
             </div>
           </div>
 
-          <!-- Detected Candlestick Patterns & Catalysts -->
-          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Detected Patterns & Catalysts</h3>
-              <span id="btcFactorsCount" class="text-[10px] text-slate-400">0 active</span>
+          <!-- Right: Technical Matrix, Detected Patterns & Signal Log -->
+          <div id="btcAuxColRight" class="space-y-2.5">
+            <!-- Technical Indicators Matrix -->
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black text-white uppercase tracking-wider">Technical Indicator Matrix</h3>
+                <span id="btcIndTfLabel" class="text-[9px] text-slate-400">15M Calculation</span>
+              </div>
+              <div class="matrix-grid">
+                <div class="matrix-item">
+                  <div class="m-label">RSI (14)</div>
+                  <div id="btcIndRsi" class="m-val text-white">--</div>
+                  <div id="btcIndRsiStatus" class="m-sub">Neutral</div>
+                </div>
+                <div class="matrix-item">
+                  <div class="m-label">MACD (12, 26, 9)</div>
+                  <div id="btcIndMacd" class="m-val text-white">--</div>
+                  <div id="btcIndMacdStatus" class="m-sub">--</div>
+                </div>
+                <div class="matrix-item">
+                  <div class="m-label">EMA Ribbon</div>
+                  <div id="btcIndRibbon" class="m-val text-white">--</div>
+                  <div id="btcIndRibbonStatus" class="m-sub">EMA 9/21/50</div>
+                </div>
+                <div class="matrix-item">
+                  <div class="m-label">Bollinger Bands</div>
+                  <div id="btcIndBb" class="m-val text-xs text-white">--</div>
+                  <div id="btcIndBbSqueeze" class="m-sub">Bandwidth: --</div>
+                </div>
+                <div class="matrix-item">
+                  <div class="m-label">Volatility (ATR 14)</div>
+                  <div id="btcIndAtr" class="m-val text-white">$--</div>
+                  <div id="btcIndAtrLabel" class="m-sub">15m Volatility</div>
+                </div>
+                <div class="matrix-item">
+                  <div class="m-label">Volume Surge</div>
+                  <div id="btcIndVol" class="m-val text-white">--x</div>
+                  <div id="btcIndVolStatus" class="m-sub">vs 20-SMA</div>
+                </div>
+              </div>
             </div>
-            <div id="btcPatternsList" class="flex flex-col gap-2">
-              <div class="text-xs text-slate-500 py-1">No prominent patterns on recent candle</div>
+
+            <!-- Detected Candlestick Patterns & Catalysts -->
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-black text-white uppercase tracking-wider">Detected Patterns & Catalysts</h3>
+                <span id="btcFactorsCount" class="text-[9px] text-slate-400">0 active</span>
+              </div>
+              <div id="btcPatternsList" class="flex flex-col gap-1.5">
+                <div class="text-xs text-slate-500 py-0.5">No prominent patterns on recent candle</div>
+              </div>
+              <div id="btcFactorsList" class="factors-container">
+                <div class="text-xs text-slate-500">Analyzing market drivers...</div>
+              </div>
             </div>
-            <div id="btcFactorsList" class="factors-container">
-              <div class="text-xs text-slate-500">Analyzing market drivers...</div>
+
+            <!-- Recent Signal Activity Log -->
+            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
+              <h3 class="text-xs font-black text-white uppercase tracking-wider">Recent Signal Activity</h3>
+              <div class="overflow-x-auto">
+                <table class="log-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>TF</th>
+                      <th>Direction</th>
+                      <th>Score</th>
+                      <th>Price</th>
+                      <th>Primary Catalyst</th>
+                    </tr>
+                  </thead>
+                  <tbody id="btcLogTbody">
+                    <tr><td colspan="6" class="text-center text-slate-500 py-2">No signals recorded yet</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- Recent Signal Activity Log -->
-          <div class="glass-panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <h3 class="text-xs sm:text-sm font-black text-white uppercase tracking-wider">Recent Signal Activity</h3>
-            <div class="overflow-x-auto">
-              <table class="log-table">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>TF</th>
-                    <th>Direction</th>
-                    <th>Score</th>
-                    <th>Price</th>
-                    <th>Primary Catalyst</th>
-                  </tr>
-                </thead>
-                <tbody id="btcLogTbody">
-                  <tr><td colspan="6" class="text-center text-slate-500 py-3">No signals recorded yet</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-
       </div>
 
     </div>
@@ -864,13 +881,50 @@
         <button onclick="clearSlip()" class="bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs transition">
           Clear
         </button>
-        <button onclick="openDraftKingsBetslip()" class="bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black px-3.5 py-1.5 rounded-xl text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1 cursor-pointer">
-          <span>👑</span>
-          <span class="whitespace-nowrap">Add to DraftKings ➔</span>
+        <button onclick="openDraftKingsBetslip()" class="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
+          <span class="text-sm">👑</span>
+          <span class="whitespace-nowrap font-black">Add to DraftKings ➔</span>
         </button>
       </div>
     </div>
 
+  <!-- DraftKings Slip Ready Modal -->
+  <div id="draftKingsSlipModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-slate-900 border border-emerald-500/40 w-full max-w-md rounded-2xl shadow-2xl shadow-emerald-500/10 overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm font-black">👑</div>
+          <div>
+            <h3 class="font-black text-sm text-white">DraftKings Slip Ready</h3>
+            <p class="text-[10px] text-emerald-400 font-medium">Formatted for instant DraftKings bet placement</p>
+          </div>
+        </div>
+        <button onclick="closeDraftKingsSlipModal()" class="text-slate-400 hover:text-white p-1 text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+      <!-- Body -->
+      <div class="p-4 space-y-3 overflow-y-auto text-xs">
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Selections Summary:</label>
+          <pre id="dkSlipFormattedText" class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-mono text-emerald-300 whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto select-all"></pre>
+        </div>
+        
+        <div id="dkModalCopySuccess" class="hidden p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-1.5 animate-pulse">
+          <span>✓</span> <span>Picks Copied to Clipboard! Ready to paste.</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button id="btnModalCopySlip" onclick="copySlipModalAction()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2 px-3 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <span id="btnModalCopyIcon">📋</span>
+            <span id="btnModalCopyText">Copy Picks</span>
+          </button>
+          <button onclick="launchDraftKingsAppDirect()" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black py-2 px-3 rounded-xl text-xs transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
+            <span>👑</span>
+            <span>Open DraftKings ➔</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Comprehensive Deep Dive Modal -->
@@ -1266,13 +1320,13 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-amber-500/10 hover:bg-amber-500/25 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px] transition cursor-pointer" title="Bet on DraftKings">
+            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Bet on DraftKings">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
-                <span class="font-bold text-amber-400">DK:</span>
+                <span class="font-bold text-emerald-400">DK:</span>
                 <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 65}%</strong> ↗</span>
+              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 65}%</strong> ↗</span>
             </a>
 
             <div class="space-y-1">
@@ -1417,13 +1471,13 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-amber-500/10 hover:bg-amber-500/25 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px] transition cursor-pointer" title="Bet on DraftKings">
+            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Bet on DraftKings">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
-                <span class="font-bold text-amber-400">DK:</span>
+                <span class="font-bold text-emerald-400">DK:</span>
                 <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 60}%</strong> ↗</span>
+              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 60}%</strong> ↗</span>
             </a>
 
             <div class="space-y-1">
@@ -1556,18 +1610,41 @@
       if (probEl) probEl.innerText = `${(jointProb * 100).toFixed(1)}%`;
     }
 
-    function copySlipToClipboard(silent = false) {
-      if (activeSlip.length === 0) return;
+    function executeClipboardCopy(text) {
+      let copied = false;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => { copied = true; }).catch(() => {});
+      }
+      // Fallback DOM copy for iOS Safari / WKWebView
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        copied = document.execCommand('copy') || copied;
+        document.body.removeChild(ta);
+      } catch (err) {
+        console.warn("DOM copy fallback err:", err);
+      }
+      return copied;
+    }
+
+    function getFormattedSlipText() {
+      if (activeSlip.length === 0) return "";
       let text = "⚾ APEXPROPS DRAFTKINGS SLIP ⚾\n";
       text += "====================================\n";
       let joint = 1.0;
       let parlayDec = 1.0;
 
       activeSlip.forEach((p, idx) => {
-        const dkOdds = p.dk_odds || p.book_odds || '-140';
-        const lineStr = p.k_line ? `${p.pick_type || 'OVER'} ${p.k_line} Strikeouts` : `${p.pick_type || 'OVER'} 0.5 H+R+RBI`;
+        const dkOdds = p.dk_odds || p.book_odds || '-130';
+        const lineStr = p.k_line ? `${p.pick_type || 'OVER'} ${p.k_line} Strikeouts` : `OVER 1.5 Hits+Runs+RBIs`;
         text += `${idx + 1}. ${p.name} (${p.team} vs ${p.opponent}) - ${lineStr} [Odds: ${dkOdds}]\n`;
-        joint *= ((p.win_prob || 60) / 100.0);
+        joint *= ((p.win_prob || 55) / 100.0);
 
         let d = p.dk_decimal;
         if (!d) {
@@ -1576,7 +1653,7 @@
           if (!isNaN(oddsVal)) {
             d = oddsVal > 0 ? (oddsVal / 100) + 1 : (100 / Math.abs(oddsVal)) + 1;
           } else {
-            d = 1.5;
+            d = 1.75;
           }
         }
         parlayDec *= d;
@@ -1593,10 +1670,13 @@
       text += `👑 DraftKings Parlay Odds: ${dkParlayOdds} (${parlayDec.toFixed(2)}x Payout)\n`;
       text += `$10 Bet Payout: $${(10 * parlayDec).toFixed(2)}\n`;
       text += "Copy & Paste into DraftKings Sportsbook Betslip!";
+      return text;
+    }
 
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text);
-      }
+    function copySlipToClipboard(silent = false) {
+      const text = getFormattedSlipText();
+      if (!text) return;
+      executeClipboardCopy(text);
     }
 
     function openDraftKingsBetslip(customUrl) {
@@ -1605,22 +1685,51 @@
         return;
       }
 
-      if (activeSlip.length > 0) {
-        copySlipToClipboard(true);
+      const text = getFormattedSlipText();
+      copySlipToClipboard(true);
+
+      const modalTextEl = document.getElementById('dkSlipFormattedText');
+      if (modalTextEl) {
+        modalTextEl.textContent = text;
       }
 
-      let targetUrl = customUrl || "https://sportsbook.draftkings.com/leagues/baseball/mlb";
-      if (!customUrl && activeSlip.length > 0 && activeSlip[0].dk_link) {
+      const modal = document.getElementById('draftKingsSlipModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+      }
+
+      const successEl = document.getElementById('dkModalCopySuccess');
+      if (successEl) {
+        successEl.classList.remove('hidden');
+        setTimeout(() => successEl.classList.add('hidden'), 3500);
+      }
+    }
+
+    function closeDraftKingsSlipModal() {
+      const modal = document.getElementById('draftKingsSlipModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function copySlipModalAction() {
+      const text = getFormattedSlipText();
+      executeClipboardCopy(text);
+      const btnText = document.getElementById('btnModalCopyText');
+      const btnIcon = document.getElementById('btnModalCopyIcon');
+      const successEl = document.getElementById('dkModalCopySuccess');
+      if (btnText) btnText.textContent = "✓ Copied to Clipboard!";
+      if (btnIcon) btnIcon.textContent = "✓";
+      if (successEl) successEl.classList.remove('hidden');
+      setTimeout(() => {
+        if (btnText) btnText.textContent = "Copy Picks";
+        if (btnIcon) btnIcon.textContent = "📋";
+      }, 2500);
+    }
+
+    function launchDraftKingsAppDirect() {
+      let targetUrl = "https://sportsbook.draftkings.com/leagues/baseball/mlb";
+      if (activeSlip.length > 0 && activeSlip[0].dk_link) {
         targetUrl = activeSlip[0].dk_link;
       }
-
-      const alertEl = document.getElementById('copyAlert');
-      if (alertEl) {
-        alertEl.innerText = `👑 ${activeSlip.length} Pick(s) Copied! Opening DraftKings...`;
-        alertEl.classList.remove('hidden');
-        setTimeout(() => alertEl.classList.add('hidden'), 4000);
-      }
-
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
         window.location.href = "dksportsbook://leagues/baseball/mlb";
@@ -2061,6 +2170,37 @@
     const btcSignalHistory = [];
     let btcCountdownInterval = null;
 
+    window.switchBtcAuxTab = function(tab) {
+      const left = document.getElementById("btcAuxColLeft");
+      const right = document.getElementById("btcAuxColRight");
+      const container = document.getElementById("btcAuxContainer");
+      const btns = document.querySelectorAll(".btc-aux-btn");
+      btns.forEach(b => {
+        b.classList.remove("active", "text-white", "bg-slate-800", "shadow-sm");
+        b.classList.add("text-slate-400");
+      });
+
+      if (tab === 'plan') {
+        const b = document.getElementById("btnAuxPlan");
+        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
+        if (left) left.classList.remove("hidden");
+        if (right) right.classList.add("hidden");
+        if (container) { container.classList.remove("md:grid-cols-2"); container.classList.add("grid-cols-1"); }
+      } else if (tab === 'matrix') {
+        const b = document.getElementById("btnAuxMatrix");
+        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
+        if (left) left.classList.add("hidden");
+        if (right) right.classList.remove("hidden");
+        if (container) { container.classList.remove("md:grid-cols-2"); container.classList.add("grid-cols-1"); }
+      } else {
+        const b = document.getElementById("btnAuxAll");
+        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
+        if (left) left.classList.remove("hidden");
+        if (right) right.classList.remove("hidden");
+        if (container) { container.classList.add("md:grid-cols-2"); }
+      }
+    };
+
     function initBtcChartOnce() {
       const container = document.getElementById("btc-chart-container");
       if (!container) return;
@@ -2070,7 +2210,7 @@
           if (btcChart && container) {
             btcChart.applyOptions({
               width: container.clientWidth,
-              height: container.clientHeight || 420
+              height: container.clientHeight || 180
             });
           }
         }, 60);
@@ -2085,7 +2225,7 @@
       container.innerHTML = "";
       btcChart = LightweightCharts.createChart(container, {
         width: container.clientWidth,
-        height: container.clientHeight || 420,
+        height: container.clientHeight || 180,
         layout: {
           background: { color: "#0f172a" },
           textColor: "#94a3b8",
@@ -2133,7 +2273,7 @@
         if (btcChart && container) {
           btcChart.applyOptions({
             width: container.clientWidth,
-            height: container.clientHeight || 420,
+            height: container.clientHeight || 180,
           });
         }
       });
@@ -2475,7 +2615,7 @@
       }
       const sourceEl = document.getElementById("btcTargetSourceLabel");
       if (sourceEl) {
-        sourceEl.innerText = d.target_source || (d.kalshi ? "Kalshi KXBTC15M" : "15M Candle Close");
+        sourceEl.innerText = d.target_source || "Robinhood 15M Target";
       }
 
       // Target Delta Badge
@@ -2652,15 +2792,15 @@
             const data = await res.json();
             if (data && data.target_price) {
               window.cachedKalshiData = data;
-              window.cachedBtcTargetPrice = data.target_price;
-              const tHero = document.getElementById("btcTargetPriceHero");
-              if (tHero) tHero.innerText = `$${Number(data.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              const sLbl = document.getElementById("btcTargetSourceLabel");
-              if (sLbl) sLbl.innerText = "Kalshi KXBTC15M";
+              if (!window.cachedBtcTargetPrice) {
+                window.cachedBtcTargetPrice = data.target_price;
+                const tHero = document.getElementById("btcTargetPriceHero");
+                if (tHero) tHero.innerText = `$${Number(data.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
               const kYes = document.getElementById("btcKalshiYesProb");
               const kNo = document.getElementById("btcKalshiNoProb");
-              if (kYes) kYes.innerText = `${data.yes_prob}% Yes (Above)`;
-              if (kNo) kNo.innerText = `${data.no_prob}% No (Below)`;
+              if (kYes) kYes.innerText = `${data.yes_prob}% Yes`;
+              if (kNo) kNo.innerText = `${data.no_prob}% No`;
               return;
             }
           }
@@ -2686,15 +2826,15 @@
                 source: "Kalshi KXBTC15M"
               };
               window.cachedKalshiData = kObj;
-              window.cachedBtcTargetPrice = strike;
-              const tHero = document.getElementById("btcTargetPriceHero");
-              if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              const sLbl = document.getElementById("btcTargetSourceLabel");
-              if (sLbl) sLbl.innerText = "Kalshi KXBTC15M";
+              if (!window.cachedBtcTargetPrice) {
+                window.cachedBtcTargetPrice = strike;
+                const tHero = document.getElementById("btcTargetPriceHero");
+                if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
               const kYes = document.getElementById("btcKalshiYesProb");
               const kNo = document.getElementById("btcKalshiNoProb");
-              if (kYes) kYes.innerText = `${yesP}% Yes (Above)`;
-              if (kNo) kNo.innerText = `${noP}% No (Below)`;
+              if (kYes) kYes.innerText = `${yesP}% Yes`;
+              if (kNo) kNo.innerText = `${noP}% No`;
             }
           }
         }

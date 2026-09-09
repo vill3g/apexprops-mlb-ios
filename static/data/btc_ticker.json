@@ -1,73 +1,9 @@
 {
-  "price": 78267.47,
-  "target_price": 78262.66,
-  "target_source": "Kalshi KXBTC15M",
-  "delta": 4.81,
-  "delta_pct": 0.006,
-  "status": "ABOVE",
-  "kalshi": {
-    "target_price": 78262.66,
-    "yes_prob": 48.5,
-    "no_prob": 51.5,
-    "ticker": "KXBTC15M-26SEP091700-00",
-    "close_time": "2026-09-09T21:00:00Z",
-    "status": "active",
-    "volume_24h": 838685.71,
-    "source": "Kalshi KXBTC15M"
-  },
-  "change_24h": -0.27,
-  "high_24h": 79752.73,
-  "low_24h": 77915.58,
-  "volume_24h": 5379.72,
-  "seconds_left": 187,
-  "formatted_countdown": "03:07",
-  "last_5_targets": [
-    {
-      "time": "19:30",
-      "price": 78279.42,
-      "delta": -233.08,
-      "delta_pct": -0.3,
-      "direction": "LOWER",
-      "arrow": "\u25bc",
-      "color": "red"
-    },
-    {
-      "time": "19:45",
-      "price": 78212.95,
-      "delta": -66.47,
-      "delta_pct": -0.08,
-      "direction": "LOWER",
-      "arrow": "\u25bc",
-      "color": "red"
-    },
-    {
-      "time": "20:00",
-      "price": 78239.0,
-      "delta": 26.05,
-      "delta_pct": 0.03,
-      "direction": "HIGHER",
-      "arrow": "\u25b2",
-      "color": "green"
-    },
-    {
-      "time": "20:15",
-      "price": 78098.1,
-      "delta": -140.9,
-      "delta_pct": -0.18,
-      "direction": "LOWER",
-      "arrow": "\u25bc",
-      "color": "red"
-    },
-    {
-      "time": "20:30",
-      "price": 78268.45,
-      "delta": 170.35,
-      "delta_pct": 0.22,
-      "direction": "HIGHER",
-      "arrow": "\u25b2",
-      "color": "green"
-    }
-  ],
-  "streak_summary": "2 Higher / 3 Lower",
-  "latency_ms": 3515.557
+  "price": 78104.12,
+  "open_24h": 78632.55,
+  "high_24h": 79783.23,
+  "low_24h": 77758.3,
+  "volume_24h": 0.0,
+  "change_24h": -0.67,
+  "source": "Robinhood Crypto"
 }

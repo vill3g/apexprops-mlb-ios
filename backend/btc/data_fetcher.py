@@ -241,30 +241,33 @@ def get_btc_ticker() -> dict:
     if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 1.0):
         return _ticker_cache["data"]
 
-    # Attempt CF Benchmarks BRTI
+    # Attempt Robinhood Crypto Live Market Data
     try:
-        api_key = os.getenv("CF_BENCHMARKS_API_KEY")
-        if api_key:
-            url = "https://www.cfbenchmarks.com/api/v1/values?id=BRTI"
-            headers = {"Authorization": f"Basic {api_key}", "Accept": "application/json"}
-            resp = requests.get(url, headers=headers, timeout=5)
-            resp.raise_for_status()
-            data = resp.json()
-            price = float(data.get("value"))
-            result = {
-                "price": round(price, 2),
-                "open_24h": round(price, 2),
-                "high_24h": round(price, 2),
-                "low_24h": round(price, 2),
-                "volume_24h": 0.0,
-                "change_24h": 0.0,
-                "source": "CFBRTI",
-            }
-            _ticker_cache["timestamp"] = now
-            _ticker_cache["data"] = result
-            return result
+        rh_url = "https://api.robinhood.com/marketdata/forex/quotes/3d961844-d360-45fc-989b-f6fca761d511/"
+        rh_resp = requests.get(rh_url, headers=HEADERS, timeout=3)
+        if rh_resp.status_code == 200:
+            rh_data = rh_resp.json()
+            mark_price = float(rh_data.get("mark_price", 0))
+            if mark_price > 0:
+                open_p = float(rh_data.get("open_price", mark_price))
+                high_p = float(rh_data.get("high_price", mark_price))
+                low_p = float(rh_data.get("low_price", mark_price))
+                vol = float(rh_data.get("volume", 0))
+                chg = ((mark_price - open_p) / open_p) * 100 if open_p > 0 else 0.0
+                result = {
+                    "price": round(mark_price, 2),
+                    "open_24h": round(open_p, 2),
+                    "high_24h": round(high_p, 2),
+                    "low_24h": round(low_p, 2),
+                    "volume_24h": round(vol, 2),
+                    "change_24h": round(chg, 2),
+                    "source": "Robinhood Crypto",
+                }
+                _ticker_cache["timestamp"] = now
+                _ticker_cache["data"] = result
+                return result
     except Exception as e:
-        logger.warning(f"CFâ€¯Benchmarks BRTI request failed: {e} â€“ falling back to other sources.")
+        logger.warning(f"Robinhood Crypto request failed: {e} – falling back to other sources.")
 
     # Original Coinbase logic (fastest endpoint)
     try:
@@ -455,7 +458,7 @@ def get_live_15m_target_data() -> dict:
                         "delta": diff,
                         "delta_pct": diff_pct,
                         "direction": "HIGHER" if is_higher else "LOWER",
-                        "arrow": "â–²" if is_higher else "â–¼",
+                        "arrow": "▲" if is_higher else "▼",
                         "color": "green" if is_higher else "red"
                     })
 
@@ -468,6 +471,19 @@ def get_live_15m_target_data() -> dict:
                 _target_cache["last_5_targets"] = []
                 _target_cache["streak_summary"] = "--"
 
+    # Fetch Robinhood 15M target strike/benchmark
+    rh_target = None
+    try:
+        h_url = "https://api.robinhood.com/marketdata/forex/historicals/3d961844-d360-45fc-989b-f6fca761d511/?bounds=24_7&interval=5minute&span=day"
+        rh_h_resp = requests.get(h_url, headers=HEADERS, timeout=3)
+        if rh_h_resp.status_code == 200:
+            pts = rh_h_resp.json().get("data_points", [])
+            last_15m = [p for p in pts if ":00:00Z" in p.get("begins_at", "") or ":15:00Z" in p.get("begins_at", "") or ":30:00Z" in p.get("begins_at", "") or ":45:00Z" in p.get("begins_at", "")]
+            if last_15m:
+                rh_target = round(float(last_15m[-1]["open_price"]), 2)
+    except Exception as e:
+        logger.info(f"Robinhood 15m target query: {e}")
+
     # Check Kalshi live 15M target strike
     kalshi_m = None
     try:
@@ -475,12 +491,16 @@ def get_live_15m_target_data() -> dict:
     except Exception:
         pass
 
-    target_source = "15M Candle Close"
-    if kalshi_m and kalshi_m.get("target_price"):
+    target_source = "Robinhood 15M Target"
+    if rh_target:
+        target_price = rh_target
+        target_source = "Robinhood 15M Target"
+    elif kalshi_m and kalshi_m.get("target_price"):
         target_price = kalshi_m["target_price"]
         target_source = "Kalshi KXBTC15M"
     else:
         target_price = _target_cache["active_target"] or curr_price
+        target_source = "15M Candle Close"
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)

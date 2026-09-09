@@ -57,6 +57,26 @@ kbo_props = intl.get_kbo_props()
 with open('static/data/kbo.json', 'w', encoding='utf-8') as f:
     json.dump({'league': 'Korea KBO', 'count': len(kbo_games), 'games': kbo_games, 'props': kbo_props}, f, indent=2)
 
+# BTC Pattern Analysis and Robinhood Target Sync
+try:
+    from backend.main import get_cached_btc_analysis, sanitize_btc_json
+    from backend.btc.data_fetcher import get_btc_ticker, fetch_candles
+    df_btc, btc_analysis = get_cached_btc_analysis(timeframe="15m", max_age_seconds=0)
+    with open('static/data/btc_analysis.json', 'w', encoding='utf-8') as f:
+        json.dump(sanitize_btc_json(btc_analysis), f, indent=2)
+
+    ticker = get_btc_ticker()
+    with open('static/data/btc_ticker.json', 'w', encoding='utf-8') as f:
+        json.dump(ticker, f, indent=2)
+
+    candles = fetch_candles(timeframe="15m", limit=100)
+    candle_records = candles.to_dict(orient="records") if hasattr(candles, 'to_dict') else []
+    with open('static/data/btc_candles.json', 'w', encoding='utf-8') as f:
+        json.dump({'timeframe': '15m', 'candles': candle_records}, f, indent=2, default=str)
+    print('SUCCESS: BTC static data synced with Robinhood 15M Target!')
+except Exception as e:
+    print('BTC sync warning:', e)
+
 print('SUCCESS: Static data synced!')
 print('Top 5 picks:', len(picks_data['top_5']))
 for p in picks_data['top_5']:

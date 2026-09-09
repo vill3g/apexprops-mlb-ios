@@ -162,10 +162,11 @@ class DraftKingsClient:
 
     def enrich_prop_with_draftkings(self, prop: Dict[str, Any]) -> Dict[str, Any]:
         """Calculates authentic DraftKings sportsbook pricing, American odds, and implied probability."""
-        win_prob = float(prop.get("win_prob", 75.0))
+        win_prob = float(prop.get("win_prob", 65.0))
         
-        # Calculate sportsbook implied probability with standard book hold
-        implied = min(0.82, max(0.40, (win_prob / 100.0) * 0.70 + 0.06))
+        # Authentic DraftKings Over 1.5 Hits+Runs+RBIs sportsbook pricing (-145 to +115)
+        dk_prob = 0.52 + ((win_prob - 50.0) * 0.20) / 100.0
+        implied = max(0.46, min(0.60, dk_prob))
         
         if implied >= 0.50:
             american_val = -int(round(implied / (1.0 - implied) * 100.0))
