@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional
 from backend.data.draftkings_client import DraftKingsClient
 from backend.data.verified_mlb_client import VerifiedMLBClient
 from backend.data.injuries_client import InjuriesClient
+from backend.data.player_photos import photo_resolver
 
 class PitcherKModel:
     def __init__(self):
@@ -175,8 +176,7 @@ class PitcherKModel:
             proj_k=proj_k
         )
 
-        if not headshot or "nophoto" in headshot:
-            headshot = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{id}/headshot/67/current.png" if id else "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png"
+        headshot = photo_resolver.get_headshot(name, id, team)
 
         catalysts = [
             f"Official starting pitcher for {team} ({'Home' if is_home else 'Away'} start at {venue})",
