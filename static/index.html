@@ -66,7 +66,7 @@
       <!-- Center: Analytics Mode Dropdown Menu -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <div class="flex items-center gap-2">
-          <label for="modeDropdown" class="text-xs uppercase font-bold text-slate-400 tracking-wider">Mode:</label>
+          <label for="modeDropdown" class="text-xs uppercase font-bold text-slate-400 tracking-wider">Prop:</label>
           <div class="relative">
             <select id="modeDropdown" onchange="switchMode(this.value)" class="bg-slate-900 border-2 border-emerald-500/60 rounded-xl text-xs sm:text-sm font-bold px-3.5 py-2 text-white focus:outline-none focus:ring-2 focus:ring-emerald-400 shadow-md shadow-emerald-500/10 cursor-pointer">
               <option value="mlb_hrrbi" selected>⚾ MLB Hits + Runs + RBIs (+1 Line)</option>
@@ -343,15 +343,22 @@
           </div>
         </div>
 
+        <!-- DraftKings Master Bet Action Button -->
+        <button onclick="openDraftKingsBetslip()" class="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition transform active:scale-[0.99] cursor-pointer">
+          <span class="text-base">👑</span>
+          <span>Add Bets Directly to DraftKings Sportsbook</span>
+          <span class="text-xs opacity-90 font-mono font-bold">(Auto-Copies Picks) ➔</span>
+        </button>
+
         <div class="flex items-center gap-3">
-          <button onclick="copySlipToClipboard()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs transition">
+          <button onclick="copySlipToClipboard()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
             📋 Copy Slip to Clipboard
           </button>
-          <button onclick="clearSlip()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs transition">
-            Clear
+          <button onclick="clearSlip()" class="bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-800 font-bold py-2.5 px-4 rounded-xl text-xs transition">
+            Clear Slip
           </button>
         </div>
-        <div id="copyAlert" class="hidden text-center text-xs font-bold text-emerald-400">✓ Slip copied to clipboard!</div>
+        <div id="copyAlert" class="hidden text-center text-xs font-bold text-amber-400 bg-amber-500/10 py-1.5 px-3 rounded-lg border border-amber-500/20">✓ Slip copied to clipboard!</div>
       </div>
     </div>
 
@@ -364,13 +371,16 @@
           <p class="text-[10px] text-slate-400" id="barSlipText">Click "+ Slip" on any prop to build a custom parlay.</p>
         </div>
       </div>
-      <div class="flex items-center justify-between sm:justify-end gap-3">
-        <div class="text-right">
+      <div class="flex items-center justify-between sm:justify-end gap-2.5">
+        <div class="text-right mr-1">
           <div class="text-[9px] uppercase text-slate-400 font-semibold">Joint Prob</div>
           <div class="text-sm font-black text-emerald-400" id="barJointProb">--</div>
         </div>
+        <button onclick="openDraftKingsBetslip()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-3 py-1.5 rounded-xl text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1 cursor-pointer">
+          👑 DK Betslip
+        </button>
         <button onclick="switchMode('slip_export')" class="bg-emerald-500/20 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 font-black px-3 py-1.5 rounded-xl text-xs border border-emerald-500/30 transition">
-          View &amp; Export
+          View Slip
         </button>
       </div>
     </div>
@@ -493,9 +503,14 @@
       <!-- Modal Footer -->
       <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/60">
         <button onclick="closeModal()" class="text-xs text-slate-400 hover:text-white font-medium">Close</button>
-        <button onclick="addCurrentModalToSlip()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
-          + Add Pick to Slip
-        </button>
+        <div class="flex items-center gap-2">
+          <a id="modalDkBtn" href="https://sportsbook.draftkings.com/leagues/baseball/mlb" target="_blank" rel="noopener noreferrer" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-md shadow-amber-500/20">
+            👑 Bet on DK ↗
+          </a>
+          <button onclick="addCurrentModalToSlip()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
+            + Add Pick to Slip
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -740,14 +755,14 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <div class="bg-amber-500/10 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px]">
+            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-amber-500/10 hover:bg-amber-500/25 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px] transition cursor-pointer" title="Bet on DraftKings">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
                 <span class="font-bold text-amber-400">DK:</span>
                 <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 65}%</strong></span>
-            </div>
+              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 65}%</strong> ↗</span>
+            </a>
 
             <div class="space-y-1">
               <div class="flex items-center justify-between text-[10px]">
@@ -879,14 +894,14 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <div class="bg-amber-500/10 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px]">
+            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-amber-500/10 hover:bg-amber-500/25 px-2 py-1.5 rounded-xl border border-amber-500/25 flex items-center justify-between text-[10px] transition cursor-pointer" title="Bet on DraftKings">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
                 <span class="font-bold text-amber-400">DK:</span>
                 <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 60}%</strong></span>
-            </div>
+              <span class="text-slate-400">Imp: <strong class="text-amber-300 font-mono">${p.dk_implied_prob || 60}%</strong> ↗</span>
+            </a>
 
             <div class="space-y-1">
               <div class="flex items-center justify-between text-[10px]">
@@ -1401,7 +1416,12 @@
           <div class="flex items-center gap-2.5">
             <span class="w-5 h-5 rounded ${p.k_line ? 'bg-orange-500' : 'bg-emerald-500'} text-slate-950 font-bold text-[10px] flex items-center justify-center">${i + 1}</span>
             <div>
-              <div class="font-bold text-white">${p.name}</div>
+              <div class="font-bold text-white flex items-center gap-2">
+                <span>${p.name}</span>
+                <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500 hover:text-slate-950 text-amber-400 border border-amber-500/30 transition flex items-center gap-0.5" title="Add directly on DraftKings">
+                  👑 DK ↗
+                </a>
+              </div>
               <div class="text-[10px] text-slate-400">
                 ${p.team} vs ${p.opponent} • ${p.k_line ? `${p.pick_type} ${p.k_line} Ks` : '+1 H+R+RBI'} • <span class="font-mono text-emerald-400/90">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</span>
               </div>
@@ -1453,7 +1473,7 @@
       document.getElementById('exportPayout').innerText = `$${payout}`;
     }
 
-    function copySlipToClipboard() {
+    function copySlipToClipboard(silent = false) {
       if (activeSlip.length === 0) return;
       let text = "👑 APEXPROPS DRAFTKINGS BETTING SLIP 👑\n";
       text += "====================================\n";
@@ -1486,9 +1506,50 @@
       text += "Generated via ApexProps // DraftKings Real-Time Odds Engine";
 
       navigator.clipboard.writeText(text);
+      if (!silent) {
+        const alertEl = document.getElementById('copyAlert');
+        if (alertEl) {
+          alertEl.innerText = "✓ Slip copied to clipboard!";
+          alertEl.classList.remove('hidden');
+          setTimeout(() => alertEl.classList.add('hidden'), 2500);
+        }
+      }
+    }
+
+    function openDraftKingsBetslip(customUrl) {
+      if (activeSlip.length === 0 && !customUrl) {
+        alert("Please click '+ Slip' on at least 1 prop before launching DraftKings betslip!");
+        return;
+      }
+
+      // Auto-copy the formatted slip text to user clipboard
+      if (activeSlip.length > 0) {
+        copySlipToClipboard(true);
+      }
+
+      // Determine DraftKings destination URL
+      let targetUrl = customUrl || "https://sportsbook.draftkings.com/leagues/baseball/mlb";
+      if (!customUrl && activeSlip.length > 0 && activeSlip[0].dk_link) {
+        targetUrl = activeSlip[0].dk_link;
+      }
+
       const alertEl = document.getElementById('copyAlert');
-      alertEl.classList.remove('hidden');
-      setTimeout(() => alertEl.classList.add('hidden'), 2500);
+      if (alertEl) {
+        alertEl.innerText = "👑 Picks copied! Opening DraftKings Betslip...";
+        alertEl.classList.remove('hidden');
+        setTimeout(() => alertEl.classList.add('hidden'), 3500);
+      }
+
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Attempt to launch DraftKings native sportsbook app
+        window.location.href = "dksportsbook://";
+        setTimeout(() => {
+          window.open(targetUrl, '_blank');
+        }, 600);
+      } else {
+        window.open(targetUrl, '_blank');
+      }
     }
 
     // ==========================================
@@ -1534,6 +1595,9 @@
       document.getElementById('modalWeatherRunImpact').innerText = weather.run_factor || "+12%";
 
       document.getElementById('modalCatalysts').innerHTML = p.catalysts.map(c => `<li>• ${c}</li>`).join('');
+      if (document.getElementById('modalDkBtn')) {
+        document.getElementById('modalDkBtn').href = p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb';
+      }
       document.getElementById('deepDiveModal').classList.remove('hidden');
     }
 
@@ -1570,6 +1634,9 @@
       document.getElementById('modalWeatherRunImpact').innerText = "-8% Contact";
 
       document.getElementById('modalCatalysts').innerHTML = p.catalysts.map(c => `<li>• ${c}</li>`).join('');
+      if (document.getElementById('modalDkBtn')) {
+        document.getElementById('modalDkBtn').href = p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb';
+      }
       document.getElementById('deepDiveModal').classList.remove('hidden');
     }
 
