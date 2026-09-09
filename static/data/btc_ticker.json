@@ -1,34 +1,16 @@
 {
-  "price": 78239.0,
-  "target_price": 78212.95,
-  "delta": 26.05,
-  "delta_pct": 0.033,
+  "price": 78298.55,
+  "target_price": 78098.1,
+  "delta": 200.45,
+  "delta_pct": 0.257,
   "status": "ABOVE",
-  "change_24h": -0.31,
+  "change_24h": -0.23,
   "high_24h": 79752.73,
-  "low_24h": 78025.0,
-  "volume_24h": 5188.77,
-  "seconds_left": 897,
-  "formatted_countdown": "14:57",
+  "low_24h": 77915.58,
+  "volume_24h": 5333.69,
+  "seconds_left": 419,
+  "formatted_countdown": "06:59",
   "last_5_targets": [
-    {
-      "time": "18:45",
-      "price": 78399.35,
-      "delta": -122.57,
-      "delta_pct": -0.16,
-      "direction": "LOWER",
-      "arrow": "\u25bc",
-      "color": "red"
-    },
-    {
-      "time": "19:00",
-      "price": 78470.38,
-      "delta": 71.03,
-      "delta_pct": 0.09,
-      "direction": "HIGHER",
-      "arrow": "\u25b2",
-      "color": "green"
-    },
     {
       "time": "19:15",
       "price": 78512.5,
@@ -55,8 +37,26 @@
       "direction": "LOWER",
       "arrow": "\u25bc",
       "color": "red"
+    },
+    {
+      "time": "20:00",
+      "price": 78239.0,
+      "delta": 26.05,
+      "delta_pct": 0.03,
+      "direction": "HIGHER",
+      "arrow": "\u25b2",
+      "color": "green"
+    },
+    {
+      "time": "20:15",
+      "price": 78098.1,
+      "delta": -140.9,
+      "delta_pct": -0.18,
+      "direction": "LOWER",
+      "arrow": "\u25bc",
+      "color": "red"
     }
   ],
   "streak_summary": "2 Higher / 3 Lower",
-  "timestamp": 1788984903
+  "timestamp": 1788986280
 }
