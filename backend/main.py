@@ -13,7 +13,7 @@ import time
 import json
 import pandas as pd
 
-from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown
+from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown, get_live_15m_target_data, format_volume_series
 from backend.btc.indicators import add_all_indicators
 from backend.btc.pattern_detector import detect_candlestick_patterns
 from backend.btc.analyzer import analyze_btc
@@ -385,6 +385,29 @@ def api_btc_analyze(timeframe: str = "15m"):
                 pass
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/api/btc/live")
+def api_btc_live():
+    """
+    Ultra-low latency endpoint returning live price, 15m target benchmark,
+    spread delta, 5-target trend box, and candle countdown for 1s polling.
+    """
+    try:
+        data = get_live_15m_target_data()
+        return JSONResponse(sanitize_btc_json(data))
+    except Exception as e:
+        return JSONResponse({
+            "price": 0.0,
+            "target_price": 0.0,
+            "delta": 0.0,
+            "delta_pct": 0.0,
+            "status": "NEUTRAL",
+            "seconds_left": 0,
+            "formatted_countdown": "--:--",
+            "last_5_targets": [],
+            "streak_summary": "--",
+            "error": str(e)
+        })
+
 @app.get("/api/btc/ticker")
 def api_btc_ticker():
     """Returns live 24h ticker info."""
@@ -412,7 +435,7 @@ def api_btc_countdown(timeframe: str = "15m"):
 @app.get("/api/btc/candles")
 def api_btc_candles(timeframe: str = "15m"):
     """
-    Returns formatted candlestick data + indicators + pattern markers
+    Returns formatted candlestick data + indicators + pattern markers + volume series
     for TradingView Lightweight Charts for the selected timeframe.
     """
     try:
@@ -460,15 +483,21 @@ def api_btc_candles(timeframe: str = "15m"):
                 })
 
         ticker = get_btc_ticker()
+        volume_series = format_volume_series(df_ind)
+        target_benchmark = analysis.get("target_benchmark", {})
 
         return JSONResponse(sanitize_btc_json({
             "candles": candles,
+            "volume": volume_series,
             "ema9": ema9_data,
             "ema21": ema21_data,
             "ema50": ema50_data,
             "ema200": ema200_data,
             "markers": markers,
-            "ticker": ticker
+            "ticker": ticker,
+            "target_price": target_benchmark.get("target_price"),
+            "trade_setup": analysis.get("trade_setup"),
+            "target_benchmark": target_benchmark
         }))
     except Exception as e:
         static_backup = os.path.join(STATIC_DIR, "data", "btc_candles.json")
