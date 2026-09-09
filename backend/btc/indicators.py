@@ -161,7 +161,63 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["vol_ratio"] = df["volume"] / (df["vol_sma"] + 1e-10)
     df["vol_surge"] = df["vol_ratio"] >= 1.5
 
+    # VWAP
+    df["vwap"] = compute_vwap(df)
+
     return df
+
+
+def compute_vwap(df: pd.DataFrame) -> pd.Series:
+    """Calculate Intraday Session Volume Weighted Average Price (VWAP)."""
+    typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
+    cum_vol_price = (typical_price * df["volume"]).cumsum()
+    cum_vol = df["volume"].cumsum() + 1e-10
+    return cum_vol_price / cum_vol
+
+
+def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[dict]:
+    """
+    Detect Fair Value Gaps (FVG) / Imbalances on 3-candle sequences.
+    - Bullish FVG: Candle 1 High < Candle 3 Low
+    - Bearish FVG: Candle 1 Low > Candle 3 High
+    """
+    fvgs = []
+    n = len(df)
+    if n < 5:
+        return fvgs
+
+    for i in range(max(2, n - 20), n):
+        c1 = df.iloc[i - 2]
+        c2 = df.iloc[i - 1]
+        c3 = df.iloc[i]
+
+        if c3["low"] > c1["high"]:
+            gap_size = c3["low"] - c1["high"]
+            gap_pct = (gap_size / (c1["high"] + 1e-10)) * 100
+            if gap_pct >= min_gap_pct:
+                fvgs.append({
+                    "type": "BULLISH_FVG",
+                    "top": round(float(c3["low"]), 2),
+                    "bottom": round(float(c1["high"]), 2),
+                    "size": round(float(gap_size), 2),
+                    "candle_index": i - 1,
+                    "time": int(c2["time"]),
+                    "description": f"Bullish FVG between ${c1['high']:.1f} and ${c3['low']:.1f} (+${gap_size:.1f})"
+                })
+        elif c1["low"] > c3["high"]:
+            gap_size = c1["low"] - c3["high"]
+            gap_pct = (gap_size / (c1["low"] + 1e-10)) * 100
+            if gap_pct >= min_gap_pct:
+                fvgs.append({
+                    "type": "BEARISH_FVG",
+                    "top": round(float(c1["low"]), 2),
+                    "bottom": round(float(c3["high"]), 2),
+                    "size": round(float(gap_size), 2),
+                    "candle_index": i - 1,
+                    "time": int(c2["time"]),
+                    "description": f"Bearish FVG between ${c3['high']:.1f} and ${c1['low']:.1f} (-${gap_size:.1f})"
+                })
+    return fvgs
 
 
 def extract_indicator_summary(df: pd.DataFrame) -> dict:
@@ -227,6 +283,9 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
         "volume": round(float(last["volume"]), 4),
         "vol_ratio": round(float(last["vol_ratio"]), 2),
         "vol_surge": bool(last["vol_surge"]),
+        "vwap": round(float(last["vwap"]), 2) if "vwap" in last and not pd.isna(last["vwap"]) else None,
+        "vwap_status": "ABOVE_VWAP" if ("vwap" in last and last["close"] >= last["vwap"]) else "BELOW_VWAP",
+        "fvgs": detect_fair_value_gaps(df),
     }
 
 
