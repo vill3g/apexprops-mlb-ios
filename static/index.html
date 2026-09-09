@@ -337,7 +337,7 @@
         <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-black uppercase text-white flex items-center gap-1.5">
-              <span>📅</span> <span id="modalGameLogTitle">Recent Game Log (Last 5 Games)</span>
+              <span>📅</span> <span id="modalGameLogTitle">Recent Game Log (Last 10 Games)</span>
             </span>
             <span id="modalGameLogBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">
               Official Log
@@ -933,16 +933,22 @@
     // 4. Game Log Rendering Logic
     // ==========================================
     function generateFallbackGameLog(p, isPitcher) {
-      const dates = ["Sep 8", "Sep 7", "Sep 6", "Sep 4", "Sep 3"];
+      const dates = ["Sep 8", "Sep 7", "Sep 6", "Sep 5", "Sep 4", "Sep 3", "Sep 2", "Sep 1", "Aug 31", "Aug 30"];
+      const pitcherDates = ["Sep 8", "Sep 2", "Aug 27", "Aug 21", "Aug 15", "Aug 9", "Aug 3", "Jul 28", "Jul 22", "Jul 16"];
       const opp = p.opponent || "OPP";
       if (isPitcher) {
         const kLine = p.k_line || 6.5;
         return [
-          { date: dates[0], opp: `vs ${opp}`, ip: "7.0", h: 3, hr: 0, so: Math.ceil(kLine + 1), era: p.era || "2.65", hit_prop: true },
-          { date: dates[1], opp: `@ ${opp}`, ip: "6.1", h: 4, hr: 1, so: Math.floor(kLine), era: p.era || "2.75", hit_prop: false },
-          { date: dates[2], opp: `vs ${opp}`, ip: "6.0", h: 2, hr: 0, so: Math.ceil(kLine + 2), era: p.era || "2.80", hit_prop: true },
-          { date: dates[3], opp: `@ ${opp}`, ip: "7.1", h: 5, hr: 1, so: Math.ceil(kLine), era: p.era || "2.90", hit_prop: true },
-          { date: dates[4], opp: `vs ${opp}`, ip: "6.0", h: 3, hr: 0, so: Math.ceil(kLine + 1), era: p.era || "2.85", hit_prop: true }
+          { date: pitcherDates[0], opp: `vs ${opp}`, ip: "7.0", h: 3, hr: 0, so: Math.ceil(kLine + 1), era: p.era || "2.65", hit_prop: true },
+          { date: pitcherDates[1], opp: `@ ${opp}`, ip: "6.1", h: 4, hr: 1, so: Math.floor(kLine), era: p.era || "2.75", hit_prop: false },
+          { date: pitcherDates[2], opp: `vs ${opp}`, ip: "6.0", h: 2, hr: 0, so: Math.ceil(kLine + 2), era: p.era || "2.80", hit_prop: true },
+          { date: pitcherDates[3], opp: `@ ${opp}`, ip: "7.1", h: 5, hr: 1, so: Math.ceil(kLine), era: p.era || "2.90", hit_prop: true },
+          { date: pitcherDates[4], opp: `vs ${opp}`, ip: "6.0", h: 3, hr: 0, so: Math.ceil(kLine + 1), era: p.era || "2.85", hit_prop: true },
+          { date: pitcherDates[5], opp: `@ ${opp}`, ip: "6.2", h: 4, hr: 0, so: Math.ceil(kLine), era: p.era || "2.80", hit_prop: true },
+          { date: pitcherDates[6], opp: `vs ${opp}`, ip: "5.1", h: 5, hr: 1, so: Math.floor(kLine - 1), era: p.era || "3.00", hit_prop: false },
+          { date: pitcherDates[7], opp: `@ ${opp}`, ip: "7.0", h: 3, hr: 0, so: Math.ceil(kLine + 2), era: p.era || "2.75", hit_prop: true },
+          { date: pitcherDates[8], opp: `vs ${opp}`, ip: "6.0", h: 4, hr: 1, so: Math.ceil(kLine + 1), era: p.era || "2.85", hit_prop: true },
+          { date: pitcherDates[9], opp: `@ ${opp}`, ip: "6.1", h: 2, hr: 0, so: Math.ceil(kLine), era: p.era || "2.70", hit_prop: true }
         ];
       } else {
         return [
@@ -950,7 +956,12 @@
           { date: dates[1], opp: `@ ${opp}`, ab: 4, r: 0, h: 1, so: 2, rbi: 0, hrrbi: 1, hit_prop: true },
           { date: dates[2], opp: `vs ${opp}`, ab: 5, r: 2, h: 3, so: 0, rbi: 2, hrrbi: 7, hit_prop: true },
           { date: dates[3], opp: `@ ${opp}`, ab: 4, r: 0, h: 0, so: 1, rbi: 0, hrrbi: 0, hit_prop: false },
-          { date: dates[4], opp: `vs ${opp}`, ab: 3, r: 1, h: 2, so: 0, rbi: 1, hrrbi: 4, hit_prop: true }
+          { date: dates[4], opp: `vs ${opp}`, ab: 3, r: 1, h: 2, so: 0, rbi: 1, hrrbi: 4, hit_prop: true },
+          { date: dates[5], opp: `@ ${opp}`, ab: 4, r: 1, h: 1, so: 1, rbi: 0, hrrbi: 2, hit_prop: true },
+          { date: dates[6], opp: `vs ${opp}`, ab: 4, r: 0, h: 1, so: 2, rbi: 1, hrrbi: 2, hit_prop: true },
+          { date: dates[7], opp: `@ ${opp}`, ab: 5, r: 2, h: 2, so: 0, rbi: 2, hrrbi: 6, hit_prop: true },
+          { date: dates[8], opp: `vs ${opp}`, ab: 3, r: 0, h: 0, so: 1, rbi: 0, hrrbi: 0, hit_prop: false },
+          { date: dates[9], opp: `@ ${opp}`, ab: 4, r: 1, h: 2, so: 1, rbi: 1, hrrbi: 4, hit_prop: true }
         ];
       }
     }
@@ -963,7 +974,7 @@
       if (!headEl || !bodyEl) return;
 
       if (isPitcher) {
-        if (titleEl) titleEl.innerText = "Pitcher Recent Game Log (Last 5 Starts)";
+        if (titleEl) titleEl.innerText = "Pitcher Recent Game Log (Last 10 Starts)";
         if (badgeEl) badgeEl.innerText = `${p.name} • Pitcher Ks`;
         headEl.innerHTML = `
           <tr class="text-slate-400 border-b border-slate-800 text-[10px] uppercase tracking-wider">
@@ -999,7 +1010,7 @@
           `;
         }).join('');
       } else {
-        if (titleEl) titleEl.innerText = "Batter Recent Game Log (Last 5 Games)";
+        if (titleEl) titleEl.innerText = "Batter Recent Game Log (Last 10 Games)";
         if (badgeEl) badgeEl.innerText = `${p.name} • +1 H+R+RBI`;
         headEl.innerHTML = `
           <tr class="text-slate-400 border-b border-slate-800 text-[10px] uppercase tracking-wider">
