@@ -19,6 +19,7 @@ from backend.engine.pitcher_k_model import PitcherKModel
 from backend.engine.international_model import InternationalBaseballModel
 from backend.engine.bvp_weather import BvPWeatherModel
 from backend.data.verified_mlb_client import VerifiedMLBClient
+from backend.data.injuries_client import InjuriesClient
 
 app = FastAPI(
     title="ApexProps Baseball Analytics Engine",
@@ -43,6 +44,7 @@ pitcher_k_model = PitcherKModel()
 intl_model = InternationalBaseballModel()
 bvp_weather_model = BvPWeatherModel()
 verified_client = VerifiedMLBClient()
+injuries_client = InjuriesClient()
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 
@@ -146,6 +148,40 @@ def get_player_gamelog(player_id: str, type: Optional[str] = "hitting"):
         "game_log": logs,
         "verified_source": "Official MLB & ESPN Verified",
         "is_verified": any(g.get("verified", False) for g in logs)
+    }
+
+@app.get("/api/injuries")
+def get_mlb_injuries(force_refresh: bool = False):
+    """Returns official league-wide MLB Injured List."""
+    if force_refresh:
+        injuries_client.refresh_injuries()
+    all_inj = injuries_client.get_all_injured()
+    return {
+        "count": len(all_inj),
+        "injuries": all_inj,
+        "teams": injuries_client.get_raw_teams()
+    }
+
+@app.get("/api/player/{player_id}/injury-status")
+def get_player_injury_status(player_id: str):
+    """Checks if a player is currently on the MLB Injured List."""
+    inj = injuries_client.get_injury(player_id, player_id)
+    if inj:
+        return {
+            "player_id": player_id,
+            "name": inj.get("name"),
+            "is_injured": True,
+            "status": inj.get("status"),
+            "team": inj.get("team"),
+            "position": inj.get("position"),
+            "description": inj.get("description"),
+            "return_date": inj.get("return_date")
+        }
+    return {
+        "player_id": player_id,
+        "name": player_id,
+        "is_injured": False,
+        "status": "Active"
     }
 
 @app.get("/api/international/npb")
