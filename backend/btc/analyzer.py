@@ -200,6 +200,25 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             score -= 6
             bearish_reasons.append(f"High Volume Surge ({ind_summary['vol_ratio']:.1f}x avg volume) on Red candle (-6)")
 
+    # VWAP factor
+    if ind_summary.get("vwap"):
+        vwap_val = ind_summary["vwap"]
+        if ind_summary.get("vwap_status") == "ABOVE_VWAP":
+            score += 6
+            bullish_reasons.append(f"Holding above Session VWAP (${vwap_val:.1f}) - Buyer edge (+6)")
+        else:
+            score -= 6
+            bearish_reasons.append(f"Trading below Session VWAP (${vwap_val:.1f}) - Seller edge (-6)")
+
+    # Fair Value Gaps (FVG) factor
+    for fvg in ind_summary.get("fvgs", [])[-2:]:
+        if fvg["type"] == "BULLISH_FVG" and curr_price >= fvg["bottom"]:
+            score += 5
+            bullish_reasons.append(f"Smart Money: Reacting to {fvg['description']} (+5)")
+        elif fvg["type"] == "BEARISH_FVG" and curr_price <= fvg["top"]:
+            score -= 5
+            bearish_reasons.append(f"Smart Money: Facing {fvg['description']} (-5)")
+
     # Clamp score to [-100, 100]
     score = max(-100, min(100, score))
 
@@ -228,9 +247,8 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     near_resistance = structure.get("nearest_resistance", curr_price + (1.5 * atr))
 
     if primary_bias == "UP":
-        # Risk is distance to stop loss (either below support or 1.5 ATR)
         sl_distance = max(1.2 * atr, curr_price - near_support)
-        sl_distance = min(sl_distance, 2.5 * atr)  # cap risk
+        sl_distance = min(sl_distance, 2.5 * atr)
         stop_loss = round(curr_price - sl_distance, 2)
         tp1 = round(curr_price + (1.5 * sl_distance), 2)
         tp2 = round(curr_price + (2.5 * sl_distance), 2)
@@ -244,7 +262,8 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             "risk_reward_1": 1.5,
             "risk_reward_2": 2.5,
             "risk_amount": round(sl_distance, 2),
-            "risk_percent": risk_pct
+            "risk_percent": risk_pct,
+            "breakeven_rule": f"Move SL to Breakeven (${round(curr_price, 2)}) after TP1 hit"
         }
     elif primary_bias == "DOWN":
         sl_distance = max(1.2 * atr, near_resistance - curr_price)
@@ -262,7 +281,8 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             "risk_reward_1": 1.5,
             "risk_reward_2": 2.5,
             "risk_amount": round(sl_distance, 2),
-            "risk_percent": risk_pct
+            "risk_percent": risk_pct,
+            "breakeven_rule": f"Move SL to Breakeven (${round(curr_price, 2)}) after TP1 hit"
         }
     else:
         setup = {
@@ -274,10 +294,133 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             "risk_reward_1": 1.0,
             "risk_reward_2": 1.5,
             "risk_amount": round(atr, 2),
-            "risk_percent": round((atr / curr_price) * 100, 2)
+            "risk_percent": round((atr / curr_price) * 100, 2),
+            "breakeven_rule": "Range trading - scalp tight limits"
         }
 
     setup["timeframe"] = timeframe.upper()
+
+    # --- 5. 15-Minute Price Target Benchmark & Above/Below Predictor ---
+    n_rows = len(df_ind)
+    active_target = curr_price
+    last_5_targets = []
+    higher_count = 0
+    lower_count = 0
+    from datetime import datetime, timezone
+
+    if n_rows >= 7:
+        # Active target is previous completed 15m candle close (index n - 2)
+        active_target = round(float(df_ind.iloc[-2]["close"]), 2)
+        
+        # Last 5 completed targets (indices n - 6 to n - 2)
+        for i in range(n_rows - 6, n_rows - 1):
+            c = df_ind.iloc[i]
+            p = df_ind.iloc[i - 1]
+            c_close = float(c["close"])
+            p_close = float(p["close"])
+            diff = round(c_close - p_close, 2)
+            diff_pct = round((diff / (p_close + 1e-10)) * 100, 2)
+            is_up = diff >= 0
+            if is_up:
+                higher_count += 1
+            else:
+                lower_count += 1
+
+            t_val = c.get("time")
+            time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%H:%M") if t_val else "--:--"
+
+            last_5_targets.append({
+                "time": time_str,
+                "price": round(c_close, 2),
+                "delta": diff,
+                "delta_pct": diff_pct,
+                "direction": "HIGHER" if is_up else "LOWER",
+                "arrow": "▲" if is_up else "▼",
+                "color": "green" if is_up else "red"
+            })
+
+    target_delta = round(curr_price - active_target, 2)
+    target_delta_pct = round((target_delta / (active_target + 1e-10)) * 100, 3)
+    target_status = "ABOVE" if target_delta >= 0 else "BELOW"
+
+    # Evaluate Above vs Below Probability & Decision Criteria
+    pred_weight = 0
+    pred_factors = []
+
+    # A. Current Spread vs Target
+    if abs(target_delta) > (atr * 0.1):
+        if target_delta > 0:
+            pred_weight += 25
+            pred_factors.append(f"Price holding +${target_delta:.2f} (+{target_delta_pct:.2f}%) above 15m target benchmark")
+        else:
+            pred_weight -= 25
+            pred_factors.append(f"Price trading -${abs(target_delta):.2f} ({target_delta_pct:.2f}%) below 15m target benchmark")
+    else:
+        pred_factors.append(f"Price testing target level within narrow range (Spread: ${target_delta:+.2f})")
+
+    # B. 15m EMA Alignment
+    if ind_summary.get("bullish_ribbon"):
+        pred_weight += 20
+        pred_factors.append("Bullish EMA 9 > 21 ribbon providing upward thrust")
+    elif ind_summary.get("bearish_ribbon"):
+        pred_weight -= 20
+        pred_factors.append("Bearish EMA 9 < 21 ribbon exerting downward pressure")
+    elif ind_summary.get("ema_9", 0) > ind_summary.get("ema_21", 0):
+        pred_weight += 8
+        pred_factors.append("Short-term EMA 9 sloping above EMA 21")
+    else:
+        pred_weight -= 8
+        pred_factors.append("Short-term EMA 9 sloping below EMA 21")
+
+    # C. Candle Progression & RSI
+    last_candle = df_ind.iloc[-1]
+    candle_green = float(last_candle["close"]) >= float(last_candle["open"])
+    if candle_green:
+        pred_weight += 15
+        pred_factors.append("Current 15-minute candle printing green with active buyer absorption")
+    else:
+        pred_weight -= 15
+        pred_factors.append("Current 15-minute candle printing red with active selling pressure")
+
+    rsi_val = ind_summary.get("rsi", 50)
+    if rsi_val >= 55:
+        pred_weight += 12
+        pred_factors.append(f"RSI momentum strong at {rsi_val:.1f} (favors holding above target)")
+    elif rsi_val <= 45:
+        pred_weight -= 12
+        pred_factors.append(f"RSI momentum weak at {rsi_val:.1f} (favors resolving below target)")
+
+    # D. Key Support / Resistance vs Target
+    if near_support and near_support >= active_target:
+        pred_weight += 12
+        pred_factors.append(f"Key structural support (${near_support:.1f}) sits ABOVE target, forming a price floor")
+    elif near_resistance and near_resistance <= active_target:
+        pred_weight -= 12
+        pred_factors.append(f"Key structural resistance (${near_resistance:.1f}) sits BELOW target, capping recovery")
+
+    if pred_weight >= 12:
+        pred_outcome = "ABOVE TARGET (OVER)"
+        pred_prob = min(92, max(56, int(52 + (abs(pred_weight) / 80.0) * 38)))
+    elif pred_weight <= -12:
+        pred_outcome = "BELOW TARGET (UNDER)"
+        pred_prob = min(92, max(56, int(52 + (abs(pred_weight) / 80.0) * 38)))
+    else:
+        pred_outcome = "ABOVE TARGET (OVER)" if target_delta >= 0 else "BELOW TARGET (UNDER)"
+        pred_prob = 52
+
+    target_benchmark = {
+        "target_price": active_target,
+        "current_price": curr_price,
+        "delta": target_delta,
+        "delta_pct": target_delta_pct,
+        "status": target_status,
+        "predicted_outcome": pred_outcome,
+        "probability_percent": pred_prob,
+        "confidence_badge": "HIGH CONVICTION" if pred_prob >= 70 else ("MODERATE EDGE" if pred_prob >= 60 else "TIGHT PIVOT BATTLE"),
+        "decision_factors": pred_factors,
+        "last_5_targets": last_5_targets,
+        "streak_summary": f"{higher_count} Higher / {lower_count} Lower"
+    }
 
     return {
         "timestamp": str(df_ind.iloc[-1]["datetime"]),
@@ -292,7 +435,8 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         "detected_patterns": patterns,
         "market_structure": structure,
         "indicators": ind_summary,
-        "trade_setup": setup
+        "trade_setup": setup,
+        "target_benchmark": target_benchmark
     }
 
 
