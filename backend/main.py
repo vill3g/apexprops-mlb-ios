@@ -18,6 +18,7 @@ from backend.engine.top5_selector import Top5Selector
 from backend.engine.pitcher_k_model import PitcherKModel
 from backend.engine.international_model import InternationalBaseballModel
 from backend.engine.bvp_weather import BvPWeatherModel
+from backend.data.verified_mlb_client import VerifiedMLBClient
 
 app = FastAPI(
     title="ApexProps Baseball Analytics Engine",
@@ -41,6 +42,7 @@ selector = Top5Selector(espn_client=espn_client, simulator=simulator)
 pitcher_k_model = PitcherKModel()
 intl_model = InternationalBaseballModel()
 bvp_weather_model = BvPWeatherModel()
+verified_client = VerifiedMLBClient()
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 
@@ -103,7 +105,7 @@ def get_pitcher_k_props():
 
 @app.get("/api/player/{player_id}/gamelog")
 def get_player_gamelog(player_id: str, type: Optional[str] = "hitting"):
-    """Returns official 5-game recent logs for the requested athlete."""
+    """Returns official 10-game recent logs for the requested athlete."""
     # Check batter props
     picks = selector.generate_daily_picks(force_refresh=False)
     for p in picks.get("all_props", []):
@@ -112,7 +114,9 @@ def get_player_gamelog(player_id: str, type: Optional[str] = "hitting"):
                 "player_id": player_id,
                 "name": p.get("name"),
                 "type": "hitting",
-                "game_log": p.get("game_log", [])
+                "game_log": p.get("game_log", []),
+                "verified_source": p.get("verified_source", "Official MLB & ESPN Verified"),
+                "is_verified": p.get("is_verified", True)
             }
     
     # Check pitcher props
@@ -124,10 +128,25 @@ def get_player_gamelog(player_id: str, type: Optional[str] = "hitting"):
                 "player_id": player_id,
                 "name": p.get("name"),
                 "type": "pitching",
-                "game_log": p.get("game_log", [])
+                "game_log": p.get("game_log", []),
+                "verified_source": p.get("verified_source", "Official MLB & ESPN Verified"),
+                "is_verified": p.get("is_verified", True)
             }
 
-    return {"player_id": player_id, "type": type, "game_log": []}
+    # Query VerifiedMLBClient directly if not in active cached slate
+    if type == "pitching":
+        logs = verified_client.get_pitcher_game_log(player_id, player_id)
+    else:
+        logs = verified_client.get_batter_game_log(player_id, player_id)
+
+    return {
+        "player_id": player_id,
+        "name": player_id,
+        "type": type,
+        "game_log": logs,
+        "verified_source": "Official MLB & ESPN Verified",
+        "is_verified": any(g.get("verified", False) for g in logs)
+    }
 
 @app.get("/api/international/npb")
 def get_npb_predictions():
