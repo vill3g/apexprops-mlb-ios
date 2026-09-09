@@ -13,6 +13,12 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
+try:
+    from .kalshi_client import get_kalshi_15m_market
+except ImportError:
+    from kalshi_client import get_kalshi_15m_market
+
+
 # Granularity mappings
 TIMEFRAMES = {
     "1m": {"seconds": 60, "coinbase": 60, "kraken": 1, "binance": "1m", "yf": "1m"},
@@ -443,7 +449,20 @@ def get_live_15m_target_data() -> dict:
                 _target_cache["last_5_targets"] = []
                 _target_cache["streak_summary"] = "--"
 
-    target_price = _target_cache["active_target"] or curr_price
+    # Check Kalshi live 15M target strike
+    kalshi_m = None
+    try:
+        kalshi_m = get_kalshi_15m_market()
+    except Exception:
+        pass
+
+    target_source = "15M Candle Close"
+    if kalshi_m and kalshi_m.get("target_price"):
+        target_price = kalshi_m["target_price"]
+        target_source = "Kalshi KXBTC15M"
+    else:
+        target_price = _target_cache["active_target"] or curr_price
+
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
     status = "ABOVE" if delta >= 0 else "BELOW"
@@ -451,9 +470,11 @@ def get_live_15m_target_data() -> dict:
     res = {
         "price": curr_price,
         "target_price": target_price,
+        "target_source": target_source,
         "delta": delta,
         "delta_pct": delta_pct,
         "status": status,
+        "kalshi": kalshi_m,
         "change_24h": ticker["change_24h"],
         "high_24h": ticker["high_24h"],
         "low_24h": ticker["low_24h"],
@@ -462,7 +483,7 @@ def get_live_15m_target_data() -> dict:
         "formatted_countdown": countdown["formatted"],
         "last_5_targets": _target_cache["last_5_targets"],
         "streak_summary": _target_cache["streak_summary"],
-        "timestamp": int(now)
+        "latency_ms": round((time.time() - now) * 1000, 3)
     }
     _live_target_result_cache["timestamp"] = time.time()
     _live_target_result_cache["data"] = res
