@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-09 16:11:35 ET",
-  "timestamp_epoch": 1788984695.5874867,
+  "timestamp": "2026-09-09 16:55:38 ET",
+  "timestamp_epoch": 1788987338.9227781,
   "total_injured": 273,
   "teams": [
     {
@@ -10838,6 +10838,607 @@
       "displayName": "Atlanta Braves",
       "injuries": [
         {
+          "id": "1024778",
+          "longComment": "If Suarez's live BP goes well, he'll then be cleared to begin a rehab assignment. The veteran reliever has not pitched in a game since late June, but with time running short on the regular season, Suarez might not be afforded too many rehab outings before being activated. He's working his way back from right elbow inflammation.",
+          "shortComment": "Suarez (elbow) will throw a live batting practice session next week, Mark Bowman of MLB.com reports.",
+          "status": "60-Day-IL",
+          "date": "2026-09-09T20:42Z",
+          "athlete": {
+            "firstName": "Robert",
+            "lastName": "Suarez",
+            "displayName": "Robert Suarez",
+            "shortName": "R. Suarez",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/_/id/4148749",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "stats",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/stats/_/id/4148749/robert-suarez",
+                "text": "Stats",
+                "shortText": "Stats",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "stats",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=stats",
+                "text": "Stats",
+                "shortText": "Stats",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "splits",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/splits/_/id/4148749/robert-suarez",
+                "text": "Splits",
+                "shortText": "Splits",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "gamelog",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/gamelog/_/id/4148749/robert-suarez",
+                "text": "Game Log",
+                "shortText": "Game Log",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "gamelog",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=gamelog",
+                "text": "Game Log",
+                "shortText": "Game Log",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "news",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/news/_/id/4148749/robert-suarez",
+                "text": "News",
+                "shortText": "News",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "news",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=news",
+                "text": "News",
+                "shortText": "News",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "bio",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/bio/_/id/4148749/robert-suarez",
+                "text": "Bio",
+                "shortText": "Bio",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "bio",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=bio",
+                "text": "Bio",
+                "shortText": "Bio",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/_/id/4148749/robert-suarez",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "overview",
+                  "sportscenter",
+                  "app",
+                  "athlete"
+                ],
+                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749",
+                "text": "Overview",
+                "shortText": "Overview",
+                "isExternal": false,
+                "isPremium": false
+              },
+              {
+                "language": "en-US",
+                "rel": [
+                  "batvspitch",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/mlb/player/batvspitch/_/id/4148749/robert-suarez",
+                "text": "Bat vs Pitch",
+                "shortText": "Bat vs Pitch",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/mlb/players/full/4148749.png",
+              "alt": "Robert Suarez"
+            },
+            "position": {
+              "id": "0",
+              "name": "Relief Pitcher",
+              "displayName": "Relief Pitcher",
+              "abbreviation": "RP",
+              "leaf": true
+            },
+            "team": {
+              "id": "15",
+              "uid": "s:1~l:10~t:15",
+              "slug": "atlanta-braves",
+              "name": "Braves",
+              "abbreviation": "ATL",
+              "displayName": "Atlanta Braves",
+              "logos": [
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "default"
+                  ],
+                  "lastUpdated": "2024-07-01T17:48Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/atl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "dark"
+                  ],
+                  "lastUpdated": "2024-07-01T17:49Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/atl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "scoreboard"
+                  ],
+                  "lastUpdated": "2024-07-01T17:48Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/scoreboard/atl.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "scoreboard",
+                    "dark"
+                  ],
+                  "lastUpdated": "2024-07-01T17:49Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_white_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_white_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_black_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_black_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_primary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_primary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_secondary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_on_secondary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_black.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_black"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_white.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "primary_logo_white"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_white_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_white_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_black_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_black_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_primary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_primary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_secondary_color.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_on_secondary_color"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_black.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_black"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_white.png",
+                  "width": 4096,
+                  "height": 4096,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "secondary_logo_white"
+                  ],
+                  "lastUpdated": "2026-07-22T20:07Z"
+                }
+              ],
+              "links": [
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "clubhouse",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/_/name/atl/atlanta-braves",
+                  "text": "Clubhouse",
+                  "shortText": "Clubhouse",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "roster",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/roster/_/name/atl/atlanta-braves",
+                  "text": "Roster",
+                  "shortText": "Roster",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "roster",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=roster",
+                  "text": "Roster",
+                  "shortText": "Roster",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "stats",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/stats/_/name/atl/atlanta-braves",
+                  "text": "Statistics",
+                  "shortText": "Statistics",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "stats",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=stats",
+                  "text": "Statistics",
+                  "shortText": "Statistics",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "schedule",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/schedule/_/name/atl",
+                  "text": "Schedule",
+                  "shortText": "Schedule",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "schedule",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=scores",
+                  "text": "Schedule",
+                  "shortText": "Schedule",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "photos",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/photos/_/name/atl",
+                  "text": "photos",
+                  "shortText": "photos",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "tickets",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.vividseats.com/atlanta-braves-tickets--sports-mlb-baseball/performer/50?wsUser=717",
+                  "text": "Tickets",
+                  "shortText": "Tickets",
+                  "isExternal": true,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "transactions",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/transactions/_/name/atl",
+                  "text": "Transactions",
+                  "shortText": "Transactions",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "injuries",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/injuries/_/name/atl",
+                  "text": "Injuries",
+                  "shortText": "Injuries",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "depthchart",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/mlb/team/depth/_/name/atl",
+                  "text": "Depth Chart",
+                  "shortText": "Depth Chart",
+                  "isExternal": false,
+                  "isPremium": false
+                },
+                {
+                  "language": "en-US",
+                  "rel": [
+                    "depthchart",
+                    "sportscenter",
+                    "app",
+                    "team"
+                  ],
+                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=depthchart",
+                  "text": "Depth Chart",
+                  "shortText": "Depth Chart",
+                  "isExternal": false,
+                  "isPremium": false
+                }
+              ]
+            },
+            "notes": {
+              "items": [
+                {
+                  "id": "1024778",
+                  "type": "news",
+                  "date": "2026-09-09T20:42Z",
+                  "headline": "Suarez (elbow) will throw a live batting practice session next week, Mark Bowman of MLB.com reports.",
+                  "text": "If Suarez's live BP goes well, he'll then be cleared to begin a rehab assignment. The veteran reliever has not pitched in a game since late June, but with time running short on the regular season, Suarez might not be afforded too many rehab outings before being activated. He's working his way back from right elbow inflammation.",
+                  "source": "RotoWire"
+                }
+              ]
+            },
+            "status": {
+              "id": "10",
+              "name": "Injured/60",
+              "type": "injured60",
+              "abbreviation": "IL60"
+            }
+          },
+          "source": {
+            "id": "1",
+            "description": "basic/manual",
+            "state": "basic"
+          },
+          "type": {
+            "id": "11",
+            "name": "INJURY_STATUS_60DAYIL",
+            "description": "60-day IL",
+            "abbreviation": "IL60"
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "60-Day IL",
+              "abbreviation": "60-Day IL"
+            },
+            "type": "Elbow",
+            "detail": "Soreness",
+            "side": "Right",
+            "returnDate": "2026-09-18"
+          }
+        },
+        {
           "id": "1024742",
           "longComment": "Elder had his knee scoped Tuesday and will miss the remainder of the regular season, though he's aiming to be available at some point during the playoffs. If he does return for the postseason, it would likely be in a relief role. The right-hander has posted a 4.11 ERA, 1.27 WHIP and 121:49 K:BB over 149 innings covering 26 starts for Atlanta this season.",
           "shortComment": "Atlanta placed Elder on the 15-day injured list Wednesday due to arthroscopic right knee surgery.",
@@ -11436,607 +12037,6 @@
             "detail": "Surgery",
             "side": "Right",
             "returnDate": "2026-10-02"
-          }
-        },
-        {
-          "id": "1023268",
-          "longComment": "The move frees a spot on the 40-man roster for Atlanta. It does not alter Suarez's timeline, as he's already missed more than 60-days of action. Suarez has resumed throwing off a mound as he works his way back from right elbow inflammation, and he should rejoin the Atlanta bullpen sometime this month, barring setbacks.",
-          "shortComment": "Atlanta transferred Suarez (elbow) to the 60-day injured list Tuesday.",
-          "status": "60-Day-IL",
-          "date": "2026-09-01T14:33Z",
-          "athlete": {
-            "firstName": "Robert",
-            "lastName": "Suarez",
-            "displayName": "Robert Suarez",
-            "shortName": "R. Suarez",
-            "links": [
-              {
-                "language": "en-US",
-                "rel": [
-                  "playercard",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/_/id/4148749",
-                "text": "Player Card",
-                "shortText": "Player Card",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "stats",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/stats/_/id/4148749/robert-suarez",
-                "text": "Stats",
-                "shortText": "Stats",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "stats",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=stats",
-                "text": "Stats",
-                "shortText": "Stats",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "splits",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/splits/_/id/4148749/robert-suarez",
-                "text": "Splits",
-                "shortText": "Splits",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "gamelog",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/gamelog/_/id/4148749/robert-suarez",
-                "text": "Game Log",
-                "shortText": "Game Log",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "gamelog",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=gamelog",
-                "text": "Game Log",
-                "shortText": "Game Log",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "news",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/news/_/id/4148749/robert-suarez",
-                "text": "News",
-                "shortText": "News",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "news",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=news",
-                "text": "News",
-                "shortText": "News",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "bio",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/bio/_/id/4148749/robert-suarez",
-                "text": "Bio",
-                "shortText": "Bio",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "bio",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749&section=bio",
-                "text": "Bio",
-                "shortText": "Bio",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "overview",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/_/id/4148749/robert-suarez",
-                "text": "Overview",
-                "shortText": "Overview",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "overview",
-                  "sportscenter",
-                  "app",
-                  "athlete"
-                ],
-                "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~a:4148749",
-                "text": "Overview",
-                "shortText": "Overview",
-                "isExternal": false,
-                "isPremium": false
-              },
-              {
-                "language": "en-US",
-                "rel": [
-                  "batvspitch",
-                  "desktop",
-                  "athlete"
-                ],
-                "href": "https://www.espn.com/mlb/player/batvspitch/_/id/4148749/robert-suarez",
-                "text": "Bat vs Pitch",
-                "shortText": "Bat vs Pitch",
-                "isExternal": false,
-                "isPremium": false
-              }
-            ],
-            "headshot": {
-              "href": "https://a.espncdn.com/i/headshots/mlb/players/full/4148749.png",
-              "alt": "Robert Suarez"
-            },
-            "position": {
-              "id": "0",
-              "name": "Relief Pitcher",
-              "displayName": "Relief Pitcher",
-              "abbreviation": "RP",
-              "leaf": true
-            },
-            "team": {
-              "id": "15",
-              "uid": "s:1~l:10~t:15",
-              "slug": "atlanta-braves",
-              "name": "Braves",
-              "abbreviation": "ATL",
-              "displayName": "Atlanta Braves",
-              "logos": [
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/atl.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "default"
-                  ],
-                  "lastUpdated": "2024-07-01T17:48Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/atl.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "dark"
-                  ],
-                  "lastUpdated": "2024-07-01T17:49Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/atl.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "scoreboard"
-                  ],
-                  "lastUpdated": "2024-07-01T17:48Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/i/teamlogos/mlb/500-dark/scoreboard/atl.png",
-                  "width": 500,
-                  "height": 500,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "scoreboard",
-                    "dark"
-                  ],
-                  "lastUpdated": "2024-07-01T17:49Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_white_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_white_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_black_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_black_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_primary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_primary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_on_secondary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_on_secondary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_black.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_black"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/primary_logo_white.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "primary_logo_white"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_white_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_white_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_black_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_black_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_primary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_primary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_on_secondary_color.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_on_secondary_color"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_black.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_black"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                },
-                {
-                  "href": "https://a.espncdn.com/guid/122673a3-bf06-4432-6950-b8a32e52ac2e/logos/secondary_logo_white.png",
-                  "width": 4096,
-                  "height": 4096,
-                  "alt": "",
-                  "rel": [
-                    "full",
-                    "secondary_logo_white"
-                  ],
-                  "lastUpdated": "2026-07-22T20:07Z"
-                }
-              ],
-              "links": [
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "clubhouse",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/_/name/atl/atlanta-braves",
-                  "text": "Clubhouse",
-                  "shortText": "Clubhouse",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "roster",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/roster/_/name/atl/atlanta-braves",
-                  "text": "Roster",
-                  "shortText": "Roster",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "roster",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=roster",
-                  "text": "Roster",
-                  "shortText": "Roster",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "stats",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/stats/_/name/atl/atlanta-braves",
-                  "text": "Statistics",
-                  "shortText": "Statistics",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "stats",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=stats",
-                  "text": "Statistics",
-                  "shortText": "Statistics",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "schedule",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/schedule/_/name/atl",
-                  "text": "Schedule",
-                  "shortText": "Schedule",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "schedule",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=scores",
-                  "text": "Schedule",
-                  "shortText": "Schedule",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "photos",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/photos/_/name/atl",
-                  "text": "photos",
-                  "shortText": "photos",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "tickets",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.vividseats.com/atlanta-braves-tickets--sports-mlb-baseball/performer/50?wsUser=717",
-                  "text": "Tickets",
-                  "shortText": "Tickets",
-                  "isExternal": true,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "transactions",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/transactions/_/name/atl",
-                  "text": "Transactions",
-                  "shortText": "Transactions",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "injuries",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/injuries/_/name/atl",
-                  "text": "Injuries",
-                  "shortText": "Injuries",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "depthchart",
-                    "desktop",
-                    "team"
-                  ],
-                  "href": "https://www.espn.com/mlb/team/depth/_/name/atl",
-                  "text": "Depth Chart",
-                  "shortText": "Depth Chart",
-                  "isExternal": false,
-                  "isPremium": false
-                },
-                {
-                  "language": "en-US",
-                  "rel": [
-                    "depthchart",
-                    "sportscenter",
-                    "app",
-                    "team"
-                  ],
-                  "href": "sportscenter://x-callback-url/showClubhouse?uid=s:1~l:10~t:15&section=depthchart",
-                  "text": "Depth Chart",
-                  "shortText": "Depth Chart",
-                  "isExternal": false,
-                  "isPremium": false
-                }
-              ]
-            },
-            "notes": {
-              "items": [
-                {
-                  "id": "1023268",
-                  "type": "news",
-                  "date": "2026-09-01T14:33Z",
-                  "headline": "Atlanta transferred Suarez (elbow) to the 60-day injured list Tuesday.",
-                  "text": "The move frees a spot on the 40-man roster for Atlanta. It does not alter Suarez's timeline, as he's already missed more than 60-days of action. Suarez has resumed throwing off a mound as he works his way back from right elbow inflammation, and he should rejoin the Atlanta bullpen sometime this month, barring setbacks.",
-                  "source": "RotoWire"
-                }
-              ]
-            },
-            "status": {
-              "id": "10",
-              "name": "Injured/60",
-              "type": "injured60",
-              "abbreviation": "IL60"
-            }
-          },
-          "source": {
-            "id": "1",
-            "description": "basic/manual",
-            "state": "basic"
-          },
-          "type": {
-            "id": "11",
-            "name": "INJURY_STATUS_60DAYIL",
-            "description": "60-day IL",
-            "abbreviation": "IL60"
-          },
-          "details": {
-            "fantasyStatus": {
-              "description": "60-Day IL",
-              "abbreviation": "60-Day IL"
-            },
-            "type": "Elbow",
-            "detail": "Soreness",
-            "side": "Right",
-            "returnDate": "2026-09-18"
           }
         },
         {
@@ -15051,11 +15051,11 @@
       "displayName": "Baltimore Orioles",
       "injuries": [
         {
-          "id": "-227845",
-          "longComment": "Since being reinstated from the injured list Aug. 28, Alexander has now picked up eight starts in 11 games while occupying four different positions during that span. Alexander is hitting .300 since his activation, but all nine of his hits have been singles, and he's provided few counting statistics (three runs, one RBI and one stolen base).",
-          "shortComment": "Alexander will start at second base and bat leadoff in Sunday's game against the Red Sox, Jake Rill of MLB.com reports.",
-          "status": "Day-To-Day",
-          "date": "2026-09-09T02:04Z",
+          "id": "-227862",
+          "longComment": "Alexander went 1-for-3 with a run scored before his back forced him out of the game in the ninth inning. The team hasn't provided any details regarding the severity of his injury, but if the 27-year-old needs to miss time, Jackson Holliday would be next in line to start at second base.",
+          "shortComment": "Alexander was removed from Tuesday's game against the Guardians due to back spasms, Matt Weyrich of The Baltimore Sun reports.",
+          "status": "10-Day-IL",
+          "date": "2026-09-09T20:47Z",
           "athlete": {
             "firstName": "Blaze",
             "lastName": "Alexander",
@@ -15613,20 +15613,20 @@
             "notes": {
               "items": [
                 {
-                  "id": "-227845",
+                  "id": "1024779",
                   "type": "news",
-                  "date": "2026-09-09T02:04Z",
-                  "headline": "Alexander will start at second base and bat leadoff in Sunday's game against the Red Sox, Jake Rill of MLB.com reports.",
-                  "text": "Since being reinstated from the injured list Aug. 28, Alexander has now picked up eight starts in 11 games while occupying four different positions during that span. Alexander is hitting .300 since his activation, but all nine of his hits have been singles, and he's provided few counting statistics (three runs, one RBI and one stolen base).",
+                  "date": "2026-09-09T20:49Z",
+                  "headline": "The Orioles placed Alexander on the 10-day injured list Wednesday with low-back discomfort.",
+                  "text": "Alexander had to be pulled from Tuesday's game versus the Guardians after his back started acting up on him, and ultimately the issue has forced another IL stint. He just returned from an extended absence less than two weeks ago. Jeremiah Jackson is taking Alexander's spot on the active roster.",
                   "source": "RotoWire"
                 }
               ]
             },
             "status": {
-              "id": "1",
-              "name": "Active",
-              "type": "active",
-              "abbreviation": "Active"
+              "id": "3",
+              "name": "Injured",
+              "type": "injured",
+              "abbreviation": "IL"
             }
           },
           "source": {
@@ -15635,27 +15635,27 @@
             "state": "basic"
           },
           "type": {
-            "id": "6",
-            "name": "INJURY_STATUS_DAYTODAY",
-            "description": "day-to-day",
-            "abbreviation": "DD"
+            "id": "14",
+            "name": "INJURY_STATUS_10DAYIL",
+            "description": "10-day IL",
+            "abbreviation": "IL10"
           },
           "details": {
             "fantasyStatus": {
-              "description": "Day-To-Day",
-              "abbreviation": "Day-To-Day"
+              "description": "10-Day IL",
+              "abbreviation": "10-Day IL"
             },
             "type": "Back",
-            "detail": "Spasms",
-            "returnDate": "2026-09-09"
+            "detail": "Soreness",
+            "returnDate": "2026-09-19"
           }
         },
         {
-          "id": "-227844",
-          "longComment": "Henderson went off in the series finale, blasting a solo homer in the first inning and a three-run shot in the fifth as part of a four-hit effort. It was a much-needed performance for the shortstop, who hit just .182 with no long balls over his previous 10 games. The 25-year-old has endured a disappointing 2026 campaign, slashing .223/.307/.408 with 22 homers, 57 RBI, 82 runs and 10 stolen bases across 136 contests.",
-          "shortComment": "Henderson went 4-for-4 with two home runs, a triple, five total RBI and three total runs scored in Sunday's 8-5 win over the Athletics.",
+          "id": "1024774",
+          "longComment": "Henderson had to be lifted from Tuesday's contest after fouling a ball off his foot, and he remains sore. The Orioles are idle Thursday, so Henderson will aim to return to action Friday when Baltimore begins a road trip in Toronto.",
+          "shortComment": "Orioles manager Craig Albernaz said that Henderson (foot) will not be in the lineup for Wednesday's game against the Guardians, Roch Kubatko of MASNSports.com reports.",
           "status": "Day-To-Day",
-          "date": "2026-09-09T01:34Z",
+          "date": "2026-09-09T20:23Z",
           "athlete": {
             "firstName": "Gunnar",
             "lastName": "Henderson",
@@ -16213,11 +16213,11 @@
             "notes": {
               "items": [
                 {
-                  "id": "-227844",
+                  "id": "1024774",
                   "type": "news",
-                  "date": "2026-09-09T01:34Z",
-                  "headline": "Henderson went 4-for-4 with two home runs, a triple, five total RBI and three total runs scored in Sunday's 8-5 win over the Athletics.",
-                  "text": "Henderson went off in the series finale, blasting a solo homer in the first inning and a three-run shot in the fifth as part of a four-hit effort. It was a much-needed performance for the shortstop, who hit just .182 with no long balls over his previous 10 games. The 25-year-old has endured a disappointing 2026 campaign, slashing .223/.307/.408 with 22 homers, 57 RBI, 82 runs and 10 stolen bases across 136 contests.",
+                  "date": "2026-09-09T20:23Z",
+                  "headline": "Orioles manager Craig Albernaz said that Henderson (foot) will not be in the lineup for Wednesday's game against the Guardians, Roch Kubatko of MASNSports.com reports.",
+                  "text": "Henderson had to be lifted from Tuesday's contest after fouling a ball off his foot, and he remains sore. The Orioles are idle Thursday, so Henderson will aim to return to action Friday when Baltimore begins a road trip in Toronto.",
                   "source": "RotoWire"
                 }
               ]
@@ -99263,11 +99263,11 @@
       "displayName": "New York Yankees",
       "injuries": [
         {
-          "id": "1024770",
-          "longComment": "Chisholm had to be lifted from Tuesday's contest against the Rockies after hurting his right thumb on a slide into second base. He is listed among the Yankees' reserves on the lineup card, so Chisholm has avoided a trip to the injured list for the time being. Jose Caballero is stepping in at second base in Chisholm's stead.",
-          "shortComment": "Chisholm (thumb) is not in the lineup for Wednesday's game versus the Rockies.",
-          "status": "Day-To-Day",
-          "date": "2026-09-09T19:51Z",
+          "id": "1024775",
+          "longComment": "Chisholm suffered the injury on a slide into second base during Tuesday's game versus the Rockies. He will be shut down from baseball activities for 7-to-10 days before being re-evaluated. Given the timing of the injury, it's possible Chisholm won't make it back before the end of the regular season. Anthony Volpe could replace Chisholm on the active roster, and if that happens Volpe is an option to share starts at second base with Jose Caballero.",
+          "shortComment": "Chisholm has been diagnosed with a right thumb sprain and will be placed on the 10-day injured list, Pete Caldera of The Bergen Record reports.",
+          "status": "Out",
+          "date": "2026-09-09T20:27Z",
           "athlete": {
             "firstName": "Jazz",
             "lastName": "Chisholm Jr.",
@@ -99825,11 +99825,11 @@
             "notes": {
               "items": [
                 {
-                  "id": "1024770",
+                  "id": "1024775",
                   "type": "news",
-                  "date": "2026-09-09T19:51Z",
-                  "headline": "Chisholm (thumb) is not in the lineup for Wednesday's game versus the Rockies.",
-                  "text": "Chisholm had to be lifted from Tuesday's contest against the Rockies after hurting his right thumb on a slide into second base. He is listed among the Yankees' reserves on the lineup card, so Chisholm has avoided a trip to the injured list for the time being. Jose Caballero is stepping in at second base in Chisholm's stead.",
+                  "date": "2026-09-09T20:27Z",
+                  "headline": "Chisholm has been diagnosed with a right thumb sprain and will be placed on the 10-day injured list, Pete Caldera of The Bergen Record reports.",
+                  "text": "Chisholm suffered the injury on a slide into second base during Tuesday's game versus the Rockies. He will be shut down from baseball activities for 7-to-10 days before being re-evaluated. Given the timing of the injury, it's possible Chisholm won't make it back before the end of the regular season. Anthony Volpe could replace Chisholm on the active roster, and if that happens Volpe is an option to share starts at second base with Jose Caballero.",
                   "source": "RotoWire"
                 }
               ]
@@ -99847,19 +99847,20 @@
             "state": "basic"
           },
           "type": {
-            "id": "6",
-            "name": "INJURY_STATUS_DAYTODAY",
-            "description": "day-to-day",
-            "abbreviation": "DD"
+            "id": "4",
+            "name": "INJURY_STATUS_OUT",
+            "description": "out",
+            "abbreviation": "O"
           },
           "details": {
             "fantasyStatus": {
-              "description": "Day-To-Day",
-              "abbreviation": "Day-To-Day"
+              "description": "OUT",
+              "abbreviation": "OUT"
             },
             "type": "Thumb",
+            "detail": "Sprain",
             "side": "Right",
-            "returnDate": "2026-09-10"
+            "returnDate": "2026-09-25"
           }
         },
         {
