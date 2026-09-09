@@ -13,6 +13,7 @@ import time
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Any, Optional
+from backend.data.player_photos import photo_resolver
 
 logger = logging.getLogger(__name__)
 
@@ -251,10 +252,11 @@ class ESPNClient:
             if s.get("name") == "ERA":
                 era = s.get("displayValue", "4.20")
         
+        name = ath.get("displayName", "Probable Pitcher")
         return {
             "id": ath.get("id"),
-            "name": ath.get("displayName", "Probable Pitcher"),
-            "headshot": ath.get("headshot") or (f"https://a.espncdn.com/i/headshots/mlb/players/full/{ath.get('id')}.png" if ath.get("id") else ""),
+            "name": name,
+            "headshot": photo_resolver.get_headshot(name, ath.get("id")),
             "era": era,
             "record": prob_data.get("record", "")
         }
@@ -381,7 +383,7 @@ class ESPNClient:
         p_id = prob_data.get("id")
         name = prob_data.get("fullName", "Probable Pitcher")
         profile = STARTER_PROFILES.get(name, {"era": "3.85", "k9": 8.2, "sw_str": "11.5%", "csw": "28.0%"})
-        headshot = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{p_id}/headshot/67/current.png" if p_id else "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png"
+        headshot = photo_resolver.get_headshot(name, p_id, team)
 
         return {
             "id": p_id or (abs(hash(name)) % 100000),
@@ -478,7 +480,7 @@ class ESPNClient:
             p_id = p.get("id")
             name = p.get("fullName", "Player")
             pos = p.get("primaryPosition", {}).get("abbreviation", "DH")
-            headshot = f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{p_id}/headshot/67/current.png"
+            headshot = photo_resolver.get_headshot(name, p_id, team)
             
             # Determine calibrated stats
             if name in player_overrides:
@@ -566,13 +568,14 @@ class ESPNClient:
                         obp = float(stats[10]) if len(stats) > 10 and stats[10].replace('.', '').isdigit() else 0.330
                         slg = float(stats[11]) if len(stats) > 11 and stats[11].replace('.', '').isdigit() else 0.420
 
+                        p_name = ath.get("displayName", "Player")
                         lineups.append({
                             "id": int(ath.get("id", 0)) if str(ath.get("id", "0")).isdigit() else idx,
-                            "name": ath.get("displayName", "Player"),
+                            "name": p_name,
                             "team": team_abbr,
                             "order": int(bat_order),
                             "pos": pos,
-                            "headshot": f"https://a.espncdn.com/i/headshots/mlb/players/full/{ath.get('id')}.png",
+                            "headshot": photo_resolver.get_headshot(p_name, ath.get("id"), team_abbr),
                             "team_logo": f"https://a.espncdn.com/i/teamlogos/mlb/500/{team_abbr.lower()}.png",
                             "avg": avg,
                             "obp": obp,
