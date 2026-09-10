@@ -536,10 +536,10 @@
         </div>
       </div>
 
-      <!-- Top Bar Stats (Live BTC Price + Kalshi 15M Target) & Action Controls -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0 flex-wrap justify-end">
-        <!-- Live Bitcoin Price with real-time updates -->
-        <div id="topBarPriceCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm transition-colors">
+      <!-- CENTER: All Three Info Panes Centered (Live BTC Price, 15M Target, 15M Close Time) -->
+      <div class="flex-1 flex items-center justify-center gap-1.5 sm:gap-2.5 mx-auto flex-wrap sm:flex-nowrap">
+        <!-- 1. Live Bitcoin Price with real-time updates -->
+        <div id="topBarPriceCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm transition-colors shrink-0">
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -550,24 +550,44 @@
           </div>
         </div>
 
-        <!-- 15M Price Target from Kalshi 15M contracts (KXBTC15) -->
-        <div id="topBarTargetCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-emerald-500/40 shadow-sm shadow-emerald-500/10 transition-colors">
+        <!-- 2. 15M Price Target from Kalshi 15M contracts (KXBTC15) -->
+        <div id="topBarTargetCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-emerald-500/40 shadow-sm shadow-emerald-500/10 transition-colors shrink-0">
           <span class="text-xs sm:text-sm">🎯</span>
           <div class="flex flex-col items-start leading-none">
             <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-emerald-400 tracking-wider">KALSHI 15M</span>
+              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-emerald-400 tracking-wider">15M TARGET</span>
               <span id="topBarTargetDelta" class="text-[7px] sm:text-[8px] font-mono font-bold text-slate-400">(--)</span>
             </div>
             <span id="topBarTargetPrice" class="text-xs sm:text-sm font-black font-mono text-emerald-400">$--,---.--</span>
           </div>
         </div>
 
+        <!-- 3. 15M Close Time / Countdown (Right Beside Target Price) -->
+        <div id="topBarCountdownCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-sm shadow-cyan-500/10 transition-colors shrink-0">
+          <span class="text-xs sm:text-sm">⏱️</span>
+          <div class="flex flex-col items-start leading-none">
+            <div class="flex items-center gap-1">
+              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-cyan-400 tracking-wider">15M CLOSE</span>
+              <span class="text-[6px] sm:text-[7px] font-mono font-bold text-slate-400 uppercase">LEFT</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="btcCountdown" class="text-xs sm:text-sm font-black font-mono text-cyan-400 leading-none">--:--</span>
+              <div class="w-7 sm:w-9 h-1 bg-slate-800 rounded-full overflow-hidden flex self-center">
+                <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Controls (Right) -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
         <!-- Dedicated Manual Refresh Button -->
         <button id="btnTopBarRefresh" type="button" onclick="triggerManualRefresh()" 
-                class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/25 flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
+                class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/25 flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
           <span id="topBarRefreshIcon" class="text-sm sm:text-base font-black">⟳</span>
-          <span class="whitespace-nowrap font-black hidden sm:inline">Refresh Data</span>
-          <span class="whitespace-nowrap font-black sm:hidden">Refresh</span>
+          <span class="whitespace-nowrap font-black hidden md:inline">Refresh Data</span>
+          <span class="whitespace-nowrap font-black md:hidden">Refresh</span>
         </button>
 
         <!-- Sound Toggle Button (Starts ON) -->
@@ -785,65 +805,8 @@
 
 
           <!-- ================================================================= -->
-          <!-- 4. EVERYTHING ELSE (LIVE PRICE, TARGET, COUNTDOWN, STRUCTURE)     -->
+          <!-- 4. INTEGRATED MARKET STRUCTURE                                    -->
           <!-- ================================================================= -->
-          
-          <!-- 4A. Live BTC Price -->
-          <div class="btc-panel-card btc-card-price p-1.5 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-0.5">
-            <div class="flex items-center justify-between">
-              <span class="text-[7px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <span class="relative flex h-1.5 w-1.5">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                </span>
-                LIVE BTC PRICE
-              </span>
-              <span id="btcLivePulseTag" class="text-[7px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s</span>
-            </div>
-            <div id="btcLStatPrice" class="text-sm sm:text-base font-black text-white font-mono tracking-tight transition-colors">
-              $--,---.--
-            </div>
-            <div class="flex items-center justify-between text-[7px] sm:text-[8px] font-mono pt-0.5">
-              <span id="btcLStatChange" class="font-bold text-slate-400">--%</span>
-              <span class="text-slate-400">Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
-            </div>
-          </div>
-
-          <!-- 4B. 15M Price Target Benchmark -->
-          <div class="btc-panel-card btc-card-target p-1.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-0.5 shadow-sm shadow-emerald-500/10">
-            <div class="flex items-center justify-between">
-              <span class="text-[7px] sm:text-[8px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
-                <span>🎯</span> 15M TARGET
-              </span>
-              <span id="btcTargetSourceLabel" class="text-[7px] text-emerald-400/90 font-mono font-bold truncate">15M Start</span>
-            </div>
-            <div id="btcTargetPriceHero" class="text-sm sm:text-base font-black font-mono text-emerald-400">
-              $--,---.--
-            </div>
-            <!-- Spread Delta Badge -->
-            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center text-center">
-              <span>--</span> <span>Evaluating spread...</span>
-            </div>
-          </div>
-
-          <!-- 4C. Countdown Box -->
-          <div class="btc-panel-card btc-card-countdown p-1.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-0.5 shadow-sm shadow-cyan-500/5">
-            <div class="flex items-center justify-between">
-              <span class="text-[7px] sm:text-[8px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
-                <span>⏱️</span> 15M CLOSE
-              </span>
-              <span class="text-[7px] text-slate-400 font-mono">COUNTDOWN</span>
-            </div>
-            <div class="flex items-baseline justify-between">
-              <div id="btcCountdown" class="text-sm sm:text-base font-black font-mono text-cyan-400">
-                --:--
-              </div>
-              <span class="text-[7px] sm:text-[8px] font-mono text-emerald-400 font-bold">1s Pulse</span>
-            </div>
-            <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
-            </div>
-          </div>
 
           <!-- 4D. Integrated Market Structure -->
           <div class="btc-panel-card btc-card-structure p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-0.5 text-[7px] sm:text-[8px] font-mono">
