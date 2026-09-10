@@ -585,22 +585,28 @@
           </div>
         </div>
 
-        <!-- 3. 15M Close Time / Countdown (Right Beside Target Price) -->
-        <div id="topBarCountdownCard" class="flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1 rounded-xl bg-slate-900 border-2 border-cyan-500/60 shadow-md shadow-cyan-500/20 transition-colors shrink-0">
-          <span class="text-sm sm:text-base">⏳</span>
-          <div class="flex flex-col items-start leading-none">
-            <div class="flex items-center gap-1.5 w-full justify-between">
-              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-cyan-400 tracking-[0.05em]">15M CLOSE</span>
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold text-slate-400 bg-slate-950 px-1 py-0.5 rounded uppercase">LEFT</span>
-            </div>
-            <div class="flex items-center gap-2 mt-0.5 w-full">
-              <span id="btcCountdown" class="text-xs sm:text-sm lg:text-base font-black font-mono text-cyan-400 leading-none whitespace-nowrap">--:--</span>
-              <div class="w-10 sm:w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden flex self-center">
-                <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
+<!-- Center: 15M Prediction Accuracy Tracker -->
+            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
+              <div class="hidden sm:flex items-center gap-0.5">
+                <span class="text-[10px]">🎯</span>
+                <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider hidden lg:inline">Accuracy:</span>
               </div>
+              <span id="btcAccuracyRatio" class="text-[7px] sm:text-[8px] font-black text-white px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
+                0/0
+              </span>
+              <span id="btcAccuracyPct" class="text-[8px] sm:text-[9px] font-black text-slate-400 hidden sm:inline">
+                --%
+              </span>
+              <div class="h-1 w-12 sm:w-16 bg-slate-800 rounded-full overflow-hidden hidden md:flex">
+                <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
+              </div>
+              <div id="btcAccuracyRecentDots" class="hidden lg:flex items-center gap-0.5 text-[8px]">
+                <span class="text-[7px] text-slate-500 italic">Tracking...</span>
+              </div>
+              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
+                RST
+              </span>
             </div>
-          </div>
-        </div>
       </div>
 
       <!-- Action Controls (Right - Structure Panel Removed) -->
@@ -698,26 +704,14 @@
               </span>
             </div>
 
-<!-- Center: 15M Prediction Accuracy Tracker -->
-            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
-              <div class="hidden sm:flex items-center gap-0.5">
-                <span class="text-[10px]">🎯</span>
-                <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider hidden lg:inline">Accuracy:</span>
+<!-- Close Price -->
+            <div id="btcClosePriceCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-indigo-500/30 font-mono shadow-sm shadow-indigo-500/10 shrink-0 mx-auto">
+              <div class="flex items-center gap-1">
+                <span class="text-[10px]">💹</span>
+                <span class="text-[8px] font-black text-indigo-400 uppercase tracking-wider hidden lg:inline">Close Price:</span>
               </div>
-              <span id="btcAccuracyRatio" class="text-[7px] sm:text-[8px] font-black text-white px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
-                0/0
-              </span>
-              <span id="btcAccuracyPct" class="text-[8px] sm:text-[9px] font-black text-slate-400 hidden sm:inline">
-                --%
-              </span>
-              <div class="h-1 w-12 sm:w-16 bg-slate-800 rounded-full overflow-hidden hidden md:flex">
-                <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
-              </div>
-              <div id="btcAccuracyRecentDots" class="hidden lg:flex items-center gap-0.5 text-[8px]">
-                <span class="text-[7px] text-slate-500 italic">Tracking...</span>
-              </div>
-              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
-                RST
+              <span id="btcLastClosePrice" class="text-[8px] sm:text-[9px] font-black text-white px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
+                $--,---.--
               </span>
             </div>
 
