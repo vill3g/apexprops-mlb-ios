@@ -644,43 +644,44 @@
         <div id="btcChartCard" class="btc-chart-card lg:col-span-2 glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between border border-slate-800" style="min-height: 520px; height: 100%;">
           
           <!-- Chart Header: Title, Status, Timeframes, Stream Badge, Refresh & Sound -->
-          <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 mb-1 border-b border-slate-800/80">
-            <div class="flex items-center gap-1.5 sm:gap-2">
+          <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-1.5 pb-1 mb-1 border-b border-slate-800/80">
+            <!-- Left: Title & Status -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-[9px] sm:text-[10px] shadow-sm shadow-amber-500/20">₿</div>
-              <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">TradingView BTC/USD 15M</h3>
-              <span id="btcChartStatus" class="text-[9px] font-mono text-emerald-400 font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20">● TV Real-Time</span>
+              <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC/USD 15M</h3>
+              <span id="btcChartStatus" class="text-[9px] font-mono text-emerald-400 font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20">● TV Live</span>
             </div>
             
-            <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-              <!-- Timeframe Quick Switch Pills -->
-              <div class="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
-                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
-                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
-                <button type="button" class="btc-tf-btn active text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
-                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
-                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
-                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
-              </div>
-
-              <!-- Confluence Module (Situated Right Beside Chart Time Bar) -->
-              <div id="btcConfluenceHeaderTab" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[9px] sm:text-[10px] font-mono shadow-sm">
-                <span class="text-xs">⚡</span>
-                <span class="font-black text-white uppercase tracking-wider hidden sm:inline">Confluence:</span>
-                <div id="btcSignalBanner" class="signal-banner signal-neutral text-[8px] sm:text-[9px] py-0.2 px-1.5 font-bold uppercase rounded">INITIALIZING</div>
-                <div class="flex items-center gap-1">
-                  <span class="text-slate-400">Score:</span>
-                  <span id="btcMeterScore" class="font-black text-white text-[9px] sm:text-[10px]">0</span>
-                  <span class="text-slate-500">/ 100</span>
+            <!-- Right: Confluence, Timeframes, Actions -->
+            <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap lg:flex-nowrap shrink-0">
+              
+              <!-- Confluence Module (Moved to the LEFT of 1M button) -->
+              <div id="btcConfluenceHeaderTab" class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[8px] sm:text-[9px] font-mono shadow-sm shrink-0">
+                <span class="text-[10px] hidden sm:inline">⚡</span>
+                <span class="font-black text-white uppercase tracking-wider hidden md:inline">Conf:</span>
+                <div id="btcSignalBanner" class="signal-banner signal-neutral text-[7px] sm:text-[8px] py-0.2 px-1 font-bold uppercase rounded">INIT</div>
+                <div class="flex items-center gap-0.5">
+                  <span id="btcMeterScore" class="font-black text-white text-[9px]">0</span>
+                  <span class="text-slate-500">/100</span>
                 </div>
-                <span id="btcPredBadge" class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
+                <span id="btcPredBadge" class="text-[7px] px-1 py-0.2 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono hidden sm:inline">
                   EVAL
                 </span>
                 <span id="btcConfidenceText" class="sr-only">Score: 0/100</span>
                 <svg class="sr-only"><path id="btcMeterArc"></path><line id="btcMeterNeedle"></line></svg>
               </div>
 
+              <!-- Timeframe Quick Switch Pills -->
+              <div class="hidden sm:flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800 shrink-0">
+                <button type="button" class="btc-tf-btn text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
+                <button type="button" class="btc-tf-btn text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
+                <button type="button" class="btc-tf-btn active text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
+                <button type="button" class="btc-tf-btn text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
+                <button type="button" class="btc-tf-btn text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
+              </div>
+
               <!-- Stream Badge -->
-              <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono text-slate-300">
+              <div class="hidden lg:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[8px] font-mono text-slate-300 shrink-0">
                 <span class="relative flex h-1.5 w-1.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -689,51 +690,51 @@
               </div>
 
               <!-- Action Controls -->
-              <button type="button" id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm transition cursor-pointer text-xs" title="Refresh BTC Analysis">
+              <button type="button" id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm transition cursor-pointer text-[10px] shrink-0" title="Refresh BTC Analysis">
                 <span id="btcRefreshIcon">&#x21bb;</span>
               </button>
-              <button type="button" id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer text-xs" title="Sound Alert">
+              <button type="button" id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer text-[10px] shrink-0" title="Sound Alert">
                 <span id="btcAudioIcon">🔇</span>
               </button>
             </div>
           </div>
 
           <!-- Slot 2: 15-Minute Target Trend & Centered Prediction Accuracy Tracker -->
-          <div class="btc-card-trend px-2 sm:px-2.5 py-1 mb-1 rounded-xl bg-slate-900/90 border border-slate-800/90 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div class="btc-card-trend px-1.5 sm:px-2 py-1 mb-1 rounded-xl bg-slate-900/90 border border-slate-800/90 flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
             <!-- Left: 15M Trend Header & Streak -->
-            <div class="flex items-center gap-1.5 shrink-0">
-              <span class="text-xs">📈</span>
-              <span class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-wider">15M Trend:</span>
-              <span id="btcTrendStreakBadge" class="text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold bg-slate-950 text-amber-400 border border-amber-500/20 font-mono">
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="text-[10px]">📈</span>
+              <span class="text-[8px] sm:text-[9px] font-black text-white uppercase tracking-wider hidden lg:inline">15M Trend:</span>
+              <span id="btcTrendStreakBadge" class="text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded-full font-bold bg-slate-950 text-amber-400 border border-amber-500/20 font-mono">
                 Streak...
               </span>
             </div>
 
-            <!-- Center: 15M Prediction Accuracy Tracker (Centered in Trend Bar) -->
-            <div id="btcAccuracyCard" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
-              <div class="flex items-center gap-1">
-                <span class="text-xs">🎯</span>
-                <span class="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-wider">Accuracy:</span>
+            <!-- Center: 15M Prediction Accuracy Tracker -->
+            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
+              <div class="hidden sm:flex items-center gap-0.5">
+                <span class="text-[10px]">🎯</span>
+                <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider hidden lg:inline">Accuracy:</span>
               </div>
-              <span id="btcAccuracyRatio" class="text-[9px] sm:text-[10px] font-black text-white px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
-                0 of 0 Correct
+              <span id="btcAccuracyRatio" class="text-[7px] sm:text-[8px] font-black text-white px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
+                0/0
               </span>
-              <span id="btcAccuracyPct" class="text-[10px] sm:text-[11px] font-black text-slate-400">
+              <span id="btcAccuracyPct" class="text-[8px] sm:text-[9px] font-black text-slate-400 hidden sm:inline">
                 --%
               </span>
-              <div class="h-1.5 w-10 sm:w-14 bg-slate-800 rounded-full overflow-hidden flex">
+              <div class="h-1 w-8 sm:w-10 bg-slate-800 rounded-full overflow-hidden hidden md:flex">
                 <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
               </div>
-              <div id="btcAccuracyRecentDots" class="flex items-center gap-0.5 text-[8px]">
-                <span class="text-[7px] text-slate-500 italic">Tracking 15M...</span>
+              <div id="btcAccuracyRecentDots" class="hidden lg:flex items-center gap-0.5 text-[8px]">
+                <span class="text-[7px] text-slate-500 italic">Tracking...</span>
               </div>
-              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6.5px] sm:text-[7px] px-1.5 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
-                RESET
+              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
+                RST
               </span>
             </div>
 
-            <!-- Right: 15M Trend Box Grid (Arrows + Close Price + Close Time) -->
-            <div id="btcTrendBoxGrid" class="flex items-center gap-1 sm:gap-1.5 justify-end shrink-0">
+            <!-- Right: 15M Trend Box Grid (Arrows + Close Price) -->
+            <div id="btcTrendBoxGrid" class="flex items-center gap-0.5 sm:gap-1 justify-end shrink-0 scale-90 sm:scale-100 transform origin-right">
               <!-- Injected via JavaScript with arrow, close price and close time -->
             </div>
           </div>
