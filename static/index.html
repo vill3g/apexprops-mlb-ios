@@ -824,6 +824,10 @@
                   <span>▼</span> BID NO
                 </button>
               </div>
+              <!-- 1-Click Close Trade Button -->
+              <button type="button" id="btnCloseTrade" onclick="triggerCloseTrade()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 active:scale-95 transition-all text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm shadow-amber-950/30 cursor-pointer">
+                <span>✕</span> Close Active Trade
+              </button>
             </div>
 
             <!-- 5. Win Rate & P&L Tracker -->
@@ -4430,6 +4434,27 @@
         }
       } catch (e) {
         alert(`Request failed: ${e}`);
+      }
+    }
+
+    async function triggerCloseTrade() {
+      if (kalshiTradingMode === "LIVE") {
+        if (!confirm("Confirm 1-click CLOSE: Exit active trade(s) now?")) {
+          return;
+        }
+      }
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Position Closed: ${data.message || 'Success'}`);
+          pollKalshiTradingStatus();
+        } else {
+          alert(`Close Notice: ${data.error || 'No open trades to close'}`);
+        }
+      } catch (e) {
+        alert(`Close request failed: ${e}`);
       }
     }
 

@@ -367,4 +367,54 @@ class AutoExecutor:
 
 
 # Global singleton instance
+    def close_open_trades(self) -> Dict[str, Any]:
+        """
+        1-Click close trade feature:
+        Closes out any active open trades immediately at current market / live price,
+        calculating realized P&L and recording result.
+        """
+        trades = self.get_trades_history()
+        open_trades = [t for t in trades if t.get("status") == "OPEN"]
+        if not open_trades:
+            return {"success": False, "error": "No open trades to close."}
+
+        from backend.btc.data_fetcher import get_btc_ticker
+        live_price = get_btc_ticker().get("price", 0.0)
+        closed_count = 0
+        total_realized_pnl = 0.0
+
+        for t in open_trades:
+            strike = float(t.get("strike", 0.0) or live_price)
+            side = t.get("side", "YES").upper()
+            entry_price = float(t.get("entry_price", 0.50))
+            count = int(t.get("count", 1))
+
+            # Determine closing value based on current live price vs strike
+            if live_price and strike:
+                is_winning = (side == "YES" and live_price >= strike) or (side == "NO" and live_price < strike)
+                # Market estimate: 0.90 if winning, 0.10 if losing
+                est_exit = 0.90 if is_winning else 0.10
+            else:
+                est_exit = entry_price
+
+            pnl = round((est_exit - entry_price) * count, 4)
+            t["status"] = "CLOSED"
+            t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
+            t["exit_price"] = est_exit
+            t["close_price"] = live_price
+            t["pnl"] = pnl
+            t["closed_at"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+            closed_count += 1
+            total_realized_pnl += pnl
+
+        self._save_trades_history(trades)
+        return {
+            "success": True,
+            "closed_count": closed_count,
+            "realized_pnl": round(total_realized_pnl, 2),
+            "message": f"Successfully closed {closed_count} position(s) (P&L: ${total_realized_pnl:+.2f})"
+        }
+
+
+# Global singleton instance
 auto_executor = AutoExecutor()

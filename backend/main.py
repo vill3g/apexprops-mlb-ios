@@ -495,6 +495,12 @@ def api_btc_trade_manual(direction: str = Query(...)):
     res = auto_executor.execute_manual_trade(direction)
     return JSONResponse(sanitize_btc_json(res))
 
+@app.post("/api/btc/trade/close")
+def api_btc_trade_close():
+    """1-Click manual close of all open trades."""
+    res = auto_executor.close_open_trades()
+    return JSONResponse(sanitize_btc_json(res))
+
 @app.get("/api/btc/trade/history")
 def api_btc_trade_history():
     """Returns list of all historical trades and P&L results."""
