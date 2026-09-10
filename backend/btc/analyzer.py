@@ -359,7 +359,8 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
                 lower_count += 1
 
             t_val = c.get("time")
-            time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
+            close_val = int(t_val) + 900 if t_val else None
+            time_str = datetime.fromtimestamp(close_val, tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if close_val else "--:--"
 
             last_5_targets.append({
                 "time": time_str,
@@ -546,16 +547,11 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     pred_is_above = p_up
     is_hit = (pred_is_above == actual_is_above)
 
-    # Start count by 1
-    acc_total = 1
-    acc_correct = 1 if is_hit else 0
-    if acc_correct == 0:
-        # Initial baseline starts at 1 of 1
-        acc_correct = 1
-        is_hit = True
-
-    acc_pct = round((acc_correct / max(1, acc_total)) * 100, 1)
-    acc_outcomes = [{"correct": is_hit}]
+    # Initial boot baseline starts at 0 of 0 (counts up as 15m closes are logged)
+    acc_total = 0
+    acc_correct = 0
+    acc_pct = 0.0
+    acc_outcomes = []
 
     target_benchmark = {
         "target_price": active_target,

@@ -725,27 +725,27 @@
 
               <!-- Main Accuracy Big Percentage -->
               <div class="my-0.5">
-                <div id="btcAccuracyPct" class="text-lg sm:text-xl font-black font-mono text-emerald-400 tracking-tight leading-none">
-                  100%
+                <div id="btcAccuracyPct" class="text-lg sm:text-xl font-black font-mono text-slate-400 tracking-tight leading-none">
+                  --%
                 </div>
                 <div class="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
                   15M Win Rate
                 </div>
               </div>
 
-              <!-- Correct Picks Count (Starts counting amount right by 1, not 10) -->
+              <!-- Correct Picks Count (Starts at 0 of 0 on boot, counts up per logged close) -->
               <div class="px-1 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-0.5">
                 <div id="btcAccuracyRatio" class="text-[8px] sm:text-[9px] font-black font-mono text-white">
-                  1 of 1 Correct
+                  0 of 0 Correct
                 </div>
                 <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden flex">
-                  <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 100%;"></div>
+                  <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
                 </div>
               </div>
 
               <!-- Recent Outcomes Streak Dots -->
               <div id="btcAccuracyRecentDots" class="flex items-center justify-center gap-1 text-[8px] font-mono">
-                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black">✓</span>
+                <span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>
               </div>
             </div>
 
@@ -2772,27 +2772,51 @@
       }
       if (!grid || !Array.isArray(last5) || last5.length === 0) return;
 
-      // Minimal 15M Target Trend: ONLY arrows (no price)
+      // 15M Target Trend: Direction Arrow + Close Price + Close Time
       grid.innerHTML = last5.map(t => {
         const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
         const cardClass = isUp ? "trend-card trend-up bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "trend-card trend-down bg-red-500/15 border border-red-500/30 text-red-400";
+        const formattedPrice = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` : "--";
+        const timeStr = t.time || "--:--";
+
         return `
-          <div class="${cardClass} py-1 px-1 text-center flex items-center justify-center rounded-lg shadow-sm font-black text-xs sm:text-sm">
-            <span>${isUp ? '▲' : '▼'}</span>
+          <div class="${cardClass} py-0.5 px-1.5 sm:px-2 text-center flex flex-col items-center justify-center rounded-lg shadow-sm font-mono shrink-0">
+            <div class="flex items-center gap-1 leading-tight">
+              <span class="text-xs font-black">${isUp ? '▲' : '▼'}</span>
+              <span class="text-[9px] sm:text-[10px] font-black text-white">${formattedPrice}</span>
+            </div>
+            <div class="text-[7px] sm:text-[8px] font-semibold text-slate-400 leading-none mt-0.5">${timeStr}</div>
           </div>
         `;
       }).join("");
     }
 
-        function renderBtcAccuracy(acc) {
+    function renderBtcAccuracy(acc) {
       if (!acc) return;
       const pctEl = document.getElementById("btcAccuracyPct");
       const ratioEl = document.getElementById("btcAccuracyRatio");
       const barEl = document.getElementById("btcAccuracyBar");
       const dotsEl = document.getElementById("btcAccuracyRecentDots");
 
-      const pct = Number(acc.accuracy_percent !== undefined ? acc.accuracy_percent : 100);
-      const ratioText = acc.ratio_text || `${acc.correct_picks !== undefined ? acc.correct_picks : 1} of ${acc.total_evaluated !== undefined ? acc.total_evaluated : 1} Correct`;
+      const total = acc.total_evaluated !== undefined ? Number(acc.total_evaluated) : 0;
+      const correct = acc.correct_picks !== undefined ? Number(acc.correct_picks) : 0;
+      const ratioText = acc.ratio_text || `${correct} of ${total} Correct`;
+
+      if (ratioEl) ratioEl.innerText = ratioText;
+
+      if (total === 0 || acc.accuracy_percent === null || acc.accuracy_percent === undefined) {
+        if (pctEl) {
+          pctEl.innerText = "--%";
+          pctEl.className = "text-lg sm:text-xl font-black font-mono text-slate-400 tracking-tight leading-none";
+        }
+        if (barEl) barEl.style.width = "0%";
+        if (dotsEl) {
+          dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
+        }
+        return;
+      }
+
+      const pct = Number(acc.accuracy_percent);
 
       if (pctEl) {
         pctEl.innerText = `${pct.toFixed(0)}%`;
@@ -2805,14 +2829,17 @@
         }
       }
 
-      if (ratioEl) ratioEl.innerText = ratioText;
-      if (barEl) barEl.style.width = `${Math.min(100, Math.max(10, pct))}%`;
+      if (barEl) barEl.style.width = `${Math.min(100, Math.max(5, pct))}%`;
 
-      if (dotsEl && Array.isArray(acc.recent_outcomes)) {
-        dotsEl.innerHTML = acc.recent_outcomes.map(isWin => isWin ? 
-          `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black" title="Correct Prediction">✓</span>` :
-          `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black" title="Missed Prediction">✗</span>`
-        ).join("");
+      if (dotsEl) {
+        if (Array.isArray(acc.recent_outcomes) && acc.recent_outcomes.length > 0) {
+          dotsEl.innerHTML = acc.recent_outcomes.map(isWin => isWin ? 
+            `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black" title="Correct Prediction">✓</span>` :
+            `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black" title="Missed Prediction">✗</span>`
+          ).join("");
+        } else {
+          dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
+        }
       }
     }
 
@@ -3038,7 +3065,7 @@
       }
     }
 
-    // Client-side Accuracy Evaluator: Starts counting amount right from 1 (1 of 1, 2 of 2, 2 of 3...)
+    // Client-side Accuracy Evaluator: Starts at 0 of 0 on boot, counts up per logged 15m close
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
       // Load live settlements saved in localStorage
       let liveSettlements = [];
@@ -3046,47 +3073,26 @@
         const stored = localStorage.getItem("btc_15m_live_settlements");
         if (stored) {
           liveSettlements = JSON.parse(stored);
-          // If stored contains the old 20-sample batch, clear it so it starts clean by 1
-          if (liveSettlements.length >= 10 && liveSettlements.some(s => !s.settle)) {
+          if (!Array.isArray(liveSettlements)) liveSettlements = [];
+          // If stored contains legacy dummy data with missing settle price, clear it to start clean
+          if (liveSettlements.some(s => s.settle === undefined && s.target === undefined)) {
             liveSettlements = [];
             localStorage.removeItem("btc_15m_live_settlements");
           }
         }
-      } catch (e) {}
-
-      // Start counting amount right from 1
-      if (!liveSettlements || liveSettlements.length === 0) {
-        let firstHit = true;
-        if (Array.isArray(rawCandles) && rawCandles.length >= 3) {
-          const prevIdx = rawCandles.length - 2;
-          const prevCand = rawCandles[prevIdx];
-          const prev2Cand = rawCandles[prevIdx - 1];
-          const cOpen = isCoinbaseFormat ? parseFloat(prevCand[3]) : parseFloat(prevCand[1]);
-          const cClose = isCoinbaseFormat ? parseFloat(prevCand[4]) : parseFloat(prevCand[4]);
-          const pClose = isCoinbaseFormat ? parseFloat(prev2Cand[4]) : parseFloat(prev2Cand[4]);
-          const pOpen = isCoinbaseFormat ? parseFloat(prev2Cand[3]) : parseFloat(prev2Cand[1]);
-          const sig = (pClose >= pOpen ? 1 : -1);
-          firstHit = ((sig >= 0) === (cClose >= cOpen));
-        }
-
-        liveSettlements = [{
-          time: Math.floor(Date.now() / 900000) * 900 - 900,
-          predicted: "ABOVE",
-          actual: firstHit ? "ABOVE" : "BELOW",
-          correct: firstHit
-        }];
-        try { localStorage.setItem("btc_15m_live_settlements", JSON.stringify(liveSettlements)); } catch(e) {}
+      } catch (e) {
+        liveSettlements = [];
       }
 
       const total = liveSettlements.length;
       const correct = liveSettlements.filter(o => o.correct).length;
-      const pct = total > 0 ? (correct / total) * 100 : 100;
+      const pct = total > 0 ? (correct / total) * 100 : null;
       const recent = liveSettlements.slice(-5).map(o => o.correct);
 
       const accData = {
         total_evaluated: total,
         correct_picks: correct,
-        accuracy_percent: Math.round(pct * 10) / 10,
+        accuracy_percent: pct !== null ? Math.round(pct * 10) / 10 : null,
         ratio_text: `${correct} of ${total} Correct`,
         recent_outcomes: recent
       };
@@ -3262,8 +3268,10 @@
             if (isUp) { higherCount++; lowerCount = 0; } else { lowerCount++; higherCount = 0; }
 
             const ctSec = isCoinbaseFormat ? c[0] : Math.floor(c[0] / 1000);
-            const cdObj = new Date(ctSec * 1000);
-            const cTimeStr = cdObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+            // 15M candle close timestamp is 900s after open
+            const closeSec = ctSec + 900;
+            const cdObj = new Date(closeSec * 1000);
+            const cTimeStr = cdObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
             return {
               time: cTimeStr,
