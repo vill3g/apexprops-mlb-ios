@@ -525,6 +525,77 @@ def analyze_wick_absorption(df: pd.DataFrame) -> dict:
     }
 
 
+def analyze_candle_close_anatomy(df: pd.DataFrame, candle_idx: int = -1) -> dict:
+    """
+    Computes precise micro-anatomy of a candle close:
+    range closure (R_close = (C - L) / (H - L)), body-to-range ratio, wick ratios,
+    and institutional directional push.
+    """
+    if len(df) < abs(candle_idx):
+        return {
+            "range_closure": 0.5,
+            "body_ratio": 0.5,
+            "upper_wick_ratio": 0.25,
+            "lower_wick_ratio": 0.25,
+            "bias": "NEUTRAL",
+            "description": "Insufficient data for anatomy",
+            "vector": 0.0
+        }
+    c = df.iloc[candle_idx]
+    c_open = float(c["open"])
+    c_close = float(c["close"])
+    c_high = float(c["high"])
+    c_low = float(c["low"])
+    rng = max(1e-6, c_high - c_low)
+    body = abs(c_close - c_open)
+    upper_wick = c_high - max(c_open, c_close)
+    lower_wick = min(c_open, c_close) - c_low
+
+    range_closure = (c_close - c_low) / rng
+    body_ratio = body / rng
+    upper_wick_ratio = upper_wick / rng
+    lower_wick_ratio = lower_wick / rng
+
+    bias = "NEUTRAL"
+    desc = "Rotational consolidation"
+    vector = 0.0
+
+    if range_closure >= 0.80 and body_ratio >= 0.50:
+        bias = "BULLISH_EXPANSION"
+        desc = "Heavy institutional buying through close (Marubozu thrust)"
+        vector = 35.0
+    elif range_closure <= 0.20 and body_ratio >= 0.50:
+        bias = "BEARISH_EXPANSION"
+        desc = "Heavy institutional selling into close (Marubozu dump)"
+        vector = -35.0
+    elif lower_wick_ratio >= 0.45 and range_closure >= 0.50:
+        bias = "BULLISH_ABSORPTION"
+        desc = f"Strong buyer absorption hammer ({lower_wick:.1f} pts lower wick rejected)"
+        vector = 30.0
+    elif upper_wick_ratio >= 0.45 and range_closure <= 0.50:
+        bias = "BEARISH_EXHAUSTION"
+        desc = f"Heavy seller rejection shooting star ({upper_wick:.1f} pts upper wick capped)"
+        vector = -30.0
+    elif c_close >= c_open:
+        bias = "MILD_BULLISH"
+        desc = "Moderate green closing candle"
+        vector = 10.0
+    else:
+        bias = "MILD_BEARISH"
+        desc = "Moderate red closing candle"
+        vector = -10.0
+
+    return {
+        "range_closure": round(range_closure, 3),
+        "body_ratio": round(body_ratio, 3),
+        "upper_wick_ratio": round(upper_wick_ratio, 3),
+        "lower_wick_ratio": round(lower_wick_ratio, 3),
+        "bias": bias,
+        "description": desc,
+        "vector": vector
+    }
+
+
 if __name__ == "__main__":
     from data_fetcher import fetch_15m_candles
     df = fetch_15m_candles(limit=150)
