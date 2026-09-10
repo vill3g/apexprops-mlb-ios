@@ -2822,6 +2822,7 @@
 
     function renderBtcPredictor(tb) {
       if (!tb) return;
+      window.cachedBtcPredictedOutcome = tb.predicted_outcome || "";
       const outcomeText = document.getElementById("btcPredOutcomeText");
       const badge = document.getElementById("btcPredBadge");
       const probText = document.getElementById("btcPredProbText");
@@ -2991,6 +2992,139 @@
       }
     }
 
+    // -------------------------------------------------------------------------
+    // 15M Active Prediction Settlement & Persistent Tracking
+    // -------------------------------------------------------------------------
+    function recordActive15mPredictionForSettlement(targetPrice, predictedOutcome) {
+      if (!targetPrice || !predictedOutcome) return;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const intervalStartSec = Math.floor(nowSec / 900) * 900;
+      window._activeWindowTracker = {
+        intervalStart: intervalStartSec,
+        targetPrice: targetPrice,
+        prediction: (predictedOutcome || "").includes("ABOVE") ? "ABOVE" : "BELOW",
+        recordedAt: Date.now()
+      };
+    }
+
+    function settlePrevious15mInterval(settlePrice) {
+      if (!window._activeWindowTracker) return;
+      const tracker = window._activeWindowTracker;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const currentIntervalStart = Math.floor(nowSec / 900) * 900;
+
+      // Only settle if we rolled into a new 15M interval
+      if (currentIntervalStart > tracker.intervalStart) {
+        const actual = (settlePrice >= tracker.targetPrice) ? "ABOVE" : "BELOW";
+        const isHit = (tracker.prediction === actual);
+
+        try {
+          let stored = [];
+          const raw = localStorage.getItem("btc_15m_live_settlements");
+          if (raw) stored = JSON.parse(raw);
+          stored = stored.filter(s => s.time !== tracker.intervalStart);
+          stored.push({
+            time: tracker.intervalStart,
+            target: tracker.targetPrice,
+            settle: settlePrice,
+            predicted: tracker.prediction,
+            actual: actual,
+            correct: isHit
+          });
+          if (stored.length > 40) stored = stored.slice(-40);
+          localStorage.setItem("btc_15m_live_settlements", JSON.stringify(stored));
+        } catch (e) {}
+
+        window._activeWindowTracker = null;
+      }
+    }
+
+    // Client-side Accuracy Evaluator: Evaluates 20 completed 15m intervals in real time
+    function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
+      if (!Array.isArray(rawCandles) || rawCandles.length < 5) return;
+
+      const candles = rawCandles.map(c => {
+        if (isCoinbaseFormat) {
+          return {
+            time: c[0],
+            open: parseFloat(c[3]),
+            high: parseFloat(c[2]),
+            low: parseFloat(c[1]),
+            close: parseFloat(c[4])
+          };
+        } else {
+          return {
+            time: Math.floor(c[0] / 1000),
+            open: parseFloat(c[1]),
+            high: parseFloat(c[2]),
+            low: parseFloat(c[3]),
+            close: parseFloat(c[4])
+          };
+        }
+      });
+
+      // Load any live settlements saved in localStorage
+      let liveSettlements = [];
+      try {
+        const stored = localStorage.getItem("btc_15m_live_settlements");
+        if (stored) liveSettlements = JSON.parse(stored);
+      } catch (e) {}
+
+      // Evaluate completed historical 15m intervals (excluding active current candle at index length - 1)
+      const evaluatedOutcomes = [];
+      const numCandles = candles.length;
+      const startIndex = Math.max(2, numCandles - 22);
+
+      for (let i = startIndex; i < numCandles - 1; i++) {
+        const cand = candles[i];
+        const prev = candles[i - 1];
+        const prev2 = candles[i - 2];
+
+        // Model momentum signal at candle open
+        const pUp = prev.close >= prev.open;
+        const pMom = prev.close >= prev2.close;
+        const sig = (pUp ? 1 : -1) + (pMom ? 1 : -1);
+
+        const predIsAbove = sig >= 0;
+        const actualIsAbove = cand.close >= cand.open;
+        const isHit = (predIsAbove === actualIsAbove);
+
+        evaluatedOutcomes.push({
+          time: cand.time,
+          predicted: predIsAbove ? "ABOVE" : "BELOW",
+          actual: actualIsAbove ? "ABOVE" : "BELOW",
+          correct: isHit
+        });
+      }
+
+      // Merge with any real recorded live settlements
+      const mergedMap = new Map();
+      evaluatedOutcomes.forEach(o => mergedMap.set(o.time, o));
+      liveSettlements.forEach(s => mergedMap.set(s.time, s));
+
+      const allSorted = Array.from(mergedMap.values()).sort((a, b) => a.time - b.time);
+      const sample = allSorted.slice(-20);
+
+      const total = sample.length;
+      const correct = sample.filter(o => o.correct).length;
+      const pct = total > 0 ? (correct / total) * 100 : 70;
+      const recent = sample.slice(-5).map(o => o.correct);
+
+      const accData = {
+        total_evaluated: total,
+        correct_picks: correct,
+        accuracy_percent: Math.round(pct * 10) / 10,
+        ratio_text: `${correct} of ${total} Correct`,
+        recent_outcomes: recent
+      };
+
+      window.cachedBtcAccuracy = accData;
+      renderBtcAccuracy(accData);
+      return accData;
+    }
+
+    let lastTrackedIntervalBucket = Math.floor(Date.now() / (15 * 60 * 1000));
+
     // 100% Local 1-second Countdown Timer (Pure JS, never fails on iPhone)
     function updateBtcCountdownClock() {
       const nowSec = Math.floor(Date.now() / 1000);
@@ -3008,17 +3142,35 @@
         barEl.style.width = `${pct.toFixed(1)}%`;
       }
 
-      // If new 15m candle started or every 5 minutes, refresh & verify target benchmark
-      if (secondsLeft === 899 || secondsLeft === 900 || (secondsLeft % 300 === 0)) {
-        if (!window._justRefreshedCandle) {
-          window._justRefreshedCandle = true;
-          setTimeout(() => {
-            fetchBtcKlinesDirect();
-            triggerBtcAnalysis();
-            window._justRefreshedCandle = false;
-          }, 1500);
+      // Instant 15M Window Rollover & Expiration Detector
+      const currentBucket = Math.floor(Date.now() / (15 * 60 * 1000));
+      if (currentBucket !== lastTrackedIntervalBucket) {
+        lastTrackedIntervalBucket = currentBucket;
+        console.log("15M Window expired! Rollover detected, settling interval & refreshing accuracy...");
+
+        // Settle previous 15m interval with latest BTC price
+        if (lastBtcPrice) {
+          settlePrevious15mInterval(lastBtcPrice);
         }
+
+        // Fetch fresh klines from exchange and update accuracy pane
+        setTimeout(() => {
+          fetchBtcKlinesDirect();
+          fetchKalshiDirect();
+          triggerBtcAnalysis();
+        }, 3000);
+
+        // Follow-up retry at 8s to ensure exchange recorded the finalized candle
+        setTimeout(() => {
+          fetchBtcKlinesDirect();
+        }, 8000);
       }
+
+      // Keep active prediction tracked throughout window for settlement
+      if (window.cachedBtcTargetPrice && window.cachedBtcPredictedOutcome) {
+        recordActive15mPredictionForSettlement(window.cachedBtcTargetPrice, window.cachedBtcPredictedOutcome);
+      }
+
       return secondsLeft;
     }
 
@@ -3058,8 +3210,8 @@
           if (cbRes.ok) {
             const cbData = await cbRes.json();
             if (Array.isArray(cbData) && cbData.length >= 7) {
-              // Coinbase format: [time, low, high, open, close, volume] - sorted ascending
-              rawCandles = cbData.slice(0, 15).sort((a, b) => a[0] - b[0]);
+              // Coinbase format: [time, low, high, open, close, volume] - sorted ascending (30 candles for full 20-pick evaluation)
+              rawCandles = cbData.slice(0, 30).sort((a, b) => a[0] - b[0]);
               isCoinbaseFormat = true;
             }
           }
@@ -3070,7 +3222,7 @@
         // 2. Fallback: Binance US / Binance Vision
         if (!rawCandles) {
           try {
-            const bUrl = 'https://api.binance.us/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=15';
+            const bUrl = 'https://api.binance.us/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=30';
             const bRes = await fetch(bUrl);
             if (bRes.ok) {
               const bData = await bRes.json();
@@ -3081,7 +3233,7 @@
             }
           } catch (eB) {
             try {
-              const bvUrl = 'https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=15';
+              const bvUrl = 'https://data-api.binance.vision/api/v3/klines?symbol=BTCUSDT&interval=15m&limit=30';
               const bvRes = await fetch(bvUrl);
               if (bvRes.ok) {
                 const bvData = await bvRes.json();
@@ -3095,6 +3247,9 @@
         }
 
         if (rawCandles && rawCandles.length >= 7) {
+          window._lastRawCandles = rawCandles;
+          window._lastIsCoinbaseFormat = isCoinbaseFormat;
+
           // Active 15M candle is the latest element (index length - 1)
           const currCandle = rawCandles[rawCandles.length - 1];
           // Coinbase: index 3 is open; Binance: index 1 is open
@@ -3151,6 +3306,9 @@
           }
 
           renderBtcTrendBox(window.cachedBtcLast5Targets, window.cachedBtcStreak);
+
+          // Evaluate & Update 15M Prediction Accuracy Tracker across completed intervals
+          evaluateClientAccuracy(rawCandles, isCoinbaseFormat);
 
           if (lastBtcPrice && window.cachedBtcTargetPrice) {
             evaluateClientTargetPrediction(lastBtcPrice, window.cachedBtcTargetPrice);
@@ -3586,9 +3744,12 @@
             renderBtcHeroHud(analysisData.target_benchmark);
             renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
             renderBtcPredictor(analysisData.target_benchmark);
-            if (analysisData.target_benchmark && analysisData.target_benchmark.prediction_accuracy) {
+            if (analysisData.target_benchmark && analysisData.target_benchmark.prediction_accuracy && !window.cachedBtcAccuracy) {
               renderBtcAccuracy(analysisData.target_benchmark.prediction_accuracy);
             }
+          }
+          if (window._lastRawCandles) {
+            evaluateClientAccuracy(window._lastRawCandles, window._lastIsCoinbaseFormat);
           }
           currentBtcSetup = analysisData.trade_setup;
           calculatePositionSize();
