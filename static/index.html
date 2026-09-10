@@ -4355,12 +4355,101 @@
       }).join("");
     }
 
+    // Custom In-App Dialog & Toast Notification Engine (Zero "localhost says" dialogs)
+    // -------------------------------------------------------------------------
+    function showAppModal({ title, badge, icon, iconBg, body, confirmText = "Confirm", confirmColor = "cyan", showCancel = true }) {
+      return new Promise((resolve) => {
+        const overlay = document.getElementById("appModalOverlay");
+        const iconEl = document.getElementById("appModalIcon");
+        const iconWrapper = document.getElementById("appModalIconWrapper");
+        const titleEl = document.getElementById("appModalTitle");
+        const badgeEl = document.getElementById("appModalBadge");
+        const bodyEl = document.getElementById("appModalBody");
+        const cancelBtn = document.getElementById("appModalCancelBtn");
+        const confirmBtn = document.getElementById("appModalConfirmBtn");
+
+        if (!overlay) {
+          resolve(window.confirm ? window.confirm(body.replace(/<[^>]*>?/gm, '')) : true);
+          return;
+        }
+
+        iconEl.innerText = icon || "⚡";
+        iconWrapper.className = `w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${iconBg || "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40"}`;
+        titleEl.innerText = title || "Notification";
+        badgeEl.innerText = badge || "KALSHI AI TRADER";
+        bodyEl.innerHTML = body || "";
+
+        if (showCancel) {
+          cancelBtn.classList.remove("hidden");
+          cancelBtn.onclick = () => {
+            overlay.classList.add("hidden");
+            resolve(false);
+          };
+        } else {
+          cancelBtn.classList.add("hidden");
+        }
+
+        const colorClasses = {
+          cyan: "bg-cyan-400 hover:bg-cyan-300 text-slate-950 shadow-cyan-500/20",
+          emerald: "bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20",
+          red: "bg-red-500 hover:bg-red-400 text-white shadow-red-500/20",
+          amber: "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20",
+          purple: "bg-purple-500 hover:bg-purple-400 text-white shadow-purple-500/20"
+        };
+        confirmBtn.className = `flex-1 py-2 rounded-xl text-xs font-black active:scale-95 transition shadow-lg ${colorClasses[confirmColor] || colorClasses.cyan}`;
+        confirmBtn.innerText = confirmText;
+        confirmBtn.onclick = () => {
+          overlay.classList.add("hidden");
+          resolve(true);
+        };
+
+        overlay.classList.remove("hidden");
+      });
+    }
+
+    function showAppToast(title, subtitle, type = "success") {
+      const container = document.getElementById("appToastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      const config = {
+        success: { border: "border-emerald-500/50", iconBg: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400", icon: "✓", textCol: "text-emerald-400" },
+        error: { border: "border-red-500/50", iconBg: "bg-red-500/20 border-red-500/40 text-red-400", icon: "✕", textCol: "text-red-400" },
+        warning: { border: "border-amber-500/50", iconBg: "bg-amber-500/20 border-amber-500/40 text-amber-400", icon: "⚠️", textCol: "text-amber-300" },
+        info: { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "ℹ️", textCol: "text-cyan-400" }
+      }[type] || { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "✓", textCol: "text-cyan-400" };
+
+      toast.className = `bg-slate-900/95 border ${config.border} rounded-xl p-2.5 sm:p-3 shadow-2xl flex items-center gap-2.5 pointer-events-auto backdrop-blur-md transform transition-all duration-300 translate-y-0 opacity-100 mb-1.5`;
+      toast.innerHTML = `
+        <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border ${config.iconBg}">
+          ${config.icon}
+        </div>
+        <div class="flex-1 min-w-0 font-mono">
+          <div class="text-[11px] sm:text-xs font-black text-white leading-tight truncate">${title}</div>
+          ${subtitle ? `<div class="text-[9px] sm:text-[10px] ${config.textCol} leading-tight truncate">${subtitle}</div>` : ""}
+        </div>
+      `;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(-10px)";
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
     async function toggleKalshiAutoTrade() {
       const nextState = !kalshiAutoTradeEnabled;
       if (nextState && kalshiTradingMode === "LIVE") {
-        if (!confirm("⚠️ CAUTION: You are about to enable LIVE autonomous trading with real funds ($7.82 balance). Proceed?")) {
-          return;
-        }
+        const confirmed = await showAppModal({
+          title: "Enable Auto-Trader",
+          badge: "REAL FUNDS WARNING",
+          icon: "⚠️",
+          iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
+          body: `You are about to enable <span class="text-red-400 font-bold">LIVE AUTONOMOUS TRADING</span> with real funds.<br><br>Trades will execute automatically whenever high conviction signals occur. Proceed?`,
+          confirmText: "Enable Live Auto",
+          confirmColor: "red"
+        });
+        if (!confirmed) return;
       }
 
       // Instant optimistic UI response
@@ -4377,10 +4466,20 @@
         const apiBase = getKalshiApiBase();
         const res = await fetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showAppToast("Auto-Trader", nextState ? "Autonomous execution active" : "Auto-trader paused", nextState ? "success" : "info");
         pollKalshiTradingStatus();
       } catch (e) {
         console.error("Error toggling auto trade:", e);
-        alert("⚠️ Cannot reach backend server at " + (getKalshiApiBase() || window.location.origin) + ". Please ensure run_app.bat is running!");
+        showAppModal({
+          title: "Backend Unreachable",
+          badge: "CONNECTION NOTICE",
+          icon: "⚠️",
+          iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
+          body: `Cannot reach backend server at ${getKalshiApiBase() || window.location.origin}.<br><br>Please ensure run_app.bat is running!`,
+          confirmText: "Understood",
+          confirmColor: "amber",
+          showCancel: false
+        });
         kalshiAutoTradeEnabled = !nextState;
         pollKalshiTradingStatus();
       }
@@ -4389,9 +4488,16 @@
     async function toggleKalshiTradingMode() {
       const nextMode = kalshiTradingMode === "PAPER" ? "LIVE" : "PAPER";
       if (nextMode === "LIVE") {
-        if (!confirm("⚠️ Switch to LIVE TRADING mode? Real orders will be submitted to Kalshi using your account balance.")) {
-          return;
-        }
+        const confirmed = await showAppModal({
+          title: "Switch to Live Trading",
+          badge: "REAL FUNDS NOTICE",
+          icon: "⚠️",
+          iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
+          body: `Switch to <span class="text-red-400 font-bold">LIVE TRADING MODE</span>?<br><br>Real orders will be submitted to Kalshi using your funded account balance.`,
+          confirmText: "Switch to Live",
+          confirmColor: "red"
+        });
+        if (!confirmed) return;
       }
 
       // Instant optimistic UI response
@@ -4399,7 +4505,7 @@
       if (btnMode) {
         btnMode.innerText = nextMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
         btnMode.className = nextMode === "LIVE" 
-          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900"
+          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
           : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
       }
       kalshiTradingMode = nextMode;
@@ -4408,6 +4514,7 @@
         const apiBase = getKalshiApiBase();
         const res = await fetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showAppToast("Trading Mode", `Switched to ${nextMode} mode`, nextMode === "LIVE" ? "warning" : "info");
         pollKalshiTradingStatus();
       } catch (e) {
         console.error("Error toggling trading mode:", e);
@@ -4418,43 +4525,72 @@
 
     async function triggerManualKalshiTrade(direction) {
       if (kalshiTradingMode === "LIVE") {
-        if (!confirm(`Confirm LIVE 1-click execution: BUY ${kalshiCurrentContracts} ${direction === 'ABOVE' ? 'YES' : 'NO'} contract(s)?`)) {
-          return;
-        }
+        const sideText = direction === "ABOVE" ? "YES" : "NO";
+        const sideColor = direction === "ABOVE" ? "text-emerald-400" : "text-red-400";
+        const confirmed = await showAppModal({
+          title: "Confirm Live Order",
+          badge: "1-CLICK SUBMISSION",
+          icon: "⚡",
+          iconBg: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40",
+          body: `Submit order to Kalshi?<br><br>Contract: <span class="text-white font-bold">15-Min Bitcoin</span><br>Action: <span class="font-bold ${sideColor}">BUY ${kalshiCurrentContracts} ${sideText}</span><br>Mode: <span class="text-red-400 font-bold">REAL FUNDS</span>`,
+          confirmText: "Submit Order",
+          confirmColor: "cyan"
+        });
+        if (!confirmed) return;
       }
       try {
         const apiBase = getKalshiApiBase();
         const res = await fetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
-          alert(`Trade Executed (${kalshiTradingMode}): ${data.trade ? data.trade.recommendation : 'Success'} (${kalshiCurrentContracts} contract)`);
+          showAppToast(
+            `Trade Executed (${kalshiTradingMode})`,
+            `${data.trade ? data.trade.recommendation : 'Filled'} • ${kalshiCurrentContracts} contract(s)`,
+            "success"
+          );
           pollKalshiTradingStatus();
         } else {
-          alert(`Trade Error: ${data.error || 'Failed to submit order'}`);
+          showAppModal({
+            title: "Order Rejected",
+            badge: "KALSHI NOTICE",
+            icon: "✕",
+            iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
+            body: data.error || "Failed to submit order.",
+            confirmText: "Dismiss",
+            confirmColor: "amber",
+            showCancel: false
+          });
         }
       } catch (e) {
-        alert(`Request failed: ${e}`);
+        showAppToast("Request Failed", String(e), "error");
       }
     }
 
     async function triggerCloseTrade() {
       if (kalshiTradingMode === "LIVE") {
-        if (!confirm("Confirm 1-click CLOSE: Exit active trade(s) now?")) {
-          return;
-        }
+        const confirmed = await showAppModal({
+          title: "Close Active Position",
+          badge: "1-CLICK EXIT",
+          icon: "✕",
+          iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
+          body: `Exit all active trade(s) at current market price and realize P&L immediately?`,
+          confirmText: "Close Now",
+          confirmColor: "amber"
+        });
+        if (!confirmed) return;
       }
       try {
         const apiBase = getKalshiApiBase();
         const res = await fetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
-          alert(`Position Closed: ${data.message || 'Success'}`);
+          showAppToast("Position Closed", data.message || "Active trade closed successfully", "success");
           pollKalshiTradingStatus();
         } else {
-          alert(`Close Notice: ${data.error || 'No open trades to close'}`);
+          showAppToast("Close Notice", data.error || "No open trades to close", "warning");
         }
       } catch (e) {
-        alert(`Close request failed: ${e}`);
+        showAppToast("Close Request Failed", String(e), "error");
       }
     }
 
@@ -4467,5 +4603,30 @@
     setInterval(pollKalshiTradingStatus, 3000);
 
   </script>
+
+  <!-- Custom In-App Modal Dialog (Zero "localhost says" native popups) -->
+  <div id="appModalOverlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div id="appModalCard" class="w-full max-w-xs sm:max-w-sm bg-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-2xl text-left">
+      <div class="flex items-center gap-2.5 mb-2.5">
+        <div id="appModalIconWrapper" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
+          <span id="appModalIcon">⚡</span>
+        </div>
+        <div class="min-w-0">
+          <div id="appModalTitle" class="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">Confirm Order</div>
+          <div id="appModalBadge" class="text-[8px] sm:text-[9px] font-mono uppercase text-cyan-400">KALSHI AI TRADER</div>
+        </div>
+      </div>
+      <div id="appModalBody" class="text-xs text-slate-300 font-mono mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
+      </div>
+      <div id="appModalBtnGroup" class="flex gap-2">
+        <button id="appModalCancelBtn" class="flex-1 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 active:scale-95 transition">Cancel</button>
+        <button id="appModalConfirmBtn" class="flex-1 py-2 rounded-xl text-slate-950 text-xs font-black active:scale-95 transition shadow-lg bg-cyan-400 hover:bg-cyan-300">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Toast Notification Container (Top Centered) -->
+  <div id="appToastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm pointer-events-none z-[10000] flex flex-col gap-2"></div>
+
 </body>
 </html>
