@@ -562,26 +562,26 @@
         </div>
 
         <!-- 1. Live Bitcoin Price with real-time updates -->
-        <div id="topBarPriceCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm transition-colors shrink-0">
-          <span class="relative flex h-2 w-2">
+        <div id="topBarPriceCard" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-slate-700 shadow-md transition-colors shrink-0">
+          <span class="relative flex h-2.5 w-2.5">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <div class="flex flex-col items-start leading-none">
-            <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-slate-400 tracking-wider">LIVE BTC</span>
-            <span id="topBarLivePrice" class="text-xs sm:text-sm font-black font-mono text-white transition-colors">$--,---.--</span>
+            <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-slate-400 tracking-[0.05em]">LIVE BTC</span>
+            <span id="topBarLivePrice" class="text-base sm:text-lg font-black font-mono text-white transition-colors">$--,---.--</span>
           </div>
         </div>
 
         <!-- 2. 15M Price Target from Kalshi 15M contracts (KXBTC15) -->
-        <div id="topBarTargetCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-emerald-500/40 shadow-sm shadow-emerald-500/10 transition-colors shrink-0">
-          <span class="text-xs sm:text-sm">🎯</span>
+        <div id="topBarTargetCard" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-emerald-500/60 shadow-md shadow-emerald-500/20 transition-colors shrink-0">
+          <span class="text-sm sm:text-base">🎯</span>
           <div class="flex flex-col items-start leading-none">
-            <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-emerald-400 tracking-wider">15M TARGET</span>
-              <span id="topBarTargetDelta" class="text-[7px] sm:text-[8px] font-mono font-bold text-slate-400">(--)</span>
+            <div class="flex items-center gap-1.5 w-full justify-between">
+              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-emerald-400 tracking-[0.05em]">15M TARGET</span>
+              <span id="topBarTargetDelta" class="text-[8px] sm:text-[9px] font-mono font-bold text-slate-400 bg-slate-950 px-1 py-0.5 rounded">(--)</span>
             </div>
-            <span id="topBarTargetPrice" class="text-xs sm:text-sm font-black font-mono text-emerald-400">$--,---.--</span>
+            <span id="topBarTargetPrice" class="text-base sm:text-lg font-black font-mono text-emerald-400 mt-0.5">$--,---.--</span>
           </div>
         </div>
 
