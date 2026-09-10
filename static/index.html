@@ -536,36 +536,28 @@
         </div>
       </div>
 
-      <!-- CENTER: Info Panes (Likely To Close Left of Live BTC, Target, Close Time) -->
-      <div class="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 mx-auto flex-wrap sm:flex-nowrap">
+      <!-- CENTER: Info Panes (Simple UP/DOWN Likely Card Left of Live BTC, Target, Close Time) -->
+      <div class="flex-1 flex items-center justify-center gap-1.5 sm:gap-2.5 mx-auto flex-wrap sm:flex-nowrap">
         
-        <!-- 0. LIKELY TO CLOSE PANEL (Moved to empty space to the left of Live BTC Price) -->
+        <!-- 0. LIKELY TO CLOSE (Simple UP / DOWN - Cut Width In Half) -->
         <div id="topBarLikelyCard" class="btc-panel-card btc-card-prediction flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm transition-all shrink-0">
-          <div id="btcPredBanner" class="flex flex-col items-start leading-none space-y-0.5 p-1 rounded-lg border border-slate-700/60 transition-all">
+          <div id="btcPredBanner" class="flex flex-col items-start leading-none transition-all">
             <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-slate-400 tracking-wider">LIKELY:</span>
-              <span id="btcPredConfidenceTag" class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded font-bold uppercase text-cyan-300 bg-cyan-950/80 border border-cyan-800/50 font-mono">NEUTRAL</span>
-              <span id="btcPredProbText" class="text-[7px] sm:text-[8px] font-mono font-bold text-cyan-400">50% Prob</span>
+              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-slate-400 tracking-wider">LIKELY</span>
+              <span id="btcPredProbText" class="text-[7px] sm:text-[8px] font-mono font-bold text-cyan-400">--%</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <div id="btcPredOutcomeText" class="text-[11px] sm:text-xs font-black tracking-tight font-mono text-white leading-tight">
-                INITIALIZING...
-              </div>
-              <div id="btcKalshiOddsContainer" class="inline-flex items-center gap-1 px-1 py-0.2 rounded bg-slate-950/90 border border-slate-800 text-[8px] sm:text-[9px] font-mono">
-                <span class="text-slate-400 font-sans">🏛️</span>
-                <span id="btcKalshiYesProb" class="text-emerald-400 font-bold">--% Yes</span>
-                <span class="text-slate-600">/</span>
-                <span id="btcKalshiNoProb" class="text-red-400 font-bold">--% No</span>
-              </div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span id="btcPredOutcomeText" class="text-xs sm:text-sm font-black font-mono text-white leading-none">--</span>
+              <span id="btcPredConfidenceTag" class="text-[6.5px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-slate-400 bg-slate-950 font-mono">--</span>
             </div>
-            <div class="flex items-center gap-1.5 w-full pt-0.5">
-              <div class="h-1.5 w-14 bg-slate-800 rounded-full overflow-hidden flex shrink-0">
-                <div id="btcPredProbBarUnder" class="h-full bg-red-500 transition-all duration-500" style="width: 50%;"></div>
-                <div id="btcPredProbBarAbove" class="h-full bg-emerald-500 transition-all duration-500" style="width: 50%;"></div>
-              </div>
-              <span id="btcPredTargetZone" class="text-[7px] sm:text-[8px] font-mono text-cyan-300 font-bold truncate max-w-[125px]">Est. Settle: --</span>
-              <ul id="btcPredFactorsList" class="hidden"></ul>
-            </div>
+          </div>
+          <!-- Hidden preservation elements for JS backward compatibility -->
+          <div class="hidden">
+            <span id="btcKalshiOddsContainer"><span id="btcKalshiYesProb"></span><span id="btcKalshiNoProb"></span></span>
+            <div id="btcPredProbBarUnder"></div>
+            <div id="btcPredProbBarAbove"></div>
+            <span id="btcPredTargetZone"></span>
+            <ul id="btcPredFactorsList"></ul>
           </div>
         </div>
 
@@ -611,35 +603,17 @@
         </div>
       </div>
 
-      <!-- Action Controls & Centered Structure Tab (Right) -->
+      <!-- Action Controls (Right - Structure Panel Removed) -->
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end">
-        
-        <!-- Structure Tab Centered Directly to the Left of Refresh Button -->
-        <div id="topBarStructureCard" class="btc-panel-card btc-card-structure flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm font-mono shrink-0">
-          <div class="flex flex-col items-center justify-center text-center leading-none">
-            <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-slate-400 tracking-wider">STRUCTURE:</span>
-              <span id="btcStructTrendBadge" class="px-1 py-0.2 rounded font-black text-[7px] sm:text-[8px] uppercase bg-slate-800 text-cyan-400">--</span>
-            </div>
-            <div id="btcStructSummary" class="text-[8px] sm:text-[9px] font-bold text-white truncate max-w-[125px] mt-0.5">Evaluating...</div>
-          </div>
-          <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
-          <div class="flex items-center gap-2 text-[7px] sm:text-[8px] leading-tight">
-            <div>
-              <span class="text-slate-500 block text-[6px] sm:text-[7px]">RES:</span>
-              <span id="btcStructRes" class="font-bold text-red-400 truncate block">$--,---</span>
-            </div>
-            <div>
-              <span class="text-slate-500 block text-[6px] sm:text-[7px]">SUP:</span>
-              <span id="btcStructSup" class="font-bold text-emerald-400 truncate block">$--,---</span>
-            </div>
-            <div>
-              <span class="text-slate-500 block text-[6px] sm:text-[7px]">VWAP:</span>
-              <span id="btcStructVwap" class="font-bold text-amber-400 block">$--,---</span>
-              <span id="btcStructVwapStatus" class="sr-only"></span>
-              <span id="btcStructBos" class="sr-only"></span>
-            </div>
-          </div>
+        <!-- Hidden Structure preservation elements for JS background calculations -->
+        <div class="hidden">
+          <span id="btcStructTrendBadge"></span>
+          <span id="btcStructSummary"></span>
+          <span id="btcStructRes"></span>
+          <span id="btcStructSup"></span>
+          <span id="btcStructVwap"></span>
+          <span id="btcStructVwapStatus"></span>
+          <span id="btcStructBos"></span>
         </div>
 
         <!-- Dedicated Manual Refresh Button -->
@@ -3117,13 +3091,14 @@
       const isPass = forecast.direction === "PASS";
 
       if (outcomeText) {
-        outcomeText.innerText = forecast.recommendation;
+        const simpleText = isAbove ? "▲ UP" : (isBelow ? "▼ DOWN" : "CHOP");
+        outcomeText.innerText = simpleText;
         if (isAbove) {
-          outcomeText.className = "text-[11px] sm:text-xs font-black tracking-tight text-emerald-400 font-mono leading-tight";
+          outcomeText.className = "text-xs sm:text-sm font-black tracking-tight text-emerald-400 font-mono leading-none";
         } else if (isBelow) {
-          outcomeText.className = "text-[11px] sm:text-xs font-black tracking-tight text-red-400 font-mono leading-tight";
+          outcomeText.className = "text-xs sm:text-sm font-black tracking-tight text-red-400 font-mono leading-none";
         } else {
-          outcomeText.className = "text-[11px] sm:text-xs font-black tracking-tight text-amber-300 font-mono leading-tight";
+          outcomeText.className = "text-xs sm:text-sm font-black tracking-tight text-amber-300 font-mono leading-none";
         }
       }
 
@@ -3140,7 +3115,7 @@
         }
       }
 
-      if (probText) probText.innerText = `${forecast.probability_percent}% Probability`;
+      if (probText) probText.innerText = `${forecast.probability_percent}%`;
       if (confTag) confTag.innerText = forecast.conviction_badge;
       if (zoneEl) zoneEl.innerText = `Est. Settle: ${forecast.target_settlement_zone}`;
 
@@ -3193,8 +3168,9 @@
       const prob = Number(tb.probability_percent || 50);
 
       if (outcomeText) {
-        outcomeText.innerText = tb.predicted_outcome || "--";
-        outcomeText.className = "text-xl sm:text-2xl font-black tracking-tight font-mono " + (isAbove ? "text-emerald-400" : "text-red-400");
+        const simpleText = isAbove ? "▲ UP" : "▼ DOWN";
+        outcomeText.innerText = simpleText;
+        outcomeText.className = "text-xs sm:text-sm font-black tracking-tight font-mono leading-none " + (isAbove ? "text-emerald-400" : "text-red-400");
       }
 
       if (banner) {
@@ -3222,7 +3198,7 @@
         }
       }
 
-      if (probText) probText.innerText = `${prob}% Probability`;
+      if (probText) probText.innerText = `${prob}%`;
       if (confTag) confTag.innerText = tb.confidence_badge || "MODERATE EDGE";
 
       // Render Kalshi Market Odds vs Model Prediction
