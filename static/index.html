@@ -656,7 +656,7 @@
             <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap lg:flex-nowrap shrink-0">
               
               <!-- Confluence Module (Moved to the LEFT of 1M button) -->
-              <div id="btcConfluenceHeaderTab" class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[8px] sm:text-[9px] font-mono shadow-sm shrink-0">
+              <div id="btcConfluenceHeaderTab" class="flex items-center justify-center w-40 gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[8px] sm:text-[9px] font-mono shadow-sm shrink-0">
                 <span class="text-[10px] hidden sm:inline">⚡</span>
                 <span class="font-black text-white uppercase tracking-wider hidden md:inline">Conf:</span>
                 <div id="btcSignalBanner" class="signal-banner signal-neutral text-[7px] sm:text-[8px] py-0.2 px-1 font-bold uppercase rounded">INIT</div>
@@ -701,17 +701,8 @@
 
           <!-- Slot 2: 15-Minute Target Trend & Centered Prediction Accuracy Tracker -->
           <div class="btc-card-trend px-1.5 sm:px-2 py-1 mb-1 rounded-xl bg-slate-900/90 border border-slate-800/90 flex items-center justify-between gap-1.5 flex-wrap sm:flex-nowrap">
-            <!-- Left: 15M Trend Header & Streak -->
-            <div class="flex items-center gap-1 shrink-0">
-              <span class="text-[10px]">📈</span>
-              <span class="text-[8px] sm:text-[9px] font-black text-white uppercase tracking-wider hidden lg:inline">15M Trend:</span>
-              <span id="btcTrendStreakBadge" class="text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded-full font-bold bg-slate-950 text-amber-400 border border-amber-500/20 font-mono">
-                Streak...
-              </span>
-            </div>
-
             <!-- Center: 15M Prediction Accuracy Tracker -->
-            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
+            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mr-auto">
               <div class="hidden sm:flex items-center gap-0.5">
                 <span class="text-[10px]">🎯</span>
                 <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider hidden lg:inline">Accuracy:</span>
@@ -3805,7 +3796,8 @@
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch('/api/btc/live', { signal: controller.signal });
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(${apiBase}/api/btc/live, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
           const liveData = await res.json();

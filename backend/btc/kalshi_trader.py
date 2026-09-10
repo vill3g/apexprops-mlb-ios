@@ -136,7 +136,7 @@ class KalshiTrader:
                         if ct_str:
                             try:
                                 ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                                if ct > now_utc - datetime.timedelta(minutes=5):
+                                if ct > now_utc and m.get("status") in ["active", "open"]:
                                     valid_m.append((ct, m))
                             except Exception:
                                 pass
@@ -289,7 +289,9 @@ class KalshiTrader:
             "count": f"{int(count)}.00",
             "price": f"{est_price:.4f}",
             "time_in_force": "immediate_or_cancel",
-            "self_trade_prevention_type": "taker_at_cross"
+            "self_trade_prevention_type": "taker_at_cross",
+            "subaccount": 0,
+            "exchange_index": 2
         }
 
         path = "/trade-api/v2/portfolio/events/orders"

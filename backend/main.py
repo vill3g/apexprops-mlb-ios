@@ -585,7 +585,29 @@ def api_btc_candles(timeframe: str = "15m"):
                 pass
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
+# =====================================================================
+# BACKGROUND AUTO-TRADER TASK
+# =====================================================================
+import threading
+import time
+
+def _auto_trader_background_loop():
+    while True:
+        try:
+            auto_executor.check_and_execute_rollover()
+        except Exception as e:
+            pass
+        time.sleep(2)
+
+@app.on_event("startup")
+def start_background_tasks():
+    t = threading.Thread(target=_auto_trader_background_loop, daemon=True)
+    t.start()
+    print("[AutoTrader] Background thread started.")
+
 # Mount static directory and route index
+
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
