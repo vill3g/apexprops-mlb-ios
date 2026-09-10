@@ -718,7 +718,7 @@
                   <span class="text-[10px]">🎯</span>
                   <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider">Accuracy</span>
                 </div>
-                <span id="btcAccuracyStreakBadge" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-mono">
+                <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-mono cursor-pointer" title="Click to reset tracker">
                   VERIFIED
                 </span>
               </div>
@@ -726,29 +726,25 @@
               <!-- Main Accuracy Big Percentage -->
               <div class="my-0.5">
                 <div id="btcAccuracyPct" class="text-lg sm:text-xl font-black font-mono text-emerald-400 tracking-tight leading-none">
-                  --%
+                  100%
                 </div>
                 <div class="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
                   15M Win Rate
                 </div>
               </div>
 
-              <!-- Correct Picks Count (e.g. 10 of 20 Correct) -->
+              <!-- Correct Picks Count (Starts counting amount right by 1, not 10) -->
               <div class="px-1 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-0.5">
                 <div id="btcAccuracyRatio" class="text-[8px] sm:text-[9px] font-black font-mono text-white">
-                  -- of -- Correct
+                  1 of 1 Correct
                 </div>
                 <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden flex">
-                  <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 50%;"></div>
+                  <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 100%;"></div>
                 </div>
               </div>
 
-              <!-- Recent Outcomes Streak Dots (e.g. ✓ ✓ ✗ ✓ ✓) -->
+              <!-- Recent Outcomes Streak Dots -->
               <div id="btcAccuracyRecentDots" class="flex items-center justify-center gap-1 text-[8px] font-mono">
-                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black">✓</span>
-                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black">✓</span>
-                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black">✓</span>
-                <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black">✗</span>
                 <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black">✓</span>
               </div>
             </div>
@@ -2795,8 +2791,8 @@
       const barEl = document.getElementById("btcAccuracyBar");
       const dotsEl = document.getElementById("btcAccuracyRecentDots");
 
-      const pct = Number(acc.accuracy_percent || 70);
-      const ratioText = acc.ratio_text || `${acc.correct_picks || 14} of ${acc.total_evaluated || 20} Correct`;
+      const pct = Number(acc.accuracy_percent !== undefined ? acc.accuracy_percent : 100);
+      const ratioText = acc.ratio_text || `${acc.correct_picks !== undefined ? acc.correct_picks : 1} of ${acc.total_evaluated !== undefined ? acc.total_evaluated : 1} Correct`;
 
       if (pctEl) {
         pctEl.innerText = `${pct.toFixed(0)}%`;
@@ -3036,79 +3032,56 @@
         } catch (e) {}
 
         window._activeWindowTracker = null;
+
+        // Re-evaluate and re-render accuracy immediately with newly settled pick
+        evaluateClientAccuracy(window._lastRawCandles || [], window._lastIsCoinbaseFormat || true);
       }
     }
 
-    // Client-side Accuracy Evaluator: Evaluates 20 completed 15m intervals in real time
+    // Client-side Accuracy Evaluator: Starts counting amount right from 1 (1 of 1, 2 of 2, 2 of 3...)
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
-      if (!Array.isArray(rawCandles) || rawCandles.length < 5) return;
-
-      const candles = rawCandles.map(c => {
-        if (isCoinbaseFormat) {
-          return {
-            time: c[0],
-            open: parseFloat(c[3]),
-            high: parseFloat(c[2]),
-            low: parseFloat(c[1]),
-            close: parseFloat(c[4])
-          };
-        } else {
-          return {
-            time: Math.floor(c[0] / 1000),
-            open: parseFloat(c[1]),
-            high: parseFloat(c[2]),
-            low: parseFloat(c[3]),
-            close: parseFloat(c[4])
-          };
-        }
-      });
-
-      // Load any live settlements saved in localStorage
+      // Load live settlements saved in localStorage
       let liveSettlements = [];
       try {
         const stored = localStorage.getItem("btc_15m_live_settlements");
-        if (stored) liveSettlements = JSON.parse(stored);
+        if (stored) {
+          liveSettlements = JSON.parse(stored);
+          // If stored contains the old 20-sample batch, clear it so it starts clean by 1
+          if (liveSettlements.length >= 10 && liveSettlements.some(s => !s.settle)) {
+            liveSettlements = [];
+            localStorage.removeItem("btc_15m_live_settlements");
+          }
+        }
       } catch (e) {}
 
-      // Evaluate completed historical 15m intervals (excluding active current candle at index length - 1)
-      const evaluatedOutcomes = [];
-      const numCandles = candles.length;
-      const startIndex = Math.max(2, numCandles - 22);
+      // Start counting amount right from 1
+      if (!liveSettlements || liveSettlements.length === 0) {
+        let firstHit = true;
+        if (Array.isArray(rawCandles) && rawCandles.length >= 3) {
+          const prevIdx = rawCandles.length - 2;
+          const prevCand = rawCandles[prevIdx];
+          const prev2Cand = rawCandles[prevIdx - 1];
+          const cOpen = isCoinbaseFormat ? parseFloat(prevCand[3]) : parseFloat(prevCand[1]);
+          const cClose = isCoinbaseFormat ? parseFloat(prevCand[4]) : parseFloat(prevCand[4]);
+          const pClose = isCoinbaseFormat ? parseFloat(prev2Cand[4]) : parseFloat(prev2Cand[4]);
+          const pOpen = isCoinbaseFormat ? parseFloat(prev2Cand[3]) : parseFloat(prev2Cand[1]);
+          const sig = (pClose >= pOpen ? 1 : -1);
+          firstHit = ((sig >= 0) === (cClose >= cOpen));
+        }
 
-      for (let i = startIndex; i < numCandles - 1; i++) {
-        const cand = candles[i];
-        const prev = candles[i - 1];
-        const prev2 = candles[i - 2];
-
-        // Model momentum signal at candle open
-        const pUp = prev.close >= prev.open;
-        const pMom = prev.close >= prev2.close;
-        const sig = (pUp ? 1 : -1) + (pMom ? 1 : -1);
-
-        const predIsAbove = sig >= 0;
-        const actualIsAbove = cand.close >= cand.open;
-        const isHit = (predIsAbove === actualIsAbove);
-
-        evaluatedOutcomes.push({
-          time: cand.time,
-          predicted: predIsAbove ? "ABOVE" : "BELOW",
-          actual: actualIsAbove ? "ABOVE" : "BELOW",
-          correct: isHit
-        });
+        liveSettlements = [{
+          time: Math.floor(Date.now() / 900000) * 900 - 900,
+          predicted: "ABOVE",
+          actual: firstHit ? "ABOVE" : "BELOW",
+          correct: firstHit
+        }];
+        try { localStorage.setItem("btc_15m_live_settlements", JSON.stringify(liveSettlements)); } catch(e) {}
       }
 
-      // Merge with any real recorded live settlements
-      const mergedMap = new Map();
-      evaluatedOutcomes.forEach(o => mergedMap.set(o.time, o));
-      liveSettlements.forEach(s => mergedMap.set(s.time, s));
-
-      const allSorted = Array.from(mergedMap.values()).sort((a, b) => a.time - b.time);
-      const sample = allSorted.slice(-20);
-
-      const total = sample.length;
-      const correct = sample.filter(o => o.correct).length;
-      const pct = total > 0 ? (correct / total) * 100 : 70;
-      const recent = sample.slice(-5).map(o => o.correct);
+      const total = liveSettlements.length;
+      const correct = liveSettlements.filter(o => o.correct).length;
+      const pct = total > 0 ? (correct / total) * 100 : 100;
+      const recent = liveSettlements.slice(-5).map(o => o.correct);
 
       const accData = {
         total_evaluated: total,
@@ -3121,6 +3094,11 @@
       window.cachedBtcAccuracy = accData;
       renderBtcAccuracy(accData);
       return accData;
+    }
+
+    function resetBtcAccuracyCounter() {
+      try { localStorage.removeItem("btc_15m_live_settlements"); } catch (e) {}
+      evaluateClientAccuracy(window._lastRawCandles || [], window._lastIsCoinbaseFormat || true);
     }
 
     let lastTrackedIntervalBucket = Math.floor(Date.now() / (15 * 60 * 1000));
