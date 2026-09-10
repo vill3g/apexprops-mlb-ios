@@ -318,9 +318,16 @@ class KalshiTrader:
                     "raw_response": res_data
                 }
             else:
+                err_text = resp.text
+                if resp.status_code == 409 and "trading_is_paused" in err_text:
+                    user_msg = "Kalshi Exchange Maintenance: Trading is paused for weekly maintenance until 5:00 AM EDT. Orders will resume at 5:00 AM EDT."
+                elif "market_not_open" in err_text or "not open" in err_text.lower():
+                    user_msg = "Kalshi Market Not Open: Waiting for 15M contract open window."
+                else:
+                    user_msg = err_text
                 return {
                     "success": False,
-                    "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {resp.text}",
+                    "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {user_msg}",
                     "payload_sent": v2_payload
                 }
         except Exception as e:
