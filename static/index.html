@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <!-- Strict Viewport to stop pinch-to-zoom on iOS / mobile -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ApexProps // MLB +1 H+R+RBI & Pitcher Ks</title>
+  <title>BTC 15M // Pattern & Confluence Analyzer</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="ApexProps">
+  <meta name="apple-mobile-web-app-title" content="BTC 15M">
   <meta name="theme-color" content="#020617">
   <link rel="manifest" href="/static/manifest.json">
   <link rel="apple-touch-icon" href="/static/assets/logo_monogram.jpg">
@@ -300,30 +300,21 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white">
 
-  <!-- Pull to Refresh Visual Indicator -->
-  <div id="pullToRefresh" class="w-full flex items-center justify-center overflow-hidden transition-[height,opacity] duration-200 ease-out pointer-events-none" style="height: 0px; opacity: 0;">
-    <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/95 border border-emerald-500/40 shadow-lg shadow-emerald-500/20 text-emerald-400 text-xs font-bold my-1">
-      <svg id="ptrArrow" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-      </svg>
-      <span id="ptrSpinner" class="hidden animate-spin w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full"></span>
-      <span id="ptrText">Pull down to refresh</span>
-    </div>
-  </div>
+  
 
   <!-- Main Container -->
   <div class="app-main-wrapper max-w-7xl mx-auto p-2 sm:p-3 space-y-2.5 w-full max-w-full overflow-x-hidden">
     
     <!-- Top Navigation / Header -->
-    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2 border-b border-slate-800 shadow-lg shadow-black/40 flex items-center justify-between gap-2.5 w-full max-w-full">
+    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2 border-b border-slate-800 shadow-lg shadow-black/40 flex items-center justify-between gap-3 w-full max-w-full">
       
-      <!-- Brand & 3rd Logo (Apex Seam Monogram) -->
+      <!-- Brand & New BTC 15M Logo -->
       <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-        <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="ApexProps Logo" class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl object-cover shadow-lg shadow-emerald-500/20 border border-emerald-500/30 shrink-0">
+        <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="BTC 15M Logo" class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl object-cover shadow-lg shadow-amber-500/25 border border-amber-500/40 shrink-0">
         <div>
           <div class="flex items-center gap-1.5 sm:gap-2">
-            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">APEX<span class="text-emerald-400">PROPS</span></h1>
-            <span class="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 items-center gap-1 shadow-sm shadow-emerald-500/20">👑 The Odds API Live</span>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">BTC <span class="text-amber-400">15M</span></h1>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center gap-1 shadow-sm shadow-amber-500/20">⚡ 15M Pattern Analyzer</span>
           </div>
           <div class="flex items-center gap-1.5 sm:gap-2 mt-0.5">
             <span class="relative flex h-2 w-2">
@@ -337,152 +328,24 @@
         </div>
       </div>
 
-      <!-- Integrated Top Title Bar Analytics Mode Selector -->
-      <div class="overflow-x-auto no-scrollbar py-0.5 shrink-0">
-        <div class="inline-flex p-1 rounded-2xl bg-slate-900 border border-slate-800 shadow-inner flex-nowrap min-w-max gap-1">
-          <button id="tabBtnHrrbi" onclick="switchMode('mlb_hrrbi')" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer">
-            <span>⚾</span>
-            <span class="whitespace-nowrap">MLB H+R+RBI</span>
-          </button>
-          <button id="tabBtnKs" onclick="switchMode('pitcher_ks')" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0 cursor-pointer">
-            <span>🔥</span>
-            <span class="whitespace-nowrap">Pitcher Ks</span>
-          </button>
-          <!-- BTC Analyzer Pane Button Integrated Directly into Top Title Bar -->
-          <button id="tabBtnBtc" onclick="switchMode('btc_analyzer')" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0 cursor-pointer border border-transparent hover:border-amber-500/40">
-            <span class="text-amber-400 font-bold">₿</span>
-            <span class="whitespace-nowrap">BTC 15M Analyzer</span>
-          </button>
-        </div>
-        <select id="modeDropdown" onchange="switchMode(this.value)" class="sr-only">
-          <option value="mlb_hrrbi" selected>⚾ MLB Hits + Runs + RBIs (+1 Line)</option>
-          <option value="pitcher_ks">🔥 Pitcher Strikeouts (K Props)</option>
-          <option value="btc_analyzer">₿ BTC 15M Pattern Analyzer</option>
-        </select>
+      <!-- Dedicated Manual Refresh Button & Sound Controls in Top Bar -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btnTopBarRefresh" type="button" onclick="triggerManualRefresh()" 
+                class="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/25 flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
+          <span id="topBarRefreshIcon" class="text-sm sm:text-base font-black">⟳</span>
+          <span class="whitespace-nowrap font-black">Refresh Data</span>
+        </button>
+        <button id="btnTopBarAudio" type="button" onclick="toggleBtcAudio()" 
+                class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer text-xs sm:text-sm" title="Sound Alert Toggle">
+          <span id="btcAudioIcon">🔇</span>
+        </button>
       </div>
     </header>
 
     <!-- ============================================================= -->
-    <!-- VIEW 1: MLB HITS + RUNS + RBIS (+1 LINE)                     -->
-    <!-- ============================================================= -->
-    <div id="view_mlb_hrrbi" class="space-y-6">
-      
-      <!-- Top 5 Daily Highest Probability Hero Section -->
-      <section class="space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="h-3.5 w-1.5 bg-emerald-500 rounded-full shrink-0"></span>
-            <h2 class="text-sm sm:text-base md:text-xl font-black text-white whitespace-nowrap tracking-tight">Top 5 Highest Probability Picks</h2>
-          </div>
-          <span class="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 whitespace-nowrap shrink-0">+1 H+R+RBI</span>
-        </div>
-        <p class="text-xs text-slate-400">Click any player to inspect complete Statistics, Game Logs, and Matchup Insights.</p>
-
-        <!-- Top 5 Grid Cards -->
-        <div id="top5Grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          <!-- Injected via JavaScript -->
-        </div>
-      </section>
-
-      <!-- Prop Screener Table -->
-      <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div>
-            <h3 class="text-sm sm:text-base font-black text-white whitespace-nowrap">MLB Slate +1 H+R+RBI Screener</h3>
-            <p class="text-xs text-slate-400">Click any row to open Statistics &amp; Recent Game Logs.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="text" id="searchInput" placeholder="Filter player or team..." oninput="filterTable()" 
-                   class="bg-slate-900 border border-slate-700 rounded-xl text-xs px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-48">
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
-                <th class="py-2.5 px-3">PLAYER</th>
-                <th class="py-2.5 px-3">MATCHUP</th>
-                <th class="py-2.5 px-3">PROP LINE</th>
-                <th class="py-2.5 px-3 text-center">PROJ TOTAL</th>
-                <th class="py-2.5 px-3 text-center">WIN PROB</th>
-                <th class="py-2.5 px-3 text-center">⚡ THE ODDS API</th>
-                <th class="py-2.5 px-3 text-center">+EV EDGE</th>
-                <th class="py-2.5 px-3 text-right">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="screenerTableBody" class="divide-y divide-slate-800/80">
-              <!-- Rows injected by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- VIEW 2: PITCHER STRIKEOUTS (K PROPS) - MATCHES H+R+RBI LAYOUT -->
-    <!-- ============================================================= -->
-    <div id="view_pitcher_ks" class="hidden space-y-6">
-      
-      <!-- Top 5 Pitcher Strikeouts Hero Section -->
-      <section class="space-y-2.5">
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="h-3.5 w-1.5 bg-orange-500 rounded-full shrink-0"></span>
-            <h2 class="text-sm sm:text-base md:text-xl font-black text-white whitespace-nowrap tracking-tight">Top 5 Highest Probability Picks</h2>
-          </div>
-          <span class="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 font-bold border border-orange-500/20 whitespace-nowrap shrink-0">Strikeout Ks</span>
-        </div>
-        <p class="text-xs text-slate-400">Starting pitchers with highest model strikeout probability, CSW%, and market edge.</p>
-
-        <!-- Top 5 Pitcher Grid Cards -->
-        <div id="top5PitcherGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          <!-- Injected via JavaScript -->
-        </div>
-      </section>
-
-      <!-- Pitcher Screener Table -->
-      <section class="glass-panel rounded-2xl p-4 sm:p-5 space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div>
-            <h3 class="text-sm sm:text-base font-black text-white whitespace-nowrap">MLB Slate Pitcher Strikeouts Screener</h3>
-            <p class="text-xs text-slate-400">Click any starting pitcher to inspect Statistics, Recent Game Logs, and Strikeout Projections.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <input type="text" id="pitcherSearchInput" placeholder="Filter pitcher or team..." oninput="filterPitcherTable()" 
-                   class="bg-slate-900 border border-slate-700 rounded-xl text-xs px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-orange-500 w-48">
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
-                <th class="py-2.5 px-3">PITCHER</th>
-                <th class="py-2.5 px-3">MATCHUP</th>
-                <th class="py-2.5 px-3">PROP LINE</th>
-                <th class="py-2.5 px-3 text-center">PROJ Ks</th>
-                <th class="py-2.5 px-3 text-center">WIN PROB</th>
-                <th class="py-2.5 px-3 text-center">⚡ THE ODDS API</th>
-                <th class="py-2.5 px-3 text-center">+EV EDGE</th>
-                <th class="py-2.5 px-3 text-right">ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="pitcherScreenerTableBody" class="divide-y divide-slate-800/80">
-              <!-- Rows injected by JavaScript -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-
-    <!-- ============================================================= -->
     <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
     <!-- ============================================================= -->
-    <div id="view_btc_analyzer" class="hidden space-y-2">
+    <div id="view_btc_analyzer" class="space-y-2">
       
       <!-- Main Row: 80% Chart (Left, Full Height) + Integrated Right Pane (20%) -->
       <div class="btc-main-grid grid grid-cols-1 lg:grid-cols-5 gap-2 items-stretch w-full">
@@ -501,12 +364,12 @@
             <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
               <!-- Timeframe Pills -->
               <div class="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
-                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
-                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
-                <button class="btc-tf-btn active text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
-                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
-                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
-                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
+                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
+                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
+                <button type="button" class="btc-tf-btn active text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
+                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
+                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
+                <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
               </div>
 
               <!-- Stream Badge -->
@@ -519,10 +382,10 @@
               </div>
 
               <!-- Action Controls -->
-              <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm transition cursor-pointer text-xs" title="Refresh BTC Analysis">
+              <button type="button" id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm transition cursor-pointer text-xs" title="Refresh BTC Analysis">
                 <span id="btcRefreshIcon">&#x21bb;</span>
               </button>
-              <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer text-xs" title="Sound Alert">
+              <button type="button" id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer text-xs" title="Sound Alert">
                 <span id="btcAudioIcon">🔇</span>
               </button>
             </div>
@@ -535,19 +398,19 @@
               <span class="text-[9px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-0.5 mr-0.5">
                 <span>✏️</span> <span>Draw:</span>
               </span>
-              <button id="drawToolPointer" onclick="setBtcDrawingTool('pointer')" class="btc-draw-btn active" title="Select / Pan Chart">
+              <button type="button" id="drawToolPointer" onclick="setBtcDrawingTool('pointer')" class="btc-draw-btn active" title="Select / Pan Chart">
                 <span>👆</span> <span class="hidden sm:inline">Cursor</span>
               </button>
-              <button id="drawToolTrendline" onclick="setBtcDrawingTool('trendline')" class="btc-draw-btn" title="Trendline (Click 2 points or drag)">
+              <button type="button" id="drawToolTrendline" onclick="setBtcDrawingTool('trendline')" class="btc-draw-btn" title="Trendline (Click 2 points or drag)">
                 <span>📏</span> <span>Trendline</span>
               </button>
-              <button id="drawToolRay" onclick="setBtcDrawingTool('ray')" class="btc-draw-btn" title="Extended Ray">
+              <button type="button" id="drawToolRay" onclick="setBtcDrawingTool('ray')" class="btc-draw-btn" title="Extended Ray">
                 <span>↗️</span> <span>Ray</span>
               </button>
-              <button id="drawToolHline" onclick="setBtcDrawingTool('hline')" class="btc-draw-btn" title="Horizontal Price Level (Click price)">
+              <button type="button" id="drawToolHline" onclick="setBtcDrawingTool('hline')" class="btc-draw-btn" title="Horizontal Price Level (Click price)">
                 <span>➖</span> <span>Horiz</span>
               </button>
-              <button id="drawToolFib" onclick="setBtcDrawingTool('fib')" class="btc-draw-btn" title="Fibonacci Retracement (Click 2 points)">
+              <button type="button" id="drawToolFib" onclick="setBtcDrawingTool('fib')" class="btc-draw-btn" title="Fibonacci Retracement (Click 2 points)">
                 <span>🔢</span> <span>Fib</span>
               </button>
             </div>
@@ -556,18 +419,18 @@
             <div class="flex items-center gap-1.5">
               <!-- Color Selector -->
               <div class="flex items-center gap-1 bg-slate-950/90 px-1.5 py-0.5 rounded-lg border border-slate-800">
-                <button onclick="setBtcDrawingColor('#f59e0b')" class="w-3 h-3 rounded-full bg-amber-400 border border-white/20 btc-color-dot active" data-color="#f59e0b" title="Amber Gold"></button>
-                <button onclick="setBtcDrawingColor('#22d3ee')" class="w-3 h-3 rounded-full bg-cyan-400 border border-white/20 btc-color-dot" data-color="#22d3ee" title="Cyan Blue"></button>
-                <button onclick="setBtcDrawingColor('#10b981')" class="w-3 h-3 rounded-full bg-emerald-400 border border-white/20 btc-color-dot" data-color="#10b981" title="Emerald Green"></button>
-                <button onclick="setBtcDrawingColor('#ef4444')" class="w-3 h-3 rounded-full bg-red-500 border border-white/20 btc-color-dot" data-color="#ef4444" title="Red"></button>
-                <button onclick="setBtcDrawingColor('#f8fafc')" class="w-3 h-3 rounded-full bg-white border border-white/20 btc-color-dot" data-color="#f8fafc" title="White"></button>
+                <button type="button" onclick="setBtcDrawingColor('#f59e0b')" class="w-3 h-3 rounded-full bg-amber-400 border border-white/20 btc-color-dot active" data-color="#f59e0b" title="Amber Gold"></button>
+                <button type="button" onclick="setBtcDrawingColor('#22d3ee')" class="w-3 h-3 rounded-full bg-cyan-400 border border-white/20 btc-color-dot" data-color="#22d3ee" title="Cyan Blue"></button>
+                <button type="button" onclick="setBtcDrawingColor('#10b981')" class="w-3 h-3 rounded-full bg-emerald-400 border border-white/20 btc-color-dot" data-color="#10b981" title="Emerald Green"></button>
+                <button type="button" onclick="setBtcDrawingColor('#ef4444')" class="w-3 h-3 rounded-full bg-red-500 border border-white/20 btc-color-dot" data-color="#ef4444" title="Red"></button>
+                <button type="button" onclick="setBtcDrawingColor('#f8fafc')" class="w-3 h-3 rounded-full bg-white border border-white/20 btc-color-dot" data-color="#f8fafc" title="White"></button>
               </div>
 
               <!-- Undo & Clear Actions -->
-              <button onclick="undoBtcDrawing()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold transition text-[9px] sm:text-[10px]" title="Undo Last Drawing">
+              <button type="button" onclick="undoBtcDrawing()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold transition text-[9px] sm:text-[10px]" title="Undo Last Drawing">
                 ↩️ <span class="hidden sm:inline">Undo</span>
               </button>
-              <button onclick="clearBtcDrawings()" class="px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-bold transition text-[9px] sm:text-[10px]" title="Clear All Drawings">
+              <button type="button" onclick="clearBtcDrawings()" class="px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-bold transition text-[9px] sm:text-[10px]" title="Clear All Drawings">
                 🗑️ <span class="hidden sm:inline">Clear</span>
               </button>
 
@@ -793,194 +656,32 @@
 
     </div>
 
-    <!-- Bottom Quick Slip Bar (Sticky on mobile) -->
-    <div id="bottomSlipBar" class="glass-panel rounded-2xl p-3 sm:p-4 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <span class="text-base">🧾</span>
-        <div>
-          <span class="text-xs font-bold text-white" id="barSlipCount">0 Picks in Slip</span>
-          <p class="text-[10px] text-slate-400" id="barSlipText">Click "+ Slip" on any prop to build a custom parlay.</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between sm:justify-end gap-2.5">
-        <div class="text-right mr-1">
-          <div class="text-[9px] uppercase text-slate-400 font-semibold">Joint Prob</div>
-          <div class="text-sm font-black text-emerald-400" id="barJointProb">--</div>
-        </div>
-        <button onclick="clearSlip()" class="bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs transition">
-          Clear
-        </button>
-        <button onclick="launchDraftKingsDirect()" class="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
-          <span class="text-sm">👑</span>
-          <span class="whitespace-nowrap font-black">Add to DraftKings ➔</span>
-        </button>
-      </div>
-    </div>
+    <script>
+    // Dedicated Top Bar Manual Refresh
+    async function triggerManualRefresh() {
+      const btn = document.getElementById("btnTopBarRefresh");
+      const icon = document.getElementById("topBarRefreshIcon");
+      if (btn) btn.disabled = true;
+      if (icon) icon.className = "inline-block animate-spin text-sm sm:text-base font-black";
 
-  <!-- Direct DraftKings Native Action Toast -->
-  <div id="dkToastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-emerald-500/50 text-emerald-300 px-4 py-2.5 rounded-2xl shadow-2xl shadow-emerald-500/20 text-xs font-bold flex items-center gap-2 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
-    <span class="text-base">👑</span>
-    <span id="dkToastText">Picks copied & launching DraftKings App...</span>
-  </div>
+      try {
+        await Promise.allSettled([
+          triggerBtcAnalysis(),
+          fetchBtcKlinesDirect(),
+          fetchKalshiDirect()
+        ]);
+      } catch(e) {
+        console.warn("Manual refresh error:", e);
+      } finally {
+        setTimeout(() => {
+          if (btn) btn.disabled = false;
+          if (icon) icon.className = "text-sm sm:text-base font-black";
+        }, 500);
+      }
+    }
 
-  <!-- Comprehensive Deep Dive Modal -->
-  <div id="deepDiveModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-      
-      <!-- Modal Header -->
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-        <div class="flex items-center gap-3">
-          <img id="modalHeadshot" src="" class="w-12 h-12 rounded-xl object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, currentModalPlayer ? currentModalPlayer.name : '', currentModalPlayer ? currentModalPlayer.id : '', currentModalPlayer ? currentModalPlayer.team_logo : '')">
-          <div>
-            <h3 id="modalPlayerName" class="font-black text-base text-white"></h3>
-            <p id="modalSub" class="text-xs text-slate-400"></p>
-          </div>
-        </div>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-white p-2 text-xl font-bold">&times;</button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="p-5 space-y-4 overflow-y-auto">
-        
-        <!-- Score & Win Probability Banner -->
-        <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 text-center">
-          <div>
-            <div class="text-[10px] uppercase text-slate-400 font-semibold">Model Win Probability</div>
-            <div id="modalWinProb" class="text-xl font-black text-emerald-400 mt-0.5"></div>
-          </div>
-          <div>
-            <div id="modalMetricLabel" class="text-[10px] uppercase text-slate-400 font-semibold">Projected Score</div>
-            <div id="modalProjScore" class="text-xl font-black text-blue-400 mt-0.5"></div>
-          </div>
-        </div>
-
-        <!-- Dedicated The Odds API Live Line Card -->
-        <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-sm">⚡</div>
-            <div>
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-black uppercase text-emerald-400">The Odds API</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">LIVE FEED</span>
-              </div>
-              <div class="text-[11px] text-slate-300 mt-0.5">
-                Prop: <strong class="text-white" id="modalDkLine">+1 H+R+RBI</strong> • Odds: <strong class="text-emerald-400 font-mono font-bold" id="modalDkOdds">-145</strong> (Dec: <span class="font-mono text-slate-400" id="modalDkDecimal">1.69</span>)
-              </div>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="text-[10px] text-slate-400">Odds API Implied / True Edge</div>
-            <div class="text-xs font-mono font-bold text-white mt-0.5">
-              <span id="modalDkImplied" class="text-slate-300">59.2%</span> / <span id="modalDkEdge" class="text-emerald-400">+12.4% EV</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Matchup Statistics Card -->
-        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase text-white flex items-center gap-1.5">
-              <span>📊</span> <span id="modalStatsTitle">Player &amp; Matchup Statistics</span>
-            </span>
-            <span id="modalBvpVerdict" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">MATCHUP EDGE</span>
-          </div>
-          <div class="grid grid-cols-4 gap-2 text-center text-xs">
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block" id="modalStat1Label">AB / Hits</span>
-              <strong id="modalBvpAbH" class="text-white">--</strong>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block" id="modalStat2Label">HR / RBI</span>
-              <strong id="modalBvpHrRbi" class="text-emerald-400">--</strong>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block" id="modalStat3Label">Career AVG</span>
-              <strong id="modalBvpAvg" class="text-white">--</strong>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block" id="modalStat4Label">Career OPS</span>
-              <strong id="modalBvpOps" class="text-white">--</strong>
-            </div>
-          </div>
-          <p id="modalBvpNote" class="text-[11px] text-slate-300 italic pt-1 border-t border-slate-900"></p>
-        </div>
-
-        <!-- Recent Game Log Card (Batter: Date / Opp / AB / R / H / SO / +1 | Pitcher: Date / Opp / IP / H / HR / SO / ERA) -->
-        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase text-white flex items-center gap-1.5">
-              <span>📅</span> <span id="modalGameLogTitle">Recent Game Log (Last 10 Games)</span>
-            </span>
-            <span id="modalGameLogBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono">
-              Official Log
-            </span>
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead id="modalGameLogHead">
-                <!-- Dynamically populated via JS -->
-              </thead>
-              <tbody id="modalGameLogBody" class="divide-y divide-slate-800/60 font-mono">
-                <!-- Dynamically populated via JS -->
-              </tbody>
-            </table>
-          </div>
-          <div id="modalGameLogSourceNote" class="text-[10px] text-slate-400 flex items-center justify-between pt-1.5 border-t border-slate-900">
-            <span class="flex items-center gap-1"><span>🛡️</span> Data Source: Official MLB Stats API &amp; ESPN</span>
-            <span class="text-emerald-400 font-medium">Cross-Verified Multi-Source</span>
-          </div>
-        </div>
-
-        <!-- Ballpark Weather Radar Card -->
-        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span id="modalWeatherVenue" class="text-xs font-black uppercase text-white flex items-center gap-1.5">
-              <span>🌤️</span> Ballpark Weather &amp; Wind Radar
-            </span>
-            <span id="modalWeatherStatus" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">FAVORABLE</span>
-          </div>
-          <div class="grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block">Temperature</span>
-              <strong id="modalWeatherTemp" class="text-white">--</strong>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block">Wind Vector</span>
-              <strong id="modalWeatherWind" class="text-white">--</strong>
-            </div>
-            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-              <span class="text-[10px] text-slate-400 block">Run Scoring Factor</span>
-              <strong id="modalWeatherRunImpact" class="text-emerald-400">--</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- Key Model Catalysts -->
-        <div class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Model Catalysts &amp; Insights</h4>
-          <ul id="modalCatalysts" class="space-y-1.5 text-xs text-slate-300"></ul>
-        </div>
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-950/60">
-        <button onclick="closeModal()" class="text-xs text-slate-400 hover:text-white font-medium">Close</button>
-        <div class="flex items-center gap-2">
-          <a id="modalDkBtn" href="https://sportsbook.draftkings.com/leagues/baseball/mlb" target="_blank" rel="noopener noreferrer" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-md shadow-amber-500/20">
-            👑 Bet on DK ↗
-          </a>
-          <button onclick="addCurrentModalToSlip()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition">
-            + Add Pick to Slip
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
     // State Store
-    let activeMode = 'mlb_hrrbi';
+    let activeMode = 'btc_analyzer';
     let top5Picks = [];
     let allPropsData = [];
     let top5Pitchers = [];
@@ -1289,7 +990,7 @@
             <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
           </td>
           <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
-            <button onclick="toggleSlip('${p.id}')" class="text-[11px] text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
               + Slip
             </button>
           </td>
@@ -1434,7 +1135,7 @@
             <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
           </td>
           <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
-            <button onclick="toggleSlip('${p.id}')" class="text-[11px] text-orange-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-orange-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
               + Slip
             </button>
           </td>
@@ -1945,128 +1646,6 @@
         closeModal();
       }
     });
-
-    // ==========================================
-    // 6. Mobile Pull-to-Refresh
-    // ==========================================
-    let ptrStartY = 0;
-    let ptrCurrentY = 0;
-    let isPtrPulling = false;
-    let isPtrRefreshing = false;
-    const PTR_THRESHOLD = 65;
-
-    function initPullToRefresh() {
-      const ptr = document.getElementById('pullToRefresh');
-      const arrow = document.getElementById('ptrArrow');
-      const spinner = document.getElementById('ptrSpinner');
-      const text = document.getElementById('ptrText');
-      if (!ptr) return;
-
-      const onStart = (clientY) => {
-        if (window.scrollY <= 2 && !isPtrRefreshing && !document.body.classList.contains('modal-open')) {
-          ptrStartY = clientY;
-          isPtrPulling = true;
-        } else {
-          isPtrPulling = false;
-        }
-      };
-
-      const onMove = (clientY) => {
-        if (!isPtrPulling || isPtrRefreshing) return;
-        ptrCurrentY = clientY;
-        const diff = ptrCurrentY - ptrStartY;
-
-        if (diff > 5 && window.scrollY <= 2) {
-          const pullDist = Math.min(diff * 0.45, 80);
-          ptr.style.height = `${pullDist}px`;
-          ptr.style.opacity = `${Math.min(pullDist / 40, 1)}`;
-
-          if (pullDist >= PTR_THRESHOLD) {
-            if (arrow) arrow.style.transform = 'rotate(180deg)';
-            if (text) text.innerText = 'Release to refresh';
-          } else {
-            if (arrow) arrow.style.transform = 'rotate(0deg)';
-            if (text) text.innerText = 'Pull down to refresh';
-          }
-        } else if (diff <= 0) {
-          ptr.style.height = '0px';
-          ptr.style.opacity = '0';
-        }
-      };
-
-      const onEnd = async () => {
-        if (!isPtrPulling || isPtrRefreshing) {
-          isPtrPulling = false;
-          return;
-        }
-        isPtrPulling = false;
-        const diff = ptrCurrentY - ptrStartY;
-        const pullDist = Math.min(diff * 0.45, 80);
-
-        if (pullDist >= PTR_THRESHOLD) {
-          isPtrRefreshing = true;
-          ptr.style.height = '48px';
-          ptr.style.opacity = '1';
-          if (arrow) arrow.classList.add('hidden');
-          if (spinner) spinner.classList.remove('hidden');
-          if (text) text.innerText = 'Refreshing props...';
-
-          try {
-            if (navigator.vibrate) navigator.vibrate(15);
-          } catch(e) {}
-
-          await refreshAllData();
-
-          if (text) text.innerText = 'Props updated!';
-          setTimeout(() => {
-            ptr.style.height = '0px';
-            ptr.style.opacity = '0';
-            setTimeout(() => {
-              if (arrow) {
-                arrow.classList.remove('hidden');
-                arrow.style.transform = 'rotate(0deg)';
-              }
-              if (spinner) spinner.classList.add('hidden');
-              if (text) text.innerText = 'Pull down to refresh';
-              isPtrRefreshing = false;
-            }, 250);
-          }, 500);
-        } else {
-          ptr.style.height = '0px';
-          ptr.style.opacity = '0';
-          if (arrow) arrow.style.transform = 'rotate(0deg)';
-        }
-      };
-
-      // Touch events (Mobile iOS & Android)
-      window.addEventListener('touchstart', (e) => {
-        if (e.touches && e.touches.length === 1) onStart(e.touches[0].clientY);
-      }, { passive: true });
-
-      window.addEventListener('touchmove', (e) => {
-        if (e.touches && e.touches.length === 1) onMove(e.touches[0].clientY);
-      }, { passive: true });
-
-      window.addEventListener('touchend', onEnd, { passive: true });
-
-      // Mouse drag events (Desktop test support)
-      let isMouseDown = false;
-      window.addEventListener('mousedown', (e) => {
-        if (window.scrollY <= 2 && e.button === 0) {
-          isMouseDown = true;
-          onStart(e.clientY);
-        }
-      });
-      window.addEventListener('mousemove', (e) => {
-        if (isMouseDown) onMove(e.clientY);
-      });
-      window.addEventListener('mouseup', () => {
-        if (isMouseDown) {
-          isMouseDown = false;
-          onEnd();
-        }
-      });
-    }
 
     // =====================================================================
     // BITCOIN 15M PATTERN ANALYZER & CONFLUENCE CLIENT
@@ -3792,9 +3371,9 @@
     }
 
     // Initialize
-    loadMLBData();
     startLive1sRefresh();
-    initPullToRefresh();
+    initBtcChartOnce();
+    triggerBtcAnalysis();
   </script>
 </body>
 </html>

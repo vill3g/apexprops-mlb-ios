@@ -29,9 +29,9 @@ from backend.data.verified_mlb_client import VerifiedMLBClient
 from backend.data.injuries_client import InjuriesClient
 
 app = FastAPI(
-    title="ApexProps Baseball Analytics Engine",
-    version="3.0.0",
-    description="Real-time MLB, NPB, and KBO baseball analytics, H+R+RBI, Ks, and BvP."
+    title="BTC 15M Pattern & Confluence Engine",
+    version="4.0.0",
+    description="Real-time Bitcoin 15-Minute Pattern & Confluence Analyzer."
 )
 
 app.add_middleware(
@@ -57,7 +57,7 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "3.0.0", "service": "ApexProps Engine"}
+    return {"status": "ok", "version": "4.0.0", "service": "BTC 15M Engine"}
 
 @app.get("/api/slate")
 def get_slate():
