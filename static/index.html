@@ -62,6 +62,82 @@
       bottom: 1rem;
       z-index: 40;
     }
+        /* Drawing Tools Styling */
+    .btc-draw-btn {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+    .btc-draw-btn:hover {
+      color: #ffffff;
+      border-color: #64748b;
+    }
+    .btc-draw-btn.active {
+      background: #f59e0b;
+      color: #020617;
+      border-color: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+    .btc-color-dot {
+      transition: transform 0.15s ease;
+    }
+    .btc-color-dot.active {
+      outline: 2px solid #ffffff;
+      outline-offset: 1px;
+      transform: scale(1.15);
+    }
+
+    /* iPad Mini 7 (A17 Pro) Screen Parameters Optimization */
+    /* Viewport: 1133px x 744px (Landscape) and 744px x 1133px (Portrait) */
+    @media screen and (min-width: 740px) and (max-height: 800px) {
+      /* iPad Mini 7 in Landscape: 1133px x 744px */
+      .app-main-wrapper {
+        padding: 0.35rem 0.5rem !important;
+        margin-top: 0 !important;
+      }
+      #view_btc_analyzer {
+        height: calc(100dvh - 54px) !important;
+        max-height: calc(100dvh - 54px) !important;
+        overflow: hidden !important;
+      }
+      .btc-main-grid {
+        height: 100% !important;
+        max-height: 100% !important;
+      }
+      .btc-chart-card {
+        height: 100% !important;
+        min-height: 0 !important;
+      }
+      .btc-right-panel {
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+      }
+    }
+
+    @media screen and (min-width: 700px) and (max-width: 850px) and (min-height: 900px) {
+      /* iPad Mini 7 in Portrait: 744px x 1133px */
+      .app-main-wrapper {
+        padding: 0.5rem 0.65rem !important;
+      }
+      #view_btc_analyzer {
+        min-height: calc(100dvh - 60px) !important;
+      }
+      .btc-chart-card {
+        min-height: 480px !important;
+      }
+    }
+
     /* BTC 15M Analyzer Styling */
     .btc-tf-btn {
       padding: 4px 12px;
@@ -236,7 +312,7 @@
   </div>
 
   <!-- Main Container -->
-  <div class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
+  <div class="app-main-wrapper max-w-7xl mx-auto p-2 sm:p-3 space-y-2.5 w-full max-w-full overflow-x-hidden">
     
     <!-- Top Navigation / Header -->
     <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2 border-b border-slate-800 shadow-lg shadow-black/40 flex items-center justify-between gap-2.5 w-full max-w-full">
@@ -406,39 +482,40 @@
     <!-- ============================================================= -->
     <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
     <!-- ============================================================= -->
-    <div id="view_btc_analyzer" class="hidden space-y-2.5">
+    <div id="view_btc_analyzer" class="hidden space-y-2">
       
       <!-- Main Row: 80% Chart (Left, Full Height) + Integrated Right Pane (20%) -->
-      <div class="grid grid-cols-1 lg:grid-cols-5 gap-2.5 items-stretch w-full">
+      <div class="btc-main-grid grid grid-cols-1 lg:grid-cols-5 gap-2 items-stretch w-full">
         
-        <!-- LEFT: Price Chart (Takes 80% width, expands down to fill the rest of the screen) -->
-        <div class="lg:col-span-4 glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between border border-slate-800" style="min-height: 540px;">
-          <!-- Chart Header: Title, Status, Timeframes, Stream Badge, Refresh & Sound -->
-          <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-1.5 border-b border-slate-800/80">
-            <div class="flex items-center gap-2">
-              <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-[10px] shadow-sm shadow-amber-500/20">₿</div>
-              <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC/USD 15M Candlestick Chart</h3>
+        <!-- LEFT: Price Chart & Interactive Drawing Tools (Takes 80% width on landscape) -->
+        <div id="btcChartCard" class="btc-chart-card lg:col-span-4 glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between border border-slate-800" style="min-height: 520px;">
+          
+          <!-- Chart Header 1: Title, Status, Timeframes, Stream Badge, Refresh & Sound -->
+          <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 mb-1 border-b border-slate-800/80">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-[9px] sm:text-[10px] shadow-sm shadow-amber-500/20">₿</div>
+              <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC/USD 15M Chart</h3>
               <span id="btcChartStatus" class="text-[9px] font-mono text-slate-400 hidden sm:inline">Loading candles...</span>
             </div>
             
-            <div class="flex items-center gap-1.5 flex-wrap">
+            <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
               <!-- Timeframe Pills -->
               <div class="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
-                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
-                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
-                <button class="btc-tf-btn active text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
-                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
-                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
-                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
+                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
+                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
+                <button class="btc-tf-btn active text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
+                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
+                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
+                <button class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
               </div>
 
               <!-- Stream Badge -->
-              <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300">
+              <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono text-slate-300">
                 <span class="relative flex h-1.5 w-1.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                 </span>
-                <span class="text-emerald-400 font-bold">1s Stream</span>
+                <span class="text-emerald-400 font-bold">1s</span>
               </div>
 
               <!-- Action Controls -->
@@ -451,13 +528,64 @@
             </div>
           </div>
 
-          <!-- TradingView Candlestick Chart (Stretches to fill rest of the screen) -->
-          <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 480px; height: 100%;">
-            <!-- Lightweight chart renders here -->
+          <!-- Chart Header 2: Interactive Drawing Tools Toolbar -->
+          <div class="flex items-center justify-between gap-1 px-1.5 py-1 mb-1 bg-slate-900/80 rounded-xl border border-slate-800 text-[10px] flex-wrap">
+            <!-- Tools Group -->
+            <div class="flex items-center gap-1 flex-wrap">
+              <span class="text-[9px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-0.5 mr-0.5">
+                <span>✏️</span> <span>Draw:</span>
+              </span>
+              <button id="drawToolPointer" onclick="setBtcDrawingTool('pointer')" class="btc-draw-btn active" title="Select / Pan Chart">
+                <span>👆</span> <span class="hidden sm:inline">Cursor</span>
+              </button>
+              <button id="drawToolTrendline" onclick="setBtcDrawingTool('trendline')" class="btc-draw-btn" title="Trendline (Click 2 points or drag)">
+                <span>📏</span> <span>Trendline</span>
+              </button>
+              <button id="drawToolRay" onclick="setBtcDrawingTool('ray')" class="btc-draw-btn" title="Extended Ray">
+                <span>↗️</span> <span>Ray</span>
+              </button>
+              <button id="drawToolHline" onclick="setBtcDrawingTool('hline')" class="btc-draw-btn" title="Horizontal Price Level (Click price)">
+                <span>➖</span> <span>Horiz</span>
+              </button>
+              <button id="drawToolFib" onclick="setBtcDrawingTool('fib')" class="btc-draw-btn" title="Fibonacci Retracement (Click 2 points)">
+                <span>🔢</span> <span>Fib</span>
+              </button>
+            </div>
+
+            <!-- Colors, Undo, Clear & Active Status -->
+            <div class="flex items-center gap-1.5">
+              <!-- Color Selector -->
+              <div class="flex items-center gap-1 bg-slate-950/90 px-1.5 py-0.5 rounded-lg border border-slate-800">
+                <button onclick="setBtcDrawingColor('#f59e0b')" class="w-3 h-3 rounded-full bg-amber-400 border border-white/20 btc-color-dot active" data-color="#f59e0b" title="Amber Gold"></button>
+                <button onclick="setBtcDrawingColor('#22d3ee')" class="w-3 h-3 rounded-full bg-cyan-400 border border-white/20 btc-color-dot" data-color="#22d3ee" title="Cyan Blue"></button>
+                <button onclick="setBtcDrawingColor('#10b981')" class="w-3 h-3 rounded-full bg-emerald-400 border border-white/20 btc-color-dot" data-color="#10b981" title="Emerald Green"></button>
+                <button onclick="setBtcDrawingColor('#ef4444')" class="w-3 h-3 rounded-full bg-red-500 border border-white/20 btc-color-dot" data-color="#ef4444" title="Red"></button>
+                <button onclick="setBtcDrawingColor('#f8fafc')" class="w-3 h-3 rounded-full bg-white border border-white/20 btc-color-dot" data-color="#f8fafc" title="White"></button>
+              </div>
+
+              <!-- Undo & Clear Actions -->
+              <button onclick="undoBtcDrawing()" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold transition text-[9px] sm:text-[10px]" title="Undo Last Drawing">
+                ↩️ <span class="hidden sm:inline">Undo</span>
+              </button>
+              <button onclick="clearBtcDrawings()" class="px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-bold transition text-[9px] sm:text-[10px]" title="Clear All Drawings">
+                🗑️ <span class="hidden sm:inline">Clear</span>
+              </button>
+
+              <!-- Active Status Hint -->
+              <span id="btcDrawStatusBadge" class="hidden md:inline-block text-[8px] font-mono font-bold text-amber-400/90 px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20">
+                Cursor Pan
+              </span>
+            </div>
+          </div>
+
+          <!-- TradingView Candlestick Chart + HTML5 Drawing Canvas Overlay -->
+          <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 420px; height: 100%;">
+            <!-- Lightweight Candlestick Chart renders inside here -->
+            <canvas id="btcDrawingCanvas" class="absolute inset-0 z-20 w-full h-full pointer-events-none"></canvas>
           </div>
 
           <!-- Mini Legend Bar -->
-          <div class="flex items-center justify-between pt-1.5 border-t border-slate-800/60 text-[8px] font-mono text-slate-400 mt-1">
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[8px] font-mono text-slate-400 mt-1">
             <span id="btcActiveTfBadge" class="px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400 font-bold">15M</span>
             <div class="flex items-center gap-2">
               <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span> EMA 9</div>
@@ -469,12 +597,12 @@
         </div>
 
         <!-- RIGHT: All-In-One Integrated Right Panel (Ordered per user instruction) -->
-        <div class="lg:col-span-1 glass-panel rounded-2xl p-2 sm:p-2.5 border border-slate-800 flex flex-col justify-between space-y-2">
+        <div class="btc-right-panel lg:col-span-1 glass-panel rounded-2xl p-1.5 sm:p-2 border border-slate-800 flex flex-col justify-between space-y-1.5 overflow-y-auto no-scrollbar">
           
           <!-- ================================================================= -->
           <!-- 1. CONFLUENCE SPEEDOMETER (ON TOP)                                -->
           <!-- ================================================================= -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1 text-center">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-0.5 text-center">
             <div class="flex items-center justify-between w-full px-1">
               <div class="flex items-center gap-1">
                 <span class="text-xs">⚡</span>
@@ -485,10 +613,10 @@
               </span>
             </div>
 
-            <div id="btcSignalBanner" class="signal-banner signal-neutral text-[9px] py-0.5 px-2">INITIALIZING</div>
+            <div id="btcSignalBanner" class="signal-banner signal-neutral text-[8px] sm:text-[9px] py-0.5 px-2">INITIALIZING</div>
             
-            <div class="meter-wrapper" style="max-height: 52px; margin: 1px 0;">
-              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 50px;">
+            <div class="meter-wrapper" style="max-height: 48px; margin: 1px 0;">
+              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 46px;">
                 <path d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="#1e293b" stroke-width="13" stroke-linecap="round"/>
                 <path id="btcMeterArc" d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="url(#btcMeterGradient)" stroke-width="13" stroke-dasharray="235.6" stroke-dashoffset="117.8" stroke-linecap="round"/>
                 <line id="btcMeterNeedle" x1="100" y1="95" x2="100" y2="28" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" style="transform-origin: 100px 95px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
@@ -501,20 +629,20 @@
                   </linearGradient>
                 </defs>
               </svg>
-              <div id="btcMeterScore" class="meter-score-display neutral text-base font-black">0</div>
+              <div id="btcMeterScore" class="meter-score-display neutral text-sm sm:text-base font-black">0</div>
             </div>
 
-            <div id="btcConfidenceText" class="text-[8px] text-slate-400 font-mono">Score: <strong>0 / 100</strong></div>
+            <div id="btcConfidenceText" class="text-[7px] sm:text-[8px] text-slate-400 font-mono">Score: <strong>0 / 100</strong></div>
           </div>
 
           <!-- ================================================================= -->
           <!-- 2. LIKELY TO CLOSE WINDOW (RIGHT BELOW SPEEDOMETER)               -->
           <!-- ================================================================= -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
             <!-- Verdict Banner -->
             <div id="btcPredBanner" class="p-1.5 rounded-lg text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
               <div class="text-[7px] uppercase tracking-wider text-slate-400 font-bold">Likely To Close</div>
-              <div id="btcPredOutcomeText" class="text-xs font-black tracking-tight text-white font-mono leading-tight">
+              <div id="btcPredOutcomeText" class="text-[11px] sm:text-xs font-black tracking-tight text-white font-mono leading-tight">
                 INITIALIZING...
               </div>
               <div class="flex items-center justify-center gap-1.5 pt-0.5">
@@ -548,7 +676,7 @@
             <!-- Key Decision Catalysts -->
             <div class="space-y-0.5">
               <div class="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Key Catalysts:</div>
-              <ul id="btcPredFactorsList" class="space-y-0.5 text-[7px] text-slate-300 max-h-12 overflow-y-auto">
+              <ul id="btcPredFactorsList" class="space-y-0.5 text-[7px] text-slate-300 max-h-10 overflow-y-auto">
                 <li class="text-slate-500">Evaluating 15M momentum...</li>
               </ul>
             </div>
@@ -557,10 +685,10 @@
           <!-- ================================================================= -->
           <!-- 3. 15-MINUTE TARGET TREND (ARROWS ONLY, NO PRICE)                 -->
           <!-- ================================================================= -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
             <div class="flex items-center justify-between gap-1">
               <div class="flex items-center gap-1">
-                <span class="text-[10px]">📈</span>
+                <span class="text-[9px]">📈</span>
                 <h4 class="text-[8px] font-black text-white uppercase tracking-wider">15M Trend</h4>
               </div>
               <span id="btcTrendStreakBadge" class="text-[7px] px-1.5 py-0.2 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono truncate">
@@ -578,9 +706,9 @@
           <!-- ================================================================= -->
           
           <!-- 4A. Live BTC Price -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-0.5">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-0.5">
             <div class="flex items-center justify-between">
-              <span class="text-[8px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
+              <span class="text-[7px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
                 <span class="relative flex h-1.5 w-1.5">
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
@@ -589,45 +717,45 @@
               </span>
               <span id="btcLivePulseTag" class="text-[7px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s</span>
             </div>
-            <div id="btcLStatPrice" class="text-base sm:text-lg font-black text-white font-mono tracking-tight transition-colors">
+            <div id="btcLStatPrice" class="text-sm sm:text-base font-black text-white font-mono tracking-tight transition-colors">
               $--,---.--
             </div>
-            <div class="flex items-center justify-between text-[8px] font-mono pt-0.5">
+            <div class="flex items-center justify-between text-[7px] sm:text-[8px] font-mono pt-0.5">
               <span id="btcLStatChange" class="font-bold text-slate-400">--%</span>
               <span class="text-slate-400">Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
             </div>
           </div>
 
           <!-- 4B. 15M Price Target Benchmark -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-0.5 shadow-sm shadow-emerald-500/10">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-0.5 shadow-sm shadow-emerald-500/10">
             <div class="flex items-center justify-between">
-              <span class="text-[8px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
+              <span class="text-[7px] sm:text-[8px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
                 <span>🎯</span> 15M TARGET
               </span>
               <span id="btcTargetSourceLabel" class="text-[7px] text-emerald-400/90 font-mono font-bold truncate">15M Start</span>
             </div>
-            <div id="btcTargetPriceHero" class="text-base sm:text-lg font-black font-mono text-emerald-400">
+            <div id="btcTargetPriceHero" class="text-sm sm:text-base font-black font-mono text-emerald-400">
               $--,---.--
             </div>
             <!-- Spread Delta Badge -->
-            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center text-center">
+            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center text-center">
               <span>--</span> <span>Evaluating spread...</span>
             </div>
           </div>
 
           <!-- 4C. Countdown Box -->
-          <div class="p-2 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-0.5 shadow-sm shadow-cyan-500/5">
+          <div class="p-1.5 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-0.5 shadow-sm shadow-cyan-500/5">
             <div class="flex items-center justify-between">
-              <span class="text-[8px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
+              <span class="text-[7px] sm:text-[8px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
                 <span>⏱️</span> 15M CLOSE
               </span>
               <span class="text-[7px] text-slate-400 font-mono">COUNTDOWN</span>
             </div>
             <div class="flex items-baseline justify-between">
-              <div id="btcCountdown" class="text-base sm:text-lg font-black font-mono text-cyan-400">
+              <div id="btcCountdown" class="text-sm sm:text-base font-black font-mono text-cyan-400">
                 --:--
               </div>
-              <span class="text-[8px] font-mono text-emerald-400 font-bold">1s Pulse</span>
+              <span class="text-[7px] sm:text-[8px] font-mono text-emerald-400 font-bold">1s Pulse</span>
             </div>
             <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
               <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
@@ -635,23 +763,23 @@
           </div>
 
           <!-- 4D. Integrated Market Structure -->
-          <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 text-[8px] font-mono">
+          <div class="p-1.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-0.5 text-[7px] sm:text-[8px] font-mono">
             <div class="flex items-center justify-between">
               <span class="text-slate-400 font-sans">Structure:</span>
               <span id="btcStructTrendBadge" class="px-1 py-0.2 rounded font-black text-[7px] uppercase bg-slate-800 text-cyan-400">--</span>
             </div>
-            <div id="btcStructSummary" class="text-[8px] font-bold text-white truncate">Evaluating swings...</div>
-            <div class="grid grid-cols-2 gap-1 pt-0.5 border-t border-slate-800/80 text-[8px]">
+            <div id="btcStructSummary" class="text-[7px] sm:text-[8px] font-bold text-white truncate">Evaluating swings...</div>
+            <div class="grid grid-cols-2 gap-1 pt-0.5 border-t border-slate-800/80 text-[7px]">
               <div>
-                <span class="text-slate-500 block text-[7px]">Res:</span>
+                <span class="text-slate-500 block text-[6px] sm:text-[7px]">Res:</span>
                 <span id="btcStructRes" class="font-bold text-red-400 truncate block">$--,---</span>
               </div>
               <div>
-                <span class="text-slate-500 block text-[7px]">Sup:</span>
+                <span class="text-slate-500 block text-[6px] sm:text-[7px]">Sup:</span>
                 <span id="btcStructSup" class="font-bold text-emerald-400 truncate block">$--,---</span>
               </div>
               <div class="col-span-2 flex items-center justify-between pt-0.5">
-                <span class="text-slate-500 text-[7px]">VWAP:</span>
+                <span class="text-slate-500 text-[6px] sm:text-[7px]">VWAP:</span>
                 <span id="btcStructVwap" class="font-bold text-amber-400">$--,---</span>
                 <span id="btcStructVwapStatus" class="sr-only"></span>
                 <span id="btcStructBos" class="sr-only"></span>
@@ -1996,6 +2124,390 @@
       }
     };
 
+        // =========================================================================
+    // BITCOIN CHART INTERACTIVE DRAWING TOOLS ENGINE (TRENDLINES, RAYS, HLINES, FIB)
+    // =========================================================================
+    window.btcActiveDrawingTool = 'pointer'; // 'pointer', 'trendline', 'ray', 'hline', 'fib'
+    window.btcActiveDrawingColor = '#f59e0b';
+    window.btcDrawings = [];
+    window.btcDrawingInProgress = null;
+    window._btcDrawingInitialized = false;
+
+    // Load saved drawings from local storage
+    try {
+      const saved = localStorage.getItem('apexprops_btc_drawings_v2');
+      if (saved) window.btcDrawings = JSON.parse(saved) || [];
+    } catch(e) {}
+
+    function setBtcDrawingTool(tool) {
+      window.btcActiveDrawingTool = tool;
+      window.btcDrawingInProgress = null;
+
+      // Update Toolbar Buttons
+      const tools = ['pointer', 'trendline', 'ray', 'hline', 'fib'];
+      tools.forEach(t => {
+        const btn = document.getElementById(`drawTool${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (btn) {
+          if (t === tool) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        }
+      });
+
+      // Update Canvas Interactive State
+      const canvas = document.getElementById('btcDrawingCanvas');
+      const badge = document.getElementById('btcDrawStatusBadge');
+      if (canvas) {
+        if (tool === 'pointer') {
+          canvas.style.pointerEvents = 'none';
+          canvas.style.cursor = 'default';
+          if (badge) badge.innerText = 'Cursor Pan';
+        } else {
+          canvas.style.pointerEvents = 'auto';
+          canvas.style.cursor = 'crosshair';
+          const labels = {
+            trendline: 'Trendline: Tap 1st point (or drag)',
+            ray: 'Ray: Tap 1st point (or drag)',
+            hline: 'Horiz Line: Tap price level',
+            fib: 'Fib: Tap Swing High/Low'
+          };
+          if (badge) badge.innerText = labels[tool] || 'Drawing Active';
+        }
+      }
+      redrawBtcDrawings();
+    }
+
+    function setBtcDrawingColor(color) {
+      window.btcActiveDrawingColor = color;
+      document.querySelectorAll('.btc-color-dot').forEach(dot => {
+        if (dot.getAttribute('data-color') === color) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+      if (window.btcDrawingInProgress) {
+        window.btcDrawingInProgress.color = color;
+        redrawBtcDrawings();
+      }
+    }
+
+    function undoBtcDrawing() {
+      if (window.btcDrawings && window.btcDrawings.length > 0) {
+        window.btcDrawings.pop();
+        try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch(e) {}
+        redrawBtcDrawings();
+      }
+    }
+
+    function clearBtcDrawings() {
+      window.btcDrawings = [];
+      window.btcDrawingInProgress = null;
+      try { localStorage.removeItem('apexprops_btc_drawings_v2'); } catch(e) {}
+      redrawBtcDrawings();
+    }
+
+    // Convert screen canvas (x, y) to chart data (logical, time, price)
+    function getChartCoordinatesFromCanvas(canvasX, canvasY) {
+      if (!btcChart || !btcCandleSeries) return null;
+      const ts = btcChart.timeScale();
+      const logical = ts.coordinateToLogical(canvasX);
+      const time = ts.coordinateToTime(canvasX);
+      const price = btcCandleSeries.coordinateToPrice(canvasY);
+      return { logical, time, price, x: canvasX, y: canvasY };
+    }
+
+    // Convert chart data point back to current screen canvas (x, y)
+    function getCanvasCoordinatesFromPoint(pt) {
+      if (!btcChart || !btcCandleSeries || !pt) return null;
+      const ts = btcChart.timeScale();
+      let x = null;
+      if (pt.time !== undefined && pt.time !== null) {
+        x = ts.timeToCoordinate(pt.time);
+      }
+      if (x === null || x === undefined || isNaN(x)) {
+        if (pt.logical !== undefined && pt.logical !== null) {
+          x = ts.logicalToCoordinate(pt.logical);
+        }
+      }
+      let y = null;
+      if (pt.price !== undefined && pt.price !== null) {
+        y = btcCandleSeries.priceToCoordinate(pt.price);
+      }
+      if (x === null || y === null || isNaN(x) || isNaN(y)) return null;
+      return { x, y };
+    }
+
+    function resizeBtcDrawingCanvas() {
+      const canvas = document.getElementById("btcDrawingCanvas");
+      const container = document.getElementById("btc-chart-container");
+      if (!canvas || !container) return;
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx.resetTransform) ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+      redrawBtcDrawings();
+    }
+
+    function redrawBtcDrawings() {
+      const canvas = document.getElementById("btcDrawingCanvas");
+      if (!canvas || !btcChart || !btcCandleSeries) return;
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Render all saved drawings
+      if (Array.isArray(window.btcDrawings)) {
+        window.btcDrawings.forEach(item => {
+          renderSingleBtcDrawing(ctx, item, w, h, false);
+        });
+      }
+
+      // Render active drawing in-progress
+      if (window.btcDrawingInProgress) {
+        renderSingleBtcDrawing(ctx, window.btcDrawingInProgress, w, h, true);
+      }
+    }
+
+    function renderSingleBtcDrawing(ctx, item, w, h, isInProgress) {
+      if (!item) return;
+      const color = item.color || '#f59e0b';
+      const lineWidth = item.width || 2;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+
+      if (item.type === 'trendline' || item.type === 'ray') {
+        const p1 = getCanvasCoordinatesFromPoint(item.start);
+        const p2 = getCanvasCoordinatesFromPoint(item.end);
+        if (p1 && p2) {
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+
+          if (item.type === 'ray') {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            if (Math.abs(dx) > 0.01) {
+              const slope = dy / dx;
+              const targetX = dx > 0 ? w : 0;
+              const targetY = p1.y + (targetX - p1.x) * slope;
+              ctx.lineTo(targetX, targetY);
+            } else {
+              ctx.lineTo(p2.x, p2.y);
+            }
+          } else {
+            ctx.lineTo(p2.x, p2.y);
+          }
+          ctx.stroke();
+
+          // Anchor vertex handles
+          ctx.beginPath();
+          ctx.arc(p1.x, p1.y, isInProgress ? 4 : 3, 0, Math.PI * 2);
+          ctx.arc(p2.x, p2.y, isInProgress ? 4 : 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (item.type === 'hline') {
+        let y = null;
+        if (item.price !== undefined && item.price !== null) {
+          y = btcCandleSeries.priceToCoordinate(item.price);
+        }
+        if (y !== null && !isNaN(y)) {
+          ctx.beginPath();
+          ctx.setLineDash([4, 4]);
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Price Pill Badge on Right Scale
+          const priceStr = `$${Number(item.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          ctx.font = 'bold 9px monospace';
+          const textW = ctx.measureText(priceStr).width;
+          ctx.fillStyle = color;
+          ctx.fillRect(w - textW - 14, y - 8, textW + 12, 16);
+          ctx.fillStyle = '#020617';
+          ctx.fillText(priceStr, w - textW - 8, y + 3.5);
+        }
+      } else if (item.type === 'fib') {
+        const p1 = getCanvasCoordinatesFromPoint(item.start);
+        const p2 = getCanvasCoordinatesFromPoint(item.end);
+        if (p1 && p2) {
+          const topY = Math.min(p1.y, p2.y);
+          const botY = Math.max(p1.y, p2.y);
+          const dy = botY - topY;
+          const levels = [
+            { pct: 0.0, label: '0.0%' },
+            { pct: 0.236, label: '23.6%' },
+            { pct: 0.382, label: '38.2%' },
+            { pct: 0.5, label: '50.0%' },
+            { pct: 0.618, label: '61.8% (Golden)' },
+            { pct: 0.786, label: '78.6%' },
+            { pct: 1.0, label: '100.0%' }
+          ];
+
+          levels.forEach(lvl => {
+            const curY = topY + dy * lvl.pct;
+            ctx.beginPath();
+            ctx.strokeStyle = lvl.pct === 0.618 || lvl.pct === 0.5 ? '#f59e0b' : color;
+            ctx.lineWidth = lvl.pct === 0.618 ? 2 : 1;
+            ctx.setLineDash([3, 3]);
+            ctx.moveTo(Math.min(p1.x, p2.x), curY);
+            ctx.lineTo(w, curY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.font = '8px monospace';
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fillText(lvl.label, Math.min(p1.x, p2.x) + 4, curY - 3);
+          });
+        }
+      }
+      ctx.restore();
+    }
+
+    function initBtcDrawingEngine() {
+      const canvas = document.getElementById('btcDrawingCanvas');
+      if (!canvas || window._btcDrawingInitialized) return;
+      window._btcDrawingInitialized = true;
+
+      resizeBtcDrawingCanvas();
+
+      let isDown = false;
+      let startX = 0;
+      let startY = 0;
+
+      function onPointerDown(e) {
+        if (window.btcActiveDrawingTool === 'pointer') return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        const pt = getChartCoordinatesFromCanvas(x, y);
+        if (!pt) return;
+
+        isDown = true;
+        startX = x;
+        startY = y;
+
+        if (window.btcActiveDrawingTool === 'hline') {
+          // Instant Horizontal Line Placement
+          const hlineObj = {
+            id: Date.now(),
+            type: 'hline',
+            price: pt.price,
+            color: window.btcActiveDrawingColor,
+            width: 2
+          };
+          window.btcDrawings.push(hlineObj);
+          try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch(e) {}
+          isDown = false;
+          redrawBtcDrawings();
+          return;
+        }
+
+        if (!window.btcDrawingInProgress) {
+          window.btcDrawingInProgress = {
+            id: Date.now(),
+            type: window.btcActiveDrawingTool,
+            color: window.btcActiveDrawingColor,
+            width: 2,
+            start: pt,
+            end: pt,
+            isDragging: true
+          };
+          const badge = document.getElementById('btcDrawStatusBadge');
+          if (badge) badge.innerText = 'Tap/Drag 2nd point';
+        } else {
+          // 2nd tap completes line
+          window.btcDrawingInProgress.end = pt;
+          window.btcDrawings.push(window.btcDrawingInProgress);
+          window.btcDrawingInProgress = null;
+          isDown = false;
+          try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch(e) {}
+          const badge = document.getElementById('btcDrawStatusBadge');
+          if (badge) badge.innerText = 'Line Saved!';
+          redrawBtcDrawings();
+        }
+      }
+
+      function onPointerMove(e) {
+        if (!isDown && !window.btcDrawingInProgress) return;
+        e.preventDefault();
+
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        const pt = getChartCoordinatesFromCanvas(x, y);
+        if (!pt) return;
+
+        if (window.btcDrawingInProgress) {
+          window.btcDrawingInProgress.end = pt;
+          redrawBtcDrawings();
+        }
+      }
+
+      function onPointerUp(e) {
+        if (!isDown) return;
+        isDown = false;
+
+        if (window.btcDrawingInProgress && window.btcDrawingInProgress.isDragging) {
+          const p1 = window.btcDrawingInProgress.start;
+          const p2 = window.btcDrawingInProgress.end;
+          const dist = Math.hypot((p2.x || 0) - (p1.x || 0), (p2.y || 0) - (p1.y || 0));
+          if (dist > 15) {
+            // Drag completed!
+            window.btcDrawings.push(window.btcDrawingInProgress);
+            window.btcDrawingInProgress = null;
+            try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch(e) {}
+            const badge = document.getElementById('btcDrawStatusBadge');
+            if (badge) badge.innerText = 'Line Saved!';
+            redrawBtcDrawings();
+          } else {
+            // Short tap: keep waiting for 2nd tap
+            window.btcDrawingInProgress.isDragging = false;
+          }
+        }
+      }
+
+      // Pointer & Touch Events (Apple Pencil & Finger touch friendly)
+      canvas.addEventListener('mousedown', onPointerDown);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+
+      canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp, { passive: false });
+
+      // Chart subscribe to pan/zoom range changes to redraw
+      if (btcChart) {
+        btcChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
+          requestAnimationFrame(redrawBtcDrawings);
+        });
+      }
+    }
+
     function initBtcChartOnce() {
       const container = document.getElementById("btc-chart-container");
       if (!container) return;
@@ -2076,12 +2588,14 @@
           if (btcCandleSeries) {
             try { btcChart.timeScale().fitContent(); } catch(e) {}
           }
+          resizeBtcDrawingCanvas();
         }
       });
 
       if (!btcCountdownInterval) {
         btcCountdownInterval = setInterval(updateBtcCountdown, 1000);
       }
+      setTimeout(initBtcDrawingEngine, 100);
     }
 
     function setBtcTimeframe(tf) {

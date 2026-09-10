@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-09-10 02:00:00+00:00",
+  "timestamp": "2026-09-10 02:15:00+00:00",
   "timeframe": "15M",
-  "price": 77985.94,
+  "price": 77961.71,
   "direction": "STRONG BEARISH (DOWN)",
   "primary_bias": "DOWN",
   "confluence_score": -49,
@@ -10,9 +10,9 @@
   "reasons_bearish": [
     "Bearish EMA Ribbon (EMA 9 < 21 < 50 aligned) (-12)",
     "Candlestick: Three Black Crows detected (-24)",
-    "RSI negative momentum at 39.9 (-3)",
+    "RSI negative momentum at 39.0 (-3)",
     "MACD histogram expanding downward (-4)",
-    "Trading below Session VWAP ($78705.8) - Seller edge (-6)"
+    "Trading below Session VWAP ($78702.9) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
@@ -43,31 +43,31 @@
     ]
   },
   "indicators": {
-    "price": 77985.94,
-    "ema_9": 78126.65323600854,
-    "ema_21": 78188.31040892174,
-    "ema_50": 78390.89688125698,
-    "ema_200": 78730.05412371528,
+    "price": 77961.71,
+    "ema_9": 78098.81498880683,
+    "ema_21": 78170.37070232592,
+    "ema_50": 78375.27926289858,
+    "ema_200": 78723.43357795852,
     "bullish_ribbon": false,
     "bearish_ribbon": true,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 39.9,
+    "rsi": 39.05,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -83.05,
-    "macd_signal": -92.06,
-    "macd_hist": 9.01,
+    "macd_line": -89.16,
+    "macd_signal": -91.07,
+    "macd_hist": 1.91,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_DOWN",
-    "bb_upper": 78394.94,
-    "bb_lower": 77873.49,
+    "bb_upper": 78381.6,
+    "bb_lower": 77859.73,
     "bb_squeeze": true,
-    "atr": 198.33,
-    "volume": 24.7607,
-    "vol_ratio": 0.77,
+    "atr": 192.06,
+    "volume": 26.8532,
+    "vol_ratio": 0.83,
     "vol_surge": false,
-    "vwap": 78705.79,
+    "vwap": 78702.95,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
       {
@@ -75,7 +75,7 @@
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 237,
+        "candle_index": 236,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -84,7 +84,7 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 239,
+        "candle_index": 238,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       }
@@ -92,45 +92,36 @@
   },
   "trade_setup": {
     "direction": "SELL (DOWN)",
-    "entry_price": 77985.94,
+    "entry_price": 77961.71,
     "stop_loss": 78323.32,
-    "take_profit_1": 77479.87,
-    "take_profit_2": 77142.49,
+    "take_profit_1": 77419.3,
+    "take_profit_2": 77057.68,
     "risk_reward_1": 1.5,
     "risk_reward_2": 2.5,
-    "risk_amount": 337.38,
-    "risk_percent": 0.43,
-    "breakeven_rule": "Move SL to Breakeven ($77985.94) after TP1 hit",
+    "risk_amount": 361.61,
+    "risk_percent": 0.46,
+    "breakeven_rule": "Move SL to Breakeven ($77961.71) after TP1 hit",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78070.4,
-    "target_source": "15M Start Price (2:15 AM UTC)",
+    "target_price": 78018.13,
+    "target_source": "15M Start Price (2:30 AM UTC)",
     "kalshi": null,
-    "current_price": 77985.94,
-    "delta": -84.46,
-    "delta_pct": -0.108,
+    "current_price": 77961.71,
+    "delta": -56.42,
+    "delta_pct": -0.072,
     "status": "BELOW",
     "predicted_outcome": "BELOW TARGET (UNDER)",
     "probability_percent": 86,
     "confidence_badge": "HIGH CONVICTION",
     "decision_factors": [
-      "Price trading -$84.46 (-0.11%) below 15m target benchmark",
+      "Price trading -$56.42 (-0.07%) below 15m target benchmark",
       "Bearish EMA 9 < 21 ribbon exerting downward pressure",
       "Active candle is RED (sellers in control)",
-      "RSI (39.9) in bearish compression zone",
+      "RSI (39.0) in bearish compression zone",
       "Chart Pattern: Three Black Crows detected (-18 pts bearish reversal)"
     ],
     "last_5_targets": [
-      {
-        "time": "12:45 AM",
-        "price": 78151.72,
-        "delta": 5.36,
-        "delta_pct": 0.01,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
       {
         "time": "1:00 AM",
         "price": 78315.21,
@@ -166,8 +157,17 @@
         "direction": "LOWER",
         "arrow": "\u25bc",
         "color": "red"
+      },
+      {
+        "time": "2:00 AM",
+        "price": 78018.13,
+        "delta": -52.27,
+        "delta_pct": -0.07,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
       }
     ],
-    "streak_summary": "2 Higher / 3 Lower"
+    "streak_summary": "1 Higher / 4 Lower"
   }
 }
