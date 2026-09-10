@@ -17,6 +17,7 @@ from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_c
 from backend.btc.indicators import add_all_indicators
 from backend.btc.pattern_detector import detect_candlestick_patterns
 from backend.btc.analyzer import analyze_btc
+from backend.btc.auto_executor import auto_executor
 
 from backend.data.espn_client import ESPNClient
 from backend.data.draftkings_client import DraftKingsClient
@@ -391,9 +392,15 @@ def api_btc_live():
     """
     Ultra-low latency endpoint returning live price, 15m target benchmark,
     spread delta, 5-target trend box, and candle countdown for 1s polling.
+    Also triggers autonomous rollover execution if window is open.
     """
     try:
         data = get_live_15m_target_data()
+        # Trigger autonomous check non-blockingly
+        try:
+            auto_executor.check_and_execute_rollover()
+        except Exception as e_trade:
+            print(f"[AutoExecutor Error]: {e_trade}")
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
         return JSONResponse({
@@ -444,6 +451,55 @@ def api_btc_kalshi():
         return JSONResponse(data)
     except Exception as e:
         return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+
+# =====================================================================
+# AUTONOMOUS KALSHI TRADING REST ENDPOINTS
+# =====================================================================
+
+@app.get("/api/btc/trade/status")
+def api_btc_trade_status():
+    """Returns full status of the Kalshi automated trading engine."""
+    try:
+        status = auto_executor.get_status()
+        return JSONResponse(sanitize_btc_json(status))
+    except Exception as e:
+        return JSONResponse({"error": str(e), "enabled": False, "mode": "PAPER"}, status_code=500)
+
+@app.post("/api/btc/trade/toggle")
+def api_btc_trade_toggle(enabled: bool = Query(...)):
+    """Toggle auto-trading execution ON or OFF."""
+    res = auto_executor.set_enabled(enabled)
+    return JSONResponse(res)
+
+@app.post("/api/btc/trade/mode")
+def api_btc_trade_mode(mode: str = Query(...)):
+    """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
+    res = auto_executor.set_mode(mode)
+    return JSONResponse(res)
+
+@app.post("/api/btc/trade/threshold")
+def api_btc_trade_threshold(threshold: str = Query(...)):
+    """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
+    res = auto_executor.set_conviction_threshold(threshold)
+    return JSONResponse(res)
+
+@app.post("/api/btc/trade/contracts")
+def api_btc_trade_contracts(count: int = Query(...)):
+    """Set number of contracts per trade."""
+    res = auto_executor.set_max_contracts(count)
+    return JSONResponse(res)
+
+@app.post("/api/btc/trade/manual")
+def api_btc_trade_manual(direction: str = Query(...)):
+    """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
+    res = auto_executor.execute_manual_trade(direction)
+    return JSONResponse(sanitize_btc_json(res))
+
+@app.get("/api/btc/trade/history")
+def api_btc_trade_history():
+    """Returns list of all historical trades and P&L results."""
+    history = auto_executor.get_trades_history()
+    return JSONResponse(sanitize_btc_json(history[::-1]))
 
 
 @app.get("/api/btc/candles")

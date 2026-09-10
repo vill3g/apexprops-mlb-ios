@@ -1,6 +1,6 @@
 {
   "appId": "com.btc15m.app",
-  "appName": "BTC 15M",
+  "appName": "Kalshi_AiTrader",
   "webDir": "static",
   "bundledWebRuntime": false,
   "ios": {

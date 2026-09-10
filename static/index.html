@@ -628,6 +628,23 @@
                 <button type="button" class="btc-tf-btn text-[9px] sm:text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
               </div>
 
+              <!-- Confluence Module (Situated Right Beside Chart Time Bar) -->
+              <div id="btcConfluenceHeaderTab" class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[9px] sm:text-[10px] font-mono shadow-sm">
+                <span class="text-xs">⚡</span>
+                <span class="font-black text-white uppercase tracking-wider hidden sm:inline">Confluence:</span>
+                <div id="btcSignalBanner" class="signal-banner signal-neutral text-[8px] sm:text-[9px] py-0.2 px-1.5 font-bold uppercase rounded">INITIALIZING</div>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-400">Score:</span>
+                  <span id="btcMeterScore" class="font-black text-white text-[9px] sm:text-[10px]">0</span>
+                  <span class="text-slate-500">/ 100</span>
+                </div>
+                <span id="btcPredBadge" class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
+                  EVAL
+                </span>
+                <span id="btcConfidenceText" class="sr-only">Score: 0/100</span>
+                <svg class="sr-only"><path id="btcMeterArc"></path><line id="btcMeterNeedle"></line></svg>
+              </div>
+
               <!-- Stream Badge -->
               <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono text-slate-300">
                 <span class="relative flex h-1.5 w-1.5">
@@ -647,8 +664,9 @@
             </div>
           </div>
 
-          <!-- Slot 2: 15-Minute Target Trend (Moved to second slot on left panel) -->
+          <!-- Slot 2: 15-Minute Target Trend & Centered Prediction Accuracy Tracker -->
           <div class="btc-card-trend px-2 sm:px-2.5 py-1 mb-1 rounded-xl bg-slate-900/90 border border-slate-800/90 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            <!-- Left: 15M Trend Header & Streak -->
             <div class="flex items-center gap-1.5 shrink-0">
               <span class="text-xs">📈</span>
               <span class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-wider">15M Trend:</span>
@@ -656,9 +674,33 @@
                 Streak...
               </span>
             </div>
-            <!-- Arrows Only Grid -->
-            <div id="btcTrendBoxGrid" class="flex items-center gap-1 sm:gap-1.5 justify-end">
-              <!-- Injected via JavaScript with ONLY arrows -->
+
+            <!-- Center: 15M Prediction Accuracy Tracker (Centered in Trend Bar) -->
+            <div id="btcAccuracyCard" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
+              <div class="flex items-center gap-1">
+                <span class="text-xs">🎯</span>
+                <span class="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-wider">Accuracy:</span>
+              </div>
+              <span id="btcAccuracyRatio" class="text-[9px] sm:text-[10px] font-black text-white px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800">
+                0 of 0 Correct
+              </span>
+              <span id="btcAccuracyPct" class="text-[10px] sm:text-[11px] font-black text-slate-400">
+                --%
+              </span>
+              <div class="h-1.5 w-10 sm:w-14 bg-slate-800 rounded-full overflow-hidden flex">
+                <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
+              </div>
+              <div id="btcAccuracyRecentDots" class="flex items-center gap-0.5 text-[8px]">
+                <span class="text-[7px] text-slate-500 italic">Tracking 15M...</span>
+              </div>
+              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6.5px] sm:text-[7px] px-1.5 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
+                RESET
+              </span>
+            </div>
+
+            <!-- Right: 15M Trend Box Grid (Arrows + Close Price + Close Time) -->
+            <div id="btcTrendBoxGrid" class="flex items-center gap-1 sm:gap-1.5 justify-end shrink-0">
+              <!-- Injected via JavaScript with arrow, close price and close time -->
             </div>
           </div>
 
@@ -669,112 +711,33 @@
 
         </div>
 
-        <!-- RIGHT: All-In-One Integrated Right Panel (Ordered per user instruction) -->
-        <div class="btc-right-panel lg:col-span-1 glass-panel rounded-2xl p-1.5 sm:p-2 border border-slate-800 flex flex-col justify-between space-y-1.5 overflow-y-auto no-scrollbar">
+        <!-- RIGHT: 50/50 Integrated Panel (Likely Tab Top 50% / Kalshi AI Trader Bottom 50%) -->
+        <div class="btc-right-panel lg:col-span-1 glass-panel rounded-2xl p-2 sm:p-2.5 border border-slate-800 flex flex-col gap-2 overflow-y-auto no-scrollbar" style="height: 100%;">
           
           <!-- ================================================================= -->
-          <!-- 1. SPLIT CONFLUENCE & PREDICTION ACCURACY (SPLIT IN TWO)          -->
+          <!-- 1. LIKELY TO CLOSE TAB (TOP 50% - MOVED UP - BIG TEXT)            -->
           <!-- ================================================================= -->
-          <div class="grid grid-cols-2 gap-1.5 w-full">
-            
-            <!-- Left Half: Confluence Speedometer & Score -->
-            <div class="btc-panel-card btc-card-confluence p-1 sm:p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-0.5 text-center flex flex-col justify-between">
-              <div class="flex items-center justify-between w-full px-0.5">
-                <div class="flex items-center gap-0.5">
-                  <span class="text-[10px]">⚡</span>
-                  <span class="text-[8px] font-black text-white uppercase tracking-wider">Confluence</span>
-                </div>
-                <span id="btcPredBadge" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
-                  EVAL
-                </span>
-              </div>
-
-              <div id="btcSignalBanner" class="signal-banner signal-neutral text-[7px] sm:text-[8px] py-0.2 px-1.5 my-0.5">INITIALIZING</div>
-              
-              <div class="meter-wrapper" style="max-height: 42px; margin: 1px 0;">
-                <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 40px;">
-                  <path d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="#1e293b" stroke-width="13" stroke-linecap="round"/>
-                  <path id="btcMeterArc" d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="url(#btcMeterGradient)" stroke-width="13" stroke-dasharray="235.6" stroke-dashoffset="117.8" stroke-linecap="round"/>
-                  <line id="btcMeterNeedle" x1="100" y1="95" x2="100" y2="28" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" style="transform-origin: 100px 95px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
-                  <circle cx="100" cy="95" r="6" fill="#f8fafc"/>
-                  <defs>
-                    <linearGradient id="btcMeterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stop-color="#ef4444"/>
-                      <stop offset="50%" stop-color="#f59e0b"/>
-                      <stop offset="100%" stop-color="#10b981"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div id="btcMeterScore" class="meter-score-display neutral text-xs sm:text-sm font-black">0</div>
-              </div>
-
-              <div id="btcConfidenceText" class="text-[6px] sm:text-[7px] text-slate-400 font-mono truncate">Score: <strong>0/100</strong></div>
-            </div>
-
-            <!-- Right Half: Prediction Accuracy & Correct Picks Tracker -->
-            <div id="btcAccuracyCard" class="btc-panel-card p-1 sm:p-1.5 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-1 text-center flex flex-col justify-between shadow-sm shadow-emerald-500/5">
-              <div class="flex items-center justify-between w-full px-0.5">
-                <div class="flex items-center gap-0.5">
-                  <span class="text-[10px]">🎯</span>
-                  <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider">Accuracy</span>
-                </div>
-                <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-mono cursor-pointer" title="Click to reset tracker">
-                  VERIFIED
-                </span>
-              </div>
-
-              <!-- Main Accuracy Big Percentage -->
-              <div class="my-0.5">
-                <div id="btcAccuracyPct" class="text-lg sm:text-xl font-black font-mono text-slate-400 tracking-tight leading-none">
-                  --%
-                </div>
-                <div class="text-[7px] sm:text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">
-                  15M Win Rate
-                </div>
-              </div>
-
-              <!-- Correct Picks Count (Starts at 0 of 0 on boot, counts up per logged close) -->
-              <div class="px-1 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-0.5">
-                <div id="btcAccuracyRatio" class="text-[8px] sm:text-[9px] font-black font-mono text-white">
-                  0 of 0 Correct
-                </div>
-                <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden flex">
-                  <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
-                </div>
-              </div>
-
-              <!-- Recent Outcomes Streak Dots -->
-              <div id="btcAccuracyRecentDots" class="flex items-center justify-center gap-1 text-[8px] font-mono">
-                <span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- ================================================================= -->
-          <!-- 2. LIKELY TO CLOSE WINDOW (RIGHT BELOW SPEEDOMETER)               -->
-          <!-- ================================================================= -->
-          <div class="btc-panel-card btc-card-prediction p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1">
-            <!-- Verdict Banner -->
-            <div id="btcPredBanner" class="p-1.5 rounded-lg text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
-              <div class="text-[7px] uppercase tracking-wider text-slate-400 font-bold">Likely To Close</div>
-              <div id="btcPredOutcomeText" class="text-[11px] sm:text-xs font-black tracking-tight text-white font-mono leading-tight">
+          <div class="btc-panel-card btc-card-prediction p-2 sm:p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between flex-1 min-h-0 space-y-1.5 shadow-sm">
+            <!-- Verdict Banner with Bigger Text -->
+            <div id="btcPredBanner" class="p-2 sm:p-2.5 rounded-xl text-center space-y-1 bg-slate-900/90 border border-slate-700 transition-all">
+              <div class="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 font-bold">Likely To Close</div>
+              <div id="btcPredOutcomeText" class="text-sm sm:text-base md:text-lg font-black tracking-tight text-white font-mono leading-tight">
                 INITIALIZING...
               </div>
-              <div class="flex items-center justify-center gap-1.5 pt-0.5">
-                <span id="btcPredProbText" class="text-[8px] font-mono font-bold text-cyan-400">50% Probability</span>
+              <div class="flex items-center justify-center gap-2 pt-0.5">
+                <span id="btcPredProbText" class="text-xs sm:text-sm font-mono font-bold text-cyan-400">50% Probability</span>
                 <span class="text-slate-600">•</span>
-                <span id="btcPredConfidenceTag" class="text-[7px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
+                <span id="btcPredConfidenceTag" class="text-[10px] sm:text-xs text-slate-300 font-bold font-mono">NEUTRAL</span>
               </div>
-              <!-- Target Settlement Zone -->
-              <div id="btcPredTargetZone" class="text-[7px] sm:text-[8px] font-mono text-cyan-300 font-semibold pt-0.5">
+              <!-- Target Settlement Zone (Bigger) -->
+              <div id="btcPredTargetZone" class="text-xs sm:text-sm font-mono text-cyan-300 font-bold pt-0.5">
                 Est. Settle: Calculating zone...
               </div>
 
-              <!-- Kalshi Odds Comparison -->
-              <div id="btcKalshiOddsContainer" class="pt-0.5 flex items-center justify-center">
-                <div class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-slate-950/80 border border-slate-800 text-[7px] font-mono">
-                  <span class="text-slate-400">🏛️ Kalshi:</span>
+              <!-- Kalshi Odds Comparison (Bigger) -->
+              <div id="btcKalshiOddsContainer" class="pt-1 flex items-center justify-center">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[10px] sm:text-xs font-mono">
+                  <span class="text-slate-400 font-sans">🏛️ Kalshi:</span>
                   <span id="btcKalshiYesProb" class="text-emerald-400 font-bold">--% Yes</span>
                   <span class="text-slate-600">/</span>
                   <span id="btcKalshiNoProb" class="text-red-400 font-bold">--% No</span>
@@ -782,24 +745,121 @@
               </div>
             </div>
 
-            <!-- Probability Split Bar -->
+            <!-- Probability Split Bar (Bigger) -->
             <div class="space-y-0.5">
-              <div class="flex justify-between text-[7px] text-slate-400 font-mono">
-                <span class="text-red-400">▼ Below Target</span>
-                <span class="text-emerald-400">▲ Above Target</span>
+              <div class="flex justify-between text-[10px] sm:text-xs text-slate-300 font-mono font-bold">
+                <span class="text-red-400">▼ Bid No (Below)</span>
+                <span class="text-emerald-400">▲ Bid Yes (Above)</span>
               </div>
-              <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden flex">
+              <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
                 <div id="btcPredProbBarUnder" class="h-full bg-red-500 transition-all duration-500" style="width: 50%;"></div>
                 <div id="btcPredProbBarAbove" class="h-full bg-emerald-500 transition-all duration-500" style="width: 50%;"></div>
               </div>
             </div>
 
-            <!-- Key Decision Catalysts -->
-            <div class="space-y-0.5">
-              <div class="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Key Catalysts:</div>
-              <ul id="btcPredFactorsList" class="space-y-0.5 text-[7px] text-slate-300 max-h-10 overflow-y-auto">
+            <!-- Key Decision Catalysts (Bigger Text) -->
+            <div class="space-y-0.5 flex-1 min-h-0 flex flex-col">
+              <div class="text-[10px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">Key Catalysts:</div>
+              <ul id="btcPredFactorsList" class="space-y-1 text-[10px] sm:text-xs text-slate-200 overflow-y-auto pr-1 flex-1">
                 <li class="text-slate-500">Evaluating 15M momentum...</li>
               </ul>
+            </div>
+          </div>
+
+          <!-- ================================================================= -->
+          <!-- 2. KALSHI AUTONOMOUS 15M TRADING CONSOLE (BOTTOM 50% - BIG TEXT)  -->
+          <!-- ================================================================= -->
+          <div id="kalshiTradingDeck" class="btc-panel-card p-2 sm:p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-lg shadow-cyan-950/20 flex flex-col justify-between flex-1 min-h-0 space-y-1.5 font-mono">
+            <!-- Header with Status & Balance (Bigger Text) -->
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-1">
+              <div class="flex items-center gap-1.5">
+                <span class="relative flex h-2.5 w-2.5">
+                  <span id="kalshiBeaconPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span id="kalshiBeaconDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs sm:text-sm font-black tracking-wider text-cyan-400 font-sans uppercase">Kalshi AI Trader</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 text-[10px]">Bal:</span>
+                <span id="kalshiLiveBalance" class="text-emerald-400 font-bold text-xs sm:text-sm">$7.82</span>
+              </div>
+            </div>
+
+            <!-- Controls: Auto-Trade Toggle & Mode Selector (Bigger Buttons) -->
+            <div class="grid grid-cols-2 gap-1.5">
+              <!-- Auto Execution Toggle -->
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Auto:</span>
+                <button id="btnToggleAutoTrade" onclick="toggleKalshiAutoTrade()" class="px-2.5 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700">
+                  OFF
+                </button>
+              </div>
+
+              <!-- Mode Toggle: PAPER vs LIVE -->
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Mode:</span>
+                <button id="btnToggleTradingMode" onclick="toggleKalshiTradingMode()" class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900">
+                  📝 PAPER
+                </button>
+              </div>
+            </div>
+
+            <!-- Extra Tool 1: Quick Sizing Presets & Sizing Stepper -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
+                  <span id="kalshiEstCost" class="text-[9px] sm:text-[10px] text-cyan-300 font-mono">(~$0.65/trade)</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-4.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold flex items-center justify-center text-xs active:scale-90">-</button>
+                  <input id="kalshiContractsInput" type="number" min="1" max="10" value="1" onchange="updateKalshiContracts(this.value)" class="w-8 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 focus:border-cyan-500 focus:outline-none" />
+                  <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-4.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold flex items-center justify-center text-xs active:scale-90">+</button>
+                  <span class="text-[9px] text-slate-400 font-mono">ct</span>
+                </div>
+              </div>
+
+              <!-- Quick Sizing Presets Tool -->
+              <div class="grid grid-cols-4 gap-1 text-[9px] font-bold font-mono">
+                <button type="button" onclick="setKalshiContractsPreset(1)" class="py-0.5 rounded bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">1 ct</button>
+                <button type="button" onclick="setKalshiContractsPreset(3)" class="py-0.5 rounded bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">3 ct</button>
+                <button type="button" onclick="setKalshiContractsPreset(5)" class="py-0.5 rounded bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">5 ct</button>
+                <button type="button" onclick="setKalshiContractsPreset(10)" class="py-0.5 rounded bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-amber-400 active:scale-95">10 ct</button>
+              </div>
+
+              <!-- Extra Tool 2: Potential Payout Multiplier & Return Tool -->
+              <div id="kalshiPayoutCalculator" class="flex items-center justify-between px-2 py-0.5 rounded bg-slate-950/90 border border-cyan-500/20 text-[9px] sm:text-[10px] text-slate-300 font-mono">
+                <span>Risk: <strong id="kalshiCalcRisk" class="text-white">$0.65</strong></span>
+                <span class="text-slate-600">→</span>
+                <span>Max Payout: <strong id="kalshiCalcPayout" class="text-emerald-400 font-bold">$1.00 (+54%)</strong></span>
+              </div>
+            </div>
+
+            <!-- Active Target & 1-Click Manual Execution (Large Tap Targets) -->
+            <div class="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80 space-y-1">
+              <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
+                <span class="text-slate-400 truncate max-w-[140px]" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
+                <span id="kalshiConvictionPill" class="px-1.5 py-0.5 rounded font-bold uppercase text-[7px] sm:text-[8px] bg-slate-800 text-cyan-400">Min: A+ & A</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+                <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-2 py-2 rounded-lg bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-sm shadow-emerald-950/50">
+                  <span>▲</span> BID YES
+                </button>
+                <button onclick="triggerManualKalshiTrade('BELOW')" class="px-2 py-2 rounded-lg bg-red-950/80 border border-red-500/50 text-red-400 hover:bg-red-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-sm shadow-red-950/50">
+                  <span>▼</span> BID NO
+                </button>
+              </div>
+            </div>
+
+            <!-- Win Rate & P&L Tracker (Bigger Text) -->
+            <div class="flex items-center justify-between px-1.5 py-1 text-[9px] sm:text-[10px] border-t border-slate-800/60 text-slate-400">
+              <div>Trades: <span id="kalshiTradesCount" class="font-bold text-white">0W - 0L</span> (<span id="kalshiWinRate" class="font-bold text-emerald-400">0%</span>)</div>
+              <div>P&L: <span id="kalshiTotalPnl" class="font-bold text-white">$0.00</span></div>
+            </div>
+
+            <!-- Recent Trades Stream -->
+            <div id="kalshiTradesListContainer" class="space-y-0.5 max-h-12 overflow-y-auto pr-0.5 text-[8px] sm:text-[9px]">
+              <div class="text-[8px] text-slate-500 text-center py-0.5">Standing by for next 15M contract rollover...</div>
             </div>
           </div>
 
@@ -2950,14 +3010,14 @@
 
       // 1. GRADE A+ SETUPS (75% - 82% Historical Win Rate)
       if (cHigh >= bbUpper && upperWick >= 0.35 && rsi >= 62) {
-        pred = "BELOW TARGET (PUT)";
+        pred = "BID NO (BELOW TARGET)";
         grade = "GRADE A+ SETUP";
         badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
         catalysts.push(`Upper Bollinger Rejection: Heavy upper wick pin (${Math.round(upperWick*100)}% of range)`);
         catalysts.push(`Overbought Exhaustion: RSI at ${rsi.toFixed(1)} rejected off band ceiling`);
       } else if (cLow <= bbLower && lowerWick >= 0.35 && rsi <= 38) {
-        pred = "ABOVE TARGET (CALL)";
+        pred = "BID YES (ABOVE TARGET)";
         grade = "GRADE A+ SETUP";
         badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
@@ -2974,14 +3034,14 @@
         }
 
         if (cLow < low4 && cClose > low4 && cClose >= cOpen) {
-          pred = "ABOVE TARGET (CALL)";
+          pred = "BID YES (ABOVE TARGET)";
           grade = "GRADE A+ SETUP";
           badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
           catalysts.push(`Bullish Liquidity Sweep: Reclaimed 4-bar low ($${Math.round(low4).toLocaleString()})`);
           catalysts.push("Institutional Stop Hunt complete: Sellers trapped on dip");
         } else if (cHigh > high4 && cClose < high4 && cClose <= cOpen) {
-          pred = "BELOW TARGET (PUT)";
+          pred = "BID NO (BELOW TARGET)";
           grade = "GRADE A+ SETUP";
           badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
@@ -2993,14 +3053,14 @@
       // 2. GRADE A SETUPS (65% - 74% Historical Win Rate)
       if (!pred) {
         if (cClose > cOpen && pClose > pOpen && p2Close > p2Open && rsi >= 64) {
-          pred = "BELOW TARGET (PUT)";
+          pred = "BID NO (BELOW TARGET)";
           grade = "GRADE A SETUP";
           badge = "⚡ 4-STAR A (72%)";
           prob = 72;
           catalysts.push("Triple Green Climax: 3 consecutive bull candles into resistance");
           catalysts.push(`Momentum Deceleration: RSI at ${rsi.toFixed(1)} signals high pullback probability`);
         } else if (cClose < cOpen && pClose < pOpen && p2Close < p2Open && rsi <= 36) {
-          pred = "ABOVE TARGET (CALL)";
+          pred = "BID YES (ABOVE TARGET)";
           grade = "GRADE A SETUP";
           badge = "⚡ 4-STAR A (72%)";
           prob = 72;
@@ -3012,13 +3072,13 @@
       // 3. GRADE B SETUPS (60% - 64% Historical Win Rate)
       if (!pred) {
         if (cClose > cOpen && pClose > pOpen && rsi >= 58) {
-          pred = "BELOW TARGET (PUT)";
+          pred = "BID NO (BELOW TARGET)";
           grade = "GRADE B SETUP";
           badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
           catalysts.push("Dual Green Surge: Consecutive bullish closes approaching mean reversion");
         } else if (cClose < cOpen && pClose < pOpen && rsi <= 42) {
-          pred = "ABOVE TARGET (CALL)";
+          pred = "BID YES (ABOVE TARGET)";
           grade = "GRADE B SETUP";
           badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
@@ -3028,7 +3088,7 @@
 
       // 4. GRADE C / PASS (NO TRADE - CHOP)
       if (!pred) {
-        pred = "PASS / NO TRADE (CHOP)";
+        pred = "PASS / NO BID (CHOP)";
         grade = "GRADE C / PASS";
         badge = "⚪ PASS (CHOP)";
         prob = 50;
@@ -4132,10 +4192,272 @@
       }
     }
 
+    // =========================================================================
+    // KALSHI AUTONOMOUS TRADING CLIENT
+    // =========================================================================
+    let kalshiAutoTradeEnabled = false;
+    let kalshiTradingMode = "PAPER";
+    let kalshiCurrentContracts = 1;
+
+    function getKalshiApiBase() {
+      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        return '';
+      }
+      return localStorage.getItem("kalshi_server_url") || 'http://192.168.1.222:8056';
+    }
+
+    function updateKalshiEstCostDisplay() {
+      const costEl = document.getElementById("kalshiEstCost");
+      if (!costEl) return;
+      const estPer = 0.65;
+      const total = (kalshiCurrentContracts * estPer).toFixed(2);
+      costEl.innerText = `(~$${total}/trade)`;
+    }
+
+    async 
+    function setKalshiContractsPreset(ct) {
+      updateKalshiContracts(ct);
+      const input = document.getElementById("kalshiContractsInput");
+      if (input) input.value = ct;
+      updateKalshiPayoutCalculator();
+    }
+
+    function updateKalshiPayoutCalculator() {
+      const input = document.getElementById("kalshiContractsInput");
+      const ct = input ? parseInt(input.value) || 1 : 1;
+      const riskEl = document.getElementById("kalshiCalcRisk");
+      const payoutEl = document.getElementById("kalshiCalcPayout");
+      const costEl = document.getElementById("kalshiEstCost");
+
+      const avgPrice = 0.58; // Typical Kalshi 15M contract purchase price
+      const totalRisk = ct * avgPrice;
+      const totalPayout = ct * 1.00;
+      const profit = totalPayout - totalRisk;
+      const retPct = Math.round((profit / totalRisk) * 100);
+
+      if (riskEl) riskEl.innerText = `$${totalRisk.toFixed(2)}`;
+      if (payoutEl) payoutEl.innerText = `$${totalPayout.toFixed(2)} (+${retPct}%)`;
+      if (costEl) costEl.innerText = `(~$${totalRisk.toFixed(2)} total)`;
+    }
+
+    function changeKalshiContracts(delta) {
+      const nextVal = Math.max(1, Math.min(10, kalshiCurrentContracts + delta));
+      updateKalshiContracts(nextVal);
+    }
+
+    async function updateKalshiContracts(val) {
+      const count = Math.max(1, Math.min(10, parseInt(val) || 1));
+      kalshiCurrentContracts = count;
+      const ctInput = document.getElementById("kalshiContractsInput");
+      if (ctInput) ctInput.value = count;
+      updateKalshiEstCostDisplay();
+
+      try {
+        const apiBase = getKalshiApiBase();
+        await fetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
+      } catch (err) {
+        console.warn("Failed to persist contracts count:", err);
+      }
+    }
+
+    async function pollKalshiTradingStatus() {
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data) return;
+
+        kalshiAutoTradeEnabled = !!data.enabled;
+        kalshiTradingMode = data.mode || "PAPER";
+
+        // Update Balance
+        const balEl = document.getElementById("kalshiLiveBalance");
+        if (balEl && data.balance_dollars !== undefined) {
+          balEl.innerText = `$${parseFloat(data.balance_dollars).toFixed(2)}`;
+        }
+
+        // Update Contracts Count
+        if (data.max_contracts !== undefined) {
+          kalshiCurrentContracts = parseInt(data.max_contracts) || 1;
+          const ctInput = document.getElementById("kalshiContractsInput");
+          if (ctInput && document.activeElement !== ctInput) {
+            ctInput.value = kalshiCurrentContracts;
+          }
+          updateKalshiEstCostDisplay();
+        }
+
+        // Update Auto-Trade Toggle
+        const btnToggle = document.getElementById("btnToggleAutoTrade");
+        if (btnToggle) {
+          if (data.enabled) {
+            btnToggle.innerText = "ON";
+            btnToggle.className = "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
+          } else {
+            btnToggle.innerText = "OFF";
+            btnToggle.className = "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
+          }
+        }
+
+        // Update Mode Button
+        const btnMode = document.getElementById("btnToggleTradingMode");
+        if (btnMode) {
+          if (data.mode === "LIVE") {
+            btnMode.innerText = "🔴 LIVE";
+            btnMode.className = "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900";
+          } else {
+            btnMode.innerText = "📝 PAPER";
+            btnMode.className = "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+          }
+        }
+
+        // Active Market Ticker
+        const tickerEl = document.getElementById("kalshiActiveTicker");
+        if (tickerEl && data.active_market) {
+          tickerEl.innerText = data.active_market.ticker || "KXBTC15M-ACTIVE";
+        }
+
+        // Win Rate & P&L
+        const countEl = document.getElementById("kalshiTradesCount");
+        if (countEl) countEl.innerText = `${data.wins || 0}W - ${data.losses || 0}L`;
+
+        const wrEl = document.getElementById("kalshiWinRate");
+        if (wrEl) wrEl.innerText = `${data.win_rate_pct || 0}%`;
+
+        const pnlEl = document.getElementById("kalshiTotalPnl");
+        if (pnlEl) {
+          const pnl = parseFloat(data.total_pnl_dollars || 0);
+          pnlEl.innerText = `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`;
+          pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
+        }
+
+        // Render Recent Trades
+        renderKalshiTradesList(data.recent_trades || []);
+      } catch (err) {
+        console.warn("Error polling Kalshi trade status:", err);
+      }
+    }
+
+    function renderKalshiTradesList(trades) {
+      const container = document.getElementById("kalshiTradesListContainer");
+      if (!container) return;
+      if (!trades || trades.length === 0) {
+        container.innerHTML = '<div class="text-[6.5px] text-slate-500 text-center py-1">No trades executed yet. Standing by for rollover...</div>';
+        return;
+      }
+
+      container.innerHTML = trades.slice(0, 5).map(t => {
+        const isWin = t.result === "WIN";
+        const isLoss = t.result === "LOSS";
+        const colorClass = isWin ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : (isLoss ? "text-red-400 border-red-800/40 bg-red-950/30" : "text-amber-400 border-amber-800/40 bg-amber-950/30");
+        const statusBadge = isWin ? "WIN" : (isLoss ? "LOSS" : "OPEN");
+        const pnlText = isWin ? `+$${parseFloat(t.pnl || 0).toFixed(2)}` : (isLoss ? `-$${Math.abs(parseFloat(t.pnl || 0)).toFixed(2)}` : "Pending");
+
+        return `
+          <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[6.5px] font-mono">
+            <div class="flex items-center gap-1">
+              <span class="font-bold uppercase">${t.side}</span>
+              <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
+              <span class="text-[6px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
+            </div>
+            <div class="flex items-center gap-1 font-bold">
+              <span>${statusBadge}</span>
+              <span>${pnlText}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function toggleKalshiAutoTrade() {
+      const nextState = !kalshiAutoTradeEnabled;
+      if (nextState && kalshiTradingMode === "LIVE") {
+        if (!confirm("⚠️ CAUTION: You are about to enable LIVE autonomous trading with real funds ($7.82 balance). Proceed?")) {
+          return;
+        }
+      }
+
+      // Instant optimistic UI response
+      const btnToggle = document.getElementById("btnToggleAutoTrade");
+      if (btnToggle) {
+        btnToggle.innerText = nextState ? "ON" : "OFF";
+        btnToggle.className = nextState 
+          ? "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50" 
+          : "px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
+      }
+      kalshiAutoTradeEnabled = nextState;
+
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, { method: "POST" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        pollKalshiTradingStatus();
+      } catch (e) {
+        console.error("Error toggling auto trade:", e);
+        alert("⚠️ Cannot reach backend server at " + (getKalshiApiBase() || window.location.origin) + ". Please ensure run_app.bat is running!");
+        kalshiAutoTradeEnabled = !nextState;
+        pollKalshiTradingStatus();
+      }
+    }
+
+    async function toggleKalshiTradingMode() {
+      const nextMode = kalshiTradingMode === "PAPER" ? "LIVE" : "PAPER";
+      if (nextMode === "LIVE") {
+        if (!confirm("⚠️ Switch to LIVE TRADING mode? Real orders will be submitted to Kalshi using your account balance.")) {
+          return;
+        }
+      }
+
+      // Instant optimistic UI response
+      const btnMode = document.getElementById("btnToggleTradingMode");
+      if (btnMode) {
+        btnMode.innerText = nextMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
+        btnMode.className = nextMode === "LIVE" 
+          ? "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900"
+          : "px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+      }
+      kalshiTradingMode = nextMode;
+
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, { method: "POST" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        pollKalshiTradingStatus();
+      } catch (e) {
+        console.error("Error toggling trading mode:", e);
+        kalshiTradingMode = (nextMode === "LIVE" ? "PAPER" : "LIVE");
+        pollKalshiTradingStatus();
+      }
+    }
+
+    async function triggerManualKalshiTrade(direction) {
+      if (kalshiTradingMode === "LIVE") {
+        if (!confirm(`Confirm LIVE 1-click execution: BUY ${kalshiCurrentContracts} ${direction === 'ABOVE' ? 'YES' : 'NO'} contract(s)?`)) {
+          return;
+        }
+      }
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Trade Executed (${kalshiTradingMode}): ${data.trade ? data.trade.recommendation : 'Success'} (${kalshiCurrentContracts} contract)`);
+          pollKalshiTradingStatus();
+        } else {
+          alert(`Trade Error: ${data.error || 'Failed to submit order'}`);
+        }
+      } catch (e) {
+        alert(`Request failed: ${e}`);
+      }
+    }
+
     // Initialize
     startLive1sRefresh();
     initBtcChartOnce();
     triggerBtcAnalysis();
+    pollKalshiTradingStatus();
+    setInterval(pollKalshiTradingStatus, 3000);
+
   </script>
 </body>
 </html>

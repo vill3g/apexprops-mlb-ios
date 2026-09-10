@@ -554,7 +554,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     acc_outcomes = []
 
     # Autonomous Next 15M Contract Rollover Forecast Engine
-    next_contract_forecast = evaluate_next_15m_contract(df_ind, target_price=active_target)
+    next_contract_forecast = evaluate_next_15m_contract(df_ind, target_price=active_target, patterns=patterns, structure=structure)
 
     target_benchmark = {
         "target_price": active_target,
@@ -600,25 +600,17 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
 
 
 
-def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None) -> dict:
+def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None, patterns: list = None, structure: dict = None) -> dict:
     """
-    Evaluates the just-finalized 15-minute candle to forecast whether the NEXT
-    15-minute contract will settle ABOVE or BELOW the target price.
-    Returns:
-      - recommendation: "ABOVE TARGET (CALL)" | "BELOW TARGET (PUT)" | "PASS / NO TRADE (CHOP)"
-      - direction: "ABOVE" | "BELOW" | "PASS"
-      - probability_percent: 50 to 82
-      - conviction_grade: "GRADE A+ SETUP" | "GRADE A SETUP" | "GRADE B SETUP" | "GRADE C / PASS"
-      - conviction_badge: e.g. "🔥 5-STAR A+ (78%)"
-      - target_settlement_zone: formatted price range string
-      - primary_edge: main technical catalyst
-      - catalysts: list of edge factors
+    Evaluates the just-finalized 15-minute candle and pattern scanner to forecast
+    whether to BID YES (Above Target) or BID NO (Below Target) on Kalshi/Robinhood.
     """
     n = len(df_ind)
     if n < 5:
         return {
-            "recommendation": "PASS / NO TRADE (CHOP)",
+            "recommendation": "PASS / NO BID (CHOP)",
             "direction": "PASS",
+            "action_type": "PASS",
             "probability_percent": 50,
             "conviction_grade": "GRADE C / PASS",
             "conviction_badge": "⚪ PASS (CHOP)",
@@ -658,51 +650,107 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
     prob = 50
     catalysts = []
 
+    # 0. Check Advanced Descending & Ascending Chart Patterns
+    if patterns:
+        bearish_pats = [p for p in patterns if p.get("type") == "BEARISH"]
+        bullish_pats = [p for p in patterns if p.get("type") == "BULLISH"]
+
+        # Descending Pattern Priority (Bid NO)
+        desc_triangle = next((p for p in bearish_pats if "Descending Triangle" in p.get("name", "")), None)
+        head_shoulders = next((p for p in bearish_pats if "Head and Shoulders" in p.get("name", "")), None)
+        bear_flag = next((p for p in bearish_pats if "Bear Flag" in p.get("name", "")), None)
+
+        if desc_triangle:
+            pred = "BID NO (BELOW TARGET)"
+            grade = "GRADE A+ SETUP"
+            badge = "🔥 5-STAR A+ (80%)"
+            prob = 80
+            catalysts.append(f"📉 Descending Triangle: {desc_triangle['description']}")
+            catalysts.append("Breakdown Pressure: Multiple lower highs compressing horizontal support")
+
+        elif head_shoulders:
+            pred = "BID NO (BELOW TARGET)"
+            grade = "GRADE A+ SETUP"
+            badge = "🔥 5-STAR A+ (78%)"
+            prob = 78
+            catalysts.append(f"📉 Head & Shoulders Top: {head_shoulders['description']}")
+            catalysts.append("Neckline Breach: Institutional distribution capping upside")
+
+        elif bear_flag:
+            pred = "BID NO (BELOW TARGET)"
+            grade = "GRADE A SETUP"
+            badge = "⚡ 4-STAR A (74%)"
+            prob = 74
+            catalysts.append(f"📉 Bear Flag: {bear_flag['description']}")
+            catalysts.append("Trend Continuation: Weak flag consolidation into 15M downward thrust")
+
+        # Ascending Pattern Priority (Bid YES)
+        if not pred:
+            asc_triangle = next((p for p in bullish_pats if "Ascending Triangle" in p.get("name", "")), None)
+            bull_flag = next((p for p in bullish_pats if "Bull Flag" in p.get("name", "")), None)
+
+            if asc_triangle:
+                pred = "BID YES (ABOVE TARGET)"
+                grade = "GRADE A+ SETUP"
+                badge = "🔥 5-STAR A+ (80%)"
+                prob = 80
+                catalysts.append(f"📈 Ascending Triangle: {asc_triangle['description']}")
+                catalysts.append("Breakout Pressure: Multiple higher lows pressing against ceiling")
+
+            elif bull_flag:
+                pred = "BID YES (ABOVE TARGET)"
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (74%)"
+                prob = 74
+                catalysts.append(f"📈 Bull Flag: {bull_flag['description']}")
+                catalysts.append("Trend Continuation: Shallow flag consolidation into 15M upward surge")
+
     # 1. GRADE A+ SETUPS (75% - 82% Historical Win Rate)
-    # A+ Setup 1: Bollinger Extreme Rejection Pin
-    if c_high >= bb_upper and upper_wick >= 0.35 and rsi >= 62:
-        pred = "BELOW TARGET (PUT)"
-        grade = "GRADE A+ SETUP"
-        badge = "🔥 5-STAR A+ (78%)"
-        prob = 78
-        catalysts.append(f"Upper Bollinger Rejection: Heavy upper wick pin ({upper_wick*100:.0f}% of range)")
-        catalysts.append(f"Overbought Exhaustion: RSI at {rsi:.1f} rejected off band ceiling")
-
-    elif c_low <= bb_lower and lower_wick >= 0.35 and rsi <= 38:
-        pred = "ABOVE TARGET (CALL)"
-        grade = "GRADE A+ SETUP"
-        badge = "🔥 5-STAR A+ (78%)"
-        prob = 78
-        catalysts.append(f"Lower Bollinger Absorption: Long lower wick hammer ({lower_wick*100:.0f}% of range)")
-        catalysts.append(f"Oversold Spring: RSI at {rsi:.1f} reclaimed off band floor")
-
-    # A+ Setup 2: Liquidity Sweep Rejection (Turtle Soup)
-    else:
-        # Check prior 4 candles swing extremes
-        low_4 = min(float(df_ind.iloc[j]["low"]) for j in range(max(0, n-6), n-2))
-        high_4 = max(float(df_ind.iloc[j]["high"]) for j in range(max(0, n-6), n-2))
-
-        if c_low < low_4 and c_close > low_4 and c_close >= c_open:
-            pred = "ABOVE TARGET (CALL)"
+    if not pred:
+        # A+ Setup 1: Bollinger Extreme Rejection Pin (Bid NO)
+        if c_high >= bb_upper and upper_wick >= 0.35 and rsi >= 62:
+            pred = "BID NO (BELOW TARGET)"
             grade = "GRADE A+ SETUP"
-            badge = "🔥 5-STAR A+ (76%)"
-            prob = 76
-            catalysts.append(f"Bullish Liquidity Sweep: Reclaimed 4-bar low (${low_4:,.0f})")
-            catalysts.append("Institutional Stop Hunt complete: Sellers trapped on dip")
+            badge = "🔥 5-STAR A+ (78%)"
+            prob = 78
+            catalysts.append(f"Upper Bollinger Rejection: Heavy upper wick pin ({upper_wick*100:.0f}% of range)")
+            catalysts.append(f"Overbought Exhaustion: RSI at {rsi:.1f} rejected off band ceiling")
 
-        elif c_high > high_4 and c_close < high_4 and c_close <= c_open:
-            pred = "BELOW TARGET (PUT)"
+        # A+ Setup 1: Bollinger Absorption Hammer (Bid YES)
+        elif c_low <= bb_lower and lower_wick >= 0.35 and rsi <= 38:
+            pred = "BID YES (ABOVE TARGET)"
             grade = "GRADE A+ SETUP"
-            badge = "🔥 5-STAR A+ (76%)"
-            prob = 76
-            catalysts.append(f"Bearish Liquidity Sweep: Rejected 4-bar high (${high_4:,.0f})")
-            catalysts.append("Overhead Capping complete: Buyers trapped on spike")
+            badge = "🔥 5-STAR A+ (78%)"
+            prob = 78
+            catalysts.append(f"Lower Bollinger Absorption: Long lower wick hammer ({lower_wick*100:.0f}% of range)")
+            catalysts.append(f"Oversold Spring: RSI at {rsi:.1f} reclaimed off band floor")
+
+        # A+ Setup 2: Liquidity Sweep Rejection (Turtle Soup)
+        else:
+            low_4 = min(float(df_ind.iloc[j]["low"]) for j in range(max(0, n-6), n-2))
+            high_4 = max(float(df_ind.iloc[j]["high"]) for j in range(max(0, n-6), n-2))
+
+            if c_low < low_4 and c_close > low_4 and c_close >= c_open:
+                pred = "BID YES (ABOVE TARGET)"
+                grade = "GRADE A+ SETUP"
+                badge = "🔥 5-STAR A+ (76%)"
+                prob = 76
+                catalysts.append(f"Bullish Liquidity Sweep: Reclaimed 4-bar low (${low_4:,.0f})")
+                catalysts.append("Institutional Stop Hunt complete: Sellers trapped on dip")
+
+            elif c_high > high_4 and c_close < high_4 and c_close <= c_open:
+                pred = "BID NO (BELOW TARGET)"
+                grade = "GRADE A+ SETUP"
+                badge = "🔥 5-STAR A+ (76%)"
+                prob = 76
+                catalysts.append(f"Bearish Liquidity Sweep: Rejected 4-bar high (${high_4:,.0f})")
+                catalysts.append("Overhead Capping complete: Buyers trapped on spike")
 
     # 2. GRADE A SETUPS (65% - 74% Historical Win Rate)
     if not pred:
         # A Setup 1: 3-Candle Climax Exhaustion
         if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]) and float(p2["close"]) > float(p2["open"]) and rsi >= 64:
-            pred = "BELOW TARGET (PUT)"
+            pred = "BID NO (BELOW TARGET)"
             grade = "GRADE A SETUP"
             badge = "⚡ 4-STAR A (72%)"
             prob = 72
@@ -710,16 +758,16 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
             catalysts.append(f"Momentum Deceleration: RSI at {rsi:.1f} signals high pullback probability")
 
         elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]) and float(p2["close"]) < float(p2["open"]) and rsi <= 36:
-            pred = "ABOVE TARGET (CALL)"
+            pred = "BID YES (ABOVE TARGET)"
             grade = "GRADE A SETUP"
             badge = "⚡ 4-STAR A (72%)"
             prob = 72
             catalysts.append("Triple Red Climax: 3 consecutive bear candles deeply oversold")
             catalysts.append(f"Exhaustion Spring: RSI at {rsi:.1f} signals strong mean-reversion bounce")
 
-        # A Setup 2: EMA Ribbon Dynamic Pullback Bounce
+        # A Setup 2: EMA Ribbon Dynamic Pullback
         elif ema_9 > ema_21 > ema_50 and c_low <= ema_21 and c_close > ema_21 and lower_wick >= 0.28:
-            pred = "ABOVE TARGET (CALL)"
+            pred = "BID YES (ABOVE TARGET)"
             grade = "GRADE A SETUP"
             badge = "⚡ 4-STAR A (70%)"
             prob = 70
@@ -727,7 +775,7 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
             catalysts.append("Dip Absorption: Buyers defended 15M moving average into close")
 
         elif ema_9 < ema_21 < ema_50 and c_high >= ema_21 and c_close < ema_21 and upper_wick >= 0.28:
-            pred = "BELOW TARGET (PUT)"
+            pred = "BID NO (BELOW TARGET)"
             grade = "GRADE A SETUP"
             badge = "⚡ 4-STAR A (70%)"
             prob = 70
@@ -738,13 +786,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
     if not pred:
         # B Setup 1: Dual Green/Red Reversion
         if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]) and rsi >= 58:
-            pred = "BELOW TARGET (PUT)"
+            pred = "BID NO (BELOW TARGET)"
             grade = "GRADE B SETUP"
             badge = "⚠️ 3-STAR B (63%)"
             prob = 63
             catalysts.append("Dual Green Surge: Consecutive bullish closes approaching mean reversion")
         elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]) and rsi <= 42:
-            pred = "ABOVE TARGET (CALL)"
+            pred = "BID YES (ABOVE TARGET)"
             grade = "GRADE B SETUP"
             badge = "⚠️ 3-STAR B (63%)"
             prob = 63
@@ -752,21 +800,21 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
 
         # B Setup 2: Momentum Thrust
         elif range_closure >= 0.80 and (abs(c_close - c_open) / rng) >= 0.55 and ema_9 > ema_21:
-            pred = "ABOVE TARGET (CALL)"
+            pred = "BID YES (ABOVE TARGET)"
             grade = "GRADE B SETUP"
             badge = "⚠️ 3-STAR B (62%)"
             prob = 62
             catalysts.append("Bullish Momentum Thrust: Upper 20% range close with positive EMA slope")
         elif range_closure <= 0.20 and (abs(c_close - c_open) / rng) >= 0.55 and ema_9 < ema_21:
-            pred = "BELOW TARGET (PUT)"
+            pred = "BID NO (BELOW TARGET)"
             grade = "GRADE B SETUP"
             badge = "⚠️ 3-STAR B (62%)"
             prob = 62
             catalysts.append("Bearish Momentum Thrust: Lower 20% range close with negative EMA slope")
 
-    # 4. GRADE C / PASS (NO TRADE - CHOP)
+    # 4. GRADE C / PASS (NO BID - CHOP)
     if not pred:
-        pred = "PASS / NO TRADE (CHOP)"
+        pred = "PASS / NO BID (CHOP)"
         grade = "GRADE C / PASS"
         badge = "⚪ PASS (CHOP)"
         prob = 50
@@ -774,21 +822,28 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None)
         catalysts.append("Capital Preservation: Skipping low-conviction setup to protect bankroll")
 
     # Calculate Target Settlement Zone based on ATR dispersion
-    if "ABOVE" in pred:
-        z_min = target + (atr * 0.15)
-        z_max = target + (atr * 0.90)
-    elif "BELOW" in pred:
-        z_min = target - (atr * 0.90)
-        z_max = target - (atr * 0.15)
-    else:
+    if "PASS" in pred:
         z_min = target - (atr * 0.35)
         z_max = target + (atr * 0.35)
+        direction = "PASS"
+        action = "PASS"
+    elif "YES" in pred or "ABOVE" in pred:
+        z_min = target + (atr * 0.15)
+        z_max = target + (atr * 0.90)
+        direction = "YES"
+        action = "BID YES"
+    else:
+        z_min = target - (atr * 0.90)
+        z_max = target - (atr * 0.15)
+        direction = "NO"
+        action = "BID NO"
 
     zone_str = f"${z_min:,.0f} - ${z_max:,.0f}"
 
     return {
         "recommendation": pred,
-        "direction": "ABOVE" if "ABOVE" in pred else ("BELOW" if "BELOW" in pred else "PASS"),
+        "direction": direction,
+        "action_type": action,
         "probability_percent": prob,
         "conviction_grade": grade,
         "conviction_badge": badge,
