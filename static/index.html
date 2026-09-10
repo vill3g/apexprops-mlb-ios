@@ -3782,11 +3782,14 @@
     }
 
     // High-Frequency 1-Second Polling Stream
+    let _isPollingBtcLive = false;
     async function pollBtcLive1s() {
       // 1. Always update local countdown clock
       updateBtcCountdownClock();
 
       if (activeMode !== 'btc_analyzer') return;
+      if (_isPollingBtcLive) return;
+      _isPollingBtcLive = true;
 
       let livePrice = null;
       let liveStats = null;
@@ -3816,13 +3819,14 @@
             if (kNo) kNo.innerText = `${liveData.kalshi.no_prob}% No (Below)`;
           }
           handledByServer = true;
+          _isPollingBtcLive = false;
           return;
         }
       } catch (err) {
         // Local server unreachable or timed out -> Fallback for mobile / standalone
       }
 
-      if (handledByServer) return;
+      if (handledByServer) { _isPollingBtcLive = false; return; }
 
       // 3. Primary Mobile Client Fallback: Coinbase Exchange Ticker (CORS: *, 100% US-friendly, no geoblock)
       try {
@@ -4239,7 +4243,10 @@
       }
     }
 
+    let _isPollingKalshiStatus = false;
     async function pollKalshiTradingStatus() {
+      if (_isPollingKalshiStatus) return;
+      _isPollingKalshiStatus = true;
       try {
         const apiBase = getKalshiApiBase();
         const res = await fetch(`${apiBase}/api/btc/trade/status`);
@@ -4314,6 +4321,8 @@
         renderKalshiTradesList(data.recent_trades || [], data.active_market);
       } catch (err) {
         console.warn("Error polling Kalshi trade status:", err);
+      } finally {
+        _isPollingKalshiStatus = false;
       }
     }
 

@@ -28,6 +28,11 @@ class KalshiTrader:
         if not self.key_id or not self.private_key_pem:
             self._load_from_credentials_file()
 
+        self._cached_balance = None
+        self._cached_balance_time = 0.0
+        self._cached_market = None
+        self._cached_market_time = 0.0
+
         if self.private_key_pem:
             try:
                 self._private_key_obj = load_pem_private_key(self.private_key_pem.encode("utf-8"), password=None)
@@ -72,10 +77,14 @@ class KalshiTrader:
             "Accept": "application/json"
         }
 
-    def get_balance(self) -> Dict[str, Any]:
+    def get_balance(self, force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Retrieves live portfolio balance and dollar breakdown.
+        Retrieves live portfolio balance and dollar breakdown (cached for 4.0s for sub-ms polling).
         """
+        now = time.time()
+        if not force_refresh and self._cached_balance and (now - self._cached_balance_time < 4.0):
+            return self._cached_balance
+
         path = "/trade-api/v2/portfolio/balance"
         try:
             headers = self._sign_headers("GET", path)
@@ -85,7 +94,7 @@ class KalshiTrader:
                 dollars = float(data.get("balance_dollars", 0.0))
                 cents = int(data.get("balance", 0))
                 port_val = float(data.get("portfolio_value", 0.0))
-                return {
+                res = {
                     "success": True,
                     "balance_dollars": dollars,
                     "balance_cents": cents,
@@ -93,6 +102,9 @@ class KalshiTrader:
                     "updated_ts": data.get("updated_ts"),
                     "raw": data
                 }
+                self._cached_balance = res
+                self._cached_balance_time = now
+                return res
             return {
                 "success": False,
                 "error": f"HTTP {resp.status_code}: {resp.text}",
@@ -107,66 +119,67 @@ class KalshiTrader:
                 "balance_cents": 0
             }
 
-    def get_active_15m_market(self, allow_synthetic: bool = True) -> Optional[Dict[str, Any]]:
+    def get_active_15m_market(self, allow_synthetic: bool = True, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
         """
-        Finds the active KXBTC15M market.
-        If live exchange has no 'open' markets (e.g. overnight or between settlements),
-        checks initialized/active markets or generates the active 15m contract for paper trading.
+        Finds the active KXBTC15M market (cached for 2.5s for ultra-low latency real-time feeds).
         """
-        path = "/trade-api/v2/markets"
-        for status_param in ["open", None]:
-            params = {"series_ticker": "KXBTC15M"}
-            if status_param:
-                params["status"] = status_param
-            try:
-                resp = requests.get(
-                    f"{BASE_URL}{path}",
-                    params=params,
-                    headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
-                    timeout=4.0
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    markets = data.get("markets", [])
-                    import datetime
-                    now_utc = datetime.datetime.now(datetime.timezone.utc)
-                    valid_m = []
-                    for m in markets:
-                        ct_str = m.get("close_time")
-                        if ct_str:
-                            try:
-                                ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                                if ct > now_utc and m.get("status") in ["active", "open"]:
-                                    valid_m.append((ct, m))
-                            except Exception:
-                                pass
-                    if valid_m:
-                        valid_m.sort(key=lambda x: x[0])
-                        active_m = valid_m[0][1]
-                        floor_strike = active_m.get("floor_strike")
-                        yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
-                        yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
-                        no_bid = float(active_m.get("no_bid_dollars") or (float(active_m.get("no_bid") or 0) / 100.0))
-                        no_ask = float(active_m.get("no_ask_dollars") or (float(active_m.get("no_ask") or 0) / 100.0))
-                        last_price = float(active_m.get("last_price_dollars") or (float(active_m.get("last_price") or 0) / 100.0))
-                        if yes_ask == 0.0: yes_ask = 0.58
-                        if no_ask == 0.0: no_ask = 0.42
+        now_ts = time.time()
+        if not force_refresh and self._cached_market and (now_ts - self._cached_market_time < 2.5):
+            return self._cached_market
 
-                        return {
-                            "ticker": active_m.get("ticker", ""),
-                            "title": active_m.get("title", ""),
-                            "strike_price": float(floor_strike) if floor_strike is not None else None,
-                            "close_time": active_m.get("close_time", ""),
-                            "yes_bid": yes_bid,
-                            "yes_ask": yes_ask,
-                            "no_bid": no_bid,
-                            "no_ask": no_ask,
-                            "last_price": last_price,
-                            "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
-                            "status": active_m.get("status", "open")
-                        }
-            except Exception as e:
-                print(f"[KalshiTrader] Error getting active 15M market: {e}")
+        path = "/trade-api/v2/markets"
+        try:
+            resp = requests.get(
+                f"{BASE_URL}{path}",
+                params={"series_ticker": "KXBTC15M", "limit": 100},
+                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
+                timeout=3.0
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                markets = data.get("markets", [])
+                import datetime
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                valid_m = []
+                for m in markets:
+                    ct_str = m.get("close_time")
+                    if ct_str:
+                        try:
+                            ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
+                            if ct > now_utc and m.get("status") in ["active", "open"]:
+                                valid_m.append((ct, m))
+                        except Exception:
+                            pass
+                if valid_m:
+                    valid_m.sort(key=lambda x: x[0])
+                    active_m = valid_m[0][1]
+                    floor_strike = active_m.get("floor_strike")
+                    yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
+                    yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
+                    no_bid = float(active_m.get("no_bid_dollars") or (float(active_m.get("no_bid") or 0) / 100.0))
+                    no_ask = float(active_m.get("no_ask_dollars") or (float(active_m.get("no_ask") or 0) / 100.0))
+                    last_price = float(active_m.get("last_price_dollars") or (float(active_m.get("last_price") or 0) / 100.0))
+                    if yes_ask == 0.0: yes_ask = 0.58
+                    if no_ask == 0.0: no_ask = 0.42
+
+                    res_market = {
+                        "ticker": active_m.get("ticker", ""),
+                        "title": active_m.get("title", ""),
+                        "strike_price": float(floor_strike) if floor_strike is not None else None,
+                        "close_time": active_m.get("close_time", ""),
+                        "yes_bid": yes_bid,
+                        "yes_ask": yes_ask,
+                        "no_bid": no_bid,
+                        "no_ask": no_ask,
+                        "last_price": last_price,
+                        "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
+                        "status": active_m.get("status", "open")
+                    }
+                    self._cached_market = res_market
+                    self._cached_market_time = now_ts
+                    return res_market
+        except Exception as e:
+            print(f"[KalshiTrader] Error getting active 15M market: {e}")
 
         if not allow_synthetic:
             return None
@@ -260,7 +273,7 @@ class KalshiTrader:
 
         # 2. LIVE TRADING EXECUTION
         # Double check balance before submitting
-        bal_res = self.get_balance()
+        bal_res = self.get_balance(force_refresh=True)
         if not bal_res.get("success", False):
             return {"success": False, "error": f"Cannot verify live balance: {bal_res.get('error')}"}
 
@@ -300,6 +313,8 @@ class KalshiTrader:
             resp = requests.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
 
             if resp.status_code in [200, 201]:
+                self._cached_balance_time = 0.0
+                self._cached_market_time = 0.0
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
                 avg_fill = float(res_data.get("average_fill_price", str(est_price)) or str(est_price))
