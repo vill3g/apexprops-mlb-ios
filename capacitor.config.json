@@ -8,6 +8,14 @@
   },
   "server": {
     "androidScheme": "https",
-    "iosScheme": "https"
+    "iosScheme": "https",
+    "allowNavigation": [
+      "*.tradingview.com",
+      "*.tradingview-widget.com",
+      "s3.tradingview.com",
+      "s.tradingview.com",
+      "*.coinbase.com",
+      "*.binance.com"
+    ]
   }
 }
