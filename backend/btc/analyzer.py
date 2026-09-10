@@ -577,7 +577,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             "correct_picks": acc_correct,
             "accuracy_percent": acc_pct,
             "ratio_text": f"{acc_correct} of {acc_total} Correct",
-            "recent_outcomes": [o["correct"] for o in acc_outcomes[-5:]]
+            "recent_outcomes": acc_outcomes[-5:]
         }
     }
 

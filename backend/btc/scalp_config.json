@@ -6,5 +6,14 @@
   "loss_target": 0.25,
   "max_contracts": 1,
   "max_trades_per_interval": 1,
-  "interval_seconds": 900
+  "interval_seconds": 900,
+  "minimum_conviction": "B+",
+  "conviction_mapping": {
+    "A+": "GRADE A+ SETUP",
+    "A": "GRADE A SETUP",
+    "B+": "GRADE B+ SETUP",
+    "B": "GRADE B SETUP",
+    "C": "GRADE C / PASS",
+    "D": "GRADE D SETUP"
+  }
 }

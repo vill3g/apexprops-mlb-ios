@@ -387,6 +387,63 @@ def api_btc_analyze(timeframe: str = "15m"):
                 pass
         return JSONResponse({"error": str(e)}, status_code=500)
 
+@app.get("/api/btc/prediction/accuracy")
+def api_btc_prediction_accuracy():
+    """Return the latest forecast with profit/loss and correctness.
+    The endpoint checks the most recent settled paper trade (if any) and
+    compares its side with the analyzer's direction to set the `correct`
+    flag. It also includes the realized P/L.
+    """
+    try:
+        # Lazy import to avoid circular deps
+        from backend.btc.auto_executor import auto_executor
+        trades = auto_executor.get_trades_history()
+        # Find most recent settled paper trade for the current market
+        last_settled = None
+        for t in reversed(trades):
+            if t.get("status") == "SETTLED" and t.get("mode", auto_executor.mode).upper() == "PAPER":
+                last_settled = t
+                break
+
+        result = {
+            "forecast": None,
+            "trade": None,
+            "correct": False
+        }
+
+        if last_settled:
+            pnl = float(last_settled.get("pnl", 0.0))
+            side = str(last_settled.get("side", "")).upper()
+            result_str = str(last_settled.get("result", "")).upper()
+            trade_dir = "ABOVE" if side in ["YES", "ABOVE"] else "BELOW"
+            
+            # Correct if trade was a winning prediction
+            is_win = "WIN" in result_str or pnl > 0
+            correct = is_win
+            
+            result["forecast"] = {
+                "conviction_grade": last_settled.get("conviction_grade", "GRADE A SETUP"),
+                "direction": last_settled.get("direction", trade_dir),
+                "generated_at": last_settled.get("timestamp"),
+                "confidence": last_settled.get("probability_percent", 75)
+            }
+            
+            result["trade"] = {
+                "id": last_settled.get("id"),
+                "pnl": pnl,
+                "result": result_str,
+                "settled_at": last_settled.get("settled_at"),
+                "side": side,
+                "strike": last_settled.get("strike"),
+                "settle_price": last_settled.get("settle_price")
+            }
+            result["correct"] = correct
+
+        return JSONResponse(result)
+    except Exception as e:
+        print(f"[API] Error in prediction accuracy endpoint: {e}")
+        raise e
+
 @app.get("/api/btc/live")
 def api_btc_live():
     """
@@ -477,6 +534,13 @@ def api_btc_trade_mode(mode: str = Query(...)):
     res = auto_executor.set_mode(mode)
     return JSONResponse(res)
 
+@app.post("/api/btc/trade/prediction_mode")
+def api_btc_trade_prediction_mode(enabled: bool = Query(...)):
+    """Toggle prediction mode ON or OFF."""
+    auto_executor.prediction_mode = enabled
+    auto_executor._save_config()
+    return JSONResponse({"status": "ok", "prediction_mode": enabled})
+
 @app.post("/api/btc/trade/threshold")
 def api_btc_trade_threshold(threshold: str = Query(...)):
     """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
@@ -502,10 +566,27 @@ def api_btc_trade_close():
     return JSONResponse(sanitize_btc_json(res))
 
 @app.get("/api/btc/trade/history")
-def api_btc_trade_history():
+def api_btc_trade_history(mode: str = None):
     """Returns list of all historical trades and P&L results."""
     history = auto_executor.get_trades_history()
+    if mode:
+        history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
+
+@app.get("/api/btc/mode")
+def api_btc_mode():
+    return JSONResponse({"mode": auto_executor.mode})
+
+@app.get("/api/btc/paper/balance")
+def api_btc_paper_balance():
+    from backend.btc.paper_balance import load_balance
+    return JSONResponse({"balance": load_balance()})
+
+@app.post("/api/btc/paper/balance/reset")
+def api_btc_paper_balance_reset():
+    from backend.btc.paper_balance import reset_balance
+    new_bal = reset_balance()
+    return JSONResponse({"balance": new_bal})
 
 # ── Scalp Engine Endpoints ────────────────────────────────────────────
 from backend.btc.scalp_engine import scalp_engine

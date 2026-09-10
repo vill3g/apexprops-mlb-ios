@@ -2,5 +2,6 @@
   "enabled": true,
   "mode": "PAPER",
   "min_conviction": "GRADE A SETUP",
-  "max_contracts": 1
+  "max_contracts": 2,
+  "prediction_mode": true
 }
