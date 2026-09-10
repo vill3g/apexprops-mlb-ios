@@ -3797,7 +3797,7 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2500);
         const apiBase = getKalshiApiBase();
-        const res = await fetch(${apiBase}/api/btc/live, { signal: controller.signal });
+        const res = await fetch(`${apiBase}/api/btc/live`, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (res.ok) {
           const liveData = await res.json();
