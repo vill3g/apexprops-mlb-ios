@@ -649,6 +649,10 @@
             <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-[9px] sm:text-[10px] shadow-sm shadow-amber-500/20">₿</div>
               <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC/USD 15M</h3>
+              <!-- MOVED: 15M Trend Box Grid -->
+              <div id="btcTrendBoxGrid" class="flex items-center gap-0.5 sm:gap-1 justify-end shrink-0 scale-90 sm:scale-100 transform origin-right">
+                <!-- Injected via JavaScript with arrow, close price and close time -->
+              </div>
               <span id="btcChartStatus" class="text-[9px] font-mono text-emerald-400 font-bold px-1.5 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/20">● Live 24 Hours</span>
             </div>
             
@@ -717,10 +721,7 @@
               </span>
             </div>
 
-            <!-- Right: 15M Trend Box Grid (Arrows + Close Price) -->
-            <div id="btcTrendBoxGrid" class="flex items-center gap-0.5 sm:gap-1 justify-end shrink-0 scale-90 sm:scale-100 transform origin-right">
-              <!-- Injected via JavaScript with arrow, close price and close time -->
-            </div>
+
           </div>
 
           <!-- Slot 3: Official TradingView Real-Time Chart Container (Full Native Drawing Tools on Left) -->
