@@ -4333,11 +4333,30 @@
       }
 
       container.innerHTML = trades.slice(0, 5).map(t => {
-        const isWin = t.result === "WIN";
-        const isLoss = t.result === "LOSS";
-        const colorClass = isWin ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : (isLoss ? "text-red-400 border-red-800/40 bg-red-950/30" : "text-amber-400 border-amber-800/40 bg-amber-950/30");
-        const statusBadge = isWin ? "WIN" : (isLoss ? "LOSS" : "OPEN");
-        const pnlText = isWin ? `+$${parseFloat(t.pnl || 0).toFixed(2)}` : (isLoss ? `-$${Math.abs(parseFloat(t.pnl || 0)).toFixed(2)}` : "Pending");
+        const resStr = String(t.result || "").toUpperCase();
+        const statStr = String(t.status || "").toUpperCase();
+        const isWin = resStr.includes("WIN");
+        const isLoss = resStr.includes("LOSS");
+        const isClosed = statStr === "CLOSED" || statStr === "SETTLED";
+        const pnlNum = parseFloat(t.pnl || 0);
+
+        let colorClass = "text-amber-400 border-amber-800/40 bg-amber-950/30";
+        let statusBadge = "OPEN";
+        let pnlText = "Pending";
+
+        if (isWin) {
+          colorClass = "text-emerald-400 border-emerald-800/40 bg-emerald-950/30";
+          statusBadge = statStr === "CLOSED" ? "CLSD WIN" : "WIN";
+          pnlText = `+$${pnlNum.toFixed(2)}`;
+        } else if (isLoss) {
+          colorClass = "text-red-400 border-red-800/40 bg-red-950/30";
+          statusBadge = statStr === "CLOSED" ? "CLSD LOSS" : "LOSS";
+          pnlText = `-$${Math.abs(pnlNum).toFixed(2)}`;
+        } else if (isClosed) {
+          colorClass = "text-slate-400 border-slate-700/40 bg-slate-900/40";
+          statusBadge = "CLOSED";
+          pnlText = `$${pnlNum.toFixed(2)}`;
+        }
 
         return `
           <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono">

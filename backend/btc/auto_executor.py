@@ -113,8 +113,8 @@ class AutoExecutor:
         self.check_settlements(trades)
 
         total_trades = len(trades)
-        wins = sum(1 for t in trades if t.get("result") == "WIN")
-        losses = sum(1 for t in trades if t.get("result") == "LOSS")
+        wins = sum(1 for t in trades if "WIN" in str(t.get("result", "")).upper())
+        losses = sum(1 for t in trades if "LOSS" in str(t.get("result", "")).upper())
         open_trades = [t for t in trades if t.get("status") == "OPEN"]
         total_pnl = sum(float(t.get("pnl", 0.0)) for t in trades)
         win_rate = round((wins / max(1, wins + losses)) * 100.0, 1) if (wins + losses) > 0 else 0.0
@@ -153,16 +153,34 @@ class AutoExecutor:
 
         for t in trades:
             if t.get("status") == "OPEN":
-                close_time_str = t.get("interval_close_time")
-                # If close time has passed by at least 15 seconds
                 close_epoch = t.get("close_epoch", 0)
-                if close_epoch and (now_ts > close_epoch + 15):
-                    # Fetch recent candles to find settlement close
+                close_time_str = t.get("interval_close_time")
+
+                # Fallback: parse ISO close_time_str if close_epoch is missing
+                if not close_epoch and close_time_str:
                     try:
+                        import datetime
+                        dt = datetime.datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                        close_epoch = dt.timestamp()
+                    except Exception:
+                        pass
+
+                # If interval has concluded
+                if close_epoch and (now_ts > close_epoch + 10):
+                    try:
+                        settle_price = 0.0
+                        # 1. Try finding finalized close from exchange candle history
                         df = fetch_candles(timeframe="15m", limit=5)
                         if len(df) >= 2:
                             settle_price = float(df.iloc[-2]["close"])
-                            strike = float(t.get("strike", 0.0))
+                        
+                        # 2. Fallback to live ticker if candle delayed
+                        if not settle_price or settle_price <= 0:
+                            from backend.btc.data_fetcher import get_btc_ticker
+                            settle_price = float(get_btc_ticker().get("price", 0.0))
+
+                        if settle_price > 0:
+                            strike = float(t.get("strike", 0.0) or settle_price)
                             side = t.get("side", "").upper()
                             entry_price = float(t.get("entry_price", 0.50))
                             count = int(t.get("count", 1))
