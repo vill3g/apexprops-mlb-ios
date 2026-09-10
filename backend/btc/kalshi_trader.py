@@ -274,56 +274,46 @@ class KalshiTrader:
                 "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
             }
 
-        # Format price in cents (Kalshi expects price as integer cents 1-99 for limit orders)
-        price_cents = int(round(est_price * 100)) if est_price <= 1.0 else int(est_price)
-        price_cents = max(1, min(price_cents, 99))
+        # Clamp price to valid Kalshi range ($0.01 - $0.99)
+        est_price = max(0.01, min(float(est_price), 0.99))
 
-        payload = {
+        # V2 endpoint: POST /portfolio/events/orders
+        # side: "bid" = buy YES, "ask" = sell YES (economically = buy NO)
+        # price: fixed-point dollar string e.g. "0.6500"
+        # count: fixed-point count string e.g. "1.00"
+        v2_side = "bid" if side_clean == "yes" else "ask"
+        v2_payload = {
             "ticker": ticker,
-            "action": "buy",
-            "side": side_clean,
-            "type": order_type,
-            "count": int(count),
-            "client_order_id": client_order_id
+            "client_order_id": client_order_id,
+            "side": v2_side,
+            "count": f"{int(count)}.00",
+            "price": f"{est_price:.4f}",
+            "time_in_force": "immediate_or_cancel",
+            "self_trade_prevention_type": "taker_at_cross"
         }
-        if side_clean == "yes":
-            payload["yes_price"] = price_cents
-        else:
-            payload["no_price"] = price_cents
 
-        path = "/trade-api/v2/portfolio/orders"
+        path = "/trade-api/v2/portfolio/events/orders"
         try:
             headers = self._sign_headers("POST", path)
-            resp = requests.post(f"{BASE_URL}{path}", json=payload, headers=headers, timeout=5.0)
-
-            # Fallback to events order endpoint if legacy returns 404/redirect
-            if resp.status_code == 404 or "moved" in resp.text.lower():
-                alt_path = "/trade-api/v2/portfolio/events/orders"
-                alt_headers = self._sign_headers("POST", alt_path)
-                alt_payload = {
-                    "ticker": ticker,
-                    "side": "bid" if side_clean == "yes" else "ask",
-                    "count": str(count),
-                    "price": f"{est_price:.4f}",
-                    "client_order_id": client_order_id
-                }
-                resp = requests.post(f"{BASE_URL}{alt_path}", json=alt_payload, headers=alt_headers, timeout=5.0)
+            resp = requests.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
 
             if resp.status_code in [200, 201]:
                 res_data = resp.json()
-                order_info = res_data.get("order", res_data)
+                fill_count = float(res_data.get("fill_count", "0") or "0")
+                avg_fill = float(res_data.get("average_fill_price", str(est_price)) or str(est_price))
                 return {
                     "success": True,
                     "mode": "LIVE",
-                    "order_id": order_info.get("order_id", client_order_id),
-                    "client_order_id": client_order_id,
+                    "order_id": res_data.get("order_id", client_order_id),
+                    "client_order_id": res_data.get("client_order_id", client_order_id),
                     "ticker": ticker,
                     "side": side_clean.upper(),
                     "action": "BUY",
                     "count": count,
-                    "filled_price": est_price,
-                    "total_cost": round(est_price * count, 4),
-                    "status": order_info.get("status", "SUBMITTED"),
+                    "filled_price": avg_fill if fill_count > 0 else est_price,
+                    "fill_count": fill_count,
+                    "total_cost": round(avg_fill * fill_count if fill_count > 0 else est_price * count, 4),
+                    "status": "FILLED" if fill_count > 0 else "RESTING",
                     "created_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                     "raw_response": res_data
                 }
@@ -331,7 +321,7 @@ class KalshiTrader:
                 return {
                     "success": False,
                     "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {resp.text}",
-                    "payload_sent": payload
+                    "payload_sent": v2_payload
                 }
         except Exception as e:
             return {"success": False, "error": f"Order execution exception: {str(e)}"}
