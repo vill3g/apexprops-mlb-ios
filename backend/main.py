@@ -325,7 +325,7 @@ def live_poll():
         for g in slate
     ]
     return {
-        "server_time": time.strftime("%H:%M:%S ET"),
+        "server_time": time.strftime("%I:%M:%S %p ET").lstrip("0"),
         "live_count": len(live_games),
         "games": live_games
     }

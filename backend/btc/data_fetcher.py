@@ -422,20 +422,39 @@ def get_live_15m_target_data() -> dict:
     curr_price = float(ticker["price"])
     countdown = get_candle_countdown("15m")
 
-    # Refresh target cache every 30s or when empty
-    if not _target_cache["active_target"] or (now - _target_cache["timestamp"] > 30.0):
+    now_dt = datetime.now(timezone.utc)
+    curr_15m_start_min = (now_dt.minute // 15) * 15
+    interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
+    interval_id = int(interval_start_dt.timestamp())
+    start_time_12hr = interval_start_dt.strftime("%I:%M %p").lstrip('0')
+
+    # Check if target benchmark needs refresh:
+    # 1. New 15-minute interval began (interval_id != cached interval_id)
+    # 2. No active target set yet
+    # 3. 5 minutes (300s) have passed since last verification check
+    needs_refresh = (
+        _target_cache.get("interval_id") != interval_id or
+        _target_cache["active_target"] is None or
+        (now - _target_cache["timestamp"] >= 300.0)
+    )
+
+    if needs_refresh:
         try:
             df = fetch_candles("15m", limit=20)
             n = len(df)
-            if n >= 7:
-                # Active target is previous closed 15m candle close (index n - 2)
-                _target_cache["active_target"] = round(float(df.iloc[-2]["close"]), 2)
-                
-                # Extract last 5 completed targets (indices n - 6 to n - 2)
+            if n > 0:
+                # The BTC price at the start of current 15 minutes is the open of latest candle
+                curr_start_price = round(float(df.iloc[-1]["open"]), 2)
+                _target_cache["active_target"] = curr_start_price
+                _target_cache["interval_id"] = interval_id
+                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} UTC)"
+                _target_cache["timestamp"] = now
+
+                # Last 5 completed targets (minimal: close and direction)
                 last_5 = []
                 higher_count = 0
                 lower_count = 0
-                for i in range(n - 6, n - 1):
+                for i in range(max(1, n - 6), n - 1):
                     c = df.iloc[i]
                     p = df.iloc[i - 1]
                     c_close = float(c["close"])
@@ -448,9 +467,8 @@ def get_live_15m_target_data() -> dict:
                     else:
                         lower_count += 1
 
-                    # Format timestamp cleanly: e.g. "15:45"
                     t_val = c.get("time")
-                    time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%H:%M") if t_val else "--:--"
+                    time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
 
                     last_5.append({
                         "time": time_str,
@@ -464,42 +482,16 @@ def get_live_15m_target_data() -> dict:
 
                 _target_cache["last_5_targets"] = last_5
                 _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
-                _target_cache["timestamp"] = now
         except Exception as e:
             if not _target_cache["active_target"]:
                 _target_cache["active_target"] = curr_price
+                _target_cache["interval_id"] = interval_id
+                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} UTC)"
                 _target_cache["last_5_targets"] = []
                 _target_cache["streak_summary"] = "--"
 
-    # Fetch Robinhood 15M target strike/benchmark
-    rh_target = None
-    try:
-        h_url = "https://api.robinhood.com/marketdata/forex/historicals/3d961844-d360-45fc-989b-f6fca761d511/?bounds=24_7&interval=5minute&span=day"
-        rh_h_resp = requests.get(h_url, headers=HEADERS, timeout=3)
-        if rh_h_resp.status_code == 200:
-            pts = rh_h_resp.json().get("data_points", [])
-            last_15m = [p for p in pts if ":00:00Z" in p.get("begins_at", "") or ":15:00Z" in p.get("begins_at", "") or ":30:00Z" in p.get("begins_at", "") or ":45:00Z" in p.get("begins_at", "")]
-            if last_15m:
-                rh_target = round(float(last_15m[-1]["open_price"]), 2)
-    except Exception as e:
-        logger.info(f"Robinhood 15m target query: {e}")
-
-    # Check Kalshi live 15M target strike
-    kalshi_m = None
-    try:
-        kalshi_m = get_kalshi_15m_market()
-    except Exception:
-        pass
-
-    if kalshi_m and kalshi_m.get("target_price"):
-        target_price = kalshi_m["target_price"]
-        target_source = "Kalshi KXBTC15"
-    elif rh_target:
-        target_price = rh_target
-        target_source = "Robinhood 15M Target"
-    else:
-        target_price = _target_cache["active_target"] or curr_price
-        target_source = "15M Candle Close"
+    target_price = _target_cache["active_target"] or curr_price
+    target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} UTC)")
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
@@ -512,7 +504,7 @@ def get_live_15m_target_data() -> dict:
         "delta": delta,
         "delta_pct": delta_pct,
         "status": status,
-        "kalshi": kalshi_m,
+        "kalshi": None,
         "change_24h": ticker["change_24h"],
         "high_24h": ticker["high_24h"],
         "low_24h": ticker["low_24h"],

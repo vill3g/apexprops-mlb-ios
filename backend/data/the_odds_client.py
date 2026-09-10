@@ -281,31 +281,33 @@ class TheOddsClient:
         if not player_name:
             return None
         norm = player_name.strip().lower()
+        norm_clean = norm.replace(".", "").replace("-", " ")
 
         all_props = self._cache.get("props", {})
         for ev_id, players in all_props.items():
-            if norm in players:
-                p_data = players[norm]
-                markets = p_data.get("markets", {})
-                if is_pitcher and "pitcher_strikeouts" in markets:
-                    k_over = markets["pitcher_strikeouts"].get("over", {})
-                    if k_over:
-                        return {
-                            "market": "pitcher_strikeouts",
-                            "line": k_over.get("line", 5.5),
-                            "odds": k_over.get("odds", -125),
-                            "formatted_odds": k_over.get("formatted_odds", "-125"),
-                            "event_id": ev_id
-                        }
-                elif not is_pitcher:
-                    for m_cand in ["batter_hits", "batter_rbis", "batter_total_bases"]:
-                        if m_cand in markets and "over" in markets[m_cand]:
-                            cand_over = markets[m_cand]["over"]
+            for p_key, p_data in players.items():
+                p_key_clean = p_key.replace(".", "").replace("-", " ")
+                if norm == p_key or norm_clean == p_key_clean or norm in p_key or p_key in norm:
+                    markets = p_data.get("markets", {})
+                    if is_pitcher and "pitcher_strikeouts" in markets:
+                        k_over = markets["pitcher_strikeouts"].get("over", {})
+                        if k_over:
                             return {
-                                "market": m_cand,
-                                "line": cand_over.get("line", 1.5),
-                                "odds": cand_over.get("odds", -135),
-                                "formatted_odds": cand_over.get("formatted_odds", "-135"),
+                                "market": "pitcher_strikeouts",
+                                "line": k_over.get("line", 5.5),
+                                "odds": k_over.get("odds", -125),
+                                "formatted_odds": k_over.get("formatted_odds", "-125"),
                                 "event_id": ev_id
                             }
+                    elif not is_pitcher:
+                        for m_cand in ["batter_hits", "batter_rbis", "batter_total_bases", "batter_home_runs"]:
+                            if m_cand in markets and "over" in markets[m_cand]:
+                                cand_over = markets[m_cand]["over"]
+                                return {
+                                    "market": m_cand,
+                                    "line": cand_over.get("line", 1.5),
+                                    "odds": cand_over.get("odds", -135),
+                                    "formatted_odds": cand_over.get("formatted_odds", "-135"),
+                                    "event_id": ev_id
+                                }
         return None

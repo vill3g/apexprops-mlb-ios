@@ -1,53 +1,50 @@
 {
-  "timestamp": "2026-09-10 00:15:00+00:00",
+  "timestamp": "2026-09-10 00:45:00+00:00",
   "timeframe": "15M",
-  "price": 78248.98,
-  "direction": "NEUTRAL / CHOPPY",
-  "primary_bias": "NEUTRAL",
-  "confluence_score": 9,
-  "confidence_percent": 54,
+  "price": 78104.8,
+  "direction": "BEARISH (DOWN)",
+  "primary_bias": "DOWN",
+  "confluence_score": -30,
+  "confidence_percent": 64,
   "reasons_bullish": [
-    "Candlestick: Tweezer Bottom detected (+16)",
-    "Candlestick: Bullish Harami detected (+8)",
-    "MACD histogram expanding upward (+4)",
-    "Smart Money: Reacting to Bullish FVG between $78030.7 and $78074.4 (+$43.7) (+5)",
-    "Smart Money: Reacting to Bullish FVG between $78169.6 and $78198.4 (+$28.8) (+5)"
+    "Candlestick: Inverted Hammer detected (+16)",
+    "Smart Money: Reacting to Bullish FVG between $78030.7 and $78074.4 (+$43.7) (+5)"
   ],
   "reasons_bearish": [
     "Bearish EMA Ribbon (EMA 9 < 21 < 50 aligned) (-12)",
-    "RSI negative momentum at 48.0 (-3)",
-    "Market Structure: Lower Highs & Lower Lows (-8)",
-    "Trading below Session VWAP ($78724.0) - Seller edge (-6)"
+    "Candlestick: Shooting Star (Bearish Pin Bar) detected (-16)",
+    "RSI negative momentum at 43.0 (-3)",
+    "MACD histogram expanding downward (-4)",
+    "Chart Pattern: Double Top formed near $78338.2 (-10)",
+    "Trading below Session VWAP ($78719.1) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
-      "name": "Tweezer Bottom",
+      "name": "Shooting Star (Bearish Pin Bar)",
+      "type": "BEARISH",
+      "strength": 2,
+      "description": "Long upper rejection wick (92.7 pts) indicates aggressive sellers rejecting highs.",
+      "candle_index": 249
+    },
+    {
+      "name": "Inverted Hammer",
       "type": "BULLISH",
       "strength": 2,
-      "description": "Dual candle rejection at identical low level (78231.4).",
-      "candle_index": 249
-    },
-    {
-      "name": "Bullish Harami",
-      "type": "BULLISH",
-      "strength": 1,
-      "description": "Small green inside candle within previous red candle body indicating selling exhausted.",
-      "candle_index": 249
-    },
-    {
-      "name": "Doji (Indecision)",
-      "type": "NEUTRAL",
-      "strength": 1,
-      "description": "Open and close virtually equal, representing market consolidation or balance.",
+      "description": "Buyers tested higher prices following a downward move, setting up reversal.",
       "candle_index": 249
     }
   ],
   "market_structure": {
-    "trend": "DOWNTREND (Lower Highs & Lower Lows)",
-    "trend_bias": "BEARISH",
+    "trend": "EXPANDING BROADENING",
+    "trend_bias": "VOLATILE",
     "bos": null,
     "choch": null,
-    "double_pattern": null,
+    "double_pattern": {
+      "type": "DOUBLE_TOP",
+      "neckline": 77727.0,
+      "level": 78338.205,
+      "description": "Double Top formed near $78338.2"
+    },
     "nearest_support": 78025.0,
     "nearest_resistance": 78323.32,
     "support_levels": [
@@ -58,52 +55,43 @@
     "resistance_levels": [
       78323.32,
       78325.0,
-      78570.83
+      78353.09
     ]
   },
   "indicators": {
-    "price": 78248.98,
-    "ema_9": 78187.63318036898,
-    "ema_21": 78243.65976928327,
-    "ema_50": 78472.53149324453,
-    "ema_200": 78769.29096765856,
+    "price": 78104.8,
+    "ema_9": 78170.90379543616,
+    "ema_21": 78226.77546672872,
+    "ema_50": 78447.64620589996,
+    "ema_200": 78763.27273339445,
     "bullish_ribbon": false,
     "bearish_ribbon": true,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 47.97,
+    "rsi": 43.05,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -100.39,
-    "macd_signal": -147.49,
-    "macd_hist": 47.09,
+    "macd_line": -92.88,
+    "macd_signal": -127.36,
+    "macd_hist": 34.48,
     "macd_cross": null,
-    "macd_hist_direction": "EXPANDING_UP",
-    "bb_upper": 78426.69,
-    "bb_lower": 77903.57,
+    "macd_hist_direction": "EXPANDING_DOWN",
+    "bb_upper": 78416.25,
+    "bb_lower": 77894.92,
     "bb_squeeze": true,
-    "atr": 186.3,
-    "volume": 2.5917,
-    "vol_ratio": 0.07,
+    "atr": 185.58,
+    "volume": 21.7897,
+    "vol_ratio": 0.59,
     "vol_surge": false,
-    "vwap": 78723.99,
+    "vwap": 78719.06,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
-      {
-        "type": "BEARISH_FVG",
-        "top": 78453.41,
-        "bottom": 78323.82,
-        "size": 129.59,
-        "candle_index": 230,
-        "time": 1788982200,
-        "description": "Bearish FVG between $78323.8 and $78453.4 (-$129.6)"
-      },
       {
         "type": "BULLISH_FVG",
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 244,
+        "candle_index": 242,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -112,74 +100,48 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 246,
+        "candle_index": 244,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       }
     ]
   },
   "trade_setup": {
-    "direction": "WAIT (NEUTRAL)",
-    "entry_price": 78248.98,
-    "stop_loss": 78025.0,
-    "take_profit_1": 78323.32,
-    "take_profit_2": 78509.62,
-    "risk_reward_1": 1.0,
-    "risk_reward_2": 1.5,
-    "risk_amount": 186.3,
-    "risk_percent": 0.24,
-    "breakeven_rule": "Range trading - scalp tight limits",
+    "direction": "SELL (DOWN)",
+    "entry_price": 78104.8,
+    "stop_loss": 78327.5,
+    "take_profit_1": 77770.76,
+    "take_profit_2": 77548.06,
+    "risk_reward_1": 1.5,
+    "risk_reward_2": 2.5,
+    "risk_amount": 222.7,
+    "risk_percent": 0.29,
+    "breakeven_rule": "Move SL to Breakeven ($78104.8) after TP1 hit",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78283.82,
-    "target_source": "Kalshi KXBTC15",
-    "kalshi": {
-      "target_price": 78283.82,
-      "yes_prob": 21.5,
-      "no_prob": 78.5,
-      "ticker": "KXBTC15M-26SEP092030-30",
-      "close_time": "2026-09-10T00:30:00Z",
-      "status": "active",
-      "volume_24h": 928594.14,
-      "source": "Kalshi KXBTC15M"
-    },
-    "current_price": 78248.98,
-    "delta": -34.84,
-    "delta_pct": -0.045,
+    "target_price": 78146.36,
+    "target_source": "15M Start Price (12:45 AM UTC)",
+    "kalshi": null,
+    "current_price": 78104.8,
+    "delta": -41.56,
+    "delta_pct": -0.053,
     "status": "BELOW",
     "predicted_outcome": "BELOW TARGET (UNDER)",
-    "probability_percent": 56,
-    "confidence_badge": "TIGHT PIVOT BATTLE",
+    "probability_percent": 79,
+    "confidence_badge": "HIGH CONVICTION",
     "decision_factors": [
-      "Kalshi KXBTC15M Market Odds: 21.5% Yes / 78.5% No (Target: $78,283.82)",
-      "Price trading -$34.84 (-0.04%) below 15m target benchmark",
+      "Price trading -$41.56 (-0.05%) below 15m target benchmark",
       "Bearish EMA 9 < 21 ribbon exerting downward pressure",
-      "Current 15-minute candle printing green with active buyer absorption",
-      "Chart Pattern: Tweezer Bottom detected (+12 pts bullish reversal)",
-      "Chart Pattern: Bullish Harami detected (+6 pts bullish reversal)"
+      "Active candle is RED (sellers in control)",
+      "RSI (43.0) neutral/pivoting",
+      "Chart Pattern: Shooting Star (Bearish Pin Bar) detected (-12 pts bearish reversal)",
+      "Chart Pattern: Inverted Hammer detected (+12 pts bullish reversal)",
+      "Chart Pattern: Double Top resistance ceiling established"
     ],
     "last_5_targets": [
       {
-        "time": "23:00",
-        "price": 78131.65,
-        "delta": 239.36,
-        "delta_pct": 0.31,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
-      {
-        "time": "23:15",
-        "price": 78169.59,
-        "delta": 37.94,
-        "delta_pct": 0.05,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
-      {
-        "time": "23:30",
+        "time": "11:30 PM",
         "price": 78205.18,
         "delta": 35.59,
         "delta_pct": 0.05,
@@ -188,7 +150,7 @@
         "color": "green"
       },
       {
-        "time": "23:45",
+        "time": "11:45 PM",
         "price": 78283.98,
         "delta": 78.8,
         "delta_pct": 0.1,
@@ -197,15 +159,33 @@
         "color": "green"
       },
       {
-        "time": "00:00",
+        "time": "12:00 AM",
         "price": 78246.24,
         "delta": -37.74,
         "delta_pct": -0.05,
         "direction": "LOWER",
         "arrow": "\u25bc",
         "color": "red"
+      },
+      {
+        "time": "12:15 AM",
+        "price": 78299.3,
+        "delta": 53.06,
+        "delta_pct": 0.07,
+        "direction": "HIGHER",
+        "arrow": "\u25b2",
+        "color": "green"
+      },
+      {
+        "time": "12:30 AM",
+        "price": 78146.36,
+        "delta": -152.94,
+        "delta_pct": -0.2,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
       }
     ],
-    "streak_summary": "4 Higher / 1 Lower"
+    "streak_summary": "3 Higher / 2 Lower"
   }
 }

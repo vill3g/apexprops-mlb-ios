@@ -239,7 +239,7 @@
   <div class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
     
     <!-- Top Navigation / Header -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800 w-full max-w-full overflow-hidden">
+    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2.5 border-b border-slate-800 shadow-lg shadow-black/40 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full max-w-full">
       
       <!-- Brand & 3rd Logo (Apex Seam Monogram) -->
       <div class="flex items-center gap-3.5">
@@ -470,13 +470,13 @@
             </div>
           </div>
 
-          <!-- 1B: 15M Price Target (Kalshi KXBTC15 Target) -->
+          <!-- 1B: 15M Price Target (15M Start Price) -->
           <div class="bg-slate-900/95 border border-emerald-500/40 rounded-xl p-2.5 space-y-1 relative overflow-hidden shadow-lg shadow-emerald-500/10">
             <div class="flex items-center justify-between">
               <span class="text-[9px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
                 <span>🎯</span> 15M PRICE TARGET
               </span>
-              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">Kalshi KXBTC15 Target</span>
+              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">15M Start Price</span>
             </div>
             <div class="flex items-baseline justify-between gap-2">
               <div id="btcTargetPriceHero" class="text-xl sm:text-2xl font-black font-mono text-emerald-400">
@@ -562,8 +562,8 @@
           <div class="flex flex-col items-center justify-center text-center p-2 bg-slate-900/50 rounded-xl border border-slate-800/60">
             <div id="btcSignalBanner" class="signal-banner signal-neutral text-[10px] py-0.5 px-2">INITIALIZING</div>
             
-            <div class="meter-wrapper" style="max-height: 95px; margin: 2px 0;">
-              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 90px;">
+            <div class="meter-wrapper" style="max-height: 75px; margin: 1px 0;">
+              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 70px;">
                 <path d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="#1e293b" stroke-width="13" stroke-linecap="round"/>
                 <path id="btcMeterArc" d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="url(#btcMeterGradient)" stroke-width="13" stroke-dasharray="235.6" stroke-dashoffset="117.8" stroke-linecap="round"/>
                 <line id="btcMeterNeedle" x1="100" y1="95" x2="100" y2="28" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" style="transform-origin: 100px 95px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
@@ -632,7 +632,7 @@
       <!-- ========================================================================= -->
       <!-- 3. CHART CONTAINER (TRADINGVIEW LIGHTWEIGHT CANDLESTICKS)                 -->
       <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col" style="height: 220px;">
+      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col" style="height: 180px;">
         <div class="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-800">
           <div class="flex items-center gap-2">
             <h3 id="btcChartTitle" class="text-xs font-black text-white">BTC/USD 15M Chart</h3>
@@ -645,7 +645,7 @@
             <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 inline-block"></span> EMA 200</div>
           </div>
         </div>
-        <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 175px;">
+        <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 140px; height: 140px;">
           <!-- Lightweight chart renders here -->
         </div>
       </div>
@@ -667,198 +667,9 @@
           </div>
         </div>
 
-        <!-- 5-Target Single Row Grid (Never Wraps, 5 Cols on all screens) -->
-        <div id="btcTrendBoxGrid" class="trend-box-grid">
+        <!-- Minimal 5-Target Trend Row: Only Close Price and Up/Down Arrow -->
+        <div id="btcTrendBoxGrid" class="grid grid-cols-5 gap-1.5">
           <!-- Injected via JavaScript in single row -->
-        </div>
-      </div>
-
-      <!-- ========================================================================= -->
-      <!-- 5. AUXILIARY: TRADE PLAN, POSITION CALCULATOR, INDICATORS & ACTIVITY       -->
-      <!-- ========================================================================= -->
-      <div class="space-y-2">
-        <!-- Sub-panel toggle buttons for iPad Mini / mobile compact view -->
-        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
-          <div class="flex items-center gap-1.5 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-[10px]">
-            <button type="button" onclick="switchBtcAuxTab('plan')" id="btnAuxPlan" class="btc-aux-btn active px-2.5 py-1 rounded-lg font-bold transition text-white bg-slate-800 shadow-sm cursor-pointer">
-              🎯 Trade Plan & Sizing
-            </button>
-            <button type="button" onclick="switchBtcAuxTab('matrix')" id="btnAuxMatrix" class="btc-aux-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white cursor-pointer">
-              📊 Technical Matrix
-            </button>
-            <button type="button" onclick="switchBtcAuxTab('all')" id="btnAuxAll" class="btc-aux-btn px-2.5 py-1 rounded-lg font-bold transition text-slate-400 hover:text-white cursor-pointer">
-              👁️ View All Side-by-Side
-            </button>
-          </div>
-          <span class="text-[9px] text-slate-500 font-mono hidden sm:inline">iPad Mini Friendly</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5" id="btcAuxContainer">
-          <!-- Left: Actionable Trade Plan & Calculator -->
-          <div id="btcAuxColLeft" class="space-y-2.5">
-            <!-- Actionable Trade Plan Card -->
-            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <h3 id="btcPlanTitleText" class="text-xs font-black text-white uppercase tracking-wider">Actionable Trade Plan</h3>
-                <span id="btcPlanType" class="text-[9px] px-2 py-0.5 rounded font-black text-slate-950 bg-amber-400 uppercase">BUY SETUP</span>
-              </div>
-
-              <div class="setup-grid">
-                <div class="setup-box highlight-entry">
-                  <div class="text-[9px] text-slate-400 uppercase font-bold">Entry Price</div>
-                  <div id="btcPlanEntry" class="text-xs sm:text-sm font-black font-mono text-cyan-300 mt-0.5">$--,---.--</div>
-                </div>
-                <div class="setup-box highlight-sl">
-                  <div class="text-[9px] text-red-400 uppercase font-bold">Stop Loss</div>
-                  <div id="btcPlanSl" class="text-xs sm:text-sm font-black font-mono text-red-400 mt-0.5">$--,---.--</div>
-                </div>
-                <div class="setup-box highlight-tp">
-                  <div class="text-[9px] text-emerald-400 uppercase font-bold">TP 1 (1.5R)</div>
-                  <div id="btcPlanTp1" class="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
-                </div>
-                <div class="setup-box highlight-tp">
-                  <div class="text-[9px] text-emerald-400 uppercase font-bold">TP 2 (2.5R)</div>
-                  <div id="btcPlanTp2" class="text-xs sm:text-sm font-black font-mono text-emerald-400 mt-0.5">$--,---.--</div>
-                </div>
-              </div>
-
-              <div class="flex justify-between text-[10px] text-slate-400 pt-0.5">
-                <span>Risk: <strong id="btcPlanRiskAmt" class="text-white">$0.00</strong> (<span id="btcPlanRiskPct">0.0%</span>)</span>
-                <span>R:R: <strong class="text-emerald-400">1 : 1.5 - 2.5</strong></span>
-              </div>
-              <div class="rr-bar">
-                <div class="rr-risk"></div>
-                <div class="rr-reward"></div>
-              </div>
-            </div>
-
-            <!-- Position Sizing & Risk Management Calculator -->
-            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <span>🧮</span> Position Sizing Calculator
-                </h3>
-                <span class="text-[9px] text-slate-400 font-mono">Risk Engine</span>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label class="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Account Balance ($)</label>
-                  <input type="number" id="calcAccountSize" value="5000" step="500" oninput="calculatePositionSize()"
-                         class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono font-bold text-xs focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                  <label class="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">Risk per Trade (%)</label>
-                  <select id="calcRiskPct" onchange="calculatePositionSize()"
-                          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white font-mono font-bold text-xs focus:outline-none focus:border-amber-500">
-                    <option value="0.5">0.5% (Conservative)</option>
-                    <option value="1.0" selected>1.0% (Standard)</option>
-                    <option value="2.0">2.0% (Aggressive)</option>
-                    <option value="3.0">3.0% (Max Risk)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-2 text-center p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-                <div>
-                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Max Risk ($)</div>
-                  <div id="calcRiskDollar" class="font-bold text-red-400 font-mono mt-0.5">$50.00</div>
-                </div>
-                <div>
-                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Position (BTC)</div>
-                  <div id="calcPosBtc" class="font-bold text-amber-400 font-mono mt-0.5">0.0000</div>
-                </div>
-                <div>
-                  <div class="text-[8px] text-slate-400 uppercase font-semibold">Notional ($)</div>
-                  <div id="calcPosNotional" class="font-bold text-white font-mono mt-0.5">$0.00</div>
-                </div>
-              </div>
-
-              <div id="calcBreakevenRule" class="text-[9px] text-cyan-300 font-mono bg-cyan-950/40 border border-cyan-500/20 p-1.5 rounded-lg text-center">
-                Move SL to Breakeven once TP1 (+1.5R) is achieved.
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Technical Matrix, Detected Patterns & Signal Log -->
-          <div id="btcAuxColRight" class="space-y-2.5">
-            <!-- Technical Indicators Matrix -->
-            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs font-black text-white uppercase tracking-wider">Technical Indicator Matrix</h3>
-                <span id="btcIndTfLabel" class="text-[9px] text-slate-400">15M Calculation</span>
-              </div>
-              <div class="matrix-grid">
-                <div class="matrix-item">
-                  <div class="m-label">RSI (14)</div>
-                  <div id="btcIndRsi" class="m-val text-white">--</div>
-                  <div id="btcIndRsiStatus" class="m-sub">Neutral</div>
-                </div>
-                <div class="matrix-item">
-                  <div class="m-label">MACD (12, 26, 9)</div>
-                  <div id="btcIndMacd" class="m-val text-white">--</div>
-                  <div id="btcIndMacdStatus" class="m-sub">--</div>
-                </div>
-                <div class="matrix-item">
-                  <div class="m-label">EMA Ribbon</div>
-                  <div id="btcIndRibbon" class="m-val text-white">--</div>
-                  <div id="btcIndRibbonStatus" class="m-sub">EMA 9/21/50</div>
-                </div>
-                <div class="matrix-item">
-                  <div class="m-label">Bollinger Bands</div>
-                  <div id="btcIndBb" class="m-val text-xs text-white">--</div>
-                  <div id="btcIndBbSqueeze" class="m-sub">Bandwidth: --</div>
-                </div>
-                <div class="matrix-item">
-                  <div class="m-label">Volatility (ATR 14)</div>
-                  <div id="btcIndAtr" class="m-val text-white">$--</div>
-                  <div id="btcIndAtrLabel" class="m-sub">15m Volatility</div>
-                </div>
-                <div class="matrix-item">
-                  <div class="m-label">Volume Surge</div>
-                  <div id="btcIndVol" class="m-val text-white">--x</div>
-                  <div id="btcIndVolStatus" class="m-sub">vs 20-SMA</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Detected Candlestick Patterns & Catalysts -->
-            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs font-black text-white uppercase tracking-wider">Detected Patterns & Catalysts</h3>
-                <span id="btcFactorsCount" class="text-[9px] text-slate-400">0 active</span>
-              </div>
-              <div id="btcPatternsList" class="flex flex-col gap-1.5">
-                <div class="text-xs text-slate-500 py-0.5">No prominent patterns on recent candle</div>
-              </div>
-              <div id="btcFactorsList" class="factors-container">
-                <div class="text-xs text-slate-500">Analyzing market drivers...</div>
-              </div>
-            </div>
-
-            <!-- Recent Signal Activity Log -->
-            <div class="glass-panel rounded-2xl p-3 sm:p-4 space-y-2">
-              <h3 class="text-xs font-black text-white uppercase tracking-wider">Recent Signal Activity</h3>
-              <div class="overflow-x-auto">
-                <table class="log-table">
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>TF</th>
-                      <th>Direction</th>
-                      <th>Score</th>
-                      <th>Price</th>
-                      <th>Primary Catalyst</th>
-                    </tr>
-                  </thead>
-                  <tbody id="btcLogTbody">
-                    <tr><td colspan="6" class="text-center text-slate-500 py-2">No signals recorded yet</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -2549,7 +2360,7 @@
     function addBtcLogEntry(data) {
       const tbody = document.getElementById("btcLogTbody");
       if (!tbody) return;
-      const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       const primeReason = (data.reasons_bullish && data.reasons_bullish[0]) || (data.reasons_bearish && data.reasons_bearish[0]) || "Neutral consolidation";
       const tf = data.timeframe || btcCurrentTimeframe.toUpperCase();
 
@@ -2609,7 +2420,7 @@
       }
       const sourceEl = document.getElementById("btcTargetSourceLabel");
       if (sourceEl) {
-        sourceEl.innerText = d.target_source || "Kalshi KXBTC15 Target";
+        sourceEl.innerText = d.target_source || "15M Start Price";
       }
 
       // Target Delta Badge
@@ -2645,26 +2456,17 @@
       }
       if (!grid || !Array.isArray(last5) || last5.length === 0) return;
 
+      // Minimal 15M Target Trend: ONLY close price and up or down arrow
       grid.innerHTML = last5.map(t => {
         const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
         const cardClass = isUp ? "trend-card trend-up" : "trend-card trend-down";
         const arrowColor = isUp ? "text-emerald-400" : "text-red-400";
-        const sign = isUp ? "+" : "-";
-        const absDelta = Math.abs(t.delta !== undefined ? t.delta : (t.change !== undefined ? t.change : 0));
         const priceVal = Number(t.price || 0);
 
         return `
-          <div class="${cardClass} p-1.5 sm:p-2.5 text-center min-w-0 flex flex-col justify-between">
-            <div class="text-[9px] sm:text-[10px] text-slate-400 font-mono truncate mb-0.5">
-              ${t.time || "--:--"}
-            </div>
-            <div class="text-[11px] sm:text-xs md:text-sm font-black font-mono text-white truncate my-0.5">
-              $${Math.round(priceVal).toLocaleString()}
-            </div>
-            <div class="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs font-mono font-bold ${arrowColor} mt-0.5">
-              <span class="text-xs sm:text-sm leading-none">${t.arrow || (isUp ? "▲" : "▼")}</span>
-              <span class="hidden sm:inline">${sign}$${absDelta.toFixed(0)}</span>
-            </div>
+          <div class="${cardClass} py-1.5 px-2 text-center flex items-center justify-center gap-1 rounded-xl font-mono">
+            <span class="text-[11px] sm:text-xs font-black text-white">$${Math.round(priceVal).toLocaleString()}</span>
+            <span class="text-xs font-black ${arrowColor}">${isUp ? '▲' : '▼'}</span>
           </div>
         `;
       }).join("");
@@ -2822,7 +2624,7 @@
               window.cachedKalshiData = kObj;
               window.cachedBtcTargetPrice = strike;
               const sLbl = document.getElementById("btcTargetSourceLabel");
-              if (sLbl) sLbl.innerText = "Kalshi KXBTC15 Target";
+              if (sLbl) sLbl.innerText = "15M Start Price";
               if (true) {
                 const tHero = document.getElementById("btcTargetPriceHero");
                 if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -2949,7 +2751,7 @@
 
             const tSec = isCoinbaseFormat ? c[0] : Math.floor(c[0] / 1000);
             const dObj = new Date(tSec * 1000);
-            const timeStr = dObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeStr = dObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
             return {
               time: timeStr,
@@ -3071,7 +2873,7 @@
         }
 
         const tHero = document.getElementById("btcTargetPriceHero");
-        if (tHero && (!tHero.innerText || tHero.innerText.includes("--") || tHero.innerText === "$0.00")) {
+        if (tHero && target && target > 0) {
           tHero.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 

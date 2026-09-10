@@ -311,30 +311,18 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     lower_count = 0
     from datetime import datetime, timezone
 
-    # Check Kalshi live 15M contract strike
-    kalshi_m = None
-    try:
-        kalshi_m = get_kalshi_15m_market()
-    except Exception:
-        pass
+    # Target benchmark is current 15m candle start/open price
+    now_dt = datetime.now(timezone.utc)
+    curr_15m_start_min = (now_dt.minute // 15) * 15
+    interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
+    start_time_12hr = interval_start_dt.strftime("%I:%M %p").lstrip('0')
 
-    if kalshi_m and kalshi_m.get("target_price"):
-        active_target = float(kalshi_m["target_price"])
-        target_source = "Kalshi KXBTC15"
+    if n_rows > 0:
+        active_target = round(float(df_ind.iloc[-1]["open"]), 2)
+        target_source = f"15M Start Price ({start_time_12hr} UTC)"
     else:
-        try:
-            from backend.btc.data_fetcher import get_live_15m_target_data
-            live_d = get_live_15m_target_data()
-            if live_d and live_d.get("target_price"):
-                active_target = float(live_d["target_price"])
-                target_source = live_d.get("target_source", "Kalshi KXBTC15")
-        except Exception:
-            pass
-
-    if not active_target and n_rows >= 7:
-        # Fallback: previous completed 15m candle close (index n - 2)
-        active_target = round(float(df_ind.iloc[-2]["close"]), 2)
-        target_source = "15M Candle Close"
+        active_target = float(curr_price)
+        target_source = "15M Start Price"
 
     if n_rows >= 7:
         # Last 5 completed targets (indices n - 6 to n - 2)
@@ -352,7 +340,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
                 lower_count += 1
 
             t_val = c.get("time")
-            time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%H:%M") if t_val else "--:--"
+            time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
 
             last_5_targets.append({
                 "time": time_str,
@@ -401,24 +389,27 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     last_candle = df_ind.iloc[-1]
     candle_green = float(last_candle["close"]) >= float(last_candle["open"])
     if candle_green:
-        pred_weight += 15
-        pred_factors.append("Current 15-minute candle printing green with active buyer absorption")
+        pred_weight += 12
+        pred_factors.append("Active candle is GREEN (buyers absorbing supply)")
     else:
-        pred_weight -= 15
-        pred_factors.append("Current 15-minute candle printing red with active selling pressure")
+        pred_weight -= 12
+        pred_factors.append("Active candle is RED (sellers in control)")
 
     rsi_val = ind_summary.get("rsi", 50)
-    if rsi_val >= 55:
+    if rsi_val >= 58:
         pred_weight += 12
-        pred_factors.append(f"RSI momentum strong at {rsi_val:.1f} (favors holding above target)")
-    elif rsi_val <= 45:
+        pred_factors.append(f"RSI ({rsi_val:.1f}) in bullish expansion zone")
+    elif rsi_val <= 42:
         pred_weight -= 12
-        pred_factors.append(f"RSI momentum weak at {rsi_val:.1f} (favors resolving below target)")
+        pred_factors.append(f"RSI ({rsi_val:.1f}) in bearish compression zone")
+    else:
+        pred_factors.append(f"RSI ({rsi_val:.1f}) neutral/pivoting")
 
-    # D. Detected Candlestick Chart Patterns
-    for p in patterns:
-        p_name = p.get("name")
+    # D. Detected Reversal & Continuation Patterns
+    active_patterns = patterns
+    for p in active_patterns:
         p_type = p.get("type")
+        p_name = p.get("name")
         p_str = p.get("strength", 1)
         pts = p_str * 6
         if p_type == "BULLISH":
@@ -465,10 +456,11 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             pred_weight -= 10
             pred_factors.append("Institutional Volume Surge detected on Red candle")
 
-    # G. Key Support / Resistance vs Target Benchmark
+    # G. Key Levels & Structural Confluence
+    levels = {"nearest_support": near_support, "nearest_resistance": near_resistance}
     if near_support and near_support >= active_target:
         pred_weight += 12
-        pred_factors.append(f"Key structural support (${near_support:.1f}) sits ABOVE target, forming a price floor")
+        pred_factors.append(f"Key structural support (${near_support:.1f}) sits ABOVE target, establishing price floor")
     elif near_resistance and near_resistance <= active_target:
         pred_weight -= 12
         pred_factors.append(f"Key structural resistance (${near_resistance:.1f}) sits BELOW target, capping recovery")
@@ -485,8 +477,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         pred_prob = 52
 
     # Prepend Kalshi Market Odds factor if available
-    if kalshi_m and kalshi_m.get("yes_prob") is not None:
-        pred_factors.insert(0, f"Kalshi KXBTC15M Market Odds: {kalshi_m['yes_prob']}% Yes / {kalshi_m['no_prob']}% No (Target: ${kalshi_m['target_price']:,.2f})")
+    kalshi_m = None
 
     target_benchmark = {
         "target_price": active_target,
