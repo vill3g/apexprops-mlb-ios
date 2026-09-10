@@ -637,11 +637,11 @@
     <!-- ============================================================= -->
     <div id="view_btc_analyzer" class="space-y-2">
       
-      <!-- Main Row: 80% Chart (Left, Full Height) + Integrated Right Pane (20%) -->
-      <div class="btc-main-grid grid grid-cols-1 lg:grid-cols-5 gap-2 items-stretch w-full">
+      <!-- Main Row: 66% Chart (Left, Full Height) + Integrated Right Pane (33%) -->
+      <div class="btc-main-grid grid grid-cols-1 lg:grid-cols-3 gap-2 items-stretch w-full">
         
-        <!-- LEFT: Official TradingView Real-Time Chart (Takes 80% width on landscape) -->
-        <div id="btcChartCard" class="btc-chart-card lg:col-span-4 glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between border border-slate-800" style="min-height: 520px; height: 100%;">
+        <!-- LEFT: Official TradingView Real-Time Chart (Takes 66% width on landscape) -->
+        <div id="btcChartCard" class="btc-chart-card lg:col-span-2 glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between border border-slate-800" style="min-height: 520px; height: 100%;">
           
           <!-- Chart Header: Title, Status, Timeframes, Stream Badge, Refresh & Sound -->
           <div class="flex flex-wrap items-center justify-between gap-1.5 pb-1 mb-1 border-b border-slate-800/80">
@@ -4318,13 +4318,13 @@
         }
 
         // Render Recent Trades
-        renderKalshiTradesList(data.recent_trades || []);
+        renderKalshiTradesList(data.recent_trades || [], data.active_market);
       } catch (err) {
         console.warn("Error polling Kalshi trade status:", err);
       }
     }
 
-    function renderKalshiTradesList(trades) {
+    function renderKalshiTradesList(trades, activeMarket) {
       const container = document.getElementById("kalshiTradesListContainer");
       if (!container) return;
       if (!trades || trades.length === 0) {
@@ -4338,13 +4338,26 @@
         const isWin = resStr.includes("WIN");
         const isLoss = resStr.includes("LOSS");
         const isClosed = statStr === "CLOSED" || statStr === "SETTLED";
-        const pnlNum = parseFloat(t.pnl || 0);
-
+        let pnlNum = parseFloat(t.pnl || 0);
+        
         let colorClass = "text-amber-400 border-amber-800/40 bg-amber-950/30";
         let statusBadge = "OPEN";
         let pnlText = "Pending";
 
-        if (isWin) {
+        if (!isClosed && activeMarket && t.entry_price) {
+            // Live PNL calculation
+            const side = String(t.side || "YES").toUpperCase();
+            const entryCost = parseFloat(t.entry_price);
+            const count = parseInt(t.count || 1);
+            let exitPrice = entryCost; // fallback
+
+            if (side === "YES" && activeMarket.yes_bid !== undefined) exitPrice = parseFloat(activeMarket.yes_bid);
+            else if (side === "NO" && activeMarket.no_bid !== undefined) exitPrice = parseFloat(activeMarket.no_bid);
+
+            pnlNum = (exitPrice - entryCost) * count;
+            pnlText = pnlNum >= 0 ? `+$${pnlNum.toFixed(2)}` : `-$${Math.abs(pnlNum).toFixed(2)}`;
+            colorClass = pnlNum >= 0 ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : "text-red-400 border-red-800/40 bg-red-950/30";
+        } else if (isWin) {
           colorClass = "text-emerald-400 border-emerald-800/40 bg-emerald-950/30";
           statusBadge = statStr === "CLOSED" ? "CLSD WIN" : "WIN";
           pnlText = `+$${pnlNum.toFixed(2)}`;
@@ -4357,13 +4370,34 @@
           statusBadge = "CLOSED";
           pnlText = `$${pnlNum.toFixed(2)}`;
         }
+        
+        // Format Timestamp (e.g. "2026-09-10 12:34:56 UTC" -> "12:34 PM")
+        let timeStr = "";
+        try {
+            if (t.timestamp) {
+                const parts = t.timestamp.split(" ");
+                if (parts.length >= 2) {
+                    const timeParts = parts[1].split(":");
+                    if (timeParts.length >= 2) {
+                        const hr = parseInt(timeParts[0]);
+                        const mn = timeParts[1];
+                        const isPM = hr >= 12;
+                        const hr12 = hr % 12 || 12;
+                        timeStr = `${hr12}:${mn} ${isPM ? 'PM' : 'AM'}`;
+                    }
+                }
+            }
+        } catch(e) {}
 
         return `
-          <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono">
-            <div class="flex items-center gap-1">
-              <span class="font-bold uppercase">${t.side}</span>
-              <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
-              <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
+          <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1">
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center gap-1">
+                <span class="font-bold uppercase">${t.side}</span>
+                <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
+                <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
+              </div>
+              <span class="text-[7px] text-slate-500">${timeStr}</span>
             </div>
             <div class="flex items-center gap-1 font-bold">
               <span>${statusBadge}</span>

@@ -121,6 +121,16 @@ class AutoExecutor:
 
         active_market = kalshi_trader.get_active_15m_market()
 
+        # Paper Trading Balance Logic
+        if self.mode == "PAPER":
+            paper_start = 500.0
+            realized_pnl = sum(float(t.get("pnl", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") in ["SETTLED", "CLOSED"])
+            open_cost = sum(float(t.get("cost", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") == "OPEN")
+            bal_dollars = paper_start + realized_pnl - open_cost
+            bal_cents = int(bal_dollars * 100)
+            balance_info["balance_dollars"] = bal_dollars
+            balance_info["balance_cents"] = bal_cents
+
         return {
             "enabled": self.enabled,
             "mode": self.mode,
