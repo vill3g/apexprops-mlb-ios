@@ -540,15 +540,15 @@
       <div class="flex-1 flex items-center justify-center gap-1.5 sm:gap-2.5 mx-auto flex-wrap sm:flex-nowrap">
         
         <!-- 0. LIKELY TO CLOSE (Simple UP / DOWN - Cut Width In Half) -->
-        <div id="topBarLikelyCard" class="btc-panel-card btc-card-prediction flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 shadow-sm transition-all shrink-0">
-          <div id="btcPredBanner" class="flex flex-col items-start leading-none transition-all">
-            <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-slate-400 tracking-wider">LIKELY</span>
-              <span id="btcPredProbText" class="text-[7px] sm:text-[8px] font-mono font-bold text-cyan-400">--%</span>
+        <div id="topBarLikelyCard" class="btc-panel-card btc-card-prediction flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-slate-700 shadow-md transition-all shrink-0">
+          <div id="btcPredBanner" class="flex flex-col items-start leading-none transition-all w-full">
+            <div class="flex items-center gap-1.5 w-full justify-between">
+              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-slate-400 tracking-[0.05em]">LIKELY</span>
+              <span id="btcPredProbText" class="text-[8px] sm:text-[9px] font-mono font-bold text-cyan-400 bg-slate-950 px-1 py-0.5 rounded">--%</span>
             </div>
-            <div class="flex items-center gap-1 mt-0.5">
-              <span id="btcPredOutcomeText" class="text-xs sm:text-sm font-black font-mono text-white leading-none">--</span>
-              <span id="btcPredConfidenceTag" class="text-[6.5px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-slate-400 bg-slate-950 font-mono">--</span>
+            <div class="flex items-center gap-1.5 mt-0.5 w-full">
+              <span id="btcPredOutcomeText" class="text-base sm:text-lg font-black font-mono text-white leading-none">--</span>
+              <span id="btcPredConfidenceTag" class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded font-bold uppercase text-slate-400 bg-slate-950 font-mono self-end mb-0.5">--</span>
             </div>
           </div>
           <!-- Hidden preservation elements for JS backward compatibility -->
@@ -569,7 +569,7 @@
           </span>
           <div class="flex flex-col items-start leading-none">
             <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-slate-400 tracking-[0.05em]">LIVE BTC</span>
-            <span id="topBarLivePrice" class="text-base sm:text-lg font-black font-mono text-white transition-colors">$--,---.--</span>
+            <span id="topBarLivePrice" class="text-base sm:text-lg font-black font-mono text-white transition-colors mt-0.5">$--,---.--</span>
           </div>
         </div>
 
@@ -586,16 +586,16 @@
         </div>
 
         <!-- 3. 15M Close Time / Countdown (Right Beside Target Price) -->
-        <div id="topBarCountdownCard" class="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-sm shadow-cyan-500/10 transition-colors shrink-0">
-          <span class="text-xs sm:text-sm">⏱️</span>
+        <div id="topBarCountdownCard" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-cyan-500/60 shadow-md shadow-cyan-500/20 transition-colors shrink-0">
+          <span class="text-sm sm:text-base">⏳</span>
           <div class="flex flex-col items-start leading-none">
-            <div class="flex items-center gap-1">
-              <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase text-cyan-400 tracking-wider">15M CLOSE</span>
-              <span class="text-[6px] sm:text-[7px] font-mono font-bold text-slate-400 uppercase">LEFT</span>
+            <div class="flex items-center gap-1.5 w-full justify-between">
+              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-cyan-400 tracking-[0.05em]">15M CLOSE</span>
+              <span class="text-[7px] sm:text-[8px] font-mono font-bold text-slate-400 bg-slate-950 px-1 py-0.5 rounded uppercase">LEFT</span>
             </div>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span id="btcCountdown" class="text-xs sm:text-sm font-black font-mono text-cyan-400 leading-none">--:--</span>
-              <div class="w-7 sm:w-9 h-1 bg-slate-800 rounded-full overflow-hidden flex self-center">
+            <div class="flex items-center gap-2 mt-0.5 w-full">
+              <span id="btcCountdown" class="text-base sm:text-lg font-black font-mono text-cyan-400 leading-none">--:--</span>
+              <div class="w-10 sm:w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden flex self-center">
                 <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
               </div>
             </div>
