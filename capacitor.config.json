@@ -1,0 +1,21 @@
+{
+  "appId": "com.btc15m.app",
+  "appName": "Kalshi_AiTrader",
+  "webDir": "static",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always"
+  },
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https",
+    "allowNavigation": [
+      "*.tradingview.com",
+      "*.tradingview-widget.com",
+      "s3.tradingview.com",
+      "s.tradingview.com",
+      "*.coinbase.com",
+      "*.binance.com"
+    ]
+  }
+}

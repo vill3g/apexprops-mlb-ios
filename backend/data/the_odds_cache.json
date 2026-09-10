@@ -1,0 +1,1925 @@
+{
+  "games": {
+    "3ef6a964abad382c28ff1f91886dc99a": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "TB@ATL": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "ATL": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "TB": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "Atlanta Braves": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "Tampa Bay Rays": {
+      "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "home_abbr": "ATL",
+      "away_abbr": "TB",
+      "commence_time": "2026-09-10T16:15:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -125,
+      "away_ml": 104,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -103,
+      "under_odds": -117,
+      "details": "TB @ ATL",
+      "source": "the-odds-api.com"
+    },
+    "01c6d0131073b3384f27ac03c02906e4": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "HOU@PHI": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "PHI": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "HOU": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "Philadelphia Phillies": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "Houston Astros": {
+      "event_id": "01c6d0131073b3384f27ac03c02906e4",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "home_abbr": "PHI",
+      "away_abbr": "HOU",
+      "commence_time": "2026-09-10T17:06:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -178,
+      "away_ml": 150,
+      "spread": -1.5,
+      "over_under": 8.5,
+      "over_odds": -110,
+      "under_odds": -110,
+      "details": "HOU @ PHI",
+      "source": "the-odds-api.com"
+    },
+    "36a89478e8db28447dfe1b5d1f656477": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "TEX@SEA": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "SEA": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "TEX": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "Seattle Mariners": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "Texas Rangers": {
+      "event_id": "36a89478e8db28447dfe1b5d1f656477",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "home_abbr": "SEA",
+      "away_abbr": "TEX",
+      "commence_time": "2026-09-10T20:10:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -131,
+      "away_ml": 109,
+      "spread": -1.5,
+      "over_under": 6.5,
+      "over_odds": -125,
+      "under_odds": 104,
+      "details": "TEX @ SEA",
+      "source": "the-odds-api.com"
+    },
+    "de5c4fe6a041ce8073e59e063fe7f31f": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "COL@NYY": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "NYY": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "COL": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "New York Yankees": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "Colorado Rockies": {
+      "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "home_abbr": "NYY",
+      "away_abbr": "COL",
+      "commence_time": "2026-09-10T23:05:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "DraftKings",
+      "home_ml": -344,
+      "away_ml": 270,
+      "spread": -1.5,
+      "over_under": 9.0,
+      "over_odds": 100,
+      "under_odds": -120,
+      "details": "COL @ NYY",
+      "source": "the-odds-api.com"
+    },
+    "46bb732d224f9da07f9e3bb2f32281cc": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    },
+    "PIT@CWS": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    },
+    "CWS": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    },
+    "PIT": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    },
+    "Chicago White Sox": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    },
+    "Pittsburgh Pirates": {
+      "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "home_abbr": "CWS",
+      "away_abbr": "PIT",
+      "commence_time": "2026-09-10T23:41:00Z",
+      "provider": "The Odds API",
+      "provider_logo": "https://the-odds-api.com/favicon.ico",
+      "bookmaker": "FanDuel",
+      "home_ml": -106,
+      "away_ml": -110,
+      "spread": 1.5,
+      "over_under": 7.5,
+      "over_odds": -122,
+      "under_odds": 100,
+      "details": "PIT @ CWS",
+      "source": "the-odds-api.com"
+    }
+  },
+  "props": {
+    "d618d7800fcb9ab31497c22ecb2120af": {},
+    "f1963b019550753f962dfa7a7fa3e781": {
+      "luis arraez": {
+        "player_name": "Luis Arraez",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 190,
+              "formatted_odds": "+190"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -260,
+              "formatted_odds": "-260"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 1000,
+              "formatted_odds": "+1000"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -2000,
+              "formatted_odds": "-2000"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 3.5,
+              "odds": 190,
+              "formatted_odds": "+190"
+            },
+            "under": {
+              "line": 3.5,
+              "odds": -260,
+              "formatted_odds": "-260"
+            }
+          }
+        }
+      },
+      "trea turner": {
+        "player_name": "Trea Turner",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 2.5,
+              "odds": 900,
+              "formatted_odds": "+900"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -1800,
+              "formatted_odds": "-1800"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 5.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 5.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          }
+        }
+      },
+      "j.t. realmuto": {
+        "player_name": "J.T. Realmuto",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 320,
+              "formatted_odds": "+320"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -475,
+              "formatted_odds": "-475"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 750,
+              "formatted_odds": "+750"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1400,
+              "formatted_odds": "-1400"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 320,
+              "formatted_odds": "+320"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -475,
+              "formatted_odds": "-475"
+            }
+          }
+        }
+      },
+      "bryan de la cruz": {
+        "player_name": "Bryan De La Cruz",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 350,
+              "formatted_odds": "+350"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -525,
+              "formatted_odds": "-525"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 950,
+              "formatted_odds": "+950"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1800,
+              "formatted_odds": "-1800"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 350,
+              "formatted_odds": "+350"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -525,
+              "formatted_odds": "-525"
+            }
+          }
+        }
+      },
+      "kyle schwarber": {
+        "player_name": "Kyle Schwarber",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 380,
+              "formatted_odds": "+380"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -575,
+              "formatted_odds": "-575"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 4.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 4.5,
+              "odds": 380,
+              "formatted_odds": "+380"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -575,
+              "formatted_odds": "-575"
+            }
+          }
+        }
+      },
+      "bryce harper": {
+        "player_name": "Bryce Harper",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 2.5,
+              "odds": 950,
+              "formatted_odds": "+950"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -2000,
+              "formatted_odds": "-2000"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "bryson stott": {
+        "player_name": "Bryson Stott",
+        "event_id": "f1963b019550753f962dfa7a7fa3e781",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 215,
+              "formatted_odds": "+215"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -295,
+              "formatted_odds": "-295"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 850,
+              "formatted_odds": "+850"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1600,
+              "formatted_odds": "-1600"
+            }
+          }
+        }
+      }
+    },
+    "01c6d0131073b3384f27ac03c02906e4": {},
+    "8dafff0a0578488c760ea460e1e6f7b3": {
+      "jakob marsee": {
+        "player_name": "Jakob Marsee",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 3.5,
+              "odds": 295,
+              "formatted_odds": "+295"
+            },
+            "under": {
+              "line": 3.5,
+              "odds": -425,
+              "formatted_odds": "-425"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 2.5,
+              "odds": 700,
+              "formatted_odds": "+700"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -1400,
+              "formatted_odds": "-1400"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 3.5,
+              "odds": 295,
+              "formatted_odds": "+295"
+            },
+            "under": {
+              "line": 3.5,
+              "odds": -425,
+              "formatted_odds": "-425"
+            }
+          }
+        }
+      },
+      "a.j. ewing": {
+        "player_name": "A.J. Ewing",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 205,
+              "formatted_odds": "+205"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -285,
+              "formatted_odds": "-285"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 475,
+              "formatted_odds": "+475"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -800,
+              "formatted_odds": "-800"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 2.5,
+              "odds": 205,
+              "formatted_odds": "+205"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -285,
+              "formatted_odds": "-285"
+            }
+          }
+        }
+      },
+      "griffin conine": {
+        "player_name": "Griffin Conine",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 300,
+              "formatted_odds": "+300"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -425,
+              "formatted_odds": "-425"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1200,
+              "formatted_odds": "-1200"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 2.5,
+              "odds": 300,
+              "formatted_odds": "+300"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -425,
+              "formatted_odds": "-425"
+            }
+          }
+        }
+      },
+      "joe mack": {
+        "player_name": "Joe Mack",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 2.5,
+              "odds": 1000,
+              "formatted_odds": "+1000"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -2000,
+              "formatted_odds": "-2000"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 2.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          }
+        }
+      },
+      "marcus semien": {
+        "player_name": "Marcus Semien",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 180,
+              "formatted_odds": "+180"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -245,
+              "formatted_odds": "-245"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 500,
+              "formatted_odds": "+500"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -900,
+              "formatted_odds": "-900"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 180,
+              "formatted_odds": "+180"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -245,
+              "formatted_odds": "-245"
+            }
+          }
+        }
+      },
+      "jared young": {
+        "player_name": "Jared Young",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 185,
+              "formatted_odds": "+185"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -255,
+              "formatted_odds": "-255"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 185,
+              "formatted_odds": "+185"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -255,
+              "formatted_odds": "-255"
+            }
+          }
+        }
+      },
+      "otto lopez": {
+        "player_name": "Otto Lopez",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 220,
+              "formatted_odds": "+220"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -310,
+              "formatted_odds": "-310"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1200,
+              "formatted_odds": "-1200"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 220,
+              "formatted_odds": "+220"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -310,
+              "formatted_odds": "-310"
+            }
+          }
+        }
+      },
+      "bo bichette": {
+        "player_name": "Bo Bichette",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 250,
+              "formatted_odds": "+250"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -350,
+              "formatted_odds": "-350"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1200,
+              "formatted_odds": "-1200"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 250,
+              "formatted_odds": "+250"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -350,
+              "formatted_odds": "-350"
+            }
+          }
+        }
+      },
+      "luis torrens": {
+        "player_name": "Luis Torrens",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 275,
+              "formatted_odds": "+275"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -390,
+              "formatted_odds": "-390"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 2.5,
+              "odds": 800,
+              "formatted_odds": "+800"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -1400,
+              "formatted_odds": "-1400"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 2.5,
+              "odds": 275,
+              "formatted_odds": "+275"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -390,
+              "formatted_odds": "-390"
+            }
+          }
+        }
+      },
+      "owen caissie": {
+        "player_name": "Owen Caissie",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 275,
+              "formatted_odds": "+275"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -390,
+              "formatted_odds": "-390"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 4.5,
+              "odds": 275,
+              "formatted_odds": "+275"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -390,
+              "formatted_odds": "-390"
+            }
+          }
+        }
+      },
+      "carson benge": {
+        "player_name": "Carson Benge",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 140,
+              "formatted_odds": "+140"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -190,
+              "formatted_odds": "-190"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1200,
+              "formatted_odds": "-1200"
+            }
+          }
+        }
+      },
+      "kyle stowers": {
+        "player_name": "Kyle Stowers",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 215,
+              "formatted_odds": "+215"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -300,
+              "formatted_odds": "-300"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 475,
+              "formatted_odds": "+475"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -800,
+              "formatted_odds": "-800"
+            }
+          }
+        }
+      },
+      "francisco lindor": {
+        "player_name": "Francisco Lindor",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 245,
+              "formatted_odds": "+245"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -340,
+              "formatted_odds": "-340"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          }
+        }
+      },
+      "heriberto hernandez": {
+        "player_name": "Heriberto Hernandez",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 255,
+              "formatted_odds": "+255"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -360,
+              "formatted_odds": "-360"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 550,
+              "formatted_odds": "+550"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "juan soto": {
+        "player_name": "Juan Soto",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 295,
+              "formatted_odds": "+295"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -425,
+              "formatted_odds": "-425"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          }
+        }
+      },
+      "graham pauley": {
+        "player_name": "Graham Pauley",
+        "event_id": "8dafff0a0578488c760ea460e1e6f7b3",
+        "markets": {
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 475,
+              "formatted_odds": "+475"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -800,
+              "formatted_odds": "-800"
+            }
+          }
+        }
+      }
+    },
+    "c8513bd1ec6dd659d64e9c17052f4c9d": {},
+    "163a7ada5c294169bddfad332af498ef": {
+      "luis garcia jr.": {
+        "player_name": "Luis Garcia Jr.",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 2.5,
+              "odds": 270,
+              "formatted_odds": "+270"
+            },
+            "under": {
+              "line": 2.5,
+              "odds": -380,
+              "formatted_odds": "-380"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 6.5,
+              "odds": 270,
+              "formatted_odds": "+270"
+            },
+            "under": {
+              "line": 6.5,
+              "odds": -380,
+              "formatted_odds": "-380"
+            }
+          }
+        }
+      },
+      "george lombard jr.": {
+        "player_name": "George Lombard Jr.",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 4.5,
+              "odds": 850,
+              "formatted_odds": "+850"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -1600,
+              "formatted_odds": "-1600"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 4.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          }
+        }
+      },
+      "jose caballero": {
+        "player_name": "Jose Caballero",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 245,
+              "formatted_odds": "+245"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -340,
+              "formatted_odds": "-340"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 750,
+              "formatted_odds": "+750"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1400,
+              "formatted_odds": "-1400"
+            }
+          }
+        }
+      },
+      "cody bellinger": {
+        "player_name": "Cody Bellinger",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 255,
+              "formatted_odds": "+255"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -360,
+              "formatted_odds": "-360"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "ben rice": {
+        "player_name": "Ben Rice",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 265,
+              "formatted_odds": "+265"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -380,
+              "formatted_odds": "-380"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "spencer jones": {
+        "player_name": "Spencer Jones",
+        "event_id": "163a7ada5c294169bddfad332af498ef",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 360,
+              "formatted_odds": "+360"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -525,
+              "formatted_odds": "-525"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 650,
+              "formatted_odds": "+650"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1200,
+              "formatted_odds": "-1200"
+            }
+          }
+        }
+      }
+    },
+    "de5c4fe6a041ce8073e59e063fe7f31f": {},
+    "cd4dc96755ca32cc907956934a4f2fcb": {
+      "drake baldwin": {
+        "player_name": "Drake Baldwin",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 115,
+              "formatted_odds": "+115"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -155,
+              "formatted_odds": "-155"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 1.5,
+              "odds": 450,
+              "formatted_odds": "+450"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -750,
+              "formatted_odds": "-750"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 4.5,
+              "odds": 115,
+              "formatted_odds": "+115"
+            },
+            "under": {
+              "line": 4.5,
+              "odds": -155,
+              "formatted_odds": "-155"
+            }
+          }
+        }
+      },
+      "mauricio dubon": {
+        "player_name": "Mauricio Dubon",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 1.5,
+              "odds": 150,
+              "formatted_odds": "+150"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -205,
+              "formatted_odds": "-205"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 550,
+              "formatted_odds": "+550"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          },
+          "batter_total_bases": {
+            "over": {
+              "line": 1.5,
+              "odds": 150,
+              "formatted_odds": "+150"
+            },
+            "under": {
+              "line": 1.5,
+              "odds": -205,
+              "formatted_odds": "-205"
+            }
+          }
+        }
+      },
+      "ronald acuna jr.": {
+        "player_name": "Ronald Acuna Jr.",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 120,
+              "formatted_odds": "+120"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -160,
+              "formatted_odds": "-160"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 425,
+              "formatted_odds": "+425"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -700,
+              "formatted_odds": "-700"
+            }
+          }
+        }
+      },
+      "michael harris ii": {
+        "player_name": "Michael Harris II",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 130,
+              "formatted_odds": "+130"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -180,
+              "formatted_odds": "-180"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 400,
+              "formatted_odds": "+400"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -650,
+              "formatted_odds": "-650"
+            }
+          }
+        }
+      },
+      "matt olson": {
+        "player_name": "Matt Olson",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 150,
+              "formatted_odds": "+150"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -205,
+              "formatted_odds": "-205"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 370,
+              "formatted_odds": "+370"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -575,
+              "formatted_odds": "-575"
+            }
+          }
+        }
+      },
+      "sean murphy": {
+        "player_name": "Sean Murphy",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 165,
+              "formatted_odds": "+165"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -220,
+              "formatted_odds": "-220"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 550,
+              "formatted_odds": "+550"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "ozzie albies": {
+        "player_name": "Ozzie Albies",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 200,
+              "formatted_odds": "+200"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -275,
+              "formatted_odds": "-275"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 550,
+              "formatted_odds": "+550"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1000,
+              "formatted_odds": "-1000"
+            }
+          }
+        }
+      },
+      "austin riley": {
+        "player_name": "Austin Riley",
+        "event_id": "cd4dc96755ca32cc907956934a4f2fcb",
+        "markets": {
+          "batter_hits": {
+            "over": {
+              "line": 0.5,
+              "odds": 240,
+              "formatted_odds": "+240"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -340,
+              "formatted_odds": "-340"
+            }
+          },
+          "batter_rbis": {
+            "over": {
+              "line": 0.5,
+              "odds": 600,
+              "formatted_odds": "+600"
+            },
+            "under": {
+              "line": 0.5,
+              "odds": -1100,
+              "formatted_odds": "-1100"
+            }
+          }
+        }
+      }
+    }
+  },
+  "games_fetched_at": 1789022568.585902,
+  "props_fetched_at": {
+    "d618d7800fcb9ab31497c22ecb2120af": 1789001566.9500268,
+    "f1963b019550753f962dfa7a7fa3e781": 1789001568.0251145,
+    "01c6d0131073b3384f27ac03c02906e4": 1789001569.1577005,
+    "8dafff0a0578488c760ea460e1e6f7b3": 1789001570.2729256,
+    "c8513bd1ec6dd659d64e9c17052f4c9d": 1789001571.3237443,
+    "163a7ada5c294169bddfad332af498ef": 1789001572.2754507,
+    "de5c4fe6a041ce8073e59e063fe7f31f": 1789001573.6901495,
+    "cd4dc96755ca32cc907956934a4f2fcb": 1789001574.6906214
+  }
+}

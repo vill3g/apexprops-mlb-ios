@@ -1,0 +1,685 @@
+"""
+Candlestick Pattern & Market Structure Detector for 15-Minute Bitcoin Candles.
+Detects single/multi-candle patterns, swing pivots, Market Structure (BOS, CHoCH, HH/HL),
+Support/Resistance clusters, and Double Tops/Bottoms.
+"""
+
+import numpy as np
+import pandas as pd
+
+
+def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
+    """
+    Scans the latest 1-3 candles in the DataFrame for high-significance candlestick patterns.
+    Returns a list of detected pattern dicts with:
+      - name: e.g. "Bullish Engulfing"
+      - type: "BULLISH" | "BEARISH" | "NEUTRAL"
+      - strength: 1 to 3 (1=mild, 2=moderate, 3=strong)
+      - description: readable explanation
+      - candle_index: index of the triggering candle
+    """
+    patterns = []
+    n = len(df)
+    if n < 5:
+        return patterns
+
+    curr = df.iloc[-1]
+    prev = df.iloc[-2]
+    prev2 = df.iloc[-3]
+
+    curr_body = abs(curr["close"] - curr["open"])
+    curr_range = curr["high"] - curr["low"] + 1e-10
+    curr_is_green = curr["close"] >= curr["open"]
+    curr_upper_wick = curr["high"] - max(curr["close"], curr["open"])
+    curr_lower_wick = min(curr["close"], curr["open"]) - curr["low"]
+
+    prev_body = abs(prev["close"] - prev["open"])
+    prev_range = prev["high"] - prev["low"] + 1e-10
+    prev_is_green = prev["close"] >= prev["open"]
+
+    prev2_body = abs(prev2["close"] - prev2["open"])
+    prev2_is_green = prev2["close"] >= prev2["open"]
+
+    avg_body = df["close"].sub(df["open"]).abs().tail(20).mean()
+
+    # 1. Bullish Engulfing
+    if (not prev_is_green) and curr_is_green and (curr["close"] >= prev["open"]) and (curr["open"] <= prev["close"]):
+        if curr_body > avg_body * 0.8:
+            patterns.append({
+                "name": "Bullish Engulfing",
+                "type": "BULLISH",
+                "strength": 3,
+                "description": "Strong green candle completely engulfed the previous red candle's body.",
+                "candle_index": n - 1
+            })
+
+    # 2. Bearish Engulfing
+    if prev_is_green and (not curr_is_green) and (curr["open"] >= prev["close"]) and (curr["close"] <= prev["open"]):
+        if curr_body > avg_body * 0.8:
+            patterns.append({
+                "name": "Bearish Engulfing",
+                "type": "BEARISH",
+                "strength": 3,
+                "description": "Strong red candle completely engulfed the previous green candle's body.",
+                "candle_index": n - 1
+            })
+
+    # 3. Hammer (Bullish Pin Bar)
+    # Lower wick >= 2x body, small upper wick <= 25% range, body in top 35% of candle
+    if curr_lower_wick >= (curr_body * 2.0) and curr_upper_wick <= (curr_range * 0.25) and curr_body > (curr_range * 0.1):
+        patterns.append({
+            "name": "Hammer (Bullish Pin Bar)",
+            "type": "BULLISH",
+            "strength": 2,
+            "description": f"Long lower rejection wick ({curr_lower_wick:.1f} pts) indicates aggressive buyers stepping in.",
+            "candle_index": n - 1
+        })
+
+    # 4. Shooting Star (Bearish Pin Bar)
+    # Upper wick >= 2x body, small lower wick <= 25% range, body in bottom 35% of candle
+    if curr_upper_wick >= (curr_body * 2.0) and curr_lower_wick <= (curr_range * 0.25) and curr_body > (curr_range * 0.1):
+        patterns.append({
+            "name": "Shooting Star (Bearish Pin Bar)",
+            "type": "BEARISH",
+            "strength": 2,
+            "description": f"Long upper rejection wick ({curr_upper_wick:.1f} pts) indicates aggressive sellers rejecting highs.",
+            "candle_index": n - 1
+        })
+
+    # 5. Inverted Hammer (at potential bottom)
+    if curr_upper_wick >= (curr_body * 2.0) and curr_lower_wick <= (curr_range * 0.15) and not prev_is_green:
+        patterns.append({
+            "name": "Inverted Hammer",
+            "type": "BULLISH",
+            "strength": 2,
+            "description": "Buyers tested higher prices following a downward move, setting up reversal.",
+            "candle_index": n - 1
+        })
+
+    # 6. Hanging Man (at potential top)
+    if curr_lower_wick >= (curr_body * 2.0) and curr_upper_wick <= (curr_range * 0.15) and prev_is_green:
+        patterns.append({
+            "name": "Hanging Man",
+            "type": "BEARISH",
+            "strength": 1,
+            "description": "Sellers pushed price sharply down during the session before a late recovery.",
+            "candle_index": n - 1
+        })
+
+    # 7. Morning Star (Bullish Reversal 3-bar)
+    if (not prev2_is_green) and prev2_body > avg_body * 0.7:
+        if prev_body < avg_body * 0.5:  # small middle star
+            if curr_is_green and curr["close"] > (prev2["open"] + prev2["close"]) / 2:
+                patterns.append({
+                    "name": "Morning Star",
+                    "type": "BULLISH",
+                    "strength": 3,
+                    "description": "Classic 3-candle bullish reversal: strong selloff -> pause -> strong green surge.",
+                    "candle_index": n - 1
+                })
+
+    # 8. Evening Star (Bearish Reversal 3-bar)
+    if prev2_is_green and prev2_body > avg_body * 0.7:
+        if prev_body < avg_body * 0.5:
+            if (not curr_is_green) and curr["close"] < (prev2["open"] + prev2["close"]) / 2:
+                patterns.append({
+                    "name": "Evening Star",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": "Classic 3-candle bearish reversal: strong rally -> pause -> strong red drop.",
+                    "candle_index": n - 1
+                })
+
+    # 9. Three White Soldiers (Strong Bullish Continuation)
+    if n >= 4:
+        c1, c2, c3 = df.iloc[-3], df.iloc[-2], df.iloc[-1]
+        if (c1["close"] > c1["open"] and c2["close"] > c2["open"] and c3["close"] > c3["open"] and
+                c3["close"] > c2["close"] > c1["close"] and
+                c3["open"] > c2["open"] > c1["open"]):
+            patterns.append({
+                "name": "Three White Soldiers",
+                "type": "BULLISH",
+                "strength": 3,
+                "description": "Three consecutive advancing green candles with higher highs and higher closes.",
+                "candle_index": n - 1
+            })
+
+    # 10. Three Black Crows (Strong Bearish Continuation)
+    if n >= 4:
+        c1, c2, c3 = df.iloc[-3], df.iloc[-2], df.iloc[-1]
+        if (c1["close"] < c1["open"] and c2["close"] < c2["open"] and c3["close"] < c3["open"] and
+                c3["close"] < c2["close"] < c1["close"] and
+                c3["open"] < c2["open"] < c1["open"]):
+            patterns.append({
+                "name": "Three Black Crows",
+                "type": "BEARISH",
+                "strength": 3,
+                "description": "Three consecutive declining red candles with lower lows and lower closes.",
+                "candle_index": n - 1
+            })
+
+    # 11. Tweezer Bottom (Identical lows at support)
+    if abs(curr["low"] - prev["low"]) / (curr["close"] + 1e-10) < 0.0008:
+        if (not prev_is_green) and curr_is_green:
+            patterns.append({
+                "name": "Tweezer Bottom",
+                "type": "BULLISH",
+                "strength": 2,
+                "description": f"Dual candle rejection at identical low level ({curr['low']:.1f}).",
+                "candle_index": n - 1
+            })
+
+    # 12. Tweezer Top (Identical highs at resistance)
+    if abs(curr["high"] - prev["high"]) / (curr["close"] + 1e-10) < 0.0008:
+        if prev_is_green and (not curr_is_green):
+            patterns.append({
+                "name": "Tweezer Top",
+                "type": "BEARISH",
+                "strength": 2,
+                "description": f"Dual candle rejection at identical high level ({curr['high']:.1f}).",
+                "candle_index": n - 1
+            })
+
+    # 13. Bullish Harami (Inside bar after red)
+    if (not prev_is_green) and curr_is_green:
+        if curr["open"] >= prev["close"] and curr["close"] <= prev["open"]:
+            patterns.append({
+                "name": "Bullish Harami",
+                "type": "BULLISH",
+                "strength": 1,
+                "description": "Small green inside candle within previous red candle body indicating selling exhausted.",
+                "candle_index": n - 1
+            })
+
+    # 14. Bearish Harami (Inside bar after green)
+    if prev_is_green and (not curr_is_green):
+        if curr["open"] <= prev["close"] and curr["close"] >= prev["open"]:
+            patterns.append({
+                "name": "Bearish Harami",
+                "type": "BEARISH",
+                "strength": 1,
+                "description": "Small red inside candle within previous green candle body indicating buying exhausted.",
+                "candle_index": n - 1
+            })
+
+    # 15. Doji / Dragonfly / Gravestone
+    if curr_body <= (curr_range * 0.10):
+        if curr_lower_wick > curr_range * 0.65:
+            patterns.append({
+                "name": "Dragonfly Doji",
+                "type": "BULLISH",
+                "strength": 2,
+                "description": "Long lower wick with open/close near the absolute high of the bar.",
+                "candle_index": n - 1
+            })
+        elif curr_upper_wick > curr_range * 0.65:
+            patterns.append({
+                "name": "Gravestone Doji",
+                "type": "BEARISH",
+                "strength": 2,
+                "description": "Long upper wick with open/close near the absolute low of the bar.",
+                "candle_index": n - 1
+            })
+        else:
+            patterns.append({
+                "name": "Doji (Indecision)",
+                "type": "NEUTRAL",
+                "strength": 1,
+                "description": "Open and close virtually equal, representing market consolidation or balance.",
+                "candle_index": n - 1
+            })
+
+    # 16. Multi-Candle Advanced Formations (Descending & Ascending)
+    if n >= 12:
+        w = df.tail(12)
+        w_highs = w["high"].values
+        w_lows = w["low"].values
+        w_closes = w["close"].values
+
+        # A. Descending Triangle (Bearish Breakdown)
+        sorted_l = sorted(w_lows[:9])
+        if abs(sorted_l[0] - sorted_l[2]) / (sorted_l[0] + 1e-6) < 0.0025:
+            h1 = max(w_highs[0:3])
+            h2 = max(w_highs[3:6])
+            h3 = max(w_highs[6:9])
+            if h1 > h2 > h3:
+                patterns.append({
+                    "name": "Descending Triangle",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": f"Flat floor support near ${sorted_l[0]:,.0f} compressed by consecutive lower highs. Downward breakdown favored.",
+                    "candle_index": n - 1
+                })
+
+        # B. Ascending Triangle (Bullish Breakout)
+        sorted_h = sorted(w_highs[:9], reverse=True)
+        if abs(sorted_h[0] - sorted_h[2]) / (sorted_h[0] + 1e-6) < 0.0025:
+            l1 = min(w_lows[0:3])
+            l2 = min(w_lows[3:6])
+            l3 = min(w_lows[6:9])
+            if l1 < l2 < l3:
+                patterns.append({
+                    "name": "Ascending Triangle",
+                    "type": "BULLISH",
+                    "strength": 3,
+                    "description": f"Flat ceiling resistance near ${sorted_h[0]:,.0f} pressured by consecutive higher lows. Upward breakout favored.",
+                    "candle_index": n - 1
+                })
+
+        # C. Head and Shoulders Top (Bearish Reversal)
+        l_peak = max(w_highs[0:3])
+        head = max(w_highs[3:6])
+        r_peak = max(w_highs[6:9])
+        if head > l_peak and head > r_peak and abs(l_peak - r_peak) / (head + 1e-6) < 0.006:
+            patterns.append({
+                "name": "Head and Shoulders Top",
+                "type": "BEARISH",
+                "strength": 3,
+                "description": f"Classic 3-peak bearish reversal: Head at ${head:,.0f}, Shoulders near ${r_peak:,.0f}. Downward breakdown confirmed.",
+                "candle_index": n - 1
+            })
+
+        # D. Bear Flag (Descending Continuation)
+        drop = (w_closes[0] - w_closes[3]) / (w_closes[0] + 1e-6)
+        if drop >= 0.003:
+            drift = (w_closes[6] - w_closes[3]) / (w_closes[3] + 1e-6)
+            if 0 < drift < (drop * 0.6):
+                patterns.append({
+                    "name": "Bear Flag (Descending Continuation)",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": f"Sharp impulse drop (-{drop*100:.2f}%) followed by weak upward consolidation flag. Downward continuation favored.",
+                    "candle_index": n - 1
+                })
+
+        # E. Bull Flag (Ascending Continuation)
+        rally = (w_closes[3] - w_closes[0]) / (w_closes[0] + 1e-6)
+        if rally >= 0.003:
+            pullback = (w_closes[3] - w_closes[6]) / (w_closes[3] + 1e-6)
+            if 0 < pullback < (rally * 0.6):
+                patterns.append({
+                    "name": "Bull Flag (Ascending Continuation)",
+                    "type": "BULLISH",
+                    "strength": 3,
+                    "description": f"Sharp impulse rally (+{rally*100:.2f}%) followed by shallow pullback flag. Upward continuation favored.",
+                    "candle_index": n - 1
+                })
+
+    return patterns
+
+
+def find_swing_points(df: pd.DataFrame, window: int = 2) -> tuple[list[dict], list[dict]]:
+    """
+    Identifies swing highs and swing lows (fractals).
+    A swing high has a higher high than `window` candles to its left and right.
+    A swing low has a lower low than `window` candles to its left and right.
+    """
+    swing_highs = []
+    swing_lows = []
+    n = len(df)
+
+    for i in range(window, n - window):
+        high_i = df.loc[i, "high"]
+        low_i = df.loc[i, "low"]
+
+        # Check swing high
+        is_swing_high = all(high_i > df.loc[i - k, "high"] for k in range(1, window + 1)) and \
+                        all(high_i >= df.loc[i + k, "high"] for k in range(1, window + 1))
+        if is_swing_high:
+            swing_highs.append({
+                "index": i,
+                "time": int(df.loc[i, "time"]),
+                "price": float(high_i)
+            })
+
+        # Check swing low
+        is_swing_low = all(low_i < df.loc[i - k, "low"] for k in range(1, window + 1)) and \
+                       all(low_i <= df.loc[i + k, "low"] for k in range(1, window + 1))
+        if is_swing_low:
+            swing_lows.append({
+                "index": i,
+                "time": int(df.loc[i, "time"]),
+                "price": float(low_i)
+            })
+
+    return swing_highs, swing_lows
+
+
+def analyze_market_structure(df: pd.DataFrame) -> dict:
+    """
+    Determines:
+    - Trend structure: Higher Highs + Higher Lows (Uptrend) vs Lower Highs + Lower Lows (Downtrend)
+    - Break of Structure (BOS)
+    - Change of Character (CHoCH)
+    - Key Support and Resistance levels from recent swing clusters
+    - Double Top / Double Bottom formations
+    """
+    swing_highs, swing_lows = find_swing_points(df, window=2)
+    n = len(df)
+    curr_price = float(df.iloc[-1]["close"])
+
+    structure = {
+        "trend": "SIDEWAYS / CHOPPY",
+        "trend_bias": "NEUTRAL",
+        "bos": None,
+        "choch": None,
+        "double_pattern": None,
+        "nearest_support": None,
+        "nearest_resistance": None,
+        "support_levels": [],
+        "resistance_levels": []
+    }
+
+    if len(swing_highs) < 2 or len(swing_lows) < 2:
+        return structure
+
+    sh_latest = swing_highs[-1]
+    sh_prev = swing_highs[-2]
+    sl_latest = swing_lows[-1]
+    sl_prev = swing_lows[-2]
+
+    # Trend structure determination
+    higher_high = sh_latest["price"] > sh_prev["price"]
+    higher_low = sl_latest["price"] > sl_prev["price"]
+    lower_high = sh_latest["price"] < sh_prev["price"]
+    lower_low = sl_latest["price"] < sl_prev["price"]
+
+    if higher_high and higher_low:
+        structure["trend"] = "UPTREND (Higher Highs & Higher Lows)"
+        structure["trend_bias"] = "BULLISH"
+    elif lower_high and lower_low:
+        structure["trend"] = "DOWNTREND (Lower Highs & Lower Lows)"
+        structure["trend_bias"] = "BEARISH"
+    elif higher_high and lower_low:
+        structure["trend"] = "EXPANDING BROADENING"
+        structure["trend_bias"] = "VOLATILE"
+    elif lower_high and higher_low:
+        structure["trend"] = "CONTRACTING TRIANGLE"
+        structure["trend_bias"] = "CONSOLIDATION"
+
+    # Break of Structure (BOS) on latest candle
+    last_close = float(df.iloc[-1]["close"])
+    last_high = float(df.iloc[-1]["high"])
+    last_low = float(df.iloc[-1]["low"])
+
+    if last_close > sh_latest["price"]:
+        structure["bos"] = {
+            "type": "BULLISH_BOS",
+            "broken_level": sh_latest["price"],
+            "description": f"Price broke above recent swing high (${sh_latest['price']:.1f})"
+        }
+        if structure["trend_bias"] == "BEARISH":
+            structure["choch"] = {
+                "type": "BULLISH_CHOCH",
+                "description": f"Change of Character: First break above swing high in downtrend"
+            }
+    elif last_close < sl_latest["price"]:
+        structure["bos"] = {
+            "type": "BEARISH_BOS",
+            "broken_level": sl_latest["price"],
+            "description": f"Price broke below recent swing low (${sl_latest['price']:.1f})"
+        }
+        if structure["trend_bias"] == "BULLISH":
+            structure["choch"] = {
+                "type": "BEARISH_CHOCH",
+                "description": f"Change of Character: First break below swing low in uptrend"
+            }
+
+    # Double Top / Double Bottom detection
+    if abs(sh_latest["price"] - sh_prev["price"]) / sh_latest["price"] < 0.0015:
+        if (sh_latest["index"] - sh_prev["index"]) >= 4:
+            structure["double_pattern"] = {
+                "type": "DOUBLE_TOP",
+                "neckline": sl_latest["price"],
+                "level": (sh_latest["price"] + sh_prev["price"]) / 2,
+                "description": f"Double Top formed near ${(sh_latest['price'] + sh_prev['price']) / 2:.1f}"
+            }
+
+    if abs(sl_latest["price"] - sl_prev["price"]) / sl_latest["price"] < 0.0015:
+        if (sl_latest["index"] - sl_prev["index"]) >= 4:
+            structure["double_pattern"] = {
+                "type": "DOUBLE_BOTTOM",
+                "neckline": sh_latest["price"],
+                "level": (sl_latest["price"] + sl_prev["price"]) / 2,
+                "description": f"Double Bottom formed near ${(sl_latest['price'] + sl_prev['price']) / 2:.1f}"
+            }
+
+    # Calculate Support & Resistance clusters
+    recent_lows = [p["price"] for p in swing_lows[-8:]]
+    recent_highs = [p["price"] for p in swing_highs[-8:]]
+
+    supports = sorted([p for p in recent_lows if p < curr_price], reverse=True)
+    resistances = sorted([p for p in recent_highs if p > curr_price])
+
+    structure["nearest_support"] = supports[0] if supports else float(df["low"].tail(20).min())
+    structure["nearest_resistance"] = resistances[0] if resistances else float(df["high"].tail(20).max())
+    structure["support_levels"] = supports[:3]
+    structure["resistance_levels"] = resistances[:3]
+
+    return structure
+
+
+def detect_liquidity_sweeps(df: pd.DataFrame, target_price: float = None) -> list[dict]:
+    """
+    Detects Liquidity Sweeps (Judas Swings) around previous swing points and the 15M target/open.
+    A sweep occurs when price pierces a key level (triggering breakout/stop orders)
+    and then sharply rejects and reclaims the level within the active window.
+    """
+    sweeps = []
+    if len(df) < 5:
+        return sweeps
+
+    curr = df.iloc[-1]
+    prev = df.iloc[-2]
+    open_price = float(target_price) if target_price else float(curr["open"])
+
+    # 1. Bullish Judas Swing / Liquidity Sweep below 15M Open or previous low
+    lowest_wick = min(float(curr["low"]), float(prev["low"]))
+    if lowest_wick < open_price and float(curr["close"]) > open_price:
+        wick_depth = open_price - lowest_wick
+        if wick_depth >= open_price * 0.0006:  # At least ~$50-60 on BTC
+            sweeps.append({
+                "name": "Bullish Liquidity Sweep (Judas Reclaim)",
+                "type": "BULLISH",
+                "strength": 3,
+                "reclaim_level": round(open_price, 2),
+                "wick_depth": round(wick_depth, 2),
+                "description": f"Price swept stops down to ${lowest_wick:.1f} and aggressively reclaimed above ${open_price:.1f}."
+            })
+
+    # 2. Bearish Judas Swing / Liquidity Sweep above 15M Open or previous high
+    highest_wick = max(float(curr["high"]), float(prev["high"]))
+    if highest_wick > open_price and float(curr["close"]) < open_price:
+        wick_height = highest_wick - open_price
+        if wick_height >= open_price * 0.0006:
+            sweeps.append({
+                "name": "Bearish Liquidity Sweep (Judas Rejection)",
+                "type": "BEARISH",
+                "strength": 3,
+                "reclaim_level": round(open_price, 2),
+                "wick_depth": round(wick_height, 2),
+                "description": f"Price swept liquidity up to ${highest_wick:.1f} and got rejected back below ${open_price:.1f}."
+            })
+
+    return sweeps
+
+
+def detect_fair_value_gaps(df: pd.DataFrame) -> list[dict]:
+    """
+    Detects active Fair Value Gaps (FVG) / Imbalances in recent candles.
+    Bullish FVG: Candle 1 High < Candle 3 Low (unfilled buying gap)
+    Bearish FVG: Candle 1 Low > Candle 3 High (unfilled selling gap)
+    """
+    fvgs = []
+    n = len(df)
+    if n < 4:
+        return fvgs
+
+    curr_price = float(df.iloc[-1]["close"])
+
+    # Scan last 10 candles for active FVGs
+    start_idx = max(2, n - 10)
+    for i in range(start_idx, n):
+        c1 = df.iloc[i - 2]
+        c3 = df.iloc[i]
+
+        # Bullish FVG
+        if float(c3["low"]) > float(c1["high"]):
+            gap_top = float(c3["low"])
+            gap_bottom = float(c1["high"])
+            gap_size = gap_top - gap_bottom
+            if gap_size > curr_price * 0.0004:
+                if curr_price >= gap_bottom * 0.998:
+                    fvgs.append({
+                        "type": "BULLISH_FVG",
+                        "top": round(gap_top, 2),
+                        "bottom": round(gap_bottom, 2),
+                        "size": round(gap_size, 2),
+                        "candle_index": i,
+                        "description": f"Bullish Fair Value Gap (${gap_bottom:.1f} - ${gap_top:.1f}) acting as price floor"
+                    })
+
+        # Bearish FVG
+        elif float(c3["high"]) < float(c1["low"]):
+            gap_top = float(c1["low"])
+            gap_bottom = float(c3["high"])
+            gap_size = gap_top - gap_bottom
+            if gap_size > curr_price * 0.0004:
+                if curr_price <= gap_top * 1.002:
+                    fvgs.append({
+                        "type": "BEARISH_FVG",
+                        "top": round(gap_top, 2),
+                        "bottom": round(gap_bottom, 2),
+                        "size": round(gap_size, 2),
+                        "candle_index": i,
+                        "description": f"Bearish Fair Value Gap (${gap_bottom:.1f} - ${gap_top:.1f}) acting as resistance ceiling"
+                    })
+
+    return fvgs
+
+
+def analyze_wick_absorption(df: pd.DataFrame) -> dict:
+    """
+    Measures the ratio of lower wick buying absorption vs upper wick selling rejection
+    over the latest 3-5 candles.
+    """
+    if len(df) < 3:
+        return {"buyer_absorption_pct": 50, "seller_rejection_pct": 50, "bias": "NEUTRAL", "description": "Neutral wick distribution"}
+
+    tail_df = df.tail(4)
+    lower_wicks = []
+    upper_wicks = []
+
+    for _, row in tail_df.iterrows():
+        b_low = min(float(row["open"]), float(row["close"]))
+        b_high = max(float(row["open"]), float(row["close"]))
+        lower_wicks.append(b_low - float(row["low"]))
+        upper_wicks.append(float(row["high"]) - b_high)
+
+    tot_lower = sum(lower_wicks)
+    tot_upper = sum(upper_wicks)
+    tot_wicks = tot_lower + tot_upper + 1e-6
+
+    lower_pct = int(round((tot_lower / tot_wicks) * 100))
+    upper_pct = 100 - lower_pct
+
+    if lower_pct >= 62:
+        bias = "BUYER_ABSORPTION"
+        desc = f"Strong buyer absorption ({lower_pct}% lower wicks soaking supply)"
+    elif upper_pct >= 62:
+        bias = "SELLER_REJECTION"
+        desc = f"Heavy seller rejection ({upper_pct}% upper wicks capping upside)"
+    else:
+        bias = "BALANCED"
+        desc = "Balanced wicks between buyers and sellers"
+
+    return {
+        "buyer_absorption_pct": lower_pct,
+        "seller_rejection_pct": upper_pct,
+        "bias": bias,
+        "description": desc
+    }
+
+
+def analyze_candle_close_anatomy(df: pd.DataFrame, candle_idx: int = -1) -> dict:
+    """
+    Computes precise micro-anatomy of a candle close:
+    range closure (R_close = (C - L) / (H - L)), body-to-range ratio, wick ratios,
+    and institutional directional push.
+    """
+    if len(df) < abs(candle_idx):
+        return {
+            "range_closure": 0.5,
+            "body_ratio": 0.5,
+            "upper_wick_ratio": 0.25,
+            "lower_wick_ratio": 0.25,
+            "bias": "NEUTRAL",
+            "description": "Insufficient data for anatomy",
+            "vector": 0.0
+        }
+    c = df.iloc[candle_idx]
+    c_open = float(c["open"])
+    c_close = float(c["close"])
+    c_high = float(c["high"])
+    c_low = float(c["low"])
+    rng = max(1e-6, c_high - c_low)
+    body = abs(c_close - c_open)
+    upper_wick = c_high - max(c_open, c_close)
+    lower_wick = min(c_open, c_close) - c_low
+
+    range_closure = (c_close - c_low) / rng
+    body_ratio = body / rng
+    upper_wick_ratio = upper_wick / rng
+    lower_wick_ratio = lower_wick / rng
+
+    bias = "NEUTRAL"
+    desc = "Rotational consolidation"
+    vector = 0.0
+
+    if range_closure >= 0.80 and body_ratio >= 0.50:
+        bias = "BULLISH_EXPANSION"
+        desc = "Heavy institutional buying through close (Marubozu thrust)"
+        vector = 35.0
+    elif range_closure <= 0.20 and body_ratio >= 0.50:
+        bias = "BEARISH_EXPANSION"
+        desc = "Heavy institutional selling into close (Marubozu dump)"
+        vector = -35.0
+    elif lower_wick_ratio >= 0.45 and range_closure >= 0.50:
+        bias = "BULLISH_ABSORPTION"
+        desc = f"Strong buyer absorption hammer ({lower_wick:.1f} pts lower wick rejected)"
+        vector = 30.0
+    elif upper_wick_ratio >= 0.45 and range_closure <= 0.50:
+        bias = "BEARISH_EXHAUSTION"
+        desc = f"Heavy seller rejection shooting star ({upper_wick:.1f} pts upper wick capped)"
+        vector = -30.0
+    elif c_close >= c_open:
+        bias = "MILD_BULLISH"
+        desc = "Moderate green closing candle"
+        vector = 10.0
+    else:
+        bias = "MILD_BEARISH"
+        desc = "Moderate red closing candle"
+        vector = -10.0
+
+    return {
+        "range_closure": round(range_closure, 3),
+        "body_ratio": round(body_ratio, 3),
+        "upper_wick_ratio": round(upper_wick_ratio, 3),
+        "lower_wick_ratio": round(lower_wick_ratio, 3),
+        "bias": bias,
+        "description": desc,
+        "vector": vector
+    }
+
+
+if __name__ == "__main__":
+    from data_fetcher import fetch_15m_candles
+    df = fetch_15m_candles(limit=150)
+    patterns = detect_candlestick_patterns(df)
+    print("Detected Candlestick Patterns in latest candles:")
+    for p in patterns:
+        print(f"  [{p['type']}] {p['name']} (Strength {p['strength']}): {p['description']}")
+    struct = analyze_market_structure(df)
+    print("\nMarket Structure:")
+    for k, v in struct.items():
+        print(f"  {k}: {v}")

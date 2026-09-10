@@ -1,0 +1,16 @@
+# Environment and credentials
+.env
+kalshi_key.pem
+kalshi_credentials.json
+backend/kalshi_credentials.json
+backend/kalshi_key.pem
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Runtime data & trade history
+backend/data/trades_history.json

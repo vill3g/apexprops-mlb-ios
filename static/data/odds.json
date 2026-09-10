@@ -1,0 +1,127 @@
+{
+  "count": 5,
+  "provider": "The Odds API",
+  "logo": "https://the-odds-api.com/favicon.ico",
+  "games": [
+    {
+      "game_id": "824872",
+      "matchup": "TB @ ATL",
+      "home_team": "Atlanta Braves",
+      "away_team": "Tampa Bay Rays",
+      "venue": "Truist Park",
+      "draftkings": {
+        "provider": "The Odds API",
+        "provider_logo": "https://the-odds-api.com/favicon.ico",
+        "bookmaker": "DraftKings",
+        "details": "TB @ ATL",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -103,
+        "under_odds": -117,
+        "home_ml": -125,
+        "away_ml": 104,
+        "event_id": "3ef6a964abad382c28ff1f91886dc99a",
+        "home_team": "Atlanta Braves",
+        "away_team": "Tampa Bay Rays",
+        "source": "the-odds-api.com",
+        "live_source": true
+      }
+    },
+    {
+      "game_id": "823413",
+      "matchup": "HOU @ PHI",
+      "home_team": "Philadelphia Phillies",
+      "away_team": "Houston Astros",
+      "venue": "Citizens Bank Park",
+      "draftkings": {
+        "provider": "The Odds API",
+        "provider_logo": "https://the-odds-api.com/favicon.ico",
+        "bookmaker": "FanDuel",
+        "details": "HOU @ PHI",
+        "over_under": 8.5,
+        "spread": -1.5,
+        "over_odds": -110,
+        "under_odds": -110,
+        "home_ml": -178,
+        "away_ml": 150,
+        "event_id": "01c6d0131073b3384f27ac03c02906e4",
+        "home_team": "Philadelphia Phillies",
+        "away_team": "Houston Astros",
+        "source": "the-odds-api.com",
+        "live_source": true
+      }
+    },
+    {
+      "game_id": "823088",
+      "matchup": "TEX @ SEA",
+      "home_team": "Seattle Mariners",
+      "away_team": "Texas Rangers",
+      "venue": "T-Mobile Park",
+      "draftkings": {
+        "provider": "The Odds API",
+        "provider_logo": "https://the-odds-api.com/favicon.ico",
+        "bookmaker": "DraftKings",
+        "details": "TEX @ SEA",
+        "over_under": 6.5,
+        "spread": -1.5,
+        "over_odds": -125,
+        "under_odds": 104,
+        "home_ml": -131,
+        "away_ml": 109,
+        "event_id": "36a89478e8db28447dfe1b5d1f656477",
+        "home_team": "Seattle Mariners",
+        "away_team": "Texas Rangers",
+        "source": "the-odds-api.com",
+        "live_source": true
+      }
+    },
+    {
+      "game_id": "823499",
+      "matchup": "COL @ NYY",
+      "home_team": "New York Yankees",
+      "away_team": "Colorado Rockies",
+      "venue": "Yankee Stadium",
+      "draftkings": {
+        "provider": "The Odds API",
+        "provider_logo": "https://the-odds-api.com/favicon.ico",
+        "bookmaker": "DraftKings",
+        "details": "COL @ NYY",
+        "over_under": 9.0,
+        "spread": -1.5,
+        "over_odds": 100,
+        "under_odds": -120,
+        "home_ml": -344,
+        "away_ml": 270,
+        "event_id": "de5c4fe6a041ce8073e59e063fe7f31f",
+        "home_team": "New York Yankees",
+        "away_team": "Colorado Rockies",
+        "source": "the-odds-api.com",
+        "live_source": true
+      }
+    },
+    {
+      "game_id": "824550",
+      "matchup": "PIT @ CWS",
+      "home_team": "Chicago White Sox",
+      "away_team": "Pittsburgh Pirates",
+      "venue": "Rate Field",
+      "draftkings": {
+        "provider": "The Odds API",
+        "provider_logo": "https://the-odds-api.com/favicon.ico",
+        "bookmaker": "FanDuel",
+        "details": "PIT @ CWS",
+        "over_under": 7.5,
+        "spread": 1.5,
+        "over_odds": -122,
+        "under_odds": 100,
+        "home_ml": -106,
+        "away_ml": -110,
+        "event_id": "46bb732d224f9da07f9e3bb2f32281cc",
+        "home_team": "Chicago White Sox",
+        "away_team": "Pittsburgh Pirates",
+        "source": "the-odds-api.com",
+        "live_source": true
+      }
+    }
+  ]
+}

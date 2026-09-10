@@ -1,0 +1,74 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: |
+          npm install
+
+      - name: Initialize Capacitor iOS Platform
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Configure iOS App Icon from Monogram Logo
+        run: |
+          mkdir -p ios/App/App/Assets.xcassets/AppIcon.appiconset
+          sips -s format png static/assets/logo_monogram.jpg --resampleWidth 1024 --resampleHeight 1024 --out ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+          find ios/App/App/Assets.xcassets/AppIcon.appiconset -name "*.png" -exec sips -s format png static/assets/logo_monogram.jpg --out {} \;
+          cat << 'EOF' > ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json
+          {
+            "images" : [
+              {
+                "filename" : "AppIcon-512@2x.png",
+                "idiom" : "universal",
+                "platform" : "ios",
+                "size" : "1024x1024"
+              }
+            ],
+            "info" : {
+              "author" : "xcode",
+              "version" : 1
+            }
+          }
+          EOF
+
+      - name: Build Xcode Archive
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean archive
+
+      - name: Package Payload into IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -r ApexProps.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ApexProps-iOS-IPA
+          path: ApexProps.ipa
+          retention-days: 14

@@ -1,0 +1,19 @@
+{
+  "name": "apexprops-mlb-ios",
+  "version": "1.0.0",
+  "description": "ApexProps MLB Hits + Runs + RBIs Mobile App",
+  "main": "static/index.html",
+  "scripts": {
+    "build": "echo 'Static assets ready in static/'",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "cap sync ios",
+    "cap:build": "cap build ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/ios": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}

@@ -6,9 +6,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Dict, Any
 
-from backend.btc.kalshi_trader import kalshi_trader
 from backend.btc.data_fetcher import get_btc_ticker
-from backend.btc.auto_executor import auto_executor
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "scalp_config.json")
 
@@ -107,6 +105,8 @@ class ScalpEngine:
     # Trade execution & closure handling
     # ------------------------------------------------------------------
     def _execute_trade(self, side: str, market_price: float) -> None:
+        from backend.btc.kalshi_trader import kalshi_trader
+        from backend.btc.auto_executor import auto_executor
         mode = self.config.get("mode", auto_executor.mode)
         dry_run = (mode == "PAPER")
         result = kalshi_trader.place_order(
@@ -160,6 +160,7 @@ class ScalpEngine:
             print(f"[ScalpEngine] Trade failed: {result.get('error')}")
 
     def _monitor_trade(self) -> None:
+        from backend.btc.auto_executor import auto_executor
         trade = self._active_trade
         if not trade:
             return

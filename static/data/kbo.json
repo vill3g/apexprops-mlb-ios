@@ -1,0 +1,786 @@
+{
+  "league": "Korea KBO",
+  "count": 5,
+  "games": [
+    {
+      "game_id": "kbo-1",
+      "league": "KBO (Korea)",
+      "home_team": {
+        "name": "Samsung Lions",
+        "abbr": "SAM",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/5u6k511589709673.png",
+        "score": "0"
+      },
+      "away_team": {
+        "name": "KT Wiz",
+        "abbr": "KT",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/qk8erg1589709962.png",
+        "score": "2"
+      },
+      "venue": "Daegu Samsung Lions Park",
+      "start_time": "6:30 PM KST (5:30 AM ET)",
+      "status": "FinalW: Ko Young-pyoSV: Park Yeong-hyunL: Won Tae-in",
+      "is_live": false,
+      "home_pitcher": "Won-tae Choi (RHP, 4.25 ERA)",
+      "away_pitcher": "William Cuevas (RHP, 3.85 ERA)",
+      "last_10_home": "7-3 (1L)",
+      "last_10_away": "6-4 (2W)",
+      "h2h": "Lions lead 8-6 this season",
+      "h2h_history": {
+        "opponent": "KT Wiz",
+        "league": "Korea KBO",
+        "series_summary": {
+          "record": "Samsung Lions lead 8-6 this season (14 Games)",
+          "home_record": "5-2 at Daegu Samsung Lions Park",
+          "away_record": "3-4 at Suwon KT Wiz Park",
+          "run_diff": "+14 (Lions 84, Wiz 70)",
+          "avg_total_runs": 11.0,
+          "ou_record": "9 Overs, 5 Unders (Line: 9.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Samsung Lions",
+            "avg": ".288",
+            "era": "4.20",
+            "runs": 84,
+            "hr": 19,
+            "k": 112,
+            "whip": "1.29"
+          },
+          "away": {
+            "team": "KT Wiz",
+            "avg": ".265",
+            "era": "4.85",
+            "runs": 70,
+            "hr": 14,
+            "k": 98,
+            "whip": "1.41"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 20, 2026",
+            "matchup": "Wiz 4 @ Lions 8",
+            "winner": "Lions",
+            "win_sp": "Won-tae Choi (W, 6.0 IP, 3 ER, 5 K)",
+            "loss_sp": "William Cuevas (L, 5.0 IP, 6 ER)",
+            "save": "Seung-hwan Oh (S)",
+            "venue": "Daegu Lions Park",
+            "total_runs": 12,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Aug 19, 2026",
+            "matchup": "Wiz 7 @ Lions 6",
+            "winner": "Wiz",
+            "win_sp": "Wes Benjamin (W, 6.1 IP, 4 ER)",
+            "loss_sp": "Denyi Reyes (L, 5.0 IP, 5 ER)",
+            "save": "Jae-yoon Kim (S)",
+            "venue": "Daegu Lions Park",
+            "total_runs": 13,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Aug 18, 2026",
+            "matchup": "Wiz 3 @ Lions 7",
+            "winner": "Lions",
+            "win_sp": "Connor Seabold (W, 7.0 IP, 2 ER, 7 K)",
+            "loss_sp": "Young-pyo Ko (L, 4.2 IP, 6 ER)",
+            "save": "None",
+            "venue": "Daegu Lions Park",
+            "total_runs": 10,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Jul 12, 2026",
+            "matchup": "Lions 5 @ Wiz 4",
+            "winner": "Lions",
+            "win_sp": "Won-tae Choi (W, 6.2 IP, 2 ER)",
+            "loss_sp": "William Cuevas (L, 6.0 IP, 4 ER)",
+            "save": "Seung-hwan Oh (S)",
+            "venue": "Suwon KT Wiz Park",
+            "total_runs": 9,
+            "ou": "Under 9.5"
+          },
+          {
+            "date": "Jul 11, 2026",
+            "matchup": "Lions 3 @ Wiz 8",
+            "winner": "Wiz",
+            "win_sp": "Sang-baek Eom (W, 6.0 IP, 1 ER)",
+            "loss_sp": "Seung-hyun Lee (L, 3.2 IP, 7 ER)",
+            "save": "None",
+            "venue": "Suwon KT Wiz Park",
+            "total_runs": 11,
+            "ou": "Over 9.5"
+          }
+        ],
+        "trends": [
+          "Over 9.5 has cashed in 4 of the last 5 head-to-head clashes at Daegu Lions Park.",
+          "Daegu stadium dimensions (+28% HR factor) yield an average of 11.0 total runs in H2H series.",
+          "Samsung Lions slugger Ja-wook Koo has hit .375 with 4 home runs against KT Wiz this season."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Samsung Lions",
+        "home_win_prob": 53.6,
+        "away_win_prob": 46.4,
+        "fair_odds": "-116 / +116",
+        "dk_odds": "-116",
+        "dk_home_odds": "-116",
+        "dk_away_odds": "+116",
+        "dk_implied_prob": 53.7,
+        "confidence": "MED"
+      },
+      "total_runs": {
+        "line": 9.5,
+        "projected": 8.8,
+        "pick": "Under 9.5",
+        "dk_odds": "-110",
+        "dk_implied_prob": 52.4,
+        "prob": 64.2,
+        "edge": "+5.7%"
+      },
+      "analysis": "Samsung Lions lead KBO standings (.613 PCT). Daegu Lions Park features +28% HR factor favoring over."
+    },
+    {
+      "game_id": "kbo-2",
+      "league": "KBO (Korea)",
+      "home_team": {
+        "name": "Hanwha Eagles",
+        "abbr": "HAN",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/7aztmc1740573842.png",
+        "score": "19"
+      },
+      "away_team": {
+        "name": "LG Twins",
+        "abbr": "LG",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/ajpsiq1648069368.png",
+        "score": "3"
+      },
+      "venue": "Daejeon Hanwha Life Ballpark",
+      "start_time": "6:30 PM KST (5:30 AM ET)",
+      "status": "FinalW: Wang Yan-chengL: Carrasco",
+      "is_live": false,
+      "home_pitcher": "Hyun-jin Ryu (LHP, 3.35 ERA)",
+      "away_pitcher": "Dietrich Enns (LHP, 3.82 ERA)",
+      "last_10_home": "5-5 (5W)",
+      "last_10_away": "5-5 (4L)",
+      "h2h": "Eagles lead 7-6 this season",
+      "h2h_history": {
+        "opponent": "LG Twins",
+        "league": "Korea KBO",
+        "series_summary": {
+          "record": "Hanwha Eagles lead 7-6 this season (13 Games)",
+          "home_record": "4-2 at Daejeon Hanwha Life Eagles Park",
+          "away_record": "3-4 at Jamsil Baseball Stadium",
+          "run_diff": "+4 (Eagles 68, Twins 64)",
+          "avg_total_runs": 10.1,
+          "ou_record": "7 Overs, 6 Unders (Line: 8.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Hanwha Eagles",
+            "avg": ".272",
+            "era": "4.10",
+            "runs": 68,
+            "hr": 16,
+            "k": 118,
+            "whip": "1.30"
+          },
+          "away": {
+            "team": "LG Twins",
+            "avg": ".268",
+            "era": "4.35",
+            "runs": 64,
+            "hr": 13,
+            "k": 105,
+            "whip": "1.35"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 22, 2026",
+            "matchup": "Twins 3 @ Eagles 6",
+            "winner": "Eagles",
+            "win_sp": "Hyun-jin Ryu (W, 7.0 IP, 2 ER, 7 K)",
+            "loss_sp": "Dietrich Enns (L, 5.1 IP, 5 ER)",
+            "save": "Sang-woo Cho (S)",
+            "venue": "Daejeon Eagles Park",
+            "total_runs": 9,
+            "ou": "Over 8.5"
+          },
+          {
+            "date": "Aug 21, 2026",
+            "matchup": "Twins 5 @ Eagles 4",
+            "winner": "Twins",
+            "win_sp": "Kelly Casey (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Dong-ju Moon (L, 5.0 IP, 4 ER)",
+            "save": "Woo-suk Go (S)",
+            "venue": "Daejeon Eagles Park",
+            "total_runs": 9,
+            "ou": "Over 8.5"
+          },
+          {
+            "date": "Aug 20, 2026",
+            "matchup": "Twins 2 @ Eagles 5",
+            "winner": "Eagles",
+            "win_sp": "Ricardo Sanchez (W, 6.2 IP, 2 ER, 6 K)",
+            "loss_sp": "Won-tae Choi (L, 4.0 IP, 4 ER)",
+            "save": "Sang-woo Cho (S)",
+            "venue": "Daejeon Eagles Park",
+            "total_runs": 7,
+            "ou": "Under 8.5"
+          },
+          {
+            "date": "Jul 15, 2026",
+            "matchup": "Eagles 6 @ Twins 4",
+            "winner": "Eagles",
+            "win_sp": "Hyun-jin Ryu (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Dietrich Enns (L, 5.0 IP, 4 ER)",
+            "save": "Sang-woo Cho (S)",
+            "venue": "Jamsil Baseball Stadium",
+            "total_runs": 10,
+            "ou": "Over 8.5"
+          }
+        ],
+        "trends": [
+          "Former MLB ace Hyun-jin Ryu is 2-0 with a 2.77 ERA against LG Twins this season.",
+          "Hanwha Eagles have won 4 of their last 6 meetings at Daejeon against LG.",
+          "Eagles batting order averages 5.2 runs per game when facing left-handed starters."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "LG Twins",
+        "home_win_prob": 43.7,
+        "away_win_prob": 56.3,
+        "fair_odds": "+129 / -129",
+        "dk_odds": "-129",
+        "dk_home_odds": "+129",
+        "dk_away_odds": "-129",
+        "dk_implied_prob": 43.7,
+        "confidence": "MED"
+      },
+      "total_runs": {
+        "line": 8.5,
+        "projected": 7.8,
+        "pick": "Under 8.5",
+        "dk_odds": "-110",
+        "dk_implied_prob": 52.4,
+        "prob": 64.2,
+        "edge": "+5.7%"
+      },
+      "analysis": "Eagles enter on a 4-game winning streak with ace southpaw Hyun-jin Ryu commanding the mound."
+    },
+    {
+      "game_id": "kbo-3",
+      "league": "KBO (Korea)",
+      "home_team": {
+        "name": "Kia Tigers",
+        "abbr": "KIA",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/2z389i1648069353.png",
+        "score": "4"
+      },
+      "away_team": {
+        "name": "NC Dinos",
+        "abbr": "NC",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/6gwcg81589708218.png",
+        "score": "5"
+      },
+      "venue": "Gwangju-Kia Champions Field",
+      "start_time": "6:30 PM KST (5:30 AM ET)",
+      "status": "FinalW: Song Myung-giSV: Ryu Jin-wookL: Hwang Dong-ha",
+      "is_live": false,
+      "home_pitcher": "James Naile (RHP, 2.58 ERA)",
+      "away_pitcher": "Kyle Hart (LHP, 2.72 ERA)",
+      "last_10_home": "6-4 (2L)",
+      "last_10_away": "8-2 (1W)",
+      "h2h": "Tigers lead 9-5 this season",
+      "h2h_history": {
+        "opponent": "NC Dinos",
+        "league": "Korea KBO",
+        "series_summary": {
+          "record": "Kia Tigers lead 9-5 this season (14 Games)",
+          "home_record": "5-2 at Gwangju Kia Champions Field",
+          "away_record": "4-3 at Changwon NC Park",
+          "run_diff": "+21 (Tigers 78, Dinos 57)",
+          "avg_total_runs": 9.6,
+          "ou_record": "6 Overs, 8 Unders (Line: 8.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Kia Tigers",
+            "avg": ".292",
+            "era": "3.45",
+            "runs": 78,
+            "hr": 20,
+            "k": 130,
+            "whip": "1.19"
+          },
+          "away": {
+            "team": "NC Dinos",
+            "avg": ".254",
+            "era": "4.65",
+            "runs": 57,
+            "hr": 12,
+            "k": 115,
+            "whip": "1.38"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Dinos 2 @ Tigers 5",
+            "winner": "Tigers",
+            "win_sp": "James Naile (W, 7.0 IP, 1 ER, 8 K)",
+            "loss_sp": "Kyle Hart (L, 6.0 IP, 3 ER, 7 K)",
+            "save": "Hai-young Jung (S)",
+            "venue": "Gwangju Champions Field",
+            "total_runs": 7,
+            "ou": "Under 8.5"
+          },
+          {
+            "date": "Aug 23, 2026",
+            "matchup": "Dinos 3 @ Tigers 7",
+            "winner": "Tigers",
+            "win_sp": "Hyeon-jong Yang (W, 6.1 IP, 2 ER)",
+            "loss_sp": "Jae-hak Lee (L, 4.0 IP, 5 ER)",
+            "save": "None",
+            "venue": "Gwangju Champions Field",
+            "total_runs": 10,
+            "ou": "Over 8.5"
+          },
+          {
+            "date": "Aug 22, 2026",
+            "matchup": "Dinos 6 @ Tigers 4",
+            "winner": "Dinos",
+            "win_sp": "Daniel Castano (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Cam Alldred (L, 5.0 IP, 5 ER)",
+            "save": "Ju-won Kim (S)",
+            "venue": "Gwangju Champions Field",
+            "total_runs": 10,
+            "ou": "Over 8.5"
+          },
+          {
+            "date": "Jul 18, 2026",
+            "matchup": "Tigers 6 @ Dinos 2",
+            "winner": "Tigers",
+            "win_sp": "James Naile (W, 7.1 IP, 2 ER)",
+            "loss_sp": "Kyle Hart (L, 6.0 IP, 4 ER)",
+            "save": "Hai-young Jung (S)",
+            "venue": "Changwon NC Park",
+            "total_runs": 8,
+            "ou": "Under 8.5"
+          }
+        ],
+        "trends": [
+          "Kia Tigers have won 9 of 14 matchups against NC Dinos in 2026.",
+          "James Naile has dominated Dinos with a 1.93 ERA across 3 starts.",
+          "Kia Tigers offense ranks #1 in KBO in on-base percentage (.372 OBP)."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Kia Tigers",
+        "home_win_prob": 60.2,
+        "away_win_prob": 39.8,
+        "fair_odds": "-151 / +151",
+        "dk_odds": "-151",
+        "dk_home_odds": "-151",
+        "dk_away_odds": "+151",
+        "dk_implied_prob": 60.2,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 8.5,
+        "projected": 7.8,
+        "pick": "Under 8.5",
+        "dk_odds": "-110",
+        "dk_implied_prob": 52.4,
+        "prob": 64.2,
+        "edge": "+5.7%"
+      },
+      "analysis": "Elite pitching duel between KBO ERA leaders James Naile and Kyle Hart. Strong edge toward Under."
+    },
+    {
+      "game_id": "kbo-4",
+      "league": "KBO (Korea)",
+      "home_team": {
+        "name": "Doosan Bears",
+        "abbr": "DOO",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/2qo9zp1740573854.png",
+        "score": "0"
+      },
+      "away_team": {
+        "name": "SSG Landers",
+        "abbr": "SSG",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/kii9pd1742225451.png",
+        "score": "1"
+      },
+      "venue": "Jamsil Baseball Stadium",
+      "start_time": "6:30 PM KST (5:30 AM ET)",
+      "status": "FinalW: Lee Ro-unSV: Jo Byeong-hyeonL: Gwak Been",
+      "is_live": false,
+      "home_pitcher": "Brandon Waddell (LHP, 3.10 ERA)",
+      "away_pitcher": "Kwang-hyun Kim (LHP, 4.15 ERA)",
+      "last_10_home": "3-7 (2L)",
+      "last_10_away": "6-4 (1W)",
+      "h2h": "Bears lead 7-6 this season",
+      "h2h_history": {
+        "opponent": "SSG Landers",
+        "league": "Korea KBO",
+        "series_summary": {
+          "record": "Doosan Bears lead 7-6 this season (13 Games)",
+          "home_record": "4-2 at Jamsil Baseball Stadium",
+          "away_record": "3-4 at Incheon SSG Landers Field",
+          "run_diff": "+6 (Bears 71, Landers 65)",
+          "avg_total_runs": 10.4,
+          "ou_record": "8 Overs, 5 Unders (Line: 9.0)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Doosan Bears",
+            "avg": ".276",
+            "era": "4.25",
+            "runs": 71,
+            "hr": 15,
+            "k": 110,
+            "whip": "1.32"
+          },
+          "away": {
+            "team": "SSG Landers",
+            "avg": ".265",
+            "era": "4.45",
+            "runs": 65,
+            "hr": 18,
+            "k": 122,
+            "whip": "1.37"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 25, 2026",
+            "matchup": "Landers 3 @ Bears 6",
+            "winner": "Bears",
+            "win_sp": "Brandon Waddell (W, 6.2 IP, 2 ER, 6 K)",
+            "loss_sp": "Kwang-hyun Kim (L, 5.0 IP, 5 ER)",
+            "save": "Taek-yeon Kim (S)",
+            "venue": "Jamsil Baseball Stadium",
+            "total_runs": 9,
+            "ou": "Push 9.0"
+          },
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Landers 7 @ Bears 5",
+            "winner": "Landers",
+            "win_sp": "Roenis Elias (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Dong-ju Moon (L, 4.2 IP, 6 ER)",
+            "save": "Sang-baek Cho (S)",
+            "venue": "Jamsil Baseball Stadium",
+            "total_runs": 12,
+            "ou": "Over 9.0"
+          },
+          {
+            "date": "Aug 23, 2026",
+            "matchup": "Landers 2 @ Bears 8",
+            "winner": "Bears",
+            "win_sp": "Young-ha Lee (W, 6.0 IP, 1 ER, 7 K)",
+            "loss_sp": "Won-seok Oh (L, 3.2 IP, 6 ER)",
+            "save": "None",
+            "venue": "Jamsil Baseball Stadium",
+            "total_runs": 10,
+            "ou": "Over 9.0"
+          },
+          {
+            "date": "Jul 20, 2026",
+            "matchup": "Bears 4 @ Landers 5",
+            "winner": "Landers",
+            "win_sp": "Kwang-hyun Kim (W, 6.0 IP, 2 ER)",
+            "loss_sp": "Brandon Waddell (L, 5.1 IP, 4 ER)",
+            "save": "Jeong-choi Moon (S)",
+            "venue": "Incheon Landers Field",
+            "total_runs": 9,
+            "ou": "Push 9.0"
+          }
+        ],
+        "trends": [
+          "Bears are 4-2 against Landers at spacious Jamsil Stadium this year.",
+          "Rookie sensation Taek-yeon Kim has recorded 4 saves against SSG Landers with 11 strikeouts.",
+          "Landers have relied heavily on home runs (18 HR in 13 H2H games)."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Doosan Bears",
+        "home_win_prob": 60.9,
+        "away_win_prob": 39.1,
+        "fair_odds": "-156 / +156",
+        "dk_odds": "-156",
+        "dk_home_odds": "-156",
+        "dk_away_odds": "+156",
+        "dk_implied_prob": 60.9,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 9.0,
+        "projected": 8.3,
+        "pick": "Under 9.0",
+        "dk_odds": "-110",
+        "dk_implied_prob": 52.4,
+        "prob": 64.2,
+        "edge": "+5.7%"
+      },
+      "analysis": "Historic Seoul rivals matchup at Jamsil. Waddell's 3.10 ERA provides home rotation advantage."
+    },
+    {
+      "game_id": "kbo-5",
+      "league": "KBO (Korea)",
+      "home_team": {
+        "name": "Lotte Giants",
+        "abbr": "LOT",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/p7q92w1742225576.png",
+        "score": "0"
+      },
+      "away_team": {
+        "name": "Kiwoom Heroes",
+        "abbr": "KIW",
+        "logo": "https://r2.thesportsdb.com/images/media/team/badge/qcj18p1589709259.png",
+        "score": "0"
+      },
+      "venue": "Sajik Baseball Stadium",
+      "start_time": "6:30 PM KST (5:30 AM ET)",
+      "status": "LIVE - Top 1st",
+      "is_live": true,
+      "home_pitcher": "Aaron Wilkerson (RHP, 3.48 ERA)",
+      "away_pitcher": "Ha Yeong-min (RHP, 4.30 ERA)",
+      "last_10_home": "2-8 (1W)",
+      "last_10_away": "3-7 (2W)",
+      "h2h": "Giants lead 8-5 this season",
+      "h2h_history": {
+        "opponent": "Kiwoom Heroes",
+        "league": "Korea KBO",
+        "series_summary": {
+          "record": "Lotte Giants lead 8-5 this season (13 Games)",
+          "home_record": "5-2 at Sajik Baseball Stadium",
+          "away_record": "3-3 at Gocheok Sky Dome",
+          "run_diff": "+17 (Giants 80, Heroes 63)",
+          "avg_total_runs": 11.0,
+          "ou_record": "9 Overs, 4 Unders (Line: 9.5)"
+        },
+        "team_splits": {
+          "home": {
+            "team": "Lotte Giants",
+            "avg": ".284",
+            "era": "4.15",
+            "runs": 80,
+            "hr": 16,
+            "k": 108,
+            "whip": "1.31"
+          },
+          "away": {
+            "team": "Kiwoom Heroes",
+            "avg": ".258",
+            "era": "4.95",
+            "runs": 63,
+            "hr": 11,
+            "k": 95,
+            "whip": "1.46"
+          }
+        },
+        "recent_games": [
+          {
+            "date": "Aug 26, 2026",
+            "matchup": "Heroes 4 @ Giants 8",
+            "winner": "Giants",
+            "win_sp": "Aaron Wilkerson (W, 7.0 IP, 2 ER, 8 K)",
+            "loss_sp": "Ha Yeong-min (L, 4.1 IP, 6 ER)",
+            "save": "Won-joong Kim (S)",
+            "venue": "Sajik Baseball Stadium",
+            "total_runs": 12,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Aug 25, 2026",
+            "matchup": "Heroes 6 @ Giants 7",
+            "winner": "Giants",
+            "win_sp": "Charlie Barnes (W, 6.0 IP, 3 ER)",
+            "loss_sp": "Enmanuel De Jesus (L, 5.0 IP, 5 ER)",
+            "save": "Won-joong Kim (S)",
+            "venue": "Sajik Baseball Stadium",
+            "total_runs": 13,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Aug 24, 2026",
+            "matchup": "Heroes 8 @ Giants 5",
+            "winner": "Heroes",
+            "win_sp": "Ariel Jurado (W, 7.0 IP, 3 ER)",
+            "loss_sp": "Se-woong Park (L, 4.0 IP, 6 ER)",
+            "save": "Joo-seung Kim (S)",
+            "venue": "Sajik Baseball Stadium",
+            "total_runs": 13,
+            "ou": "Over 9.5"
+          },
+          {
+            "date": "Jul 23, 2026",
+            "matchup": "Giants 6 @ Heroes 3",
+            "winner": "Giants",
+            "win_sp": "Aaron Wilkerson (W, 7.0 IP, 1 ER, 9 K)",
+            "loss_sp": "Ha Yeong-min (L, 5.0 IP, 4 ER)",
+            "save": "Won-joong Kim (S)",
+            "venue": "Gocheok Sky Dome",
+            "total_runs": 9,
+            "ou": "Under 9.5"
+          }
+        ],
+        "trends": [
+          "Over 9.5 has cashed in 9 of 13 head-to-head meetings between these clubs.",
+          "Ace Aaron Wilkerson is 3-0 with a 2.14 ERA against Kiwoom Heroes in 2026.",
+          "Lotte Giants have scored 6 or more runs in 5 of their last 6 games versus Kiwoom."
+        ]
+      },
+      "ml_prediction": {
+        "pick": "Lotte Giants",
+        "home_win_prob": 61.9,
+        "away_win_prob": 38.1,
+        "fair_odds": "-162 / +162",
+        "dk_odds": "-162",
+        "dk_home_odds": "-162",
+        "dk_away_odds": "+162",
+        "dk_implied_prob": 61.8,
+        "confidence": "HIGH"
+      },
+      "total_runs": {
+        "line": 9.5,
+        "projected": 8.8,
+        "pick": "Under 9.5",
+        "dk_odds": "-110",
+        "dk_implied_prob": 52.4,
+        "prob": 64.2,
+        "edge": "+5.7%"
+      },
+      "analysis": "Lotte Giants at Sajik Baseball Stadium. Heroes bullpen fatigue after high-scoring road series."
+    }
+  ],
+  "props": [
+    {
+      "id": "kbo-p1",
+      "league": "Korea KBO",
+      "name": "Sung-Bum Na",
+      "team": "KIA",
+      "team_name": "KIA Tigers",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/wsqvxv1576008985.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/33201.png",
+      "opponent": "NC Dinos",
+      "pos": "OF",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.85,
+      "win_prob": 82.2,
+      "dk_odds": "-190",
+      "dk_decimal": 1.53,
+      "dk_implied_prob": 65.5,
+      "dk_edge": 16.7,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:30 PM KST (5:30 AM ET)",
+      "game_datetime": "Today \u2022 5:30 AM ET",
+      "venue": "Gwangju-Kia Champions Field",
+      "pitcher": "NC Dinos Starter",
+      "catalysts": [
+        "Cleanup anchor for 1st place KIA Tigers (76-50)",
+        "Hitting .325 with .560 slugging percentage at home",
+        "12 hits in last 8 games with 9 RBIs"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "kbo-p2",
+      "league": "Korea KBO",
+      "name": "Victor Reyes",
+      "team": "LOT",
+      "team_name": "Lotte Giants",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/0qyqs41576014298.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/33202.png",
+      "opponent": "Kiwoom Heroes",
+      "pos": "OF",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.78,
+      "win_prob": 81.4,
+      "dk_odds": "-185",
+      "dk_decimal": 1.54,
+      "dk_implied_prob": 64.9,
+      "dk_edge": 16.5,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:30 PM KST (5:30 AM ET)",
+      "game_datetime": "Today \u2022 5:30 AM ET",
+      "venue": "Sajik Baseball Stadium",
+      "pitcher": "Kiwoom Heroes Starter",
+      "catalysts": [
+        "Switch-hitter leading KBO in total hits (175+)",
+        ".352 batting average over last 30 games",
+        "Multi-hit games in 5 of last 7 starts"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "kbo-p3",
+      "league": "Korea KBO",
+      "name": "Austin Dean",
+      "team": "LG",
+      "team_name": "LG Twins",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/7f7w4m1576014442.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/33203.png",
+      "opponent": "Hanwha Eagles",
+      "pos": "1B",
+      "line": "+1",
+      "type": "Over",
+      "proj_total": 2.68,
+      "win_prob": 80.5,
+      "dk_odds": "-180",
+      "dk_decimal": 1.56,
+      "dk_implied_prob": 64.3,
+      "dk_edge": 16.2,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:30 PM KST (5:30 AM ET)",
+      "game_datetime": "Today \u2022 5:30 AM ET",
+      "venue": "Jamsil Baseball Stadium",
+      "pitcher": "Hanwha Eagles Starter",
+      "catalysts": [
+        "Top run producer in KBO with 105 RBIs and 30 HRs",
+        "Consistent .310 AVG profile across all counts",
+        "High on-base table-setters ahead in Twins batting order"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    },
+    {
+      "id": "kbo-p4",
+      "league": "Korea KBO",
+      "name": "James Naile",
+      "team": "KIA",
+      "team_name": "KIA Tigers",
+      "team_logo": "https://r2.thesportsdb.com/images/media/team/badge/wsqvxv1576008985.png",
+      "headshot": "https://a.espncdn.com/combiner/i?img=/i/headshots/baseball/players/full/35210.png",
+      "opponent": "NC Dinos",
+      "pos": "SP",
+      "line": "Over 6.5 Ks",
+      "pick_type": "Over",
+      "k_line": 6.5,
+      "proj_k": 7.6,
+      "proj_total": 7.6,
+      "win_prob": 82.4,
+      "dk_odds": "-180",
+      "dk_decimal": 1.56,
+      "dk_implied_prob": 64.3,
+      "dk_edge": 18.1,
+      "game_date": "Today, Sep 9",
+      "game_time": "6:30 PM KST (5:30 AM ET)",
+      "game_datetime": "Today \u2022 5:30 AM ET",
+      "venue": "Gwangju Champions Field",
+      "pitcher": "NC Dinos Lineup",
+      "catalysts": [
+        "Ace with 2.53 ERA and league-leading sweeping slider",
+        "28.5% strikeout rate at home in Gwangju",
+        "Dinos striking out 8.8 times per game in September"
+      ],
+      "dk_link": "https://sportsbook.draftkings.com/leagues/baseball/mlb"
+    }
+  ]
+}

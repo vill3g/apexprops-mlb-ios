@@ -1,0 +1,751 @@
+{
+  "Aaron Judge": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33192.png",
+    "size": 196283,
+    "source": "espn_id"
+  },
+  "Tomoyuki Sugano": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/608372/headshot/67/current.png",
+    "size": 37414,
+    "source": "current"
+  },
+  "Francisco Lindor": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/32129.png",
+    "size": 206527,
+    "source": "espn_id"
+  },
+  "Janson Junk": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/676083/headshot/67/current.png",
+    "size": 37749,
+    "source": "current"
+  },
+  "Juan Soto": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/41020.png",
+    "size": 202350,
+    "source": "espn_id"
+  },
+  "Kyle Tucker": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34898.png",
+    "size": 216785,
+    "source": "espn_id"
+  },
+  "Cristopher S\u00e1nchez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/650911/headshot/67/current.png",
+    "size": 38720,
+    "source": "current"
+  },
+  "Mickey Gasper": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/681508/headshot/67/current.png",
+    "size": 36489,
+    "source": "current"
+  },
+  "Ryan Johnson": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/696270/headshot/67/current.png",
+    "size": 36380,
+    "source": "current"
+  },
+  "Yordan Alvarez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/670541/headshot/67/current.png",
+    "size": 37835,
+    "source": "current"
+  },
+  "Zach Neto": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/687263/headshot/67/current.png",
+    "size": 33718,
+    "source": "mlb_search",
+    "mlb_id": 687263
+  },
+  "Jake Bennett": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/687562/headshot/67/current.png",
+    "size": 36807,
+    "source": "current"
+  },
+  "Ketel Marte": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33076.png",
+    "size": 193276,
+    "source": "espn_id"
+  },
+  "Daniel Lynch IV": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/663738/headshot/67/current.png",
+    "size": 39746,
+    "source": "current"
+  },
+  "Wilyer Abreu": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/677800/headshot/67/current.png",
+    "size": 37448,
+    "source": "current"
+  },
+  "Roman Anthony": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701350/headshot/67/current.png",
+    "size": 35492,
+    "source": "current"
+  },
+  "Shohei Ohtani": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/39832.png",
+    "size": 154304,
+    "source": "espn_id"
+  },
+  "Rhett Lowder": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/695076/headshot/67/current.png",
+    "size": 41954,
+    "source": "current"
+  },
+  "Bryan Reynolds": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/668804/headshot/67/current.png",
+    "size": 35770,
+    "source": "mlb_search",
+    "mlb_id": 668804
+  },
+  "Davis Martin": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/663436/headshot/67/current.png",
+    "size": 42267,
+    "source": "current"
+  },
+  "Bobby Witt Jr.": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42402.png",
+    "size": 215871,
+    "source": "espn_id"
+  },
+  "Zac Gallen": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/668678/headshot/67/current.png",
+    "size": 43057,
+    "source": "current"
+  },
+  "Jose Altuve": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/31084.png",
+    "size": 208744,
+    "source": "espn_id"
+  },
+  "Vladimir Guerrero Jr.": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/665489/headshot/67/current.png",
+    "size": 36376,
+    "source": "current"
+  },
+  "Brady Basso": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/669620/headshot/67/current.png",
+    "size": 40537,
+    "source": "current"
+  },
+  "Trevor Story": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/596115/headshot/67/current.png",
+    "size": 38156,
+    "source": "current"
+  },
+  "Joc Pederson": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/32800.png",
+    "size": 215387,
+    "source": "espn_id"
+  },
+  "Brandon Lowe": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/664040/headshot/67/current.png",
+    "size": 37451,
+    "source": "mlb_search",
+    "mlb_id": 664040
+  },
+  "Reynaldo L\u00f3pez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/625643/headshot/67/current.png",
+    "size": 39052,
+    "source": "current"
+  },
+  "Taylor Ward": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34981.png",
+    "size": 172698,
+    "source": "espn_id"
+  },
+  "Brenton Doyle": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42980.png",
+    "size": 173213,
+    "source": "espn_id"
+  },
+  "Will Warren": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701542/headshot/67/current.png",
+    "size": 43078,
+    "source": "current"
+  },
+  "Yandy Diaz": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/650490/headshot/67/current.png",
+    "size": 38254,
+    "source": "mlb_search",
+    "mlb_id": 650490
+  },
+  "Henry Bolte": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/703607/headshot/67/current.png",
+    "size": 42069,
+    "source": "current"
+  },
+  "Braydon Fisher": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/680755/headshot/67/current.png",
+    "size": 36098,
+    "source": "current"
+  },
+  "Ezequiel Tovar": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42427.png",
+    "size": 193976,
+    "source": "espn_id"
+  },
+  "Mark Vientos": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/668901/headshot/67/current.png",
+    "size": 36820,
+    "source": "mlb_search",
+    "mlb_id": 668901
+  },
+  "Zack Gelof": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/680869/headshot/67/current.png",
+    "size": 40539,
+    "source": "current"
+  },
+  "Fernando Tatis Jr.": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/665487/headshot/67/current.png",
+    "size": 38343,
+    "source": "current"
+  },
+  "Jackson Kent": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/800600/headshot/67/current.png",
+    "size": 39407,
+    "source": "current"
+  },
+  "Charlie Blackmon": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/31093.png",
+    "size": 196795,
+    "source": "espn_id"
+  },
+  "Xander Bogaerts": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/593428/headshot/67/current.png",
+    "size": 38190,
+    "source": "current"
+  },
+  "Pete Alonso": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/36018.png",
+    "size": 205463,
+    "source": "espn_id"
+  },
+  "Kevin McGonigle": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/805808/headshot/67/current.png",
+    "size": 36217,
+    "source": "current"
+  },
+  "Zebby Matthews": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/805673/headshot/67/current.png",
+    "size": 35669,
+    "source": "current"
+  },
+  "Dylan Crews": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686611/headshot/67/current.png",
+    "size": 38960,
+    "source": "current"
+  },
+  "Walker Buehler": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/621111/headshot/67/current.png",
+    "size": 36489,
+    "source": "current"
+  },
+  "Andr\u00e9s Chaparro": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/665953/headshot/67/current.png",
+    "size": 37985,
+    "source": "current"
+  },
+  "Hao-Yu Lee": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701678/headshot/67/current.png",
+    "size": 35338,
+    "source": "current"
+  },
+  "Lawrence Butler": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/671732/headshot/67/current.png",
+    "size": 39788,
+    "source": "current"
+  },
+  "Kyle Schwarber": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/656941/headshot/67/current.png",
+    "size": 38048,
+    "source": "current"
+  },
+  "Hunter Brown": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686613/headshot/67/current.png",
+    "size": 36255,
+    "source": "current"
+  },
+  "Brandon Nimmo": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/32159.png",
+    "size": 198616,
+    "source": "espn_id"
+  },
+  "Jake Burger": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/39866.png",
+    "size": 197583,
+    "source": "espn_id"
+  },
+  "Robert Stock": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/476594/headshot/67/current.png",
+    "size": 40262,
+    "source": "current"
+  },
+  "Nick Sogard": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686765/headshot/67/current.png",
+    "size": 40379,
+    "source": "current"
+  },
+  "Colt Keith": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/690993/headshot/67/current.png",
+    "size": 38395,
+    "source": "current"
+  },
+  "Brett Bateman": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/703520/headshot/67/current.png",
+    "size": 32573,
+    "source": "current"
+  },
+  "Charles McAdoo": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/807727/headshot/67/current.png",
+    "size": 41625,
+    "source": "current"
+  },
+  "Jonah Bride": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/681146/headshot/67/current.png",
+    "size": 40877,
+    "source": "mlb_search",
+    "mlb_id": 681146
+  },
+  "Carlos Cortes": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/666126/headshot/67/current.png",
+    "size": 39921,
+    "source": "current"
+  },
+  "Luke Keaschall": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/807712/headshot/67/current.png",
+    "size": 38661,
+    "source": "current"
+  },
+  "Keider Montero": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/672456/headshot/67/current.png",
+    "size": 35719,
+    "source": "current"
+  },
+  "James Wood": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/695578/headshot/67/current.png",
+    "size": 37960,
+    "source": "current"
+  },
+  "Seiya Suzuki": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/673548/headshot/67/current.png",
+    "size": 35455,
+    "source": "mlb_search",
+    "mlb_id": 673548
+  },
+  "Logan Henderson": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701656/headshot/67/current.png",
+    "size": 38192,
+    "source": "current"
+  },
+  "Kody Clemens": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/665019/headshot/67/current.png",
+    "size": 36211,
+    "source": "current"
+  },
+  "Jackson Merrill": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701538/headshot/67/current.png",
+    "size": 36376,
+    "source": "current"
+  },
+  "Manny Machado": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/592518/headshot/67/current.png",
+    "size": 36815,
+    "source": "current"
+  },
+  "Ian Happ": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34966.png",
+    "size": 209055,
+    "source": "espn_id"
+  },
+  "Nicky Lopez": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/36024.png",
+    "size": 191670,
+    "source": "espn_id"
+  },
+  "Lake Bachar": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/669199/headshot/67/current.png",
+    "size": 39563,
+    "source": "current"
+  },
+  "Justin Foscue": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/679822/headshot/67/current.png",
+    "size": 42493,
+    "source": "current"
+  },
+  "Kade Anderson": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/807739/headshot/67/current.png",
+    "size": 39061,
+    "source": "current"
+  },
+  "Jesus Sanchez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/660821/headshot/67/current.png",
+    "size": 35890,
+    "source": "mlb_search",
+    "mlb_id": 660821
+  },
+  "William Contreras": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/41042.png",
+    "size": 201551,
+    "source": "espn_id"
+  },
+  "Kevin Gausman": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/592332/headshot/67/current.png",
+    "size": 39295,
+    "source": "current"
+  },
+  "Brooks Lee": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686797/headshot/67/current.png",
+    "size": 36192,
+    "source": "current"
+  },
+  "Bryce Harper": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/547180/headshot/67/current.png",
+    "size": 40787,
+    "source": "current"
+  },
+  "Alejandro Kirk": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/672386/headshot/67/current.png",
+    "size": 37099,
+    "source": "current"
+  },
+  "Bryan Torres": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/663494/headshot/67/current.png",
+    "size": 37750,
+    "source": "current"
+  },
+  "Blade Tidwell": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/694918/headshot/67/current.png",
+    "size": 37340,
+    "source": "current"
+  },
+  "Iv\u00e1n Herrera": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/671056/headshot/67/current.png",
+    "size": 38371,
+    "source": "current"
+  },
+  "Ezequiel Duran": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/677649/headshot/67/current.png",
+    "size": 41183,
+    "source": "current"
+  },
+  "Corey Seager": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/608369/headshot/67/current.png",
+    "size": 41065,
+    "source": "current"
+  },
+  "Steven Kwan": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/41996.png",
+    "size": 205316,
+    "source": "espn_id"
+  },
+  "Shane Baz": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/669358/headshot/67/current.png",
+    "size": 36845,
+    "source": "current"
+  },
+  "Jackson Chourio": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/694192/headshot/67/current.png",
+    "size": 37709,
+    "source": "mlb_search",
+    "mlb_id": 694192
+  },
+  "Christian Walker": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/32170.png",
+    "size": 208835,
+    "source": "espn_id"
+  },
+  "Jose Ramirez": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/32801.png",
+    "size": 230813,
+    "source": "espn_id"
+  },
+  "Josh Bell": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/605137/headshot/67/current.png",
+    "size": 42317,
+    "source": "current"
+  },
+  "Alec Burleson": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/676475/headshot/67/current.png",
+    "size": 38503,
+    "source": "current"
+  },
+  "Logan O'Hoppe": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42429.png",
+    "size": 212613,
+    "source": "espn_id"
+  },
+  "Ty France": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/664034/headshot/67/current.png",
+    "size": 36922,
+    "source": "current"
+  },
+  "Trea Turner": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/607208/headshot/67/current.png",
+    "size": 39991,
+    "source": "current"
+  },
+  "Adley Rutschman": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42410.png",
+    "size": 192873,
+    "source": "espn_id"
+  },
+  "Foster Griffin": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/656492/headshot/67/current.png",
+    "size": 38778,
+    "source": "current"
+  },
+  "Matt Olson": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/621566/headshot/67/current.png",
+    "size": 37099,
+    "source": "current"
+  },
+  "Griffin Jax": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/643377/headshot/67/current.png",
+    "size": 37712,
+    "source": "current"
+  },
+  "Andrew Vaughn": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/42424.png",
+    "size": 197402,
+    "source": "espn_id"
+  },
+  "Ryan McMahon": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33753.png",
+    "size": 287889,
+    "source": "espn_id"
+  },
+  "Tommy White": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/695720/headshot/67/current.png",
+    "size": 41704,
+    "source": "current"
+  },
+  "Gleyber Torres": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33758.png",
+    "size": 173198,
+    "source": "espn_id"
+  },
+  "Rowdy Tellez": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33748.png",
+    "size": 164205,
+    "source": "espn_id"
+  },
+  "Mookie Betts": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33039.png",
+    "size": 168494,
+    "source": "espn_id"
+  },
+  "Riley Greene": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/682985/headshot/67/current.png",
+    "size": 36188,
+    "source": "current"
+  },
+  "Michael Harris II": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/671739/headshot/67/current.png",
+    "size": 38425,
+    "source": "current"
+  },
+  "Brice Turang": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/668930/headshot/67/current.png",
+    "size": 40425,
+    "source": "mlb_search",
+    "mlb_id": 668930
+  },
+  "Christopher Morel": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/666624/headshot/67/current.png",
+    "size": 40036,
+    "source": "mlb_search",
+    "mlb_id": 666624
+  },
+  "Elly De La Cruz": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/4917694.png",
+    "size": 206099,
+    "source": "espn_id"
+  },
+  "Yoshinobu Yamamoto": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/808967/headshot/67/current.png",
+    "size": 36604,
+    "source": "current"
+  },
+  "Luis Arraez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/650333/headshot/67/current.png",
+    "size": 34916,
+    "source": "current"
+  },
+  "Ronald Acu\u00f1a Jr.": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/660670/headshot/67/current.png",
+    "size": 38925,
+    "source": "current"
+  },
+  "Randy Arozarena": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/668227/headshot/67/current.png",
+    "size": 39775,
+    "source": "current"
+  },
+  "Cody Bradford": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/674003/headshot/67/current.png",
+    "size": 41319,
+    "source": "current"
+  },
+  "Turner Hill": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/806367/headshot/67/current.png",
+    "size": 39621,
+    "source": "current"
+  },
+  "Andre Pallante": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/669467/headshot/67/current.png",
+    "size": 41014,
+    "source": "current"
+  },
+  "Junior Caminero": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/691406/headshot/67/current.png",
+    "size": 39393,
+    "source": "mlb_search",
+    "mlb_id": 691406
+  },
+  "Drew Gilbert": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/687551/headshot/67/current.png",
+    "size": 36850,
+    "source": "current"
+  },
+  "Bryce Eldridge": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/805811/headshot/67/current.png",
+    "size": 38620,
+    "source": "current"
+  },
+  "J.P. Crawford": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/641487/headshot/67/current.png",
+    "size": 39575,
+    "source": "current"
+  },
+  "Freddie Freeman": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/30193.png",
+    "size": 177737,
+    "source": "espn_id"
+  },
+  "Teoscar Hernandez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/606192/headshot/67/current.png",
+    "size": 38280,
+    "source": "mlb_search",
+    "mlb_id": 606192
+  },
+  "Dominic Canzone": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686527/headshot/67/current.png",
+    "size": 38786,
+    "source": "current"
+  },
+  "Yohandy Morales": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/691002/headshot/67/current.png",
+    "size": 36593,
+    "source": "current"
+  },
+  "Alex Bregman": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34886.png",
+    "size": 193907,
+    "source": "espn_id"
+  },
+  "Drake Baldwin": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686948/headshot/67/current.png",
+    "size": 36941,
+    "source": "current"
+  },
+  "Cody Bellinger": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/33912.png",
+    "size": 198110,
+    "source": "espn_id"
+  },
+  "Salvador Perez": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/31127.png",
+    "size": 173817,
+    "source": "espn_id"
+  },
+  "Kazuma Okamoto": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/672960/headshot/67/current.png",
+    "size": 34933,
+    "source": "current"
+  },
+  "Leo Bernal": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/699024/headshot/67/current.png",
+    "size": 39163,
+    "source": "current"
+  },
+  "Josh Naylor": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34971.png",
+    "size": 200989,
+    "source": "espn_id"
+  },
+  "Vinnie Pasquantino": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/686469/headshot/67/current.png",
+    "size": 38532,
+    "source": "mlb_search",
+    "mlb_id": 686469
+  },
+  "Andrew Benintendi": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34977.png",
+    "size": 181721,
+    "source": "espn_id"
+  },
+  "Dillon Dingler": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/693307/headshot/67/current.png",
+    "size": 36661,
+    "source": "current"
+  },
+  "Kaelen Culpepper": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/701785/headshot/67/current.png",
+    "size": 38328,
+    "source": "current"
+  },
+  "Jonah Cox": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/813841/headshot/67/current.png",
+    "size": 40064,
+    "source": "current"
+  },
+  "CJ Abrams": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/682928/headshot/67/current.png",
+    "size": 40265,
+    "source": "current"
+  },
+  "Mauricio Dub\u00f3n": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/643289/headshot/67/current.png",
+    "size": 38351,
+    "source": "current"
+  },
+  "Tyler Stephenson": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/34863.png",
+    "size": 203641,
+    "source": "espn_id"
+  },
+  "Andres Gimenez": {
+    "url": "https://a.espncdn.com/i/headshots/mlb/players/full/39868.png",
+    "size": 180707,
+    "source": "espn_id"
+  },
+  "Joshua B\u00e1ez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/695491/headshot/67/current.png",
+    "size": 37970,
+    "source": "current"
+  },
+  "Bryson Stott": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/681082/headshot/67/current.png",
+    "size": 39147,
+    "source": "current"
+  },
+  "Wyatt Langford": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/694671/headshot/67/current.png",
+    "size": 40524,
+    "source": "current"
+  },
+  "Cal Raleigh": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/663728/headshot/67/current.png",
+    "size": 37851,
+    "source": "current"
+  },
+  "Julio Rodr\u00edguez": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/677594/headshot/67/current.png",
+    "size": 38388,
+    "source": "current"
+  },
+  "Jung Hoo Lee": {
+    "url": "https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/808982/headshot/67/current.png",
+    "size": 39288,
+    "source": "current"
+  }
+}

@@ -395,8 +395,24 @@ class AutoExecutor:
 
         return order_res
 
+    def close_specific_trade(self, trade_id: str, pnl: float) -> Dict[str, Any]:
+        """Close a single trade identified by ``trade_id``.
+        Used by ScalpEngine to close a trade when profit/loss thresholds are hit.
+        """
+        trades = self.get_trades_history()
+        for t in trades:
+            if t.get("id") == trade_id and t.get("status") == "OPEN":
+                from backend.btc.data_fetcher import get_btc_ticker
+                live_price = get_btc_ticker().get("price", 0.0)
+                t["status"] = "CLOSED"
+                t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
+                t["exit_price"] = live_price
+                t["pnl"] = pnl
+                t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                self._save_trades_history(trades)
+                return {"success": True, "trade_id": trade_id, "pnl": pnl}
+        return {"success": False, "error": f"Trade {trade_id} not found or not open"}
 
-# Global singleton instance
     def close_open_trades(self) -> Dict[str, Any]:
         """
         1-Click close trade feature:
