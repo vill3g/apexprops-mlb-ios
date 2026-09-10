@@ -1,9 +1,9 @@
 {
-  "price": 78326.45,
-  "open_24h": 0.0,
-  "high_24h": 0.0,
-  "low_24h": 0.0,
+  "price": 78394.1,
+  "open_24h": 78291.21,
+  "high_24h": 78396.85,
+  "low_24h": 78271.51,
   "volume_24h": 0.0,
-  "change_24h": 0.0,
+  "change_24h": 0.13,
   "source": "Robinhood Crypto"
 }

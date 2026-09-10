@@ -1,40 +1,24 @@
 {
-  "timestamp": "2026-09-10 04:00:00+00:00",
+  "timestamp": "2026-09-10 04:15:00+00:00",
   "timeframe": "15M",
-  "price": 78295.51,
+  "price": 78357.0,
   "direction": "NEUTRAL / CHOPPY",
   "primary_bias": "NEUTRAL",
-  "confluence_score": -19,
-  "confidence_percent": 59,
+  "confluence_score": 5,
+  "confidence_percent": 52,
   "reasons_bullish": [
     "Short-term EMA 9 above EMA 21 (+4)",
-    "RSI positive momentum at 52.1 (+3)",
+    "RSI positive momentum at 55.0 (+3)",
     "Market Structure: Higher Highs & Higher Lows (+8)",
     "Smart Money: Reacting to Bullish FVG between $78049.7 and $78221.5 (+$171.8) (+5)",
     "Smart Money: Reacting to Bullish FVG between $78243.8 and $78305.8 (+$61.9) (+5)"
   ],
   "reasons_bearish": [
-    "Candlestick: Three Black Crows detected (-24)",
     "MACD histogram expanding downward (-4)",
     "Chart Pattern: Double Top formed near $78502.9 (-10)",
-    "Trading below Session VWAP ($78686.0) - Seller edge (-6)"
+    "Trading below Session VWAP ($78683.8) - Seller edge (-6)"
   ],
-  "detected_patterns": [
-    {
-      "name": "Three Black Crows",
-      "type": "BEARISH",
-      "strength": 3,
-      "description": "Three consecutive declining red candles with lower lows and lower closes.",
-      "candle_index": 249
-    },
-    {
-      "name": "Doji (Indecision)",
-      "type": "NEUTRAL",
-      "strength": 1,
-      "description": "Open and close virtually equal, representing market consolidation or balance.",
-      "candle_index": 249
-    }
-  ],
+  "detected_patterns": [],
   "market_structure": {
     "trend": "UPTREND (Higher Highs & Higher Lows)",
     "trend_bias": "BULLISH",
@@ -42,66 +26,57 @@
     "choch": null,
     "double_pattern": {
       "type": "DOUBLE_TOP",
-      "neckline": 77939.19,
+      "neckline": 78242.04,
       "level": 78502.85500000001,
       "description": "Double Top formed near $78502.9"
     },
-    "nearest_support": 78060.08,
-    "nearest_resistance": 78323.32,
+    "nearest_support": 78242.04,
+    "nearest_resistance": 78487.38,
     "support_levels": [
+      78242.04,
       78060.08,
-      78025.0,
-      77939.19
+      78025.0
     ],
     "resistance_levels": [
-      78323.32,
-      78325.0,
-      78353.09
+      78487.38,
+      78518.33,
+      78570.83
     ]
   },
   "indicators": {
-    "price": 78295.51,
-    "ema_9": 78270.82416556303,
-    "ema_21": 78242.27093674502,
-    "ema_50": 78361.39124454168,
-    "ema_200": 78689.5273515356,
+    "price": 78357.0,
+    "ema_9": 78291.04333245041,
+    "ema_21": 78254.24217389259,
+    "ema_50": 78361.91380300133,
+    "ema_200": 78672.05090515649,
     "bullish_ribbon": false,
     "bearish_ribbon": false,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 52.09,
+    "rsi": 54.97,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": 2.24,
-    "macd_signal": -31.25,
-    "macd_hist": 33.48,
+    "macd_line": 11.35,
+    "macd_signal": -22.49,
+    "macd_hist": 33.84,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_DOWN",
-    "bb_upper": 78440.18,
-    "bb_lower": 77998.54,
+    "bb_upper": 78458.69,
+    "bb_lower": 78000.64,
     "bb_squeeze": true,
-    "atr": 172.72,
-    "volume": 3.4667,
-    "vol_ratio": 0.11,
+    "atr": 167.29,
+    "volume": 2.933,
+    "vol_ratio": 0.1,
     "vol_surge": false,
-    "vwap": 78685.98,
+    "vwap": 78683.77,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
-      {
-        "type": "BULLISH_FVG",
-        "top": 78074.42,
-        "bottom": 78030.74,
-        "size": 43.68,
-        "candle_index": 229,
-        "time": 1788994800,
-        "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
-      },
       {
         "type": "BULLISH_FVG",
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 231,
+        "candle_index": 230,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       },
@@ -110,7 +85,7 @@
         "top": 78221.53,
         "bottom": 78049.73,
         "size": 171.8,
-        "candle_index": 243,
+        "candle_index": 242,
         "time": 1789007400,
         "description": "Bullish FVG between $78049.7 and $78221.5 (+$171.8)"
       },
@@ -119,7 +94,7 @@
         "top": 78305.77,
         "bottom": 78243.84,
         "size": 61.93,
-        "candle_index": 244,
+        "candle_index": 243,
         "time": 1789008300,
         "description": "Bullish FVG between $78243.8 and $78305.8 (+$61.9)"
       }
@@ -127,46 +102,37 @@
   },
   "trade_setup": {
     "direction": "WAIT (NEUTRAL)",
-    "entry_price": 78295.51,
-    "stop_loss": 78060.08,
-    "take_profit_1": 78323.32,
-    "take_profit_2": 78496.04,
+    "entry_price": 78357.0,
+    "stop_loss": 78242.04,
+    "take_profit_1": 78487.38,
+    "take_profit_2": 78654.67,
     "risk_reward_1": 1.0,
     "risk_reward_2": 1.5,
-    "risk_amount": 172.72,
-    "risk_percent": 0.22,
+    "risk_amount": 167.29,
+    "risk_percent": 0.21,
     "breakeven_rule": "Range trading - scalp tight limits",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78297.15,
-    "target_source": "15M Start Price (4:00 AM UTC)",
+    "target_price": 78314.17,
+    "target_source": "15M Start Price (4:15 AM UTC)",
     "kalshi": null,
-    "current_price": 78295.51,
-    "delta": -1.64,
-    "delta_pct": -0.002,
-    "status": "BELOW",
-    "predicted_outcome": "BELOW TARGET (UNDER)",
-    "probability_percent": 49,
+    "current_price": 78357.0,
+    "delta": 42.83,
+    "delta_pct": 0.055,
+    "status": "ABOVE",
+    "predicted_outcome": "ABOVE TARGET (OVER)",
+    "probability_percent": 58,
     "confidence_badge": "TIGHT PIVOT BATTLE",
     "decision_factors": [
-      "\u23f1\ufe0f Time-Decay: -$1.64 deficit (10m 55s remaining, Vol: $147.3)",
+      "\u23f1\ufe0f Time-Decay: Holding +$42.83 lead (9m 42s remaining, Vol: $134.5)",
       "\ud83d\udcc8 Micro EMA: Short-term EMA 9 sloping above EMA 21",
-      "\ud83e\uddf2 SMC Sweep: Bearish Liquidity Sweep (Judas Rejection) (+$122.8 spike rejected below target)",
       "\ud83d\udce6 FVG Floor: Bullish imbalance support ($78050 - $78222)",
       "\ud83d\udce6 FVG Floor: Bullish imbalance support ($78244 - $78306)",
-      "\ud83d\udd34 Active Candle: Red bar (sellers in control)"
+      "\ud83d\udcca Order Flow: Heavy Overhead Capping (63% upper wicks)",
+      "\ud83d\udfe2 Active Candle: Green bar (buyers defending bid)"
     ],
     "last_5_targets": [
-      {
-        "time": "2:45 AM",
-        "price": 78326.1,
-        "delta": 86.88,
-        "delta_pct": 0.11,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
       {
         "time": "3:00 AM",
         "price": 78345.81,
@@ -202,8 +168,30 @@
         "direction": "LOWER",
         "arrow": "\u25bc",
         "color": "red"
+      },
+      {
+        "time": "4:00 AM",
+        "price": 78314.16,
+        "delta": 17.0,
+        "delta_pct": 0.02,
+        "direction": "HIGHER",
+        "arrow": "\u25b2",
+        "color": "green"
       }
     ],
-    "streak_summary": "3 Higher / 2 Lower"
+    "streak_summary": "3 Higher / 2 Lower",
+    "prediction_accuracy": {
+      "total_evaluated": 20,
+      "correct_picks": 10,
+      "accuracy_percent": 50.0,
+      "ratio_text": "10 of 20 Correct",
+      "recent_outcomes": [
+        true,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
   }
 }
