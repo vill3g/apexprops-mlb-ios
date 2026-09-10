@@ -2415,8 +2415,11 @@
 
       // 15M Target Benchmark Display
       const targetEl = document.getElementById("btcTargetPriceHero");
-      if (targetEl && d.target_price) {
-        targetEl.innerText = `$${Number(d.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      if (d.target_price) {
+        window.cachedBtcTargetPrice = Number(d.target_price);
+        if (targetEl) {
+          targetEl.innerText = `$${Number(d.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
       }
       const sourceEl = document.getElementById("btcTargetSourceLabel");
       if (sourceEl) {
@@ -2577,6 +2580,7 @@
     let isFetchingKalshiDirect = false;
 
     // Direct Kalshi 15M Market Fetcher (with local fallback)
+    // Direct Kalshi 15M Market Odds Fetcher (Probabilities ONLY - never overrides target price)
     async function fetchKalshiDirect() {
       if (isFetchingKalshiDirect) return;
       isFetchingKalshiDirect = true;
@@ -2586,17 +2590,12 @@
           const res = await fetch('/api/btc/kalshi');
           if (res.ok) {
             const data = await res.json();
-            if (data && data.target_price) {
+            if (data) {
               window.cachedKalshiData = data;
-              if (!window.cachedBtcTargetPrice) {
-                window.cachedBtcTargetPrice = data.target_price;
-                const tHero = document.getElementById("btcTargetPriceHero");
-                if (tHero) tHero.innerText = `$${Number(data.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              }
               const kYes = document.getElementById("btcKalshiYesProb");
               const kNo = document.getElementById("btcKalshiNoProb");
-              if (kYes) kYes.innerText = `${data.yes_prob}% Yes`;
-              if (kNo) kNo.innerText = `${data.no_prob}% No`;
+              if (kYes && data.yes_prob !== undefined) kYes.innerText = `${data.yes_prob}% Yes`;
+              if (kNo && data.no_prob !== undefined) kNo.innerText = `${data.no_prob}% No`;
               return;
             }
           }
@@ -2609,31 +2608,21 @@
           const markets = kJson.markets || [];
           if (markets.length > 0) {
             const m = markets[0];
-            const strike = parseFloat(m.floor_strike);
-            if (strike > 0) {
-              const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
-              const yesP = Math.round(yesBid * 100);
-              const noP = 100 - yesP;
-              const kObj = {
-                target_price: strike,
-                yes_prob: yesP,
-                no_prob: noP,
-                ticker: m.ticker,
-                source: "Kalshi KXBTC15M"
-              };
-              window.cachedKalshiData = kObj;
-              window.cachedBtcTargetPrice = strike;
-              const sLbl = document.getElementById("btcTargetSourceLabel");
-              if (sLbl) sLbl.innerText = "15M Start Price";
-              if (true) {
-                const tHero = document.getElementById("btcTargetPriceHero");
-                if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              }
-              const kYes = document.getElementById("btcKalshiYesProb");
-              const kNo = document.getElementById("btcKalshiNoProb");
-              if (kYes) kYes.innerText = `${yesP}% Yes`;
-              if (kNo) kNo.innerText = `${noP}% No`;
-            }
+            const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
+            const yesP = Math.round(yesBid * 100);
+            const noP = 100 - yesP;
+            const kObj = {
+              strike: parseFloat(m.floor_strike || 0),
+              yes_prob: yesP,
+              no_prob: noP,
+              ticker: m.ticker,
+              source: "Kalshi KXBTC15M"
+            };
+            window.cachedKalshiData = kObj;
+            const kYes = document.getElementById("btcKalshiYesProb");
+            const kNo = document.getElementById("btcKalshiNoProb");
+            if (kYes) kYes.innerText = `${yesP}% Yes`;
+            if (kNo) kNo.innerText = `${noP}% No`;
           }
         }
       } catch (err) {
@@ -2660,8 +2649,8 @@
         barEl.style.width = `${pct.toFixed(1)}%`;
       }
 
-      // If new 15m candle started, refresh klines & target benchmark
-      if (secondsLeft === 899 || secondsLeft === 900) {
+      // If new 15m candle started or every 5 minutes, refresh & verify target benchmark
+      if (secondsLeft === 899 || secondsLeft === 900 || (secondsLeft % 300 === 0)) {
         if (!window._justRefreshedCandle) {
           window._justRefreshedCandle = true;
           setTimeout(() => {
@@ -2674,22 +2663,43 @@
       return secondsLeft;
     }
 
-    // Direct Public 15m Klines Fetcher (Primary: Coinbase Exchange CORS: *, Fallback: Binance US / Vision)
+    // Direct Public 15m Klines Fetcher (Force use Desktop 15M Start Price Benchmark on Mobile)
     async function fetchBtcKlinesDirect() {
       if (isFetchingKlinesDirect) return;
       isFetchingKlinesDirect = true;
       try {
+        // 0. If on standalone mobile, check bundled desktop analysis first
+        if (!window.cachedBtcTargetPrice) {
+          try {
+            const staticResp = await fetch('data/btc_analysis.json');
+            if (staticResp.ok) {
+              const staticData = await staticResp.json();
+              if (staticData && staticData.target_benchmark && staticData.target_benchmark.target_price) {
+                const tb = staticData.target_benchmark;
+                window.cachedBtcTargetPrice = Number(tb.target_price);
+                const targetHero = document.getElementById("btcTargetPriceHero");
+                if (targetHero) targetHero.innerText = `$${Number(tb.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const sLbl = document.getElementById("btcTargetSourceLabel");
+                if (sLbl) sLbl.innerText = tb.target_source || "15M Start Price";
+                if (tb.last_5_targets && tb.last_5_targets.length > 0) {
+                  renderBtcTrendBox(tb.last_5_targets, tb.streak_summary);
+                }
+              }
+            }
+          } catch (eStatic) {}
+        }
+
         let rawCandles = null;
         let isCoinbaseFormat = false;
 
-        // 1. Primary: Coinbase Exchange 15m candles (CORS: *, 100% US & mobile friendly)
+        // 1. Primary: Coinbase Exchange 15m candles (CORS: *, 100% US & mobile friendly, identical to desktop)
         try {
           const cbUrl = 'https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=900';
           const cbRes = await fetch(cbUrl);
           if (cbRes.ok) {
             const cbData = await cbRes.json();
             if (Array.isArray(cbData) && cbData.length >= 7) {
-              // Coinbase format: [time, low, high, open, close, volume] - sorted newest first
+              // Coinbase format: [time, low, high, open, close, volume] - sorted ascending
               rawCandles = cbData.slice(0, 15).sort((a, b) => a[0] - b[0]);
               isCoinbaseFormat = true;
             }
@@ -2726,35 +2736,45 @@
         }
 
         if (rawCandles && rawCandles.length >= 7) {
-          // In chronological order, previous completed candle is at length - 2
-          const prevCandle = rawCandles[rawCandles.length - 2];
-          const targetClose = isCoinbaseFormat ? parseFloat(prevCandle[4]) : parseFloat(prevCandle[4]);
-          window.cachedBtcTargetPrice = targetClose;
+          // Active 15M candle is the latest element (index length - 1)
+          const currCandle = rawCandles[rawCandles.length - 1];
+          // Coinbase: index 3 is open; Binance: index 1 is open
+          const targetOpen = isCoinbaseFormat ? parseFloat(currCandle[3]) : parseFloat(currCandle[1]);
+          window.cachedBtcTargetPrice = targetOpen;
+
+          // Compute interval start time in 12hr UTC format matching desktop
+          const tSec = isCoinbaseFormat ? currCandle[0] : Math.floor(currCandle[0] / 1000);
+          const dObj = new Date(tSec * 1000);
+          const timeStr = dObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' });
 
           const targetHero = document.getElementById("btcTargetPriceHero");
-          if (targetHero && targetClose) {
-            targetHero.innerText = `$${targetClose.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          if (targetHero && targetOpen) {
+            targetHero.innerText = `$${targetOpen.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          }
+          const sLbl = document.getElementById("btcTargetSourceLabel");
+          if (sLbl) {
+            sLbl.innerText = `15M Start Price (${timeStr} UTC)`;
           }
 
-          // Extract last 5 completed intervals
-          const last5Raw = rawCandles.slice(-7, -2);
+          // Extract last 5 completed intervals (slice -6 to -1)
+          const last5Raw = rawCandles.slice(-6, -1);
           let higherCount = 0;
           let lowerCount = 0;
           window.cachedBtcLast5Targets = last5Raw.map((c, idx) => {
             const closeP = parseFloat(c[4]);
-            const priorIdx = rawCandles.length - 7 - 1 + idx;
+            const priorIdx = rawCandles.length - 6 - 1 + idx;
             const priorClose = parseFloat(rawCandles[priorIdx][4]);
             const delta = closeP - priorClose;
             const deltaPct = (delta / priorClose) * 100;
             const isUp = delta >= 0;
             if (isUp) { higherCount++; lowerCount = 0; } else { lowerCount++; higherCount = 0; }
 
-            const tSec = isCoinbaseFormat ? c[0] : Math.floor(c[0] / 1000);
-            const dObj = new Date(tSec * 1000);
-            const timeStr = dObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const ctSec = isCoinbaseFormat ? c[0] : Math.floor(c[0] / 1000);
+            const cdObj = new Date(ctSec * 1000);
+            const cTimeStr = cdObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' });
 
             return {
-              time: timeStr,
+              time: cTimeStr,
               price: closeP,
               direction: isUp ? "HIGHER" : "LOWER",
               arrow: isUp ? "▲" : "▼",
@@ -2989,15 +3009,16 @@
         updateClientBtcLive(livePrice, liveStats);
       }
 
-      // Ensure Kalshi KXBTC15 target benchmark is actively fetched on mobile
-      if (!window._lastKalshiPollTime || (Date.now() - window._lastKalshiPollTime > 12000) || !window.cachedBtcTargetPrice) {
-        window._lastKalshiPollTime = Date.now();
-        fetchKalshiDirect();
+      // Ensure 15M target benchmark is actively fetched and verified on mobile (every 5 min or if missing)
+      if (!window._lastTargetPollTime || (Date.now() - window._lastTargetPollTime > 300000) || !window.cachedBtcTargetPrice) {
+        window._lastTargetPollTime = Date.now();
+        fetchBtcKlinesDirect();
       }
 
-      // If target benchmark is not loaded yet, fetch direct klines
-      if (!window.cachedBtcTargetPrice && !isFetchingKlinesDirect) {
-        fetchBtcKlinesDirect();
+      // Periodically refresh Kalshi prediction probabilities (every 15s) without touching target price
+      if (!window._lastKalshiPollTime || (Date.now() - window._lastKalshiPollTime > 15000)) {
+        window._lastKalshiPollTime = Date.now();
+        fetchKalshiDirect();
       }
     }
 
@@ -3056,11 +3077,11 @@
                   cArr.push({ time: t, open: op, high: hi, low: lo, close: cl });
                   vArr.push({ time: t, value: vo, color: cl >= op ? '#10b98180' : '#ef444480' });
                 }
-                const targetPrev = sorted.length >= 2 ? parseFloat(sorted[sorted.length - 2][4]) : cArr[cArr.length - 1].close;
+                const targetOpen = cArr.length > 0 ? cArr[cArr.length - 1].open : (sorted.length > 0 ? parseFloat(sorted[sorted.length - 1][3]) : 0);
                 candlesData = {
                   candles: cArr,
                   volume: vArr,
-                  target_price: targetPrev
+                  target_price: targetOpen
                 };
               }
             }
@@ -3087,11 +3108,11 @@
                   cArr.push({ time: t, open: op, high: hi, low: lo, close: cl });
                   vArr.push({ time: t, value: vo, color: cl >= op ? '#10b98180' : '#ef444480' });
                 }
-                const targetPrev = rawKlines.length >= 2 ? parseFloat(rawKlines[rawKlines.length - 2][4]) : cArr[cArr.length - 1].close;
+                const targetOpen = cArr.length > 0 ? cArr[cArr.length - 1].open : (rawKlines.length > 0 ? parseFloat(rawKlines[rawKlines.length - 1][1]) : 0);
                 candlesData = {
                   candles: cArr,
                   volume: vArr,
-                  target_price: targetPrev
+                  target_price: targetOpen
                 };
               }
             }
