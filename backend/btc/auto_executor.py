@@ -206,7 +206,7 @@ class AutoExecutor:
                             t["result"] = "WIN" if is_win else "LOSS"
                             t["settle_price"] = settle_price
                             t["pnl"] = pnl
-                            t["settled_at"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+                            t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
                             modified = True
                     except Exception as e:
                         print(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
@@ -302,7 +302,7 @@ class AutoExecutor:
             trade_record = {
                 "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
                 "client_order_id": order_res.get("client_order_id", ""),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                 "interval_close_time": close_time_str,
                 "close_epoch": close_epoch,
                 "ticker": current_interval_id,
@@ -366,7 +366,7 @@ class AutoExecutor:
             trade_record = {
                 "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
                 "client_order_id": order_res.get("client_order_id", ""),
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                 "interval_close_time": close_time_str,
                 "close_epoch": time.time() + sec_left,
                 "ticker": active_m.get("ticker", ""),
@@ -431,7 +431,7 @@ class AutoExecutor:
             t["exit_price"] = est_exit
             t["close_price"] = live_price
             t["pnl"] = pnl
-            t["closed_at"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+            t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
             closed_count += 1
             total_realized_pnl += pnl
 

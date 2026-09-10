@@ -422,7 +422,8 @@ def get_live_15m_target_data() -> dict:
     curr_price = float(ticker["price"])
     countdown = get_candle_countdown("15m")
 
-    now_dt = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    now_dt = datetime.now(ZoneInfo("America/New_York"))
     curr_15m_start_min = (now_dt.minute // 15) * 15
     interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
     interval_id = int(interval_start_dt.timestamp())
@@ -447,7 +448,7 @@ def get_live_15m_target_data() -> dict:
                 curr_start_price = round(float(df.iloc[-1]["open"]), 2)
                 _target_cache["active_target"] = curr_start_price
                 _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} UTC)"
+                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
                 _target_cache["timestamp"] = now
 
                 # Last 5 completed targets (minimal: close and direction)
@@ -468,7 +469,7 @@ def get_live_15m_target_data() -> dict:
                         lower_count += 1
 
                     t_val = c.get("time")
-                    time_str = datetime.fromtimestamp(int(t_val), tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
+                    time_str = datetime.fromtimestamp(int(t_val), tz=ZoneInfo("America/New_York")).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
 
                     last_5.append({
                         "time": time_str,
@@ -486,12 +487,12 @@ def get_live_15m_target_data() -> dict:
             if not _target_cache["active_target"]:
                 _target_cache["active_target"] = curr_price
                 _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} UTC)"
+                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
                 _target_cache["last_5_targets"] = []
                 _target_cache["streak_summary"] = "--"
 
     target_price = _target_cache["active_target"] or curr_price
-    target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} UTC)")
+    target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)

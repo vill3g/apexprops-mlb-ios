@@ -267,7 +267,7 @@ class KalshiTrader:
                 "filled_price": simulated_price,
                 "total_cost": cost,
                 "status": "FILLED (SIMULATED)",
-                "created_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                 "message": f"Simulated BUY of {count} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
             }
 
@@ -331,7 +331,7 @@ class KalshiTrader:
                     "fill_count": fill_count,
                     "total_cost": round(avg_fill * fill_count if fill_count > 0 else est_price * count, 4),
                     "status": "FILLED" if fill_count > 0 else "RESTING",
-                    "created_at": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                    "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                     "raw_response": res_data
                 }
             else:

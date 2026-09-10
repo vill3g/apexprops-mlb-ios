@@ -331,14 +331,15 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     from datetime import datetime, timezone
 
     # Target benchmark is current 15m candle start/open price
-    now_dt = datetime.now(timezone.utc)
+    from zoneinfo import ZoneInfo
+    now_dt = datetime.now(ZoneInfo("America/New_York"))
     curr_15m_start_min = (now_dt.minute // 15) * 15
     interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
     start_time_12hr = interval_start_dt.strftime("%I:%M %p").lstrip('0')
 
     if n_rows > 0:
         active_target = round(float(df_ind.iloc[-1]["open"]), 2)
-        target_source = f"15M Start Price ({start_time_12hr} UTC)"
+        target_source = f"15M Start Price ({start_time_12hr} ET)"
     else:
         active_target = float(curr_price)
         target_source = "15M Start Price"
@@ -360,7 +361,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
 
             t_val = c.get("time")
             close_val = int(t_val) + 900 if t_val else None
-            time_str = datetime.fromtimestamp(close_val, tz=timezone.utc).strftime("%I:%M %p").lstrip('0') if close_val else "--:--"
+            time_str = datetime.fromtimestamp(close_val, tz=ZoneInfo("America/New_York")).strftime("%I:%M %p").lstrip('0') if close_val else "--:--"
 
             last_5_targets.append({
                 "time": time_str,

@@ -1050,10 +1050,11 @@
     // Live Clock & 1-Second Auto-Refresh (Shows Date Before Time: e.g. Sep 9 • 7:15:32 AM)
     function updateLiveClock() {
       const now = new Date();
-      const datePart = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const timePart = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+      const opts = { timeZone: 'America/New_York' };
+      const datePart = now.toLocaleDateString('en-US', { ...opts, month: 'short', day: 'numeric' });
+      const timePart = now.toLocaleTimeString('en-US', { ...opts, hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
       const clockEl = document.getElementById('liveClock');
-      if (clockEl) clockEl.innerText = `${datePart} • ${timePart}`;
+      if (clockEl) clockEl.innerText = `${datePart} • ${timePart} ET`;
     }
 
     function startLive1sRefresh() {
@@ -2360,7 +2361,7 @@
           autosize: true,
           symbol: "COINBASE:BTCUSD",
           interval: interval,
-          timezone: "Etc/UTC",
+          timezone: "America/New_York",
           theme: "dark",
           style: "1",
           locale: "en",
@@ -3589,7 +3590,7 @@
           }
           const sLbl = document.getElementById("btcTargetSourceLabel");
           if (sLbl) {
-            sLbl.innerText = `15M Start Price (${timeStr} UTC)`;
+            sLbl.innerText = `15M Start Price (${timeStr} ET)`;
           }
 
           // Extract last 5 completed intervals (slice -6 to -1)
@@ -4373,21 +4374,14 @@
           pnlText = `$${pnlNum.toFixed(2)}`;
         }
         
-        // Format Timestamp (e.g. "2026-09-10 12:34:56 UTC" -> "12:34 PM")
+        // Format Timestamp in NYC (America/New_York) ET Time
         let timeStr = "";
         try {
             if (t.timestamp) {
-                const parts = t.timestamp.split(" ");
-                if (parts.length >= 2) {
-                    const timeParts = parts[1].split(":");
-                    if (timeParts.length >= 2) {
-                        const hr = parseInt(timeParts[0]);
-                        const mn = timeParts[1];
-                        const isPM = hr >= 12;
-                        const hr12 = hr % 12 || 12;
-                        timeStr = `${hr12}:${mn} ${isPM ? 'PM' : 'AM'}`;
-                    }
-                }
+                let tsRaw = t.timestamp.replace(" ET", "").replace(" UTC", "");
+                let dObj = new Date(tsRaw.includes("T") ? tsRaw : tsRaw.replace(" ", "T") + "Z");
+                if (isNaN(dObj.getTime())) dObj = new Date(tsRaw);
+                timeStr = dObj.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
             }
         } catch(e) {}
 
