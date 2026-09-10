@@ -539,6 +539,25 @@
       <!-- CENTER: Info Panes (Simple UP/DOWN Likely Card Left of Live BTC, Target, Close Time) -->
       <div class="flex-1 flex items-center justify-center gap-1.5 sm:gap-2.5 mx-auto flex-wrap sm:flex-nowrap">
         
+                <!-- CONFLUENCE CARD (Minimized fixed size in top nav bar) -->
+        <button type="button" id="btcConfluenceHeaderTab" onclick="openBtcConfluenceModal()" class="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-amber-500/60 shadow-md shadow-amber-500/20 transition-all shrink-0 cursor-pointer hover:bg-slate-800 text-left" title="Click for Confluence breakdown">
+          <span class="text-sm sm:text-base">?</span>
+          <div class="flex flex-col items-start leading-none">
+            <div class="flex items-center gap-1 w-full justify-between">
+              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-amber-400 tracking-[0.05em]">CONFLUENCE</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="btcConfluenceBtnText" class="text-base sm:text-lg font-black font-mono text-amber-300 leading-none">50% EVAL</span>
+            </div>
+          </div>
+          <!-- Hidden preservation elements for JS backward compatibility -->
+          <span id="btcSignalBanner" class="hidden">INIT</span>
+          <span id="btcMeterScore" class="hidden">0</span>
+          <span id="btcPredBadge" class="hidden">EVAL</span>
+          <span id="btcConfidenceText" class="sr-only">Score: 0/100</span>
+          <svg class="sr-only"><path id="btcMeterArc"></path><line id="btcMeterNeedle"></line></svg>
+        </button>
+
         <!-- 0. LIKELY TO CLOSE (Simple UP / DOWN - Cut Width In Half) -->
         <div id="topBarLikelyCard" class="btc-panel-card btc-card-prediction flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 border-2 border-slate-700 shadow-md transition-all shrink-0">
           <div id="btcPredBanner" class="flex flex-col items-start leading-none transition-all w-full">
