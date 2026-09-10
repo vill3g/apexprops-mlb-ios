@@ -10,6 +10,8 @@ import json
 import uuid
 from typing import Dict, Any, List, Optional
 import pandas as pd
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from backend.btc.kalshi_trader import kalshi_trader
 from backend.btc.data_fetcher import fetch_candles, get_candle_countdown
@@ -27,6 +29,7 @@ class AutoExecutor:
         self.mode: str = "PAPER"  # "PAPER" or "LIVE"
         self.min_conviction: str = "GRADE A SETUP"  # "GRADE A+ SETUP" or "GRADE A SETUP"
         self.max_contracts: int = 1
+        self.prediction_mode: bool = False
         self.last_traded_interval: Optional[str] = None
         self.last_check_time: float = 0.0
 
@@ -42,6 +45,7 @@ class AutoExecutor:
                     self.mode = cfg.get("mode", "PAPER")
                     self.min_conviction = cfg.get("min_conviction", "GRADE A SETUP")
                     self.max_contracts = int(cfg.get("max_contracts", 1))
+                    self.prediction_mode = bool(cfg.get("prediction_mode", False))
             except Exception as e:
                 print(f"[AutoExecutor] Error loading config: {e}")
 
@@ -52,7 +56,8 @@ class AutoExecutor:
                     "enabled": self.enabled,
                     "mode": self.mode,
                     "min_conviction": self.min_conviction,
-                    "max_contracts": self.max_contracts
+                    "max_contracts": self.max_contracts,
+                    "prediction_mode": self.prediction_mode
                 }, f, indent=2)
         except Exception as e:
             print(f"[AutoExecutor] Error saving config: {e}")
@@ -112,21 +117,27 @@ class AutoExecutor:
         # Update settlement for prior trades
         self.check_settlements(trades)
 
-        total_trades = len(trades)
-        wins = sum(1 for t in trades if "WIN" in str(t.get("result", "")).upper())
-        losses = sum(1 for t in trades if "LOSS" in str(t.get("result", "")).upper())
-        open_trades = [t for t in trades if t.get("status") == "OPEN"]
-        total_pnl = sum(float(t.get("pnl", 0.0)) for t in trades)
+        # Filter stats by the current mode (PAPER or LIVE)
+        mode_trades = [t for t in trades if t.get("mode", self.mode).upper() == self.mode]
+        total_trades = len(mode_trades)
+        wins = sum(1 for t in mode_trades if "WIN" in str(t.get("result", "")).upper())
+        losses = sum(1 for t in mode_trades if "LOSS" in str(t.get("result", "")).upper())
+        open_trades = [t for t in mode_trades if t.get("status") == "OPEN"]
+        total_pnl = sum(float(t.get("pnl", 0.0)) for t in mode_trades)
         win_rate = round((wins / max(1, wins + losses)) * 100.0, 1) if (wins + losses) > 0 else 0.0
 
         active_market = kalshi_trader.get_active_15m_market()
 
         # Paper Trading Balance Logic
         if self.mode == "PAPER":
-            paper_start = 500.0
-            realized_pnl = sum(float(t.get("pnl", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") in ["SETTLED", "CLOSED"])
-            open_cost = sum(float(t.get("cost", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") == "OPEN")
-            bal_dollars = paper_start + realized_pnl - open_cost
+            try:
+                from backend.btc.paper_balance import load_balance
+                bal_dollars = load_balance()
+            except ImportError:
+                paper_start = 500.0
+                realized_pnl = sum(float(t.get("pnl", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") in ["SETTLED", "CLOSED"])
+                open_cost = sum(float(t.get("cost", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") == "OPEN")
+                bal_dollars = paper_start + realized_pnl - open_cost
             bal_cents = int(bal_dollars * 100)
             balance_info["balance_dollars"] = bal_dollars
             balance_info["balance_cents"] = bal_cents
@@ -136,6 +147,7 @@ class AutoExecutor:
             "mode": self.mode,
             "min_conviction": self.min_conviction,
             "max_contracts": self.max_contracts,
+            "prediction_mode": self.prediction_mode,
             "kalshi_connected": kalshi_trader.is_authenticated(),
             "balance_dollars": balance_info.get("balance_dollars", 0.0),
             "balance_cents": balance_info.get("balance_cents", 0),
@@ -146,7 +158,7 @@ class AutoExecutor:
             "total_pnl_dollars": round(total_pnl, 2),
             "open_trades_count": len(open_trades),
             "open_trades": open_trades,
-            "recent_trades": trades[-10:][::-1],  # latest 10 trades first
+            "recent_trades": mode_trades[-15:][::-1],  # latest 15 trades of current mode first
             "active_market": active_market
         }
 
@@ -169,8 +181,7 @@ class AutoExecutor:
                 # Fallback: parse ISO close_time_str if close_epoch is missing
                 if not close_epoch and close_time_str:
                     try:
-                        import datetime
-                        dt = datetime.datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                        dt = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
                         close_epoch = dt.timestamp()
                     except Exception:
                         pass
@@ -208,6 +219,14 @@ class AutoExecutor:
                             t["pnl"] = pnl
                             t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
                             modified = True
+                            
+                            # Update Paper Balance if this was a paper trade
+                            if t.get("mode", self.mode).upper() == "PAPER":
+                                try:
+                                    from backend.btc.paper_balance import update_balance
+                                    update_balance(pnl)
+                                except Exception as ep:
+                                    print(f"Failed to update paper balance: {ep}")
                     except Exception as e:
                         print(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
 
@@ -228,9 +247,14 @@ class AutoExecutor:
         sec_left = countdown_info.get("seconds_left", 900)
         sec_elapsed = 900 - sec_left
 
-        # The rollover evaluation window is the first 60 seconds of a new 15M candle (sec_elapsed <= 60 or sec_left >= 840)
+        # The standard rollover evaluation window is the first 60 seconds
         is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
-        if not is_rollover_window and not (sec_left <= 10):
+        # The prediction mode window is exactly 1 minute after contract start (60-65 seconds elapsed)
+        is_prediction_window = 60 <= sec_elapsed <= 65 or 835 <= sec_left <= 840
+
+        window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
+        
+        if not window_valid and not (sec_left <= 10):
             return None
 
         # Fetch active Kalshi KXBTC15M market
@@ -263,12 +287,15 @@ class AutoExecutor:
         if direction == "PASS" or "PASS" in rec or "CHOP" in rec:
             return None
 
-        # Strict Filter 2: Conviction Threshold
+        # Strict Filter 2: Conviction Threshold (Bypassed if prediction mode is enabled)
         meets_conviction = False
-        if self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
+        if self.prediction_mode:
             meets_conviction = True
-        elif self.min_conviction == "GRADE A SETUP" and ("A+" in grade or "GRADE A " in grade):
-            meets_conviction = True
+        else:
+            if self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
+                meets_conviction = True
+            elif self.min_conviction == "GRADE A SETUP" and ("A+" in grade or "GRADE A " in grade):
+                meets_conviction = True
 
         if not meets_conviction:
             return None
@@ -393,8 +420,24 @@ class AutoExecutor:
 
         return order_res
 
+    def close_specific_trade(self, trade_id: str, pnl: float) -> Dict[str, Any]:
+        """Close a single trade identified by ``trade_id``.
+        Used by ScalpEngine to close a trade when profit/loss thresholds are hit.
+        """
+        trades = self.get_trades_history()
+        for t in trades:
+            if t.get("id") == trade_id and t.get("status") == "OPEN":
+                from backend.btc.data_fetcher import get_btc_ticker
+                live_price = get_btc_ticker().get("price", 0.0)
+                t["status"] = "CLOSED"
+                t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
+                t["exit_price"] = live_price
+                t["pnl"] = pnl
+                t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                self._save_trades_history(trades)
+                return {"success": True, "trade_id": trade_id, "pnl": pnl}
+        return {"success": False, "error": f"Trade {trade_id} not found or not open"}
 
-# Global singleton instance
     def close_open_trades(self) -> Dict[str, Any]:
         """
         1-Click close trade feature:

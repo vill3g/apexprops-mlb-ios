@@ -217,11 +217,14 @@ def format_volume_series(df: pd.DataFrame) -> list[dict]:
     return series
 
 
+import threading
+
 # High-performance in-memory cache for ultra-fast 1-second polling
 _ticker_cache = {
     "timestamp": 0.0,
     "data": None
 }
+_ticker_lock = threading.Lock()
 
 _target_cache = {
     "timestamp": 0.0,
@@ -234,12 +237,13 @@ _target_cache = {
 def get_btc_ticker() -> dict:
     """
     Get live 24h ticker info. Primary source: CF Benchmarks BRTI.
-    Cached for 1.0s to support high-frequency polling.
+    Cached for 0.75s to support high-frequency polling.
     Falls back to Coinbase, Binance.US, and candle fallback if BRTI is unavailable.
     """
     now = time.time()
-    if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 1.0):
-        return _ticker_cache["data"]
+    with _ticker_lock:
+        if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 0.75):
+            return _ticker_cache["data"]
 
     # Attempt Robinhood Crypto Live Market Data
     try:

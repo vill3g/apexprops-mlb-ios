@@ -796,11 +796,14 @@
                 <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
                   <div class="flex items-center gap-1.5">
                     <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
-                    <span id="kalshiEstCost" class="text-[9px] sm:text-[10px] text-cyan-300 font-mono">(~$0.65/trade)</span>
+                    <div class="flex items-center">
+                      <span class="text-cyan-400 font-bold text-[10px] mr-0.5">$</span>
+                      <input id="kalshiSizeInput" type="number" min="0.50" step="0.50" value="0.65" onchange="updateKalshiSize(this.value)" class="w-12 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1 py-0.5 focus:border-cyan-500 focus:outline-none text-center" />
+                    </div>
                   </div>
                   <div class="flex items-center gap-1">
                     <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">-</button>
-                    <input id="kalshiContractsInput" type="number" min="1" max="10" value="1" onchange="updateKalshiContracts(this.value)" class="w-8 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 focus:border-cyan-500 focus:outline-none" />
+                    <input id="kalshiContractsInput" type="number" min="1" max="1000" value="1" onchange="updateKalshiContracts(this.value)" class="w-10 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 focus:border-cyan-500 focus:outline-none" />
                     <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">+</button>
                     <span class="text-[10px] text-slate-400 font-mono">ct</span>
                   </div>
@@ -842,9 +845,16 @@
 
               <!-- Recent Trades Stream (Allocated 40% of Left Panel Height) -->
               <div class="flex flex-col flex-1 min-h-0 border-t border-slate-800/80 pt-1" style="height: 40%; min-height: 40%; max-height: 40%;">
-                <div class="flex items-center justify-between pb-0.5 text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
-                  <span>Recent Trades Log</span>
-                  <span class="text-cyan-400 text-[8px]">Live History</span>
+                <div class="flex flex-col gap-0.5 pb-1 mb-1 text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-wider shrink-0 border-b border-slate-800">
+                  <div class="flex items-center justify-between">
+                    <span>Recent Trades Log</span>
+                    <span class="text-cyan-400 text-[8px]">Live History</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[7.5px] mt-0.5">
+                    <span>Bal: <span id="tradeLogPaperBalance" class="text-white">$0.00</span></span>
+                    <span>Risk: <span class="text-emerald-400">$25 Max</span></span>
+                    <span>TP: <span class="text-emerald-400">+50%</span></span>
+                  </div>
                 </div>
                 <div id="kalshiTradesListContainer" class="space-y-1 flex-1 h-full overflow-y-auto pr-0.5 text-[9px] sm:text-[10px]">
                   <div class="text-[9px] text-slate-500 text-center py-2">Standing by for next 15M contract rollover...</div>
@@ -854,95 +864,226 @@
             </div>
 
             <!-- ========================================================================= -->
-            <!-- TAB 2: SETTINGS PANE                                                      -->
+            <!-- TAB 2: SETTINGS PANE (GENERAL & SCALPER SUB-PAGES)                         -->
             <!-- ========================================================================= -->
             <div id="aiSettingsTabContent" class="space-y-2 flex flex-col flex-1 min-h-0 overflow-y-auto pr-0.5 hidden">
               
-              <!-- Section A: Signal & Conviction Threshold -->
-              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                  <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                    <span>🎯</span> Min Conviction
-                  </span>
-                  <span id="settingGradeLabel" class="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">Grade A+ & A</span>
-                </div>
-                <div class="grid grid-cols-2 gap-1 text-[9px] sm:text-[10px]">
-                  <button onclick="setConvictionFilter('APLUS')" id="btnFilterAPlus" class="py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer">
-                    A+ Only (Strict)
-                  </button>
-                  <button onclick="setConvictionFilter('ALL')" id="btnFilterAll" class="py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer">
-                    A+ & A (Standard)
-                  </button>
-                </div>
+              <!-- Sub-Page Switcher (General Settings vs Scalper Settings) -->
+              <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-slate-950 border border-slate-800 shrink-0 text-[9px] font-sans font-bold uppercase tracking-wider">
+                <button id="btnSettingsSubGeneral" onclick="switchSettingsSubPage('general')" class="py-1 rounded bg-slate-800 text-cyan-300 shadow-sm transition-all cursor-pointer">
+                  ⚙️ General
+                </button>
+                <button id="btnSettingsSubScalp" onclick="switchSettingsSubPage('scalp')" class="py-1 rounded text-slate-400 hover:text-slate-200 transition-all cursor-pointer flex items-center justify-center gap-1">
+                  <span>⚡</span> Scalper
+                  <span id="scalpSubBadge" class="h-1.5 w-1.5 rounded-full bg-slate-600"></span>
+                </button>
               </div>
 
-              <!-- Section B: Autonomous Execution Triggers -->
-              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                  <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                    <span>⏱️</span> Execution Timing
-                  </span>
-                  <span class="text-[9px] text-slate-400 font-mono">Candle Rollover</span>
-                </div>
-                
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <span class="text-slate-300">Trigger Window</span>
-                  <select id="settingTriggerWindow" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[9px] text-cyan-300 focus:outline-none">
-                    <option value="early">14:50 - 13:00 Left</option>
-                    <option value="standard" selected>12:00 - 10:00 Left</option>
-                    <option value="late">08:00 - 05:00 Left</option>
-                  </select>
-                </div>
-
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <span class="text-slate-300">Trend Alignment Guard</span>
-                  <input type="checkbox" id="settingTrendGuard" checked class="rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0 cursor-pointer" />
-                </div>
-              </div>
-
-              <!-- Section C: Risk Management & Contract Limits -->
-              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                  <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                    <span>🛡️</span> Risk & Limits
-                  </span>
-                  <span class="text-[9px] text-emerald-400 font-mono">Active Shield</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
-                  <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
-                    <span class="text-slate-400 text-[8px]">Max Daily Risk</span>
-                    <span class="text-white font-bold font-mono mt-0.5">$25.00</span>
+              <!-- ===================================================================== -->
+              <!-- SUB-PAGE 1: GENERAL BOT SETTINGS                                      -->
+              <!-- ===================================================================== -->
+              <div id="generalSettingsSubPage" class="space-y-2 flex flex-col">
+                <!-- Section A: Signal & Conviction Threshold -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>🎯</span> Min Conviction
+                    </span>
+                    <span id="settingGradeLabel" class="text-[9px] font-mono font-bold text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">Grade A+ & A</span>
                   </div>
-                  <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
-                    <span class="text-slate-400 text-[8px]">Max Open Trades</span>
-                    <span class="text-white font-bold font-mono mt-0.5">1 Trade</span>
+                  <div class="grid grid-cols-2 gap-1 text-[9px] sm:text-[10px]">
+                    <button onclick="setConvictionFilter('APLUS')" id="btnFilterAPlus" class="py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer">
+                      A+ Only
+                    </button>
+                    <button onclick="setConvictionFilter('A')" id="btnFilterA" class="py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer">
+                      A+ & A
+                    </button>
+                    <button onclick="setConvictionFilter('BPLUS')" id="btnFilterBPlus" class="py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer">
+                      A+, A & B+
+                    </button>
+                    <button onclick="setConvictionFilter('B')" id="btnFilterB" class="py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer">
+                      A+, A, B+ & B
+                    </button>
                   </div>
                 </div>
 
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                  <span class="text-slate-300">Auto Take-Profit (+50%)</span>
-                  <input type="checkbox" id="settingAutoTakeProfit" checked class="rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-0 cursor-pointer" />
+                <!-- Section B: Autonomous Execution Triggers -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>⏱️</span> Execution Timing
+                    </span>
+                    <span class="text-[9px] text-slate-400 font-mono">Candle Rollover</span>
+                  </div>
+                  
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Trigger Window</span>
+                    <select id="settingTriggerWindow" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[9px] text-cyan-300 focus:outline-none">
+                      <option value="early">14:50 - 13:00 Left</option>
+                      <option value="standard" selected>12:00 - 10:00 Left</option>
+                      <option value="late">08:00 - 05:00 Left</option>
+                    </select>
+                  </div>
+                  
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-cyan-900/50">
+                    <span class="text-cyan-300 font-bold flex items-center gap-1">
+                      <span>🔮</span> Prediction Mode
+                    </span>
+                    <input type="checkbox" id="settingPredictionMode" onchange="togglePredictionMode(this.checked)" class="rounded bg-slate-950 border-cyan-700/50 text-cyan-500 focus:ring-0 cursor-pointer" />
+                  </div>
+
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Trend Alignment Guard</span>
+                    <input type="checkbox" id="settingTrendGuard" checked class="rounded bg-slate-950 border-slate-700 text-cyan-500 focus:ring-0 cursor-pointer" />
+                  </div>
+                </div>
+
+                <!-- Section C: Risk Management & Contract Limits -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>🛡️</span> Risk & Limits
+                    </span>
+                    <span class="text-[9px] text-emerald-400 font-mono">Active Shield</span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
+                      <span class="text-slate-400 text-[8px]">Max Daily Risk</span>
+                      <span class="text-white font-bold font-mono mt-0.5">$25.00</span>
+                    </div>
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
+                      <span class="text-slate-400 text-[8px]">Max Open Trades</span>
+                      <span class="text-white font-bold font-mono mt-0.5">1 Trade</span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Auto Take-Profit (+50%)</span>
+                    <input type="checkbox" id="settingAutoTakeProfit" checked class="rounded bg-slate-950 border-slate-700 text-emerald-500 focus:ring-0 cursor-pointer" />
+                  </div>
+                </div>
+
+                <!-- Section D: Kalshi Gateway Connection & Actions -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">💰 Paper Balance:</span>
+                    <span id="kalshiSettingsPaperBalance" class="text-white font-bold font-mono">$500.00</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-1.5 pt-1">
+                    <button onclick="saveKalshiSettings()" class="w-full py-1.5 px-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 active:scale-95 transition-all text-[10px] font-sans font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm cursor-pointer">
+                      <span>💾</span> Save
+                    </button>
+                    <button onclick="resetKalshiSettingsDefaults()" class="w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
+                      <span>↺</span> Reset
+                    </button>
+                    <button onclick="resetPaperBalanceUI()" class="w-full py-1.5 px-2 col-span-2 rounded-lg bg-red-900/50 hover:bg-red-800 border border-red-500/40 text-red-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
+                      <span>⚠️</span> Reset Paper Balance
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Section D: Kalshi Gateway Connection & Actions -->
-              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
-                  <span class="text-slate-400 font-sans">API Latency:</span>
-                  <span class="text-emerald-400 font-bold font-mono">11ms (TTL Cached)</span>
+              <!-- ===================================================================== -->
+              <!-- SUB-PAGE 2: DEDICATED SCALPER ENGINE SETTINGS                         -->
+              <!-- ===================================================================== -->
+              <div id="scalperSettingsSubPage" class="space-y-2 flex flex-col hidden">
+                <!-- Scalp Master Status & Toggle -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>⚡</span> Scalp Engine
+                    </span>
+                    <span id="scalpStatusBadge" class="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">INACTIVE</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Rapid Scalping Mode:</span>
+                    <button id="btnToggleScalpEngine" onclick="toggleScalpEngine()" class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700 cursor-pointer">
+                      OFF
+                    </button>
+                  </div>
                 </div>
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
-                  <span class="text-slate-400 font-sans">Timezone:</span>
-                  <span class="text-slate-300 font-mono">NYC Eastern (ET)</span>
+
+                <!-- Scalp Triggers & Thresholds -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>📈</span> Entry & Targets
+                    </span>
+                    <span class="text-[9px] text-cyan-400 font-mono">Micro Moves</span>
+                  </div>
+
+                  <!-- Price Move Threshold -->
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Min Move Trigger:</span>
+                    <div class="flex items-center gap-1">
+                      <input id="scalpPriceMoveThreshold" type="number" step="0.1" min="0.1" max="5.0" value="0.5" class="w-14 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-cyan-300 font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
+                      <span class="text-slate-400">%</span>
+                    </div>
+                  </div>
+
+                  <!-- Profit & Loss Target -->
+                  <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+                      <span class="text-slate-400 text-[8px]">Profit Target</span>
+                      <div class="flex items-center justify-between">
+                        <input id="scalpProfitTarget" type="number" step="0.05" min="0.05" max="1.0" value="0.25" class="w-12 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-emerald-400 font-mono font-bold py-0.5 focus:border-emerald-500 focus:outline-none" />
+                        <span id="scalpProfitTargetLabel" class="text-[8px] text-emerald-400 font-bold">+25%</span>
+                      </div>
+                    </div>
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
+                      <span class="text-slate-400 text-[8px]">Stop Loss Target</span>
+                      <div class="flex items-center justify-between">
+                        <input id="scalpLossTarget" type="number" step="0.05" min="0.05" max="1.0" value="0.25" class="w-12 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-red-400 font-mono font-bold py-0.5 focus:border-red-500 focus:outline-none" />
+                        <span id="scalpLossTargetLabel" class="text-[8px] text-red-400 font-bold">-25%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Minimum Conviction Dropdown -->
+                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-slate-300">Min Conviction:</span>
+                    <select id="scalpMinConviction" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[9px] text-cyan-300 font-mono focus:outline-none cursor-pointer">
+                      <option value="A+" selected>A+ Only (Strict)</option>
+                      <option value="A">A+ & A</option>
+                      <option value="B+">A+, A & B+</option>
+                      <option value="B">A+, A, B+ & B</option>
+                      <option value="C">All (Include C)</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="grid grid-cols-2 gap-1.5 pt-1">
-                  <button onclick="saveKalshiSettings()" class="w-full py-1.5 px-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 active:scale-95 transition-all text-[10px] font-sans font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm cursor-pointer">
-                    <span>💾</span> Save
-                  </button>
-                  <button onclick="resetKalshiSettingsDefaults()" class="w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
-                    <span>↺</span> Reset
-                  </button>
+
+                <!-- Sizing & Interval Limits -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
+                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
+                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
+                      <span>🛡️</span> Scalp Limits
+                    </span>
+                    <span class="text-[9px] text-emerald-400 font-mono">Per-15M Interval</span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <span class="text-slate-400 text-[8px]">Contracts:</span>
+                      <input id="scalpMaxContracts" type="number" min="1" max="10" value="1" class="w-10 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                      <span class="text-slate-400 text-[8px]">Max Trades:</span>
+                      <input id="scalpMaxTradesPerInterval" type="number" min="1" max="5" value="1" class="w-10 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1 shrink-0">
+                  <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="saveScalpSettings()" class="w-full py-1.5 px-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-slate-950 active:scale-95 transition-all text-[10px] font-sans font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm cursor-pointer">
+                      <span>💾</span> Save Scalper
+                    </button>
+                    <button onclick="resetScalpSettingsDefaults()" class="w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
+                      <span>↺</span> Defaults
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -2867,16 +3008,51 @@
         rngEl.innerText = `$${Math.round(d.low_24h).toLocaleString()} / $${Math.round(d.high_24h).toLocaleString()}`;
       }
 
+    function applyTargetPriceColor(el, price, target) {
+      if (!el || !price || !target) return;
+      const diff = price - target;
+      el.classList.remove("text-emerald-400", "text-red-400", "text-amber-300", "text-white");
+      if (Math.abs(diff) <= 1.0 || (Math.abs(diff) / target) < 0.0001) {
+        el.classList.add("text-amber-300");
+      } else if (diff > 0) {
+        el.classList.add("text-emerald-400");
+      } else {
+        el.classList.add("text-red-400");
+      }
+    }
+
+    function updateTargetCardBorder(cardEl, price, target) {
+      if (!cardEl || !price || !target) return;
+      const diff = price - target;
+      cardEl.classList.remove(
+        "border-emerald-500/60", "border-red-500/60", "border-amber-400/60",
+        "shadow-emerald-500/20", "shadow-red-500/20", "shadow-amber-500/20"
+      );
+      if (Math.abs(diff) <= 1.0 || (Math.abs(diff) / target) < 0.0001) {
+        cardEl.classList.add("border-amber-400/60", "shadow-amber-500/20");
+      } else if (diff > 0) {
+        cardEl.classList.add("border-emerald-500/60", "shadow-emerald-500/20");
+      } else {
+        cardEl.classList.add("border-red-500/60", "shadow-red-500/20");
+      }
+    }
+
       // 15M Target Benchmark Display
       const targetEl = document.getElementById("btcTargetPriceHero");
+      const topTargetCard = document.getElementById("topBarTargetCard");
       const activeKalshiPrice = (window.cachedKalshiData && (window.cachedKalshiData.target_price || window.cachedKalshiData.strike)) || Number(d.target_price);
       if (activeKalshiPrice > 0) {
         window.cachedBtcTargetPrice = activeKalshiPrice;
         if (targetEl) {
           targetEl.innerText = `$${activeKalshiPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          applyTargetPriceColor(targetEl, price, activeKalshiPrice);
         }
         if (topTargetEl) {
           topTargetEl.innerText = `$${activeKalshiPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          applyTargetPriceColor(topTargetEl, price, activeKalshiPrice);
+        }
+        if (topTargetCard && price > 0) {
+          updateTargetCardBorder(topTargetCard, price, activeKalshiPrice);
         }
         if (topDeltaEl && price > 0) {
           const kDelta = price - activeKalshiPrice;
@@ -2984,10 +3160,21 @@
 
       if (dotsEl) {
         if (Array.isArray(acc.recent_outcomes) && acc.recent_outcomes.length > 0) {
-          dotsEl.innerHTML = acc.recent_outcomes.map(isWin => isWin ? 
-            `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black" title="Correct Prediction">✓</span>` :
-            `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black" title="Missed Prediction">✗</span>`
-          ).join("");
+          dotsEl.innerHTML = acc.recent_outcomes.map(o => {
+            // Check if o is an object or boolean (fallback for old backend structure)
+            const isWin = typeof o === 'object' ? o.correct : o;
+            
+            let tooltipStr = isWin ? "Correct Prediction" : "Missed Prediction";
+            if (typeof o === 'object' && o.target !== undefined && o.settle !== undefined) {
+              const diff = (o.settle - o.target).toFixed(2);
+              const sign = diff >= 0 ? "+" : "";
+              tooltipStr = `Prediction: ${o.predicted} | Actual: ${o.actual} | Target: $${o.target.toFixed(2)} | Settle: $${o.settle.toFixed(2)} (${sign}$${diff})`;
+            }
+
+            return isWin ? 
+              `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black cursor-help" title="${tooltipStr}">✓</span>` :
+              `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black cursor-help" title="${tooltipStr}">✗</span>`
+          }).join("");
         } else {
           dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
         }
@@ -3540,7 +3727,7 @@
         correct_picks: correct,
         accuracy_percent: pct !== null ? Math.round(pct * 10) / 10 : null,
         ratio_text: `${correct} of ${total} Correct`,
-        recent_outcomes: recent
+        recent_outcomes: liveSettlements.slice(-5)
       };
 
       window.cachedBtcAccuracy = accData;
@@ -3784,7 +3971,9 @@
       }
     }
 
-    // Client-side Above/Below Target Resolution Evaluator (Blends Rollover Forecast & Live Delta)
+    // Client-side 15M Contract Prediction Evaluator
+    // Locks prediction at 1 minute after contract start based on historical price, volume, and chart patterns,
+    // and sticks with that prediction until the end of the contract.
     function evaluateClientTargetPrediction(price, target) {
       if (!price || !target) return;
       const delta = price - target;
@@ -3792,51 +3981,84 @@
       const isAbove = delta >= 0;
 
       const nowSec = Math.floor(Date.now() / 1000);
+      const intervalId = Math.floor(nowSec / 900) * 900;
       const elapsed = nowSec % 900;
-      const timeFactor = elapsed / 900;
 
-      const fc = window.cachedNextContractForecast;
-      let prob = 50 + Math.min(42, Math.abs(delta) / 6);
-
-      // In the first 3 minutes of a new contract, heavily weight the rollover forecast
-      let outcome = isAbove ? "LIKELY TO CLOSE ABOVE TARGET" : "LIKELY TO CLOSE BELOW TARGET";
-      let badge = prob >= 75 ? "HIGH CONVICTION" : (prob >= 62 ? "MODERATE" : "BALANCED");
-
-      if (fc && elapsed < 180 && fc.direction !== "PASS") {
-        badge = fc.conviction_badge;
-        if ((fc.direction === "ABOVE" && isAbove) || (fc.direction === "BELOW" && !isAbove)) {
-          prob = Math.max(prob, fc.probability_percent);
+      // 1. First 60 seconds of contract: Warmup & pattern scanner
+      if (elapsed < 60 && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
+        const outcomeText = document.getElementById("btcPredOutcomeText");
+        const probText = document.getElementById("btcPredProbText");
+        const confTag = document.getElementById("btcPredConfidenceTag");
+        const banner = document.getElementById("btcPredBanner");
+        if (outcomeText) {
+          outcomeText.innerText = "⏳ 1M SCAN";
+          outcomeText.className = "text-xs sm:text-sm font-black tracking-tight text-amber-300 font-mono leading-none";
         }
-      } else if (timeFactor > 0.65) {
-        prob += 4;
+        if (probText) probText.innerText = `${60 - elapsed}s`;
+        if (confTag) confTag.innerText = "ANALYZING";
+        if (banner) {
+          banner.style.background = "rgba(245, 158, 11, 0.10)";
+          banner.style.borderColor = "#f59e0b";
+        }
+        return;
       }
-      prob = Math.max(52, Math.min(96, Math.round(prob)));
 
-      const decisionFactors = [
-        `Live price has ${isAbove ? '+' : '-'}$${Math.abs(delta).toFixed(2)} (${isAbove ? '+' : '-'}${Math.abs(deltaPct).toFixed(2)}%) cushion`,
-        `Active 15M Target benchmark locked at $${target.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        `${Math.floor((900 - elapsed) / 60)}m ${((900 - elapsed) % 60)}s remaining until interval close`
+      // 2. Lock in prediction at 1 minute mark (elapsed >= 60s) using historical price, volume & patterns
+      if (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId) {
+        let fc = window.cachedNextContractForecast;
+        if (!fc && window._lastRawCandles) {
+          fc = evaluateClientNextContractForecast(window._lastRawCandles, window._lastIsCoinbaseFormat, target);
+        }
+
+        let dir = (fc && fc.direction && fc.direction !== "PASS") ? fc.direction : (isAbove ? "ABOVE" : "BELOW");
+        let prob = (fc && fc.probability_percent) ? fc.probability_percent : (58 + Math.min(32, Math.round(Math.abs(delta) / 8)));
+        let badge = (fc && fc.conviction_badge) ? fc.conviction_badge : (prob >= 75 ? "⚡ HIGH CONVICTION" : "MODERATE EDGE");
+        let grade = (fc && fc.conviction_grade) ? fc.conviction_grade : (prob >= 75 ? "GRADE A+ SETUP" : "GRADE A SETUP");
+        let edge = (fc && fc.primary_edge) ? fc.primary_edge : (dir === "ABOVE" ? "Bullish volume & pattern support" : "Bearish pattern rejection");
+        let catalysts = (fc && fc.catalysts && fc.catalysts.length > 0) ? fc.catalysts : [
+          `Historical volume & pattern trend: ${dir}`,
+          `Chart structure: ${dir === "ABOVE" ? "Support holding" : "Resistance holding"}`,
+          `1-min locked benchmark: $${price.toFixed(2)} vs target $${target.toFixed(2)}`
+        ];
+
+        window.lockedContractForecast = {
+          intervalId: intervalId,
+          lockedAt: nowSec,
+          direction: dir,
+          outcome: dir === "ABOVE" ? "LIKELY TO CLOSE ABOVE TARGET" : "LIKELY TO CLOSE BELOW TARGET",
+          outcomeText: dir === "ABOVE" ? "▲ UP" : "▼ DOWN",
+          probability_percent: prob,
+          confidence_badge: badge,
+          conviction_grade: grade,
+          primary_edge: edge,
+          decision_factors: catalysts
+        };
+        window.cachedNextContractForecast = window.lockedContractForecast;
+      }
+
+      // 3. Sticking with the locked prediction until the end of the contract
+      const locked = window.lockedContractForecast;
+      const isLockedAbove = locked.direction === "ABOVE";
+
+      const liveFactors = [
+        ...locked.decision_factors.slice(0, 2),
+        `Live cushion: ${isAbove ? '+' : '-'}$${Math.abs(delta).toFixed(2)} (${isAbove ? '+' : '-'}${Math.abs(deltaPct).toFixed(2)}%)`,
+        `15M Contract Close in: ${Math.floor((900 - elapsed) / 60)}m ${((900 - elapsed) % 60)}s`
       ];
 
-      if (fc && fc.primary_edge) {
-        decisionFactors.push(`Rollover Edge: ${fc.primary_edge}`);
-      } else {
-        decisionFactors.push(`Momentum favoring ${isAbove ? 'bullish resolution above target' : 'bearish rejection below target'}`);
-      }
-
       const tb = {
-        predicted_outcome: outcome,
-        probability_percent: prob,
-        confidence_badge: badge,
-        next_contract_forecast: fc,
-        decision_factors: decisionFactors
+        predicted_outcome: locked.outcome,
+        probability_percent: locked.probability_percent,
+        confidence_badge: locked.confidence_badge,
+        next_contract_forecast: locked,
+        decision_factors: liveFactors
       };
 
       renderBtcPredictor(tb);
 
-      // Also update speedometer needle based on live probability
-      const meterScore = isAbove ? Math.round((prob - 50) * 2) : -Math.round((prob - 50) * 2);
-      updateBtcConfluenceGauge(meterScore, isAbove ? "BUY" : "SELL", prob);
+      // Speedometer needle tracks locked conviction direction
+      const meterScore = isLockedAbove ? Math.round((locked.probability_percent - 50) * 2) : -Math.round((locked.probability_percent - 50) * 2);
+      updateBtcConfluenceGauge(meterScore, isLockedAbove ? "BUY" : "SELL", locked.probability_percent);
     }
 
     // Client-side Live Display Updater (for Mobile, iPhone / Standalone)
@@ -3905,10 +4127,16 @@
         const tHero = document.getElementById("btcTargetPriceHero");
         if (tHero && target && target > 0) {
           tHero.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          applyTargetPriceColor(tHero, price, target);
         }
         const topTarget = document.getElementById("topBarTargetPrice");
+        const topCard = document.getElementById("topBarTargetCard");
         if (topTarget && target && target > 0) {
           topTarget.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          applyTargetPriceColor(topTarget, price, target);
+        }
+        if (topCard && target && target > 0 && price > 0) {
+          updateTargetCardBorder(topCard, price, target);
         }
         const topDelta = document.getElementById("topBarTargetDelta");
         if (topDelta && target && target > 0 && price > 0) {
@@ -3956,6 +4184,9 @@
             const kNo = document.getElementById("btcKalshiNoProb");
             if (kYes) kYes.innerText = `${liveData.kalshi.yes_prob}% Yes (Above)`;
             if (kNo) kNo.innerText = `${liveData.kalshi.no_prob}% No (Below)`;
+          }
+          if (liveData.seconds_left !== undefined) {
+            window._btcServerNextCloseEpoch = Date.now() + (liveData.seconds_left * 1000);
           }
           handledByServer = true;
           _isPollingBtcLive = false;
@@ -4056,28 +4287,25 @@
         let analysisData = null;
         let candlesData = null;
 
-        // 1. Fetch analysis
-        try {
-          const resp = await fetch(`/api/btc/analyze?timeframe=${btcCurrentTimeframe}`);
-          if (resp.ok) analysisData = await resp.json();
-        } catch (e) {
-          console.warn("Live BTC analysis fetch failed, checking static fallback:", e);
-        }
+        const analysisPromise = fetch(`/api/btc/analyze?timeframe=${btcCurrentTimeframe}`)
+          .then(res => res.ok ? res.json() : null)
+          .catch(e => null)
+          .then(async (data) => {
+             if (data) return data;
+             try {
+                const fallbackResp = await fetch(`data/btc_analysis.json`);
+                if (fallbackResp.ok) return await fallbackResp.json();
+             } catch(e) {}
+             return null;
+          });
 
-        if (!analysisData) {
-          try {
-            const fallbackResp = await fetch(`data/btc_analysis.json`);
-            if (fallbackResp.ok) analysisData = await fallbackResp.json();
-          } catch (e) {}
-        }
+        const candlesPromise = fetch(`/api/btc/candles?timeframe=${btcCurrentTimeframe}`)
+          .then(res => res.ok ? res.json() : null)
+          .catch(e => null);
 
-        // 2. Fetch candles
-        try {
-          const candleResp = await fetch(`/api/btc/candles?timeframe=${btcCurrentTimeframe}`);
-          if (candleResp.ok) candlesData = await candleResp.json();
-        } catch (e) {
-          console.warn("Live BTC candles fetch failed, checking static fallback:", e);
-        }
+        const [aData, cData] = await Promise.all([analysisPromise, candlesPromise]);
+        analysisData = aData;
+        candlesData = cData;
 
         // Direct Public Kline Fallback for iPhone / standalone (Primary: Coinbase CORS: *, Fallback: Binance)
         if (!candlesData) {
@@ -4284,18 +4512,16 @@
 
     async function updateBtcCountdown() {
       if (activeMode !== 'btc_analyzer') return;
-      try {
-        const res = await fetch(`/api/btc/countdown?timeframe=${btcCurrentTimeframe}`);
-        if (res.ok) {
-          const d = await res.json();
+      if (window._btcServerNextCloseEpoch) {
+          let secLeft = Math.floor((window._btcServerNextCloseEpoch - Date.now()) / 1000);
+          if (secLeft < 0) secLeft = 0;
+          const mins = Math.floor(secLeft / 60).toString().padStart(2, '0');
+          const secs = (secLeft % 60).toString().padStart(2, '0');
           const cd = document.getElementById("btcCountdown");
-          if (cd) cd.innerText = d.formatted;
-          if (d.seconds_left === 1) {
+          if (cd) cd.innerText = `${mins}:${secs}`;
+          if (secLeft === 1) {
             setTimeout(triggerBtcAnalysis, 1500);
           }
-        }
-      } catch (e) {
-        // ignore
       }
     }
 
@@ -4329,19 +4555,66 @@
       return (typeof localStorage !== 'undefined' && localStorage.getItem("kalshi_server_url")) || 'http://192.168.1.222:8056';
     }
 
+    let kalshiCurrentPriceEst = 0.65; // Track current estimated contract price
+
     function updateKalshiEstCostDisplay() {
-      const costEl = document.getElementById("kalshiEstCost");
-      if (!costEl) return;
-      const estPer = 0.65;
-      const total = (kalshiCurrentContracts * estPer).toFixed(2);
-      costEl.innerText = `(~$${total}/trade)`;
+      const sizeInput = document.getElementById("kalshiSizeInput");
+      const ctInput = document.getElementById("kalshiContractsInput");
+      if (!sizeInput || !ctInput) return;
+      const total = (kalshiCurrentContracts * kalshiCurrentPriceEst).toFixed(2);
+      if (document.activeElement !== sizeInput) {
+        sizeInput.value = total;
+      }
+    }
+
+    function updateKalshiSize(val) {
+      let size = parseFloat(val);
+      if (isNaN(size) || size < kalshiCurrentPriceEst) size = kalshiCurrentPriceEst;
+      const ct = Math.max(1, Math.round(size / kalshiCurrentPriceEst));
+      
+      kalshiCurrentContracts = ct;
+      const ctInput = document.getElementById("kalshiContractsInput");
+      if (ctInput) ctInput.value = ct;
+      
+      updateKalshiPayoutCalculator();
+      saveKalshiContractsCount(ct);
+    }
+
+    async function saveKalshiContractsCount(count) {
+      try {
+        const apiBase = getKalshiApiBase();
+        await fetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
+      } catch (err) {
+        console.warn("Failed to persist contracts count:", err);
+      }
+    }
+
+    async function updateKalshiContracts(val) {
+      let ct = parseInt(val, 10);
+      if (isNaN(ct) || ct < 1) ct = 1;
+      kalshiCurrentContracts = ct;
+      updateKalshiEstCostDisplay();
+      updateKalshiPayoutCalculator();
+
+      const ctInput = document.getElementById("kalshiContractsInput");
+      if (ctInput) ctInput.value = ct;
+
+      await saveKalshiContractsCount(ct);
+    }
+
+    function changeKalshiContracts(delta) {
+      let current = parseInt(document.getElementById("kalshiContractsInput").value, 10) || 1;
+      let next = current + delta;
+      if (next < 1) next = 1;
+      const ctInput = document.getElementById("kalshiContractsInput");
+      if (ctInput) ctInput.value = next;
+      updateKalshiContracts(next);
     }
 
     function setKalshiContractsPreset(ct) {
       updateKalshiContracts(ct);
       const input = document.getElementById("kalshiContractsInput");
       if (input) input.value = ct;
-      updateKalshiPayoutCalculator();
     }
 
     function updateKalshiPayoutCalculator() {
@@ -4349,37 +4622,14 @@
       const ct = input ? parseInt(input.value) || 1 : 1;
       const riskEl = document.getElementById("kalshiCalcRisk");
       const payoutEl = document.getElementById("kalshiCalcPayout");
-      const costEl = document.getElementById("kalshiEstCost");
 
-      const avgPrice = 0.58; // Typical Kalshi 15M contract purchase price
-      const totalRisk = ct * avgPrice;
-      const totalPayout = ct * 1.00;
-      const profit = totalPayout - totalRisk;
-      const retPct = Math.round((profit / totalRisk) * 100);
+      const totalRisk = ct * kalshiCurrentPriceEst;
+      const maxPayout = ct * 1.00;
+      const netProfit = maxPayout - totalRisk;
+      const roi = totalRisk > 0 ? (netProfit / totalRisk) * 100 : 0;
 
       if (riskEl) riskEl.innerText = `$${totalRisk.toFixed(2)}`;
-      if (payoutEl) payoutEl.innerText = `$${totalPayout.toFixed(2)} (+${retPct}%)`;
-      if (costEl) costEl.innerText = `(~$${totalRisk.toFixed(2)} total)`;
-    }
-
-    function changeKalshiContracts(delta) {
-      const nextVal = Math.max(1, Math.min(10, kalshiCurrentContracts + delta));
-      updateKalshiContracts(nextVal);
-    }
-
-    async function updateKalshiContracts(val) {
-      const count = Math.max(1, Math.min(10, parseInt(val) || 1));
-      kalshiCurrentContracts = count;
-      const ctInput = document.getElementById("kalshiContractsInput");
-      if (ctInput) ctInput.value = count;
-      updateKalshiEstCostDisplay();
-
-      try {
-        const apiBase = getKalshiApiBase();
-        await fetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
-      } catch (err) {
-        console.warn("Failed to persist contracts count:", err);
-      }
+      if (payoutEl) payoutEl.innerText = `$${maxPayout.toFixed(2)} (+${Math.round(roi)}%)`;
     }
 
     let _isPollingKalshiStatus = false;
@@ -4398,8 +4648,13 @@
 
         // Update Balance
         const balEl = document.getElementById("kalshiLiveBalance");
-        if (balEl && data.balance_dollars !== undefined) {
-          balEl.innerText = `$${parseFloat(data.balance_dollars).toFixed(2)}`;
+        const settingsBalEl = document.getElementById("kalshiSettingsPaperBalance");
+        const tradeLogBalEl = document.getElementById("tradeLogPaperBalance");
+        if (data.balance_dollars !== undefined) {
+          const formatted = `$${parseFloat(data.balance_dollars).toFixed(2)}`;
+          if (balEl) balEl.innerText = formatted;
+          if (settingsBalEl) settingsBalEl.innerText = formatted;
+          if (tradeLogBalEl) tradeLogBalEl.innerText = formatted;
         }
 
         // Update Contracts Count
@@ -4424,6 +4679,14 @@
           }
         }
 
+        // Update Prediction Mode Checkbox
+        if (data.prediction_mode !== undefined) {
+          const pmCheckbox = document.getElementById("settingPredictionMode");
+          if (pmCheckbox && document.activeElement !== pmCheckbox) {
+             pmCheckbox.checked = !!data.prediction_mode;
+          }
+        }
+
         // Update Mode Button
         const btnMode = document.getElementById("btnToggleTradingMode");
         if (btnMode) {
@@ -4438,8 +4701,17 @@
 
         // Active Market Ticker
         const tickerEl = document.getElementById("kalshiActiveTicker");
-        if (tickerEl && data.active_market) {
-          tickerEl.innerText = data.active_market.ticker || "KXBTC15M-ACTIVE";
+        if (data.active_market) {
+          if (tickerEl) tickerEl.innerText = data.active_market.ticker || "KXBTC15M-ACTIVE";
+          
+          if (data.active_market.yes_bid !== undefined) {
+             const newEst = parseFloat(data.active_market.yes_bid);
+             if (!isNaN(newEst) && newEst > 0 && newEst !== kalshiCurrentPriceEst) {
+               kalshiCurrentPriceEst = newEst;
+               updateKalshiEstCostDisplay();
+               updateKalshiPayoutCalculator();
+             }
+          }
         }
 
         // Win Rate & P&L
@@ -4468,12 +4740,15 @@
     function renderKalshiTradesList(trades, activeMarket) {
       const container = document.getElementById("kalshiTradesListContainer");
       if (!container) return;
-      if (!trades || trades.length === 0) {
-        container.innerHTML = '<div class="text-[6.5px] text-slate-500 text-center py-1">No trades executed yet. Standing by for rollover...</div>';
+
+      const filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+
+      if (filteredTrades.length === 0) {
+        container.innerHTML = '<div class="text-[6.5px] text-slate-500 text-center py-1">No trades executed yet in ' + kalshiTradingMode + ' mode. Standing by for rollover...</div>';
         return;
       }
 
-      container.innerHTML = trades.slice(0, 5).map(t => {
+      container.innerHTML = filteredTrades.slice(0, 5).map(t => {
         const resStr = String(t.result || "").toUpperCase();
         const statStr = String(t.status || "").toUpperCase();
         const isWin = resStr.includes("WIN");
@@ -4526,9 +4801,10 @@
         return `
           <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1">
             <div class="flex flex-col gap-0.5">
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 flex-wrap">
                 <span class="font-bold uppercase">${t.side}</span>
                 <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
+                <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
                 <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
               </div>
               <span class="text-[7px] text-slate-500">${timeStr}</span>
@@ -4622,6 +4898,19 @@
         toast.style.transform = "translateY(-10px)";
         setTimeout(() => toast.remove(), 300);
       }, 3500);
+    }
+
+    async function togglePredictionMode(enabled) {
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${enabled}`, { method: "POST" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showAppToast("Prediction Mode", enabled ? "1-Min locked predictions active" : "Prediction mode disabled", enabled ? "success" : "info");
+        pollKalshiTradingStatus();
+      } catch (e) {
+        console.error("Error toggling prediction mode:", e);
+        showAppToast("Error", "Failed to update prediction mode", "error");
+      }
     }
 
     async function toggleKalshiAutoTrade() {
@@ -4820,24 +5109,46 @@
     async function setConvictionFilter(type) {
       kalshiConvictionFilter = type;
       const btnAPlus = document.getElementById("btnFilterAPlus");
-      const btnAll = document.getElementById("btnFilterAll");
+      const btnA = document.getElementById("btnFilterA");
+      const btnBPlus = document.getElementById("btnFilterBPlus");
+      const btnB = document.getElementById("btnFilterB");
       const label = document.getElementById("settingGradeLabel");
-      const thresholdParam = type === "APLUS" ? "A+" : "A";
+      
+      let thresholdParam = "A+";
+      let labelText = "Grade A+ Only";
+      
+      const activeClass = "py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer";
+      const inactiveClass = "py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer";
+
+      if (btnAPlus) btnAPlus.className = inactiveClass;
+      if (btnA) btnA.className = inactiveClass;
+      if (btnBPlus) btnBPlus.className = inactiveClass;
+      if (btnB) btnB.className = inactiveClass;
 
       if (type === "APLUS") {
-        if (btnAPlus) btnAPlus.className = "py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer";
-        if (btnAll) btnAll.className = "py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer";
-        if (label) label.innerText = "Grade A+ Only";
-      } else {
-        if (btnAll) btnAll.className = "py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer";
-        if (btnAPlus) btnAPlus.className = "py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer";
-        if (label) label.innerText = "Grade A+ & A";
+        if (btnAPlus) btnAPlus.className = activeClass;
+        thresholdParam = "A+";
+        labelText = "Grade A+ Only";
+      } else if (type === "A" || type === "ALL") {
+        if (btnA) btnA.className = activeClass;
+        thresholdParam = "A";
+        labelText = "Grade A+ & A";
+      } else if (type === "BPLUS") {
+        if (btnBPlus) btnBPlus.className = activeClass;
+        thresholdParam = "B+";
+        labelText = "Grade A+, A & B+";
+      } else if (type === "B") {
+        if (btnB) btnB.className = activeClass;
+        thresholdParam = "B";
+        labelText = "Grade A+, A, B+ & B";
       }
+      
+      if (label) label.innerText = labelText;
 
       try {
         const apiBase = getKalshiApiBase();
         await fetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
-        showAppToast("Filter Updated", `Conviction set to ${type === "APLUS" ? "Grade A+ Only" : "Grade A+ & A"}`, "info");
+        showAppToast("Filter Updated", `Conviction set to ${labelText}`, "info");
       } catch (e) {
         console.error("Failed to update conviction threshold:", e);
       }
@@ -4846,16 +5157,290 @@
     async function saveKalshiSettings() {
       showAppToast("Settings Saved", "Trade parameters applied successfully", "success");
     }
+    
+    async function resetPaperBalanceUI() {
+      const confirmed = await showAppModal({
+        title: "Reset Paper Balance",
+        badge: "PAPER TRADING",
+        icon: "⚠️",
+        iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
+        body: `Are you sure you want to reset your paper trading balance back to $500.00?`,
+        confirmText: "Reset Balance",
+        confirmColor: "red"
+      });
+      
+      if (!confirmed) return;
+      
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          const balEl = document.getElementById("kalshiSettingsPaperBalance");
+          if (balEl) balEl.innerText = `$${parseFloat(data.balance).toFixed(2)}`;
+          showAppToast("Balance Reset", "Paper balance has been reset to $500.00", "success");
+          pollKalshiTradingStatus();
+        }
+      } catch (e) {
+        showAppToast("Error", "Failed to reset paper balance", "error");
+      }
+    }
 
-    function resetKalshiSettingsDefaults() {
-      setConvictionFilter("ALL");
-      const triggerWin = document.getElementById("settingTriggerWindow");
-      if (triggerWin) triggerWin.value = "standard";
-      const trendGuard = document.getElementById("settingTrendGuard");
-      if (trendGuard) trendGuard.checked = true;
-      const takeProfit = document.getElementById("settingAutoTakeProfit");
-      if (takeProfit) takeProfit.checked = true;
-      showAppToast("Defaults Restored", "Settings reset to recommended defaults", "info");
+    // =========================================================================
+    // SCALPER SETTINGS SUB-PAGE CONTROLLER
+    // =========================================================================
+    let scalpEngineActive = false;
+
+    function switchSettingsSubPage(sub) {
+      const pageGeneral = document.getElementById("generalSettingsSubPage");
+      const pageScalp = document.getElementById("scalperSettingsSubPage");
+      const btnGeneral = document.getElementById("btnSettingsSubGeneral");
+      const btnScalp = document.getElementById("btnSettingsSubScalp");
+
+      const activeClass = "py-1 rounded bg-slate-800 text-cyan-300 shadow-sm transition-all cursor-pointer";
+      const inactiveClass = "py-1 rounded text-slate-400 hover:text-slate-200 transition-all cursor-pointer";
+
+      if (sub === "general") {
+        if (pageGeneral) pageGeneral.classList.remove("hidden");
+        if (pageScalp) pageScalp.classList.add("hidden");
+        if (btnGeneral) btnGeneral.className = activeClass;
+        if (btnScalp) btnScalp.className = inactiveClass + " flex items-center justify-center gap-1";
+      } else {
+        if (pageGeneral) pageGeneral.classList.add("hidden");
+        if (pageScalp) pageScalp.classList.remove("hidden");
+        if (btnScalp) btnScalp.className = activeClass + " flex items-center justify-center gap-1";
+        if (btnGeneral) btnGeneral.className = inactiveClass;
+        loadScalpConfigUI();
+      }
+    }
+
+    async function loadScalpConfigUI() {
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`);
+        if (!res.ok) return;
+        const cfg = await res.json();
+        if (!cfg) return;
+
+        scalpEngineActive = !!cfg.enabled;
+        const btnToggle = document.getElementById("btnToggleScalpEngine");
+        const badge = document.getElementById("scalpStatusBadge");
+        const subBadge = document.getElementById("scalpSubBadge");
+
+        if (btnToggle) {
+          btnToggle.innerText = scalpEngineActive ? "ON" : "OFF";
+          btnToggle.className = scalpEngineActive 
+            ? "px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50 cursor-pointer"
+            : "px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700 cursor-pointer";
+        }
+        if (badge) {
+          badge.innerText = scalpEngineActive ? "ACTIVE" : "INACTIVE";
+          badge.className = scalpEngineActive 
+            ? "text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+            : "text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400";
+        }
+        if (subBadge) {
+          subBadge.className = scalpEngineActive ? "h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" : "h-1.5 w-1.5 rounded-full bg-slate-600";
+        }
+
+        const moveInput = document.getElementById("scalpPriceMoveThreshold");
+        if (moveInput && cfg.price_move_threshold !== undefined) moveInput.value = cfg.price_move_threshold;
+
+        const profInput = document.getElementById("scalpProfitTarget");
+        const profLabel = document.getElementById("scalpProfitTargetLabel");
+        if (profInput && cfg.profit_target !== undefined) {
+          profInput.value = cfg.profit_target;
+          if (profLabel) profLabel.innerText = `+${Math.round(cfg.profit_target * 100)}%`;
+        }
+
+        const lossInput = document.getElementById("scalpLossTarget");
+        const lossLabel = document.getElementById("scalpLossTargetLabel");
+        if (lossInput && cfg.loss_target !== undefined) {
+          lossInput.value = cfg.loss_target;
+          if (lossLabel) lossLabel.innerText = `-${Math.round(cfg.loss_target * 100)}%`;
+        }
+
+        const convSelect = document.getElementById("scalpMinConviction");
+        if (convSelect && cfg.minimum_conviction) convSelect.value = cfg.minimum_conviction;
+
+        const maxCtInput = document.getElementById("scalpMaxContracts");
+        if (maxCtInput && cfg.max_contracts !== undefined) maxCtInput.value = cfg.max_contracts;
+
+        const maxTrInput = document.getElementById("scalpMaxTradesPerInterval");
+        if (maxTrInput && cfg.max_trades_per_interval !== undefined) maxTrInput.value = cfg.max_trades_per_interval;
+      } catch (err) {
+        console.warn("Error loading scalp config:", err);
+      }
+    }
+
+    async function toggleScalpEngine() {
+      const nextState = !scalpEngineActive;
+      try {
+        const apiBase = getKalshiApiBase();
+        const endpoint = nextState ? "/api/btc/scalp/start" : "/api/btc/scalp/stop";
+        const res = await fetch(`${apiBase}${endpoint}`, { method: "POST" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        scalpEngineActive = nextState;
+        showAppToast("Scalp Engine", nextState ? "Autonomous scalper active" : "Scalper paused", nextState ? "success" : "info");
+        loadScalpConfigUI();
+      } catch (err) {
+        showAppToast("Scalper Error", String(err), "error");
+      }
+    }
+
+    async function saveScalpSettings() {
+      try {
+        const moveVal = parseFloat(document.getElementById("scalpPriceMoveThreshold")?.value || 0.5);
+        const profVal = parseFloat(document.getElementById("scalpProfitTarget")?.value || 0.25);
+        const lossVal = parseFloat(document.getElementById("scalpLossTarget")?.value || 0.25);
+        const convVal = document.getElementById("scalpMinConviction")?.value || "A+";
+        const ctVal = parseInt(document.getElementById("scalpMaxContracts")?.value || 1);
+        const trVal = parseInt(document.getElementById("scalpMaxTradesPerInterval")?.value || 1);
+
+        const patchBody = {
+          price_move_threshold: moveVal,
+          profit_target: profVal,
+          loss_target: lossVal,
+          minimum_conviction: convVal,
+          max_contracts: ctVal,
+          max_trades_per_interval: trVal
+        };
+
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patchBody)
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showAppToast("Scalper Saved", "Scalp parameters updated successfully", "success");
+        loadScalpConfigUI();
+      } catch (err) {
+        showAppToast("Save Failed", String(err), "error");
+      }
+    }
+
+    async function resetScalpSettingsDefaults() {
+      const defaultCfg = {
+        price_move_threshold: 0.5,
+        profit_target: 0.25,
+        loss_target: 0.25,
+        minimum_conviction: "A+",
+        max_contracts: 1,
+        max_trades_per_interval: 1
+      };
+
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(defaultCfg)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showAppToast("Defaults Restored", "Scalper settings reset to defaults", "info");
+        loadScalpConfigUI();
+      } catch (err) {
+        showAppToast("Reset Failed", String(err), "error");
+      }
+    }
+
+    function initAccuracyTooltip() {
+      const banner = document.getElementById("topBarLikelyCard") || document.getElementById("btcPredBanner");
+      const tooltip = document.getElementById("accuracyTooltip");
+      if (!banner || !tooltip) return;
+
+      let hideTimeout = null;
+
+      banner.addEventListener("mouseenter", async () => {
+        clearTimeout(hideTimeout);
+        try {
+          const apiBase = getKalshiApiBase();
+          const res = await fetch(`${apiBase}/api/btc/prediction/accuracy`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (!data || !data.trade) {
+            tooltip.classList.add("hidden");
+            return;
+          }
+
+          const fc = data.forecast || {};
+          const tr = data.trade || {};
+          const isCorrect = data.correct;
+          const pnlVal = parseFloat(tr.pnl || 0);
+          const pnlFormatted = pnlVal >= 0 ? `+$${pnlVal.toFixed(2)}` : `-$${Math.abs(pnlVal).toFixed(2)}`;
+          const pnlColor = pnlVal >= 0 ? "text-emerald-400" : "text-red-400";
+          const settledAt = tr.settled_at || "Recent Settle";
+
+          const headerIcon = isCorrect ? "✓" : "✗";
+          const headerText = isCorrect ? "CORRECT PREDICTION" : "INCORRECT PREDICTION";
+          const headerColor = isCorrect ? "text-emerald-400" : "text-red-400";
+          const badgeBg = isCorrect ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300";
+
+          tooltip.innerHTML = `
+            <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-slate-800">
+              <span class="${headerColor} font-black text-xs">${headerIcon} ${headerText}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded ${badgeBg} font-bold ml-auto font-mono">VERIFIED</span>
+            </div>
+            <div class="space-y-1.5 text-[11px] font-mono">
+              <div class="flex justify-between gap-4"><span class="text-slate-400">Conviction:</span> <span class="font-bold text-cyan-300">${fc.conviction_grade || "GRADE A+"}</span></div>
+              <div class="flex justify-between gap-4"><span class="text-slate-400">Direction:</span> <span class="font-bold text-white">${fc.direction || "UP"}</span></div>
+              <div class="flex justify-between gap-4"><span class="text-slate-400">Confidence:</span> <span class="font-bold text-emerald-400">${fc.confidence || 75}%</span></div>
+              <div class="flex justify-between gap-4"><span class="text-slate-400">Profit/Loss:</span> <span class="font-bold ${pnlColor}">${pnlFormatted}</span></div>
+              <div class="flex justify-between gap-4 pt-1 border-t border-slate-800/80 text-[9px] text-slate-400"><span>Settled:</span> <span>${settledAt}</span></div>
+            </div>
+          `;
+
+          const rect = banner.getBoundingClientRect();
+          let top = rect.bottom + 8;
+          let left = rect.left;
+          if (left + 260 > window.innerWidth) {
+            left = window.innerWidth - 270;
+          }
+          tooltip.style.top = `${top}px`;
+          tooltip.style.left = `${Math.max(10, left)}px`;
+          tooltip.classList.remove("hidden");
+        } catch (err) {
+          console.warn("[AccuracyTooltip] Error:", err);
+        }
+      });
+
+      banner.addEventListener("mouseleave", () => {
+        hideTimeout = setTimeout(() => {
+          tooltip.classList.add("hidden");
+        }, 120);
+      });
+    }
+
+    let btcWs = null;
+    function initBtcWebsocket() {
+      if (btcWs) return;
+      try {
+        btcWs = new WebSocket("wss://ws-feed.exchange.coinbase.com");
+        btcWs.onopen = () => {
+          btcWs.send(JSON.stringify({
+            "type": "subscribe",
+            "product_ids": ["BTC-USD"],
+            "channels": ["ticker"]
+          }));
+        };
+        btcWs.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "ticker" && data.product_id === "BTC-USD") {
+              const p = parseFloat(data.price);
+              if (!isNaN(p)) {
+                renderBtcHeroHud({ price: p });
+              }
+            }
+          } catch (e) {}
+        };
+        btcWs.onerror = () => { btcWs = null; };
+        btcWs.onclose = () => { btcWs = null; setTimeout(initBtcWebsocket, 5000); };
+      } catch (e) {
+        btcWs = null;
+      }
     }
 
     // Initialize
@@ -4865,8 +5450,14 @@
     triggerBtcAnalysis();
     pollKalshiTradingStatus();
     setInterval(pollKalshiTradingStatus, 3000);
+    initAccuracyTooltip();
+    loadScalpConfigUI();
+    initBtcWebsocket();
 
   </script>
+
+  <!-- Accuracy Hover Tooltip Panel -->
+  <div id="accuracyTooltip" class="fixed hidden pointer-events-none z-[99999] bg-slate-950/95 border border-cyan-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md text-xs font-mono text-white max-w-xs transition-opacity duration-150"></div>
 
   <!-- Custom In-App Modal Dialog (Zero "localhost says" native popups) -->
   <div id="appModalOverlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4">

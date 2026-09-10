@@ -69,6 +69,8 @@ def get_kalshi_15m_market():
             if valid_m:
                 valid_m.sort(key=lambda x: x[0])
                 active_m = valid_m[0][1]
+            else:
+                return None
             floor_strike = active_m.get("floor_strike")
             if floor_strike is not None:
                 target_price = float(floor_strike)
