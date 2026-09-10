@@ -749,101 +749,100 @@
         <div class="btc-right-panel lg:col-span-1 glass-panel rounded-2xl p-2.5 sm:p-3 border border-slate-800 flex flex-col overflow-y-auto no-scrollbar" style="height: 100%;">
           
           <!-- ================================================================= -->
-          <!-- KALSHI AUTONOMOUS 15M TRADING CONSOLE (ENTIRE PANEL - BIG TEXT)   -->
+          <!-- KALSHI AUTONOMOUS 15M TRADING CONSOLE (STREAMLINED - 40% TRADES)  -->
           <!-- ================================================================= -->
-          <div id="kalshiTradingDeck" class="btc-panel-card p-3 sm:p-3.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-lg shadow-cyan-950/20 flex flex-col justify-between flex-1 h-full min-h-0 space-y-2.5 font-mono">
+          <div id="kalshiTradingDeck" class="btc-panel-card p-2 sm:p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-lg shadow-cyan-950/20 flex flex-col justify-between flex-1 h-full min-h-0 space-y-1.5 font-mono">
             
-            <!-- Header with Status & Balance (+25% text size) -->
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
-              <div class="flex items-center gap-2">
-                <span class="relative flex h-3 w-3">
-                  <span id="kalshiBeaconPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span id="kalshiBeaconDot" class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span class="text-sm sm:text-base font-black tracking-wider text-cyan-400 font-sans uppercase">Kalshi AI Trader</span>
-              </div>
+            <!-- 1. Streamlined Header with Status & Live Balance -->
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-1 shrink-0">
               <div class="flex items-center gap-1.5">
-                <span class="text-slate-400 text-xs sm:text-sm">Bal:</span>
-                <span id="kalshiLiveBalance" class="text-emerald-400 font-bold text-sm sm:text-base">$7.82</span>
+                <span class="relative flex h-2.5 w-2.5">
+                  <span id="kalshiBeaconPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span id="kalshiBeaconDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs sm:text-sm font-black tracking-wider text-cyan-400 font-sans uppercase">Kalshi AI Trader</span>
+              </div>
+              <div class="flex items-center gap-1 text-[10px] sm:text-xs">
+                <span class="text-slate-400">Bal:</span>
+                <span id="kalshiLiveBalance" class="text-emerald-400 font-bold">$7.82</span>
               </div>
             </div>
 
-            <!-- Controls: Auto-Trade Toggle & Mode Selector (+25% text size) -->
-            <div class="grid grid-cols-2 gap-2">
+            <!-- 2. Streamlined Controls: Auto Toggle & Mode Selector -->
+            <div class="grid grid-cols-2 gap-1.5 shrink-0">
               <!-- Auto Execution Toggle -->
-              <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                <span class="text-xs sm:text-sm text-slate-300 font-sans font-bold">Auto:</span>
-                <button id="btnToggleAutoTrade" onclick="toggleKalshiAutoTrade()" class="px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700">
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Auto:</span>
+                <button id="btnToggleAutoTrade" onclick="toggleKalshiAutoTrade()" class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700">
                   OFF
                 </button>
               </div>
 
               <!-- Mode Toggle: PAPER vs LIVE -->
-              <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                <span class="text-xs sm:text-sm text-slate-300 font-sans font-bold">Mode:</span>
-                <button id="btnToggleTradingMode" onclick="toggleKalshiTradingMode()" class="px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900">
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Mode:</span>
+                <button id="btnToggleTradingMode" onclick="toggleKalshiTradingMode()" class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900">
                   📝 PAPER
                 </button>
               </div>
             </div>
 
-            <!-- Sizing Controls & Presets (+25% text size) -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs sm:text-sm text-slate-300 font-sans font-bold">Size:</span>
-                  <span id="kalshiEstCost" class="text-[11px] sm:text-xs text-cyan-300 font-mono">(~$0.65/trade)</span>
-                </div>
+            <!-- 3. Streamlined Sizing Controls (Individual preset buttons removed to save space) -->
+            <div class="space-y-1 shrink-0">
+              <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
                 <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="changeKalshiContracts(-1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-sm active:scale-90">-</button>
-                  <input id="kalshiContractsInput" type="number" min="1" max="10" value="1" onchange="updateKalshiContracts(this.value)" class="w-10 text-center bg-slate-900 border border-slate-700 rounded-lg text-xs sm:text-sm font-mono font-bold text-white py-1 focus:border-cyan-500 focus:outline-none" />
-                  <button type="button" onclick="changeKalshiContracts(1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-sm active:scale-90">+</button>
-                  <span class="text-[11px] sm:text-xs text-slate-400 font-mono">ct</span>
+                  <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
+                  <span id="kalshiEstCost" class="text-[9px] sm:text-[10px] text-cyan-300 font-mono">(~$0.65/trade)</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">-</button>
+                  <input id="kalshiContractsInput" type="number" min="1" max="10" value="1" onchange="updateKalshiContracts(this.value)" class="w-8 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 focus:border-cyan-500 focus:outline-none" />
+                  <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">+</button>
+                  <span class="text-[10px] text-slate-400 font-mono">ct</span>
                 </div>
               </div>
 
-              <!-- Quick Sizing Presets Tool (+25% text size) -->
-              <div class="grid grid-cols-4 gap-1.5 text-xs sm:text-sm font-bold font-mono">
-                <button type="button" onclick="setKalshiContractsPreset(1)" class="py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">1 ct</button>
-                <button type="button" onclick="setKalshiContractsPreset(3)" class="py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">3 ct</button>
-                <button type="button" onclick="setKalshiContractsPreset(5)" class="py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-slate-300 active:scale-95">5 ct</button>
-                <button type="button" onclick="setKalshiContractsPreset(10)" class="py-1 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-amber-400 active:scale-95">10 ct</button>
-              </div>
-
-              <!-- Potential Payout Multiplier & Return Tool (+25% text size) -->
-              <div id="kalshiPayoutCalculator" class="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-950/90 border border-cyan-500/20 text-xs sm:text-sm text-slate-300 font-mono">
+              <!-- Streamlined Payout Multiplier Tool -->
+              <div id="kalshiPayoutCalculator" class="flex items-center justify-between px-2 py-0.5 rounded bg-slate-950/90 border border-cyan-500/20 text-[9px] sm:text-[10px] text-slate-300 font-mono">
                 <span>Risk: <strong id="kalshiCalcRisk" class="text-white">$0.65</strong></span>
                 <span class="text-slate-600">→</span>
-                <span>Max Payout: <strong id="kalshiCalcPayout" class="text-emerald-400 font-bold">$1.00 (+54%)</strong></span>
+                <span>Max: <strong id="kalshiCalcPayout" class="text-emerald-400 font-bold">$1.00 (+54%)</strong></span>
               </div>
             </div>
 
-            <!-- Active Target & 1-Click Manual Execution (+25% Larger Buttons) -->
-            <div class="p-2.5 sm:p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-2">
-              <div class="flex items-center justify-between text-xs sm:text-sm">
-                <span class="text-slate-400 truncate max-w-[150px] font-bold" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
-                <span id="kalshiConvictionPill" class="px-2 py-0.5 rounded font-bold uppercase text-[9px] sm:text-[10px] bg-slate-800 text-cyan-400">Min: A+ & A</span>
+            <!-- 4. Active Target & Streamlined 1-Click Execution -->
+            <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1 shrink-0">
+              <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
+                <span class="text-slate-400 truncate max-w-[140px] font-bold" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
+                <span id="kalshiConvictionPill" class="px-1.5 py-0.2 rounded font-bold uppercase text-[8px] bg-slate-800 text-cyan-400">Min: A+ & A</span>
               </div>
-              <div class="grid grid-cols-2 gap-2 pt-0.5">
-                <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-3 py-3 sm:py-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all text-sm sm:text-base font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/60 cursor-pointer">
-                  <span class="text-base sm:text-lg">▲</span> BID YES
+              <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+                <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-2 py-2 rounded-lg bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-md shadow-emerald-950/60 cursor-pointer">
+                  <span>▲</span> BID YES
                 </button>
-                <button onclick="triggerManualKalshiTrade('BELOW')" class="px-3 py-3 sm:py-3.5 rounded-xl bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all text-sm sm:text-base font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-950/60 cursor-pointer">
-                  <span class="text-base sm:text-lg">▼</span> BID NO
+                <button onclick="triggerManualKalshiTrade('BELOW')" class="px-2 py-2 rounded-lg bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-md shadow-red-950/60 cursor-pointer">
+                  <span>▼</span> BID NO
                 </button>
               </div>
             </div>
 
-            <!-- Win Rate & P&L Tracker (+25% text size) -->
-            <div class="flex items-center justify-between px-2 py-1.5 text-xs sm:text-sm border-t border-slate-800/60 text-slate-400">
+            <!-- 5. Win Rate & P&L Tracker -->
+            <div class="flex items-center justify-between px-1.5 py-1 text-[9px] sm:text-[10px] border-t border-slate-800/60 text-slate-400 shrink-0">
               <div>Trades: <span id="kalshiTradesCount" class="font-bold text-white">0W - 0L</span> (<span id="kalshiWinRate" class="font-bold text-emerald-400">0%</span>)</div>
               <div>P&L: <span id="kalshiTotalPnl" class="font-bold text-white">$0.00</span></div>
             </div>
 
-            <!-- Recent Trades Stream (+25% text size & expanded height) -->
-            <div id="kalshiTradesListContainer" class="space-y-1 flex-1 min-h-[60px] max-h-[120px] overflow-y-auto pr-0.5 text-[10px] sm:text-xs">
-              <div class="text-[10px] sm:text-xs text-slate-500 text-center py-2">Standing by for next 15M contract rollover...</div>
+            <!-- 6. Recent Trades Stream (Allocated 40% of Left Panel Height) -->
+            <div class="flex flex-col flex-1 min-h-0 border-t border-slate-800/80 pt-1" style="height: 40%; min-height: 40%; max-height: 40%;">
+              <div class="flex items-center justify-between pb-0.5 text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-wider shrink-0">
+                <span>Recent Trades Log</span>
+                <span class="text-cyan-400 text-[8px]">Live History</span>
+              </div>
+              <div id="kalshiTradesListContainer" class="space-y-1 flex-1 h-full overflow-y-auto pr-0.5 text-[9px] sm:text-[10px]">
+                <div class="text-[9px] text-slate-500 text-center py-2">Standing by for next 15M contract rollover...</div>
+              </div>
             </div>
+
           </div>
 
         </div>
@@ -4275,10 +4274,10 @@
         if (btnToggle) {
           if (data.enabled) {
             btnToggle.innerText = "ON";
-            btnToggle.className = "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
+            btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
           } else {
             btnToggle.innerText = "OFF";
-            btnToggle.className = "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
+            btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
           }
         }
 
@@ -4287,10 +4286,10 @@
         if (btnMode) {
           if (data.mode === "LIVE") {
             btnMode.innerText = "🔴 LIVE";
-            btnMode.className = "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900";
+            btnMode.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900";
           } else {
             btnMode.innerText = "📝 PAPER";
-            btnMode.className = "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+            btnMode.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
           }
         }
 
@@ -4337,11 +4336,11 @@
         const pnlText = isWin ? `+$${parseFloat(t.pnl || 0).toFixed(2)}` : (isLoss ? `-$${Math.abs(parseFloat(t.pnl || 0)).toFixed(2)}` : "Pending");
 
         return `
-          <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[10px] sm:text-xs font-mono">
+          <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono">
             <div class="flex items-center gap-1">
               <span class="font-bold uppercase">${t.side}</span>
               <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
-              <span class="text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
+              <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
             </div>
             <div class="flex items-center gap-1 font-bold">
               <span>${statusBadge}</span>
@@ -4365,8 +4364,8 @@
       if (btnToggle) {
         btnToggle.innerText = nextState ? "ON" : "OFF";
         btnToggle.className = nextState 
-          ? "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50" 
-          : "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
+          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50" 
+          : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
       }
       kalshiAutoTradeEnabled = nextState;
 
@@ -4396,8 +4395,8 @@
       if (btnMode) {
         btnMode.innerText = nextMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
         btnMode.className = nextMode === "LIVE" 
-          ? "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900"
-          : "px-3 py-1 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900"
+          : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
       }
       kalshiTradingMode = nextMode;
 
