@@ -1,50 +1,50 @@
 {
-  "timestamp": "2026-09-10 01:15:00+00:00",
+  "timestamp": "2026-09-10 01:45:00+00:00",
   "timeframe": "15M",
-  "price": 78189.44,
-  "direction": "BEARISH (DOWN)",
+  "price": 77972.33,
+  "direction": "STRONG BEARISH (DOWN)",
   "primary_bias": "DOWN",
-  "confluence_score": -25,
-  "confidence_percent": 61,
+  "confluence_score": -58,
+  "confidence_percent": 76,
   "reasons_bullish": [
-    "Market Structure: Higher Highs & Higher Lows (+8)",
-    "Smart Money: Reacting to Bullish FVG between $78030.7 and $78074.4 (+$43.7) (+5)",
-    "Smart Money: Reacting to Bullish FVG between $78169.6 and $78198.4 (+$28.8) (+5)"
+    "Market Structure: Higher Highs & Higher Lows (+8)"
   ],
   "reasons_bearish": [
     "Bearish EMA Ribbon (EMA 9 < 21 < 50 aligned) (-12)",
-    "Candlestick: Bearish Harami detected (-8)",
-    "RSI negative momentum at 46.7 (-3)",
+    "Candlestick: Three Black Crows detected (-24)",
+    "RSI negative momentum at 39.7 (-3)",
     "MACD histogram expanding downward (-4)",
-    "Chart Pattern: Double Top formed near $78338.2 (-10)",
-    "Trading below Session VWAP ($78714.3) - Seller edge (-6)"
+    "Structure Breakdown: Price broke below recent swing low ($78060.1) (-7)",
+    "Trend Shift: Change of Character: First break below swing low in uptrend (-10)",
+    "Trading below Session VWAP ($78708.3) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
-      "name": "Bearish Harami",
+      "name": "Three Black Crows",
       "type": "BEARISH",
-      "strength": 1,
-      "description": "Small red inside candle within previous green candle body indicating buying exhausted.",
+      "strength": 3,
+      "description": "Three consecutive declining red candles with lower lows and lower closes.",
       "candle_index": 249
     }
   ],
   "market_structure": {
     "trend": "UPTREND (Higher Highs & Higher Lows)",
     "trend_bias": "BULLISH",
-    "bos": null,
-    "choch": null,
-    "double_pattern": {
-      "type": "DOUBLE_TOP",
-      "neckline": 78060.08,
-      "level": 78338.205,
-      "description": "Double Top formed near $78338.2"
+    "bos": {
+      "type": "BEARISH_BOS",
+      "broken_level": 78060.08,
+      "description": "Price broke below recent swing low ($78060.1)"
     },
-    "nearest_support": 78060.08,
+    "choch": {
+      "type": "BEARISH_CHOCH",
+      "description": "Change of Character: First break below swing low in uptrend"
+    },
+    "double_pattern": null,
+    "nearest_support": 77915.58,
     "nearest_resistance": 78323.32,
     "support_levels": [
-      78060.08,
-      78025.0,
-      77915.58
+      77915.58,
+      77727.0
     ],
     "resistance_levels": [
       78323.32,
@@ -53,31 +53,31 @@
     ]
   },
   "indicators": {
-    "price": 78189.44,
-    "ema_9": 78203.70578907915,
-    "ema_21": 78234.21514154752,
-    "ema_50": 78434.22749020516,
-    "ema_200": 78750.49899391849,
+    "price": 77972.33,
+    "ema_9": 78142.21754501066,
+    "ema_21": 78199.63199526825,
+    "ema_50": 78403.57965960879,
+    "ema_200": 78736.22022924696,
     "bullish_ribbon": false,
     "bearish_ribbon": true,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 46.67,
+    "rsi": 39.7,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -67.67,
-    "macd_signal": -106.07,
-    "macd_hist": 38.4,
+    "macd_line": -81.79,
+    "macd_signal": -95.88,
+    "macd_hist": 14.09,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_DOWN",
-    "bb_upper": 78431.58,
-    "bb_lower": 77901.04,
+    "bb_upper": 78405.05,
+    "bb_lower": 77877.55,
     "bb_squeeze": true,
-    "atr": 197.96,
-    "volume": 20.9092,
-    "vol_ratio": 0.64,
+    "atr": 205.42,
+    "volume": 25.8623,
+    "vol_ratio": 0.8,
     "vol_surge": false,
-    "vwap": 78714.31,
+    "vwap": 78708.31,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
       {
@@ -85,7 +85,7 @@
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 240,
+        "candle_index": 238,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -94,7 +94,7 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 242,
+        "candle_index": 240,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       }
@@ -102,55 +102,38 @@
   },
   "trade_setup": {
     "direction": "SELL (DOWN)",
-    "entry_price": 78189.44,
-    "stop_loss": 78426.99,
-    "take_profit_1": 77833.11,
-    "take_profit_2": 77595.56,
+    "entry_price": 77972.33,
+    "stop_loss": 78323.32,
+    "take_profit_1": 77445.85,
+    "take_profit_2": 77094.85,
     "risk_reward_1": 1.5,
     "risk_reward_2": 2.5,
-    "risk_amount": 237.55,
-    "risk_percent": 0.3,
-    "breakeven_rule": "Move SL to Breakeven ($78189.44) after TP1 hit",
+    "risk_amount": 350.99,
+    "risk_percent": 0.45,
+    "breakeven_rule": "Move SL to Breakeven ($77972.33) after TP1 hit",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78315.21,
-    "target_source": "15M Start Price (1:15 AM UTC)",
+    "target_price": 78143.75,
+    "target_source": "15M Start Price (1:45 AM UTC)",
     "kalshi": null,
-    "current_price": 78189.44,
-    "delta": -125.77,
-    "delta_pct": -0.161,
+    "current_price": 77972.33,
+    "delta": -171.42,
+    "delta_pct": -0.219,
     "status": "BELOW",
     "predicted_outcome": "BELOW TARGET (UNDER)",
-    "probability_percent": 82,
+    "probability_percent": 94,
     "confidence_badge": "HIGH CONVICTION",
     "decision_factors": [
-      "Price trading -$125.77 (-0.16%) below 15m target benchmark",
+      "Price trading -$171.42 (-0.22%) below 15m target benchmark",
       "Bearish EMA 9 < 21 ribbon exerting downward pressure",
       "Active candle is RED (sellers in control)",
-      "RSI (46.7) neutral/pivoting",
-      "Chart Pattern: Bearish Harami detected (-6 pts bearish reversal)",
-      "Chart Pattern: Double Top resistance ceiling established"
+      "RSI (39.7) in bearish compression zone",
+      "Chart Pattern: Three Black Crows detected (-18 pts bearish reversal)",
+      "Market Structure: Bearish Break of Structure (BOS) confirmed",
+      "Market Structure: Bearish Change of Character (CHoCH)"
     ],
     "last_5_targets": [
-      {
-        "time": "12:00 AM",
-        "price": 78246.24,
-        "delta": -37.74,
-        "delta_pct": -0.05,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
-      {
-        "time": "12:15 AM",
-        "price": 78299.3,
-        "delta": 53.06,
-        "delta_pct": 0.07,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
       {
         "time": "12:30 AM",
         "price": 78146.36,
@@ -177,8 +160,26 @@
         "direction": "HIGHER",
         "arrow": "\u25b2",
         "color": "green"
+      },
+      {
+        "time": "1:15 AM",
+        "price": 78145.52,
+        "delta": -169.69,
+        "delta_pct": -0.22,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
+      },
+      {
+        "time": "1:30 AM",
+        "price": 78143.76,
+        "delta": -1.76,
+        "delta_pct": -0.0,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
       }
     ],
-    "streak_summary": "3 Higher / 2 Lower"
+    "streak_summary": "2 Higher / 3 Lower"
   }
 }

@@ -239,45 +239,46 @@
   <div class="max-w-7xl mx-auto p-3 sm:p-6 space-y-6 w-full max-w-full overflow-x-hidden">
     
     <!-- Top Navigation / Header -->
-    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2.5 border-b border-slate-800 shadow-lg shadow-black/40 flex flex-col md:flex-row md:items-center justify-between gap-3 w-full max-w-full">
+    <header class="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md px-3 sm:px-6 py-2 border-b border-slate-800 shadow-lg shadow-black/40 flex items-center justify-between gap-2.5 w-full max-w-full">
       
       <!-- Brand & 3rd Logo (Apex Seam Monogram) -->
-      <div class="flex items-center gap-3.5">
-        <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="ApexProps Logo" class="h-12 w-12 rounded-2xl object-cover shadow-lg shadow-emerald-500/20 border border-emerald-500/30 shrink-0">
+      <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
+        <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="ApexProps Logo" class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl object-cover shadow-lg shadow-emerald-500/20 border border-emerald-500/30 shrink-0">
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-black tracking-tight text-white">APEX<span class="text-emerald-400">PROPS</span></h1>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center gap-1 shadow-sm shadow-emerald-500/20">👑 DraftKings Live</span>
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">APEX<span class="text-emerald-400">PROPS</span></h1>
+            <span class="hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 items-center gap-1 shadow-sm shadow-emerald-500/20">👑 The Odds API Live</span>
           </div>
-          <div class="flex items-center gap-2 mt-0.5">
+          <div class="flex items-center gap-1.5 sm:gap-2 mt-0.5">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="text-[11px] font-semibold text-emerald-400">LIVE</span>
-            <span class="text-[11px] text-slate-500">•</span>
-            <span id="liveClock" class="text-[11px] font-mono text-slate-400">--:--:--</span>
+            <span class="text-[10px] sm:text-[11px] font-semibold text-emerald-400">LIVE</span>
+            <span class="text-[10px] sm:text-[11px] text-slate-500">•</span>
+            <span id="liveClock" class="text-[10px] sm:text-[11px] font-mono text-slate-400">--:--:--</span>
           </div>
         </div>
       </div>
 
-      <!-- Center: Analytics Mode Selector (Scrollable Tab Selector) -->
-      <div class="w-full md:w-auto overflow-x-auto no-scrollbar py-1 shrink-0">
+      <!-- Integrated Top Title Bar Analytics Mode Selector -->
+      <div class="overflow-x-auto no-scrollbar py-0.5 shrink-0">
         <div class="inline-flex p-1 rounded-2xl bg-slate-900 border border-slate-800 shadow-inner flex-nowrap min-w-max gap-1">
           <button id="tabBtnHrrbi" onclick="switchMode('mlb_hrrbi')" 
-                  class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 flex items-center gap-1.5 shrink-0">
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer">
             <span>⚾</span>
-            <span class="whitespace-nowrap">MLB +1 H+R+RBI</span>
+            <span class="whitespace-nowrap">MLB H+R+RBI</span>
           </button>
           <button id="tabBtnKs" onclick="switchMode('pitcher_ks')" 
-                  class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0">
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0 cursor-pointer">
             <span>🔥</span>
-            <span class="whitespace-nowrap">Pitcher Strikeouts (Ks)</span>
+            <span class="whitespace-nowrap">Pitcher Ks</span>
           </button>
+          <!-- BTC Analyzer Pane Button Integrated Directly into Top Title Bar -->
           <button id="tabBtnBtc" onclick="switchMode('btc_analyzer')" 
-                  class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0">
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5 shrink-0 cursor-pointer border border-transparent hover:border-amber-500/40">
             <span class="text-amber-400 font-bold">₿</span>
-            <span class="whitespace-nowrap">BTC 15M Pattern Analyzer</span>
+            <span class="whitespace-nowrap">BTC 15M Analyzer</span>
           </button>
         </div>
         <select id="modeDropdown" onchange="switchMode(this.value)" class="sr-only">
@@ -405,165 +406,202 @@
     <!-- ============================================================= -->
     <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
     <!-- ============================================================= -->
-    <div id="view_btc_analyzer" class="hidden space-y-3.5">
+    <div id="view_btc_analyzer" class="hidden space-y-2.5">
       
-      <!-- BTC Top Bar: Timeframes, Live Stream Indicator & Refresh Controls -->
-      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-        <!-- Brand & Timeframe Pills -->
-        <div class="flex flex-wrap items-center gap-2">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-xs shadow-md shadow-amber-500/20">₿</div>
-            <h2 class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC Pattern Analyzer</h2>
-            <span id="btcActiveTfBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono font-bold">15M</span>
-          </div>
-          <div class="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800">
-            <button class="btc-tf-btn" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
-            <button class="btc-tf-btn" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
-            <button class="btc-tf-btn active" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
-            <button class="btc-tf-btn" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
-            <button class="btc-tf-btn" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
-            <button class="btc-tf-btn" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
-          </div>
-        </div>
-
-        <!-- Controls & Audio -->
-        <div class="flex items-center gap-2">
-          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="font-bold text-emerald-400">1s Stream</span>
-          </div>
-          <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/20 transition cursor-pointer" title="Re-analyze BTC">
-            <span id="btcRefreshIcon">&#x21bb;</span>
-          </button>
-          <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer" title="Sound Alert">
-            <span id="btcAudioIcon">🔇</span>
-          </button>
-        </div>
-      </div>
-
       <!-- ========================================================================= -->
-      <!-- 1. LIVE BITCOIN PRICE (WITH INTEGRATED MARKET STRUCTURE - NEAT AND CLEAN)  -->
+      <!-- 1. 80% CHART (LEFT) + 20% STACKED PRICE INFO (RIGHT, 50% SIZE)            -->
       <!-- ========================================================================= -->
-      <div class="hero-price-card rounded-2xl p-2.5 sm:p-3 space-y-2">
-        <!-- Top Row: Standout Live BTC Price, 15M Target Card & Countdown -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 items-center">
-          <!-- 1A: Standout Live BTC Price -->
-          <div class="space-y-0.5">
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-2.5 items-stretch w-full">
+        
+        <!-- LEFT: Price Chart (Takes 80% of horizontal space via lg:col-span-4) -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col justify-between border border-slate-800" style="min-height: 270px;">
+          <!-- Chart Header: Title, Status, Timeframes, Stream Badge, Refresh & Sound -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-slate-800/80">
             <div class="flex items-center gap-2">
-              <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">LIVE BITCOIN PRICE</span>
-              <span id="btcLivePulseTag" class="text-[8px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s LIVE</span>
+              <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 font-black flex items-center justify-center text-[10px] shadow-sm shadow-amber-500/20">₿</div>
+              <h3 id="btcChartTitle" class="text-xs sm:text-sm font-black text-white whitespace-nowrap">BTC/USD 15M Candlestick Chart</h3>
+              <span id="btcChartStatus" class="text-[9px] font-mono text-slate-400 hidden sm:inline">Loading candles...</span>
             </div>
-            <div id="btcLStatPrice" class="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight transition-colors">
+            
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <!-- Timeframe Pills -->
+              <div class="flex items-center gap-0.5 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800">
+                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1m" onclick="setBtcTimeframe('1m')">1M</button>
+                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="5m" onclick="setBtcTimeframe('5m')">5M</button>
+                <button class="btc-tf-btn active text-[10px] px-1.5 py-0.5" data-tf="15m" onclick="setBtcTimeframe('15m')">15M</button>
+                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1h" onclick="setBtcTimeframe('1h')">1H</button>
+                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="4h" onclick="setBtcTimeframe('4h')">4H</button>
+                <button class="btc-tf-btn text-[10px] px-1.5 py-0.5" data-tf="1d" onclick="setBtcTimeframe('1d')">1D</button>
+              </div>
+
+              <!-- Stream Badge -->
+              <div class="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono text-slate-300">
+                <span class="relative flex h-1.5 w-1.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                <span class="text-emerald-400 font-bold">1s Stream</span>
+              </div>
+
+              <!-- Action Controls -->
+              <button id="btnBtcRefresh" onclick="triggerBtcAnalysis()" class="p-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-sm transition cursor-pointer text-xs" title="Refresh BTC Analysis">
+                <span id="btcRefreshIcon">&#x21bb;</span>
+              </button>
+              <button id="btnBtcAudio" onclick="toggleBtcAudio()" class="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer text-xs" title="Sound Alert">
+                <span id="btcAudioIcon">🔇</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- TradingView Lightweight Candlestick Chart Container -->
+          <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 210px; height: 210px;">
+            <!-- Lightweight chart renders here -->
+          </div>
+
+          <!-- Mini Legend Bar -->
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[8px] font-mono text-slate-400 mt-1">
+            <span id="btcActiveTfBadge" class="px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400 font-bold">15M</span>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span> EMA 9</div>
+              <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span> EMA 21</div>
+              <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span> EMA 50</div>
+              <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 inline-block"></span> EMA 200</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Live Bitcoin Price Pane Info (Takes 20% via lg:col-span-1, 50% Size, Stacked Vertically) -->
+        <div class="lg:col-span-1 glass-panel rounded-2xl p-2 sm:p-2.5 border border-slate-800 flex flex-col justify-between space-y-2">
+          
+          <!-- 1A: Standout Live BTC Price (50% Size) -->
+          <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-0.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[8px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
+                <span class="relative flex h-1.5 w-1.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                </span>
+                LIVE BTC PRICE
+              </span>
+              <span id="btcLivePulseTag" class="text-[7px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold">1s LIVE</span>
+            </div>
+            <div id="btcLStatPrice" class="text-base sm:text-lg font-black text-white font-mono tracking-tight transition-colors">
               $--,---.--
             </div>
-            <div class="flex items-center gap-2 text-[10px] font-mono">
+            <div class="flex items-center justify-between text-[8px] font-mono pt-0.5">
               <span id="btcLStatChange" class="font-bold text-slate-400">--%</span>
-              <span class="text-slate-600">•</span>
-              <span class="text-slate-400">24h Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
+              <span class="text-slate-400">Vol: <strong id="btcLStatVol" class="text-slate-300">--,---</strong></span>
             </div>
           </div>
 
-          <!-- 1B: 15M Price Target (15M Start Price) -->
-          <div class="bg-slate-900/95 border border-emerald-500/40 rounded-xl p-2.5 space-y-1 relative overflow-hidden shadow-lg shadow-emerald-500/10">
+          <!-- 1B: 15M Price Target Benchmark (50% Size) -->
+          <div class="p-2 rounded-xl bg-slate-900/90 border border-emerald-500/30 space-y-0.5 shadow-sm shadow-emerald-500/10">
             <div class="flex items-center justify-between">
-              <span class="text-[9px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
-                <span>🎯</span> 15M PRICE TARGET
+              <span class="text-[8px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
+                <span>🎯</span> 15M TARGET
               </span>
-              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">15M Start Price</span>
+              <span id="btcTargetSourceLabel" class="text-[7px] text-emerald-400/90 font-mono font-bold truncate">15M Start</span>
             </div>
-            <div class="flex items-baseline justify-between gap-2">
-              <div id="btcTargetPriceHero" class="text-xl sm:text-2xl font-black font-mono text-emerald-400">
-                $--,---.--
-              </div>
+            <div id="btcTargetPriceHero" class="text-base sm:text-lg font-black font-mono text-emerald-400">
+              $--,---.--
             </div>
-            <!-- Real-Time Spread Delta Badge -->
-            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center">
+            <!-- Spread Delta Badge -->
+            <div id="btcTargetDeltaBadge" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700 w-full justify-center text-center">
               <span>--</span> <span>Evaluating spread...</span>
             </div>
           </div>
 
-          <!-- 1C: Target Resolution Expiry Countdown Box -->
-          <div class="bg-slate-900/90 border border-cyan-500/40 rounded-xl p-2.5 flex flex-col justify-between space-y-1 shadow-lg shadow-cyan-500/5">
+          <!-- 1C: Countdown Box (50% Size) -->
+          <div class="p-2 rounded-xl bg-slate-900/90 border border-cyan-500/30 space-y-0.5 shadow-sm shadow-cyan-500/5">
             <div class="flex items-center justify-between">
-              <span class="text-[9px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
-                <span>⏱️</span> TIME TO 15M CLOSE
+              <span class="text-[8px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
+                <span>⏱️</span> 15M CLOSE
               </span>
-              <span class="text-[8px] text-slate-400 font-mono">TARGET RESOLUTION</span>
+              <span class="text-[7px] text-slate-400 font-mono">COUNTDOWN</span>
             </div>
             <div class="flex items-baseline justify-between">
-              <div id="btcCountdown" class="text-2xl sm:text-3xl font-black font-mono text-cyan-400">
+              <div id="btcCountdown" class="text-base sm:text-lg font-black font-mono text-cyan-400">
                 --:--
               </div>
-              <div class="text-right">
-                <span class="text-[8px] text-slate-400 block">Auto-countdown</span>
-                <span class="text-[9px] font-mono text-emerald-400 font-bold">1s Live Pulse</span>
-              </div>
+              <span class="text-[8px] font-mono text-emerald-400 font-bold">1s Pulse</span>
             </div>
             <!-- Progress Bar -->
-            <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
               <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000" style="width: 50%;"></div>
             </div>
           </div>
-        </div>
 
-        <!-- Integrated Market Structure Sub-Pane (Neat, Clean, Integrated) -->
-        <div class="pt-1.5 border-t border-slate-800/80">
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
-            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <div class="flex items-center justify-between text-[8px] text-slate-400 font-sans mb-0.5">
-                <span>Structure & Bias</span>
-                <span id="btcStructTrendBadge" class="px-1 py-0.2 rounded font-black text-[8px] uppercase bg-slate-800 text-cyan-400">--</span>
+          <!-- 1D: Integrated Market Structure (50% Size) -->
+          <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1 text-[8px] font-mono">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 font-sans">Structure:</span>
+              <span id="btcStructTrendBadge" class="px-1 py-0.2 rounded font-black text-[7px] uppercase bg-slate-800 text-cyan-400">--</span>
+            </div>
+            <div id="btcStructSummary" class="text-[8px] font-bold text-white truncate">Evaluating swings...</div>
+            <div class="grid grid-cols-2 gap-1 pt-0.5 border-t border-slate-800/80 text-[8px]">
+              <div>
+                <span class="text-slate-500 block text-[7px]">Res:</span>
+                <span id="btcStructRes" class="font-bold text-red-400 truncate block">$--,---</span>
               </div>
-              <div id="btcStructSummary" class="text-[10px] font-bold text-white truncate">Evaluating swings...</div>
-              <div id="btcStructBos" class="text-[8px] text-cyan-400 font-bold truncate mt-0.5"></div>
-            </div>
-            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Immediate Resistance</span>
-              <div id="btcStructRes" class="text-xs sm:text-sm font-black text-red-400">$--,---.--</div>
-              <span class="text-[7px] text-slate-500 font-sans">Upper Invalidation</span>
-            </div>
-            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Immediate Support</span>
-              <div id="btcStructSup" class="text-xs sm:text-sm font-black text-emerald-400">$--,---.--</div>
-              <span class="text-[7px] text-slate-500 font-sans">Lower Cushion</span>
-            </div>
-            <div class="p-1.5 sm:p-2 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-              <span class="text-[8px] text-slate-400 font-sans mb-0.5">Session VWAP</span>
-              <div id="btcStructVwap" class="text-xs sm:text-sm font-black text-amber-400">$--,---.--</div>
-              <span id="btcStructVwapStatus" class="text-[7px] text-slate-500 font-sans">Institutional Mean</span>
+              <div>
+                <span class="text-slate-500 block text-[7px]">Sup:</span>
+                <span id="btcStructSup" class="font-bold text-emerald-400 truncate block">$--,---</span>
+              </div>
+              <div class="col-span-2 flex items-center justify-between pt-0.5">
+                <span class="text-slate-500 text-[7px]">VWAP:</span>
+                <span id="btcStructVwap" class="font-bold text-amber-400">$--,---</span>
+                <span id="btcStructVwapStatus" class="sr-only"></span>
+                <span id="btcStructBos" class="sr-only"></span>
+              </div>
             </div>
           </div>
+
         </div>
+
       </div>
 
       <!-- ========================================================================= -->
-      <!-- 2. SPEEDOMETER (WITH INTEGRATED TARGET RESOLUTION PREDICTOR PANE)          -->
+      <!-- 2. EFFICIENTLY INTEGRATED 15M TARGET TREND & CONFLUENCE PANE              -->
       <!-- ========================================================================= -->
       <div class="glass-panel rounded-2xl p-2.5 sm:p-3 space-y-2 border border-slate-800">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs">⚡</span>
-            <h3 class="text-xs font-black text-white uppercase tracking-wider">Confluence Speedometer & Target Resolution</h3>
+        
+        <!-- Top Section: 15M Target Trend (Minimal Row: Close Price and Up/Down Arrow) -->
+        <div class="space-y-1.5 pb-2 border-b border-slate-800/80">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs">📈</span>
+              <h4 class="text-xs font-black text-white uppercase tracking-wider">15M Target Trend</h4>
+              <span class="text-[9px] text-slate-500 hidden sm:inline">(Last 5 Closes)</span>
+            </div>
+            <span id="btcTrendStreakBadge" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono">
+              Loading streak...
+            </span>
           </div>
-          <span id="btcPredBadge" class="text-[8px] px-2 py-0.5 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
-            EVALUATING
-          </span>
+          <!-- Minimal 5-Target Trend Row: Only Close Price and Up/Down Arrow -->
+          <div id="btcTrendBoxGrid" class="grid grid-cols-5 gap-1 sm:gap-1.5">
+            <!-- Injected via JavaScript in single row -->
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-center">
+        <!-- Bottom Section: Confluence Speedometer & Target Resolution Predictor -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-center pt-0.5">
+          
           <!-- Left Sub-Pane: Speedometer Gauge -->
-          <div class="flex flex-col items-center justify-center text-center p-2 bg-slate-900/50 rounded-xl border border-slate-800/60">
-            <div id="btcSignalBanner" class="signal-banner signal-neutral text-[10px] py-0.5 px-2">INITIALIZING</div>
+          <div class="flex flex-col items-center justify-center text-center p-2 bg-slate-900/60 rounded-xl border border-slate-800/80">
+            <div class="flex items-center justify-between w-full px-1 mb-1">
+              <div class="flex items-center gap-1">
+                <span class="text-xs">⚡</span>
+                <span class="text-[9px] font-black text-white uppercase tracking-wider">Confluence Speedometer</span>
+              </div>
+              <span id="btcPredBadge" class="text-[8px] px-1.5 py-0.2 rounded font-black uppercase text-slate-950 bg-amber-400 font-mono">
+                EVALUATING
+              </span>
+            </div>
+
+            <div id="btcSignalBanner" class="signal-banner signal-neutral text-[10px] py-0.5 px-2 mb-1">INITIALIZING</div>
             
-            <div class="meter-wrapper" style="max-height: 75px; margin: 1px 0;">
-              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 70px;">
+            <div class="meter-wrapper" style="max-height: 65px; margin: 1px 0;">
+              <svg class="meter-svg" viewBox="0 0 200 105" style="max-height: 60px;">
                 <path d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="#1e293b" stroke-width="13" stroke-linecap="round"/>
                 <path id="btcMeterArc" d="M 20 95 A 75 75 0 0 1 180 95" fill="none" stroke="url(#btcMeterGradient)" stroke-width="13" stroke-dasharray="235.6" stroke-dashoffset="117.8" stroke-linecap="round"/>
                 <line id="btcMeterNeedle" x1="100" y1="95" x2="100" y2="28" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" style="transform-origin: 100px 95px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);"/>
@@ -576,28 +614,28 @@
                   </linearGradient>
                 </defs>
               </svg>
-              <div id="btcMeterScore" class="meter-score-display neutral text-xl font-black">0</div>
+              <div id="btcMeterScore" class="meter-score-display neutral text-lg font-black">0</div>
             </div>
 
-            <div id="btcConfidenceText" class="text-[10px] text-slate-400 font-mono">Confluence Score: <strong>0 / 100</strong> (50% Conf.)</div>
+            <div id="btcConfidenceText" class="text-[9px] text-slate-400 font-mono mt-0.5">Confluence: <strong>0 / 100</strong> (50% Conf.)</div>
           </div>
 
-          <!-- Right Sub-Pane: Integrated Target Resolution Predictor -->
+          <!-- Right Sub-Pane: Integrated Target Resolution Predictor & Catalysts -->
           <div class="flex flex-col justify-between space-y-1.5 p-2 bg-slate-900/70 rounded-xl border border-slate-800">
             <!-- Big Prediction Verdict Banner -->
-            <div id="btcPredBanner" class="p-2 rounded-xl text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
+            <div id="btcPredBanner" class="p-1.5 rounded-xl text-center space-y-0.5 bg-slate-900/90 border border-slate-700">
               <div class="text-[8px] uppercase tracking-wider text-slate-400 font-bold">Predicted 15M Close Outcome</div>
-              <div id="btcPredOutcomeText" class="text-sm sm:text-base font-black tracking-tight text-white font-mono">
+              <div id="btcPredOutcomeText" class="text-xs sm:text-sm font-black tracking-tight text-white font-mono">
                 INITIALIZING...
               </div>
               <div class="flex items-center justify-center gap-2 pt-0.5">
-                <span id="btcPredProbText" class="text-[10px] font-mono font-bold text-cyan-400">50% Probability</span>
+                <span id="btcPredProbText" class="text-[9px] font-mono font-bold text-cyan-400">50% Probability</span>
                 <span class="text-slate-600">•</span>
                 <span id="btcPredConfidenceTag" class="text-[8px] text-slate-400 font-semibold font-mono">NEUTRAL</span>
               </div>
               <!-- Kalshi Market Odds vs Model Prediction Comparison -->
               <div id="btcKalshiOddsContainer" class="pt-0.5 flex items-center justify-center">
-                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[9px] font-mono">
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[8px] font-mono">
                   <span class="text-slate-400 font-sans font-semibold">🏛️ Kalshi Odds:</span>
                   <span id="btcKalshiYesProb" class="text-emerald-400 font-bold">--% Yes</span>
                   <span class="text-slate-600">/</span>
@@ -608,7 +646,7 @@
 
             <!-- Probability Split Bar -->
             <div class="space-y-0.5">
-              <div class="flex justify-between text-[8px] text-slate-400 font-mono">
+              <div class="flex justify-between text-[7px] text-slate-400 font-mono">
                 <span class="text-red-400">▼ Below Target</span>
                 <span class="text-emerald-400">▲ Above Target</span>
               </div>
@@ -618,59 +656,17 @@
               </div>
             </div>
 
-            <!-- Key Decision Criteria -->
+            <!-- Key Decision Catalysts -->
             <div class="space-y-0.5">
-              <div class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Key Decision Catalysts:</div>
-              <ul id="btcPredFactorsList" class="space-y-0.5 text-[9px] text-slate-300 max-h-16 overflow-y-auto">
+              <div class="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Key Decision Catalysts:</div>
+              <ul id="btcPredFactorsList" class="space-y-0.5 text-[8px] text-slate-300 max-h-12 overflow-y-auto">
                 <li class="text-slate-500">Evaluating 15M candle momentum vs target...</li>
               </ul>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- ========================================================================= -->
-      <!-- 3. CHART CONTAINER (TRADINGVIEW LIGHTWEIGHT CANDLESTICKS)                 -->
-      <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 flex flex-col" style="height: 180px;">
-        <div class="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-800">
-          <div class="flex items-center gap-2">
-            <h3 id="btcChartTitle" class="text-xs font-black text-white">BTC/USD 15M Chart</h3>
-            <span id="btcChartStatus" class="text-[9px] text-slate-400">Loading candles...</span>
-          </div>
-          <div class="flex items-center gap-2 text-[8px] font-mono text-slate-400">
-            <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block"></span> EMA 9</div>
-            <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span> EMA 21</div>
-            <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span> EMA 50</div>
-            <div class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 inline-block"></span> EMA 200</div>
-          </div>
-        </div>
-        <div id="btc-chart-container" class="flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 140px; height: 140px;">
-          <!-- Lightweight chart renders here -->
-        </div>
-      </div>
-
-      <!-- ========================================================================= -->
-      <!-- 4. 15 MIN TREND (SHOW IN ONE ROW, SHOW LESS INFO IF SPACE IS NEEDED)      -->
-      <!-- ========================================================================= -->
-      <div class="glass-panel rounded-2xl p-2.5 sm:p-3 space-y-1.5">
-        <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
-          <div class="flex items-center gap-2">
-            <span class="text-xs">📈</span>
-            <h3 class="text-xs font-black text-white uppercase tracking-wider">15M Target Trend</h3>
-            <span class="text-[9px] text-slate-500 hidden sm:inline">(Last 5 Closes)</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span id="btcTrendStreakBadge" class="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-amber-400 border border-slate-700 font-mono">
-              Loading streak...
-            </span>
-          </div>
         </div>
 
-        <!-- Minimal 5-Target Trend Row: Only Close Price and Up/Down Arrow -->
-        <div id="btcTrendBoxGrid" class="grid grid-cols-5 gap-1.5">
-          <!-- Injected via JavaScript in single row -->
-        </div>
       </div>
 
     </div>
@@ -2015,8 +2011,11 @@
           if (btcChart && container) {
             btcChart.applyOptions({
               width: container.clientWidth,
-              height: container.clientHeight || 180
+              height: container.clientHeight || 210
             });
+            if (btcCandleSeries) {
+              try { btcChart.timeScale().fitContent(); } catch(e) {}
+            }
           }
         }, 60);
         return;
@@ -2030,7 +2029,7 @@
       container.innerHTML = "";
       btcChart = LightweightCharts.createChart(container, {
         width: container.clientWidth,
-        height: container.clientHeight || 180,
+        height: container.clientHeight || 210,
         layout: {
           background: { color: "#0f172a" },
           textColor: "#94a3b8",
@@ -2078,8 +2077,11 @@
         if (btcChart && container) {
           btcChart.applyOptions({
             width: container.clientWidth,
-            height: container.clientHeight || 180,
+            height: container.clientHeight || 210,
           });
+          if (btcCandleSeries) {
+            try { btcChart.timeScale().fitContent(); } catch(e) {}
+          }
         }
       });
 
