@@ -482,7 +482,7 @@ class Top5Selector:
             "implied_prob": res["implied_prob"],
             "edge": res["edge"],
             "l10_hit": f"{l10_hits}/10",
-            "best_book": f"DraftKings ({res['book_odds']})",
+            "best_book": f"The Odds API ({res['book_odds']})",
             "pitcher": f"{pitcher_name} ({pitcher_era} ERA)",
             "pitcher_name": pitcher_name,
             "pitcher_era": pitcher_era,
@@ -544,7 +544,7 @@ class Top5Selector:
                 "opponent": "COL", "is_home": True, "order": 1, "pos": "DH", "line": 2.5, "type": "Over",
                 "win_prob": 76.4, "proj_total": 3.42, "exp_hits": 1.45, "exp_runs": 1.15, "exp_rbis": 0.82,
                 "book_odds": "-125", "implied_prob": 55.6, "edge": 20.8, "l10_hit": "8/10",
-                "best_book": "DraftKings (-125)", "pitcher": "Cal Quantrill (5.12 ERA)", "venue": "Coors Field",
+                "best_book": "The Odds API (-125)", "pitcher": "Cal Quantrill (5.12 ERA)", "venue": "Coors Field",
                 "catalysts": ["Coors Field park factor +34% to extra-base hits", "Mashes RHP sinker/cutter mix (.442 wOBA)", "Batting leadoff in projected 6.4 team run total game"],
                 "dist": [{"val": 0, "pct": 4}, {"val": 1, "pct": 9}, {"val": 2, "pct": 11}, {"val": 3, "pct": 28}, {"val": 4, "pct": 26}, {"val": "5+", "pct": 22}]
             },
@@ -555,7 +555,7 @@ class Top5Selector:
                 "opponent": "BOS", "is_home": True, "order": 3, "pos": "CF", "line": 1.5, "type": "Over",
                 "win_prob": 74.8, "proj_total": 2.94, "exp_hits": 1.25, "exp_runs": 0.95, "exp_rbis": 0.74,
                 "book_odds": "-145", "implied_prob": 59.2, "edge": 15.6, "l10_hit": "9/10",
-                "best_book": "FanDuel (-140)", "pitcher": "Nick Pivetta (4.38 ERA)", "venue": "Yankee Stadium",
+                "best_book": "The Odds API (-140)", "pitcher": "Nick Pivetta (4.38 ERA)", "venue": "Yankee Stadium",
                 "catalysts": [".482 xwOBA vs fastballs over 95mph", "Juan Soto batting ahead (.419 OBP) yields prime RBI traffic", "82.4% contact rate inside strike zone"],
                 "dist": [{"val": 0, "pct": 6}, {"val": 1, "pct": 19}, {"val": 2, "pct": 31}, {"val": 3, "pct": 22}, {"val": 4, "pct": 14}, {"val": "5+", "pct": 8}]
             },
@@ -566,7 +566,7 @@ class Top5Selector:
                 "opponent": "BOS", "is_home": True, "order": 2, "pos": "RF", "line": 1.5, "type": "Over",
                 "win_prob": 74.2, "proj_total": 3.02, "exp_hits": 1.28, "exp_runs": 1.05, "exp_rbis": 0.69,
                 "book_odds": "-135", "implied_prob": 57.4, "edge": 16.8, "l10_hit": "8/10",
-                "best_book": "DraftKings (-135)", "pitcher": "Nick Pivetta (4.38 ERA)", "venue": "Yankee Stadium",
+                "best_book": "The Odds API (-135)", "pitcher": "Nick Pivetta (4.38 ERA)", "venue": "Yankee Stadium",
                 "catalysts": ["Elite .419 on-base percentage yields massive scoring volume", "Short porch right field target enhances extra-base potential", "Walk discipline guarantees deep counts and bullpen fatigue"],
                 "dist": [{"val": 0, "pct": 7}, {"val": 1, "pct": 20}, {"val": 2, "pct": 32}, {"val": 3, "pct": 23}, {"val": 4, "pct": 12}, {"val": "5+", "pct": 6}]
             },

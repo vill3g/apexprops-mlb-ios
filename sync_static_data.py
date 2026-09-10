@@ -42,7 +42,9 @@ for g in slate:
             'draftkings': dk_data
         })
 with open('static/data/draftkings.json', 'w', encoding='utf-8') as f:
-    json.dump({'count': len(odds_list), 'provider': 'DraftKings', 'logo': dk.dk_logo, 'games': odds_list}, f, indent=2)
+    json.dump({'count': len(odds_list), 'provider': 'The Odds API', 'logo': dk.logo, 'games': odds_list}, f, indent=2)
+with open('static/data/odds.json', 'w', encoding='utf-8') as f:
+    json.dump({'count': len(odds_list), 'provider': 'The Odds API', 'logo': dk.logo, 'games': odds_list}, f, indent=2)
 
 from backend.engine.international_model import InternationalBaseballModel
 intl = InternationalBaseballModel()

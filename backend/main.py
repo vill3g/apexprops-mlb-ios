@@ -284,12 +284,13 @@ def get_draftkings_odds():
                 "home_team": g.get('home_team', {}).get('name'),
                 "away_team": g.get('away_team', {}).get('name'),
                 "venue": g.get('venue'),
+                "odds": dk_data,
                 "draftkings": dk_data
             })
     return {
         "count": len(odds_list),
-        "provider": "DraftKings",
-        "logo": draftkings_client.dk_logo,
+        "provider": "The Odds API",
+        "logo": draftkings_client.logo,
         "games": odds_list
     }
 

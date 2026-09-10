@@ -61,7 +61,8 @@ class TheOddsClient:
         self.cache_ttl_games = 600.0   # 10 minutes cache for game odds
         self.cache_ttl_props = 1800.0  # 30 minutes cache for player props
         self._cache = self._load_disk_cache()
-        self.dk_logo = "https://a.espncdn.com/i/betting/Draftkings_Light.svg"
+        self.logo = "https://the-odds-api.com/favicon.ico"
+        self.provider = "The Odds API"
 
     def _load_disk_cache(self) -> Dict[str, Any]:
         if os.path.exists(CACHE_FILE):
@@ -81,7 +82,7 @@ class TheOddsClient:
 
     def get_game_odds(self, force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Fetch all MLB game moneylines, spreads, and over/unders from DraftKings via The Odds API.
+        Fetch all MLB game moneylines, spreads, and over/unders strictly via The Odds API.
         Returns a dict keyed by game_id and team abbreviation.
         """
         now = time.time()
@@ -94,7 +95,6 @@ class TheOddsClient:
         params = {
             "apiKey": self.api_key,
             "regions": "us",
-            "bookmakers": "draftkings",
             "markets": "h2h,spreads,totals",
             "oddsFormat": "american"
         }
@@ -113,7 +113,9 @@ class TheOddsClient:
                     away_abbr = TEAM_ABBR_MAP.get(away, away[:3].upper())
 
                     bms = g.get("bookmakers", [])
-                    dk = next((b for b in bms if b.get("key") == "draftkings"), None)
+                    # Pick active US bookmaker from The Odds API
+                    active_bm = bms[0] if bms else None
+                    bm_name = active_bm.get("title", "The Odds API") if active_bm else "The Odds API"
 
                     home_ml = -120
                     away_ml = 100
@@ -123,8 +125,8 @@ class TheOddsClient:
                     over_odds = -110
                     under_odds = -110
 
-                    if dk:
-                        for m in dk.get("markets", []):
+                    if active_bm:
+                        for m in active_bm.get("markets", []):
                             m_key = m.get("key")
                             outcomes = m.get("outcomes", [])
                             if m_key == "h2h":
@@ -155,8 +157,9 @@ class TheOddsClient:
                         "home_abbr": home_abbr,
                         "away_abbr": away_abbr,
                         "commence_time": g.get("commence_time"),
-                        "provider": "DraftKings",
-                        "provider_logo": self.dk_logo,
+                        "provider": "The Odds API",
+                        "provider_logo": self.logo,
+                        "bookmaker": bm_name,
                         "home_ml": home_ml,
                         "away_ml": away_ml,
                         "spread": spread,
@@ -177,7 +180,7 @@ class TheOddsClient:
                 self._cache["games"] = parsed_games
                 self._cache["games_fetched_at"] = now
                 self._save_disk_cache()
-                logger.info(f"Successfully fetched {len(raw_games)} MLB games with DraftKings odds from The Odds API")
+                logger.info(f"Successfully fetched {len(raw_games)} MLB games from The Odds API")
                 return parsed_games
             else:
                 logger.warning(f"The Odds API returned status {resp.status_code}: {resp.text}")
@@ -188,7 +191,7 @@ class TheOddsClient:
 
     def fetch_player_props_for_event(self, event_id: str, force_refresh: bool = False) -> Dict[str, Any]:
         """
-        Fetch player props for a single game event from The Odds API with DraftKings bookmaker.
+        Fetch player props for a single game event strictly from The Odds API.
         Markets: batter_hits, batter_total_bases, batter_rbis, batter_home_runs, pitcher_strikeouts.
         """
         now = time.time()
@@ -202,7 +205,6 @@ class TheOddsClient:
         params = {
             "apiKey": self.api_key,
             "regions": "us",
-            "bookmakers": "draftkings",
             "markets": "batter_hits,batter_total_bases,batter_rbis,batter_home_runs,pitcher_strikeouts",
             "oddsFormat": "american"
         }
@@ -212,11 +214,11 @@ class TheOddsClient:
             if resp.status_code == 200:
                 data = resp.json()
                 bms = data.get("bookmakers", [])
-                dk = next((b for b in bms if b.get("key") == "draftkings"), None)
-
                 parsed_player_props = {}
-                if dk:
-                    for market in dk.get("markets", []):
+
+                for bm in bms:
+                    bm_title = bm.get("title", bm.get("key"))
+                    for market in bm.get("markets", []):
                         m_key = market.get("key")
                         outcomes = market.get("outcomes", [])
                         for o in outcomes:
@@ -227,6 +229,8 @@ class TheOddsClient:
                             p_entry = parsed_player_props.setdefault(norm_name, {
                                 "player_name": p_name,
                                 "event_id": event_id,
+                                "bookmaker": bm_title,
+                                "provider": "The Odds API",
                                 "markets": {}
                             })
                             side = o.get("name") # Over or Under
@@ -234,16 +238,18 @@ class TheOddsClient:
                             price = o.get("price")
                             
                             m_dict = p_entry["markets"].setdefault(m_key, {})
-                            m_dict[side.lower()] = {
-                                "line": point,
-                                "odds": price,
-                                "formatted_odds": f"+{price}" if price > 0 else f"{price}"
-                            }
+                            if side.lower() not in m_dict:
+                                m_dict[side.lower()] = {
+                                    "line": point,
+                                    "odds": price,
+                                    "formatted_odds": f"+{price}" if price > 0 else f"{price}",
+                                    "bookmaker": bm_title
+                                }
 
                 props_cache[event_id] = parsed_player_props
                 fetched_at_map[event_id] = now
                 self._save_disk_cache()
-                logger.info(f"Fetched DraftKings props for event {event_id}: {len(parsed_player_props)} players")
+                logger.info(f"Fetched The Odds API props for event {event_id}: {len(parsed_player_props)} players")
                 return parsed_player_props
             else:
                 logger.warning(f"Error fetching props for event {event_id}: status {resp.status_code}")
@@ -297,6 +303,8 @@ class TheOddsClient:
                                 "line": k_over.get("line", 5.5),
                                 "odds": k_over.get("odds", -125),
                                 "formatted_odds": k_over.get("formatted_odds", "-125"),
+                                "bookmaker": k_over.get("bookmaker", "The Odds API"),
+                                "provider": "The Odds API",
                                 "event_id": ev_id
                             }
                     elif not is_pitcher:
@@ -308,6 +316,8 @@ class TheOddsClient:
                                     "line": cand_over.get("line", 1.5),
                                     "odds": cand_over.get("odds", -135),
                                     "formatted_odds": cand_over.get("formatted_odds", "-135"),
+                                    "bookmaker": cand_over.get("bookmaker", "The Odds API"),
+                                    "provider": "The Odds API",
                                     "event_id": ev_id
                                 }
         return None
