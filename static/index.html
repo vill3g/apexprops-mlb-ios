@@ -3340,13 +3340,16 @@
           }
         } catch (e) {}
 
-        // 2. Try direct public Kalshi API
-        const kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
-        if (kRes.ok) {
-          const kJson = await kRes.json();
-          const markets = kJson.markets || [];
-          if (markets.length > 0) {
-            const m = markets[0];
+        // 2. Try direct public Kalshi API (first with open status, then general)
+        let kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
+        let kJson = kRes.ok ? await kRes.json() : null;
+        if (!kJson || !kJson.markets || kJson.markets.length === 0) {
+          kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M');
+          kJson = kRes.ok ? await kRes.json() : null;
+        }
+        if (kJson && kJson.markets && kJson.markets.length > 0) {
+          const markets = kJson.markets;
+          const m = markets[0];
             const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
             const yesP = Math.round(yesBid * 100);
             const noP = 100 - yesP;
@@ -3363,7 +3366,6 @@
             if (kYes) kYes.innerText = `${yesP}% Yes`;
             if (kNo) kNo.innerText = `${noP}% No`;
           }
-        }
       } catch (err) {
         console.warn("Direct Kalshi fetch fallback:", err);
       } finally {
