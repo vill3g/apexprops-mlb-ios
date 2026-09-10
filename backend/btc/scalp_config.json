@@ -1,0 +1,10 @@
+{
+  "enabled": false,
+  "mode": "PAPER",
+  "price_move_threshold": 0.5,
+  "profit_target": 0.25,
+  "loss_target": 0.25,
+  "max_contracts": 1,
+  "max_trades_per_interval": 1,
+  "interval_seconds": 900
+}
