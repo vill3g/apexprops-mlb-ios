@@ -2745,7 +2745,7 @@
       const topPriceEl = document.getElementById("topBarLivePrice");
       const topTargetEl = document.getElementById("topBarTargetPrice");
       const topDeltaEl = document.getElementById("topBarTargetDelta");
-      const price = Number(d.price || 0);
+      const price = Number(d.price || d.current_price || lastBtcPrice || 0);
 
       if (prEl && price > 0) {
         prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -3500,6 +3500,10 @@
           if (targetHero) {
             targetHero.innerText = `$${lastBtcPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
+          const topTargetHero = document.getElementById("topBarTargetPrice");
+          if (topTargetHero) {
+            topTargetHero.innerText = `$${lastBtcPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          }
         }
 
         // 3. Instant Next-15M Contract Rollover Forecast
@@ -3551,6 +3555,8 @@
                 window.cachedBtcTargetPrice = Number(tb.target_price);
                 const targetHero = document.getElementById("btcTargetPriceHero");
                 if (targetHero) targetHero.innerText = `$${Number(tb.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const topTargetHero = document.getElementById("topBarTargetPrice");
+                if (topTargetHero) topTargetHero.innerText = `$${Number(tb.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 const sLbl = document.getElementById("btcTargetSourceLabel");
                 if (sLbl) sLbl.innerText = tb.target_source || "15M Start Price";
                 if (tb.last_5_targets && tb.last_5_targets.length > 0) {
@@ -3625,6 +3631,10 @@
           const targetHero = document.getElementById("btcTargetPriceHero");
           if (targetHero && targetOpen) {
             targetHero.innerText = `$${targetOpen.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          }
+          const topTargetHero = document.getElementById("topBarTargetPrice");
+          if (topTargetHero && targetOpen) {
+            topTargetHero.innerText = `$${targetOpen.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
           }
           const sLbl = document.getElementById("btcTargetSourceLabel");
           if (sLbl) {
@@ -3750,6 +3760,15 @@
           prEl.classList.add(price > lastBtcPrice ? "price-flash-up" : "price-flash-down");
         }
       }
+      const topPriceEl = document.getElementById("topBarLivePrice");
+      if (topPriceEl && price > 0) {
+        topPriceEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (lastBtcPrice && price !== lastBtcPrice) {
+          topPriceEl.classList.remove("price-flash-up", "price-flash-down");
+          void topPriceEl.offsetWidth;
+          topPriceEl.classList.add(price > lastBtcPrice ? "price-flash-up" : "price-flash-down");
+        }
+      }
       lastBtcPrice = price;
 
       // Update 24h stats if available on mobile
@@ -3796,6 +3815,15 @@
         const tHero = document.getElementById("btcTargetPriceHero");
         if (tHero && target && target > 0) {
           tHero.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        const topTarget = document.getElementById("topBarTargetPrice");
+        if (topTarget && target && target > 0) {
+          topTarget.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        const topDelta = document.getElementById("topBarTargetDelta");
+        if (topDelta && target && target > 0 && price > 0) {
+          topDelta.innerText = `${isAbove ? "+" : ""}$${delta.toFixed(1)}`;
+          topDelta.className = "text-[7px] sm:text-[8px] font-mono font-bold " + (isAbove ? "text-emerald-400" : "text-red-400");
         }
 
         evaluateClientTargetPrediction(price, target);
@@ -4125,7 +4153,7 @@
         // 4. Update Analysis, HUD, Trend Box, Predictor & Calculator
         if (analysisData) {
           if (analysisData.target_benchmark) {
-            renderBtcHeroHud(analysisData.target_benchmark);
+            renderBtcHeroHud({ ...analysisData.target_benchmark, price: analysisData.price || analysisData.target_benchmark.current_price });
             renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
             renderBtcPredictor(analysisData.target_benchmark);
             if (analysisData.target_benchmark && analysisData.target_benchmark.prediction_accuracy && !window.cachedBtcAccuracy) {
@@ -4200,10 +4228,10 @@
     let kalshiCurrentContracts = 1;
 
     function getKalshiApiBase() {
-      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+      if (typeof window !== 'undefined' && window.location && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         return '';
       }
-      return localStorage.getItem("kalshi_server_url") || 'http://192.168.1.222:8056';
+      return (typeof localStorage !== 'undefined' && localStorage.getItem("kalshi_server_url")) || 'http://192.168.1.222:8056';
     }
 
     function updateKalshiEstCostDisplay() {
@@ -4214,7 +4242,6 @@
       costEl.innerText = `(~$${total}/trade)`;
     }
 
-    async 
     function setKalshiContractsPreset(ct) {
       updateKalshiContracts(ct);
       const input = document.getElementById("kalshiContractsInput");
@@ -4452,6 +4479,7 @@
     }
 
     // Initialize
+    updateKalshiPayoutCalculator();
     startLive1sRefresh();
     initBtcChartOnce();
     triggerBtcAnalysis();
