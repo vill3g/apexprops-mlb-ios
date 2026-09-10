@@ -311,17 +311,6 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     lower_count = 0
     from datetime import datetime, timezone
 
-    # Check Robinhood live 15M target strike / benchmark
-    rh_target = None
-    try:
-        from backend.btc.data_fetcher import get_live_15m_target_data
-        live_d = get_live_15m_target_data()
-        if live_d and live_d.get("target_price"):
-            rh_target = float(live_d["target_price"])
-            target_source = live_d.get("target_source", "Robinhood 15M Target")
-    except Exception:
-        pass
-
     # Check Kalshi live 15M contract strike
     kalshi_m = None
     try:
@@ -329,14 +318,23 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     except Exception:
         pass
 
-    if rh_target:
-        active_target = rh_target
-    elif kalshi_m and kalshi_m.get("target_price"):
+    if kalshi_m and kalshi_m.get("target_price"):
         active_target = float(kalshi_m["target_price"])
-        target_source = "Kalshi KXBTC15M"
-    elif n_rows >= 7:
+        target_source = "Kalshi KXBTC15"
+    else:
+        try:
+            from backend.btc.data_fetcher import get_live_15m_target_data
+            live_d = get_live_15m_target_data()
+            if live_d and live_d.get("target_price"):
+                active_target = float(live_d["target_price"])
+                target_source = live_d.get("target_source", "Kalshi KXBTC15")
+        except Exception:
+            pass
+
+    if not active_target and n_rows >= 7:
         # Fallback: previous completed 15m candle close (index n - 2)
         active_target = round(float(df_ind.iloc[-2]["close"]), 2)
+        target_source = "15M Candle Close"
 
     if n_rows >= 7:
         # Last 5 completed targets (indices n - 6 to n - 2)

@@ -470,13 +470,13 @@
             </div>
           </div>
 
-          <!-- 1B: 15M Price Target (Robinhood 15M Target) -->
+          <!-- 1B: 15M Price Target (Kalshi KXBTC15 Target) -->
           <div class="bg-slate-900/95 border border-emerald-500/40 rounded-xl p-2.5 space-y-1 relative overflow-hidden shadow-lg shadow-emerald-500/10">
             <div class="flex items-center justify-between">
               <span class="text-[9px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1">
                 <span>🎯</span> 15M PRICE TARGET
               </span>
-              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">Robinhood 15M Target</span>
+              <span id="btcTargetSourceLabel" class="text-[9px] text-emerald-400/90 font-mono font-bold">Kalshi KXBTC15 Target</span>
             </div>
             <div class="flex items-baseline justify-between gap-2">
               <div id="btcTargetPriceHero" class="text-xl sm:text-2xl font-black font-mono text-emerald-400">
@@ -881,54 +881,17 @@
         <button onclick="clearSlip()" class="bg-slate-900 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs transition">
           Clear
         </button>
-        <button onclick="openDraftKingsBetslip()" class="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
+        <button onclick="launchDraftKingsDirect()" class="bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-500/25 transition flex items-center gap-1.5 cursor-pointer active:scale-95">
           <span class="text-sm">👑</span>
           <span class="whitespace-nowrap font-black">Add to DraftKings ➔</span>
         </button>
       </div>
     </div>
 
-  <!-- DraftKings Slip Ready Modal -->
-  <div id="draftKingsSlipModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-slate-900 border border-emerald-500/40 w-full max-w-md rounded-2xl shadow-2xl shadow-emerald-500/10 overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Header -->
-      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
-        <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm font-black">👑</div>
-          <div>
-            <h3 class="font-black text-sm text-white">DraftKings Slip Ready</h3>
-            <p class="text-[10px] text-emerald-400 font-medium">Formatted for instant DraftKings bet placement</p>
-          </div>
-        </div>
-        <button onclick="closeDraftKingsSlipModal()" class="text-slate-400 hover:text-white p-1 text-xl font-bold cursor-pointer">&times;</button>
-      </div>
-      <!-- Body -->
-      <div class="p-4 space-y-3 overflow-y-auto text-xs">
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Selections Summary:</label>
-          <pre id="dkSlipFormattedText" class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] font-mono text-emerald-300 whitespace-pre-wrap leading-relaxed max-h-44 overflow-y-auto select-all"></pre>
-        </div>
-        
-        <div id="dkModalCopySuccess" class="hidden p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-1.5 animate-pulse">
-          <span>✓</span> <span>Picks Copied to Clipboard! Ready to paste.</span>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-          <button id="btnModalCopySlip" onclick="copySlipModalAction()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-2.5 px-3 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
-            <span id="btnModalCopyIcon">📋</span>
-            <span id="btnModalCopyText">Copy Picks</span>
-          </button>
-          <button onclick="launchDraftKingsAppDirect(false)" class="w-full bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
-            <span>👑</span>
-            <span>Open App (dksb://)</span>
-          </button>
-          <button onclick="launchDraftKingsAppDirect(true)" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold py-2.5 px-3 rounded-xl text-xs transition border border-emerald-500/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
-            <span>🌐</span>
-            <span>In Browser ➔</span>
-          </button>
-        </div>
-      </div>
-    </div>
+  <!-- Direct DraftKings Native Action Toast -->
+  <div id="dkToastNotification" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 border border-emerald-500/50 text-emerald-300 px-4 py-2.5 rounded-2xl shadow-2xl shadow-emerald-500/20 text-xs font-bold flex items-center gap-2 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+    <span class="text-base">👑</span>
+    <span id="dkToastText">Picks copied & launching DraftKings App...</span>
   </div>
 
   <!-- Comprehensive Deep Dive Modal -->
@@ -1324,7 +1287,7 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Bet on DraftKings">
+            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
                 <span class="font-bold text-emerald-400">DK:</span>
@@ -1475,7 +1438,7 @@
             </div>
 
             <!-- DraftKings Live Odds Badge -->
-            <a href="${p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb'}" target="_blank" rel="noopener noreferrer" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Bet on DraftKings">
+            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">👑</span>
                 <span class="font-bold text-emerald-400">DK:</span>
@@ -1683,70 +1646,60 @@
       executeClipboardCopy(text);
     }
 
-    function openDraftKingsBetslip(customUrl) {
-      if (activeSlip.length === 0 && !customUrl) {
-        alert("Please click '+ Slip' on at least 1 prop selection before launching DraftKings!");
+    function showDkToast(msg) {
+      const t = document.getElementById("dkToastNotification");
+      const txt = document.getElementById("dkToastText");
+      if (!t) return;
+      if (txt) txt.textContent = msg;
+      t.classList.remove("opacity-0", "-translate-y-4");
+      t.classList.add("opacity-100", "translate-y-0");
+      setTimeout(() => {
+        t.classList.remove("opacity-100", "translate-y-0");
+        t.classList.add("opacity-0", "-translate-y-4");
+      }, 2600);
+    }
+
+    function launchDraftKingsDirect() {
+      if (activeSlip.length === 0) {
+        showDkToast("⚠️ Please select (+ Slip) at least 1 prop first!");
         return;
       }
 
-      const text = getFormattedSlipText();
+      // 1. Silent clipboard copy of formatted picks
       copySlipToClipboard(true);
+      showDkToast("👑 Picks copied! Opening DraftKings App...");
 
-      const modalTextEl = document.getElementById('dkSlipFormattedText');
-      if (modalTextEl) {
-        modalTextEl.textContent = text;
-      }
+      // 2. Format outcomes for native iOS deep link
+      const selections = activeSlip.map(p => ({
+        bookEventId: p.book_event_id || p.event_id || "84240",
+        bookMarketId: p.book_market_id || p.market_id || "",
+        bookOutcomeId: p.book_outcome_id || p.outcome_id || p.dk_outcome_id || ""
+      }));
 
-      const modal = document.getElementById('draftKingsSlipModal');
-      if (modal) {
-        modal.classList.remove('hidden');
-      }
+      const validOutcomes = selections.filter(s => s.bookOutcomeId);
+      const outcomeIds = validOutcomes.map(s => s.bookOutcomeId).join(',');
+      
+      // Native iOS app deep link only: dksb://sb/addbet/[outcomes]
+      const deepLink = outcomeIds ? `dksb://sb/addbet/${outcomeIds}` : "dksb://sb/addbet";
+      const webFallback = outcomeIds 
+        ? `https://sportsbook.draftkings.com/event/${selections[0].bookEventId || '84240'}?outcomes=${outcomeIds}`
+        : "https://sportsbook.draftkings.com/leagues/baseball/mlb";
 
-      const successEl = document.getElementById('dkModalCopySuccess');
-      if (successEl) {
-        successEl.classList.remove('hidden');
-        setTimeout(() => successEl.classList.add('hidden'), 3500);
-      }
-    }
+      // 3. Direct 1-Click Native iOS Deep Link execution (No modal dialog)
+      window.location.href = deepLink;
 
-    function closeDraftKingsSlipModal() {
-      const modal = document.getElementById('draftKingsSlipModal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    function copySlipModalAction() {
-      const text = getFormattedSlipText();
-      executeClipboardCopy(text);
-      const btnText = document.getElementById('btnModalCopyText');
-      const btnIcon = document.getElementById('btnModalCopyIcon');
-      const successEl = document.getElementById('dkModalCopySuccess');
-      if (btnText) btnText.textContent = "✓ Copied to Clipboard!";
-      if (btnIcon) btnIcon.textContent = "✓";
-      if (successEl) successEl.classList.remove('hidden');
+      // Fallback if not on iOS / app not installed
       setTimeout(() => {
-        if (btnText) btnText.textContent = "Copy Picks";
-        if (btnIcon) btnIcon.textContent = "📋";
-      }, 2500);
+        window.open(webFallback, '_blank');
+      }, 750);
     }
 
-    // ==========================================
-    // Outlier-Engineered DraftKings Link Builder
-    // ==========================================
-    const OUTLIER_DK_TEMPLATES = {
-      deeplink: {
-        baseTemplate: "dksb://sb/addbet/",
-        selectionTemplate: "[bookOutcomeId]",
-        selectionSeperator: ",",
-        templateSuffix: ""
-      },
-      webLink: {
-        baseTemplate: "https://sportsbook.draftkings.com/event/[bookEventId]?outcomes=",
-        baseAdministrativeAreaTemplate: "https://sportsbook.draftkings.com/event/[bookEventId]?state=[administrativeArea]&outcomes=",
-        selectionTemplate: "[bookOutcomeId]",
-        selectionSeperator: ",",
-        templateSuffix: ""
-      }
-    };
+    function openDraftKingsBetslip() {
+      launchDraftKingsDirect();
+    }
+
+    function closeDraftKingsSlipModal() {}
+    function copySlipModalAction() {};
 
     function buildOutlierDraftKingsLinks(selections, adminArea = "") {
       if (!selections || selections.length === 0) return null;
@@ -1779,30 +1732,7 @@
     }
 
     function launchDraftKingsAppDirect(forceWeb = false) {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      copySlipToClipboard(true);
-
-      const selections = activeSlip.map(p => ({
-        bookEventId: p.book_event_id || p.event_id || "84240",
-        bookMarketId: p.book_market_id || p.market_id || "",
-        bookOutcomeId: p.book_outcome_id || p.outcome_id || p.dk_outcome_id || ""
-      }));
-
-      const validOutcomes = selections.filter(s => s.bookOutcomeId);
-      const links = validOutcomes.length > 0 
-        ? buildOutlierDraftKingsLinks(validOutcomes) 
-        : { deeplink: "dksb://sb/addbet", webLink: "https://sportsbook.draftkings.com/leagues/baseball/mlb" };
-
-      if (forceWeb || !isMobile) {
-        window.open(links.webLink, '_blank');
-      } else {
-        // Primary Outlier mobile launch: command DraftKings app directly via dksb://
-        window.location.href = links.deeplink;
-        setTimeout(() => {
-          // If DraftKings native app is not installed, fallback gracefully to universal browser link
-          window.open(links.webLink, '_blank');
-        }, 750);
-      }
+      launchDraftKingsDirect();
     }
 
     // ==========================================
@@ -2015,7 +1945,7 @@
       ];
       document.getElementById('modalCatalysts').innerHTML = catalysts.map(c => `<li>• ${c}</li>`).join('');
       if (document.getElementById('modalDkBtn')) {
-        document.getElementById('modalDkBtn').href = p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb';
+        document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
       document.getElementById('deepDiveModal').classList.remove('hidden');
     }
@@ -2064,7 +1994,7 @@
 
       document.getElementById('modalCatalysts').innerHTML = (p.catalysts || []).map(c => `<li>• ${c}</li>`).join('');
       if (document.getElementById('modalDkBtn')) {
-        document.getElementById('modalDkBtn').href = p.dk_link || 'https://sportsbook.draftkings.com/leagues/baseball/mlb';
+        document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
       document.getElementById('deepDiveModal').classList.remove('hidden');
     }
@@ -2679,7 +2609,7 @@
       }
       const sourceEl = document.getElementById("btcTargetSourceLabel");
       if (sourceEl) {
-        sourceEl.innerText = d.target_source || "Robinhood 15M Target";
+        sourceEl.innerText = d.target_source || "Kalshi KXBTC15 Target";
       }
 
       // Target Delta Badge
@@ -2890,8 +2820,10 @@
                 source: "Kalshi KXBTC15M"
               };
               window.cachedKalshiData = kObj;
-              if (!window.cachedBtcTargetPrice) {
-                window.cachedBtcTargetPrice = strike;
+              window.cachedBtcTargetPrice = strike;
+              const sLbl = document.getElementById("btcTargetSourceLabel");
+              if (sLbl) sLbl.innerText = "Kalshi KXBTC15 Target";
+              if (true) {
                 const tHero = document.getElementById("btcTargetPriceHero");
                 if (tHero) tHero.innerText = `$${strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
               }
@@ -3253,6 +3185,12 @@
 
       if (livePrice && livePrice > 0) {
         updateClientBtcLive(livePrice, liveStats);
+      }
+
+      // Ensure Kalshi KXBTC15 target benchmark is actively fetched on mobile
+      if (!window._lastKalshiPollTime || (Date.now() - window._lastKalshiPollTime > 12000) || !window.cachedBtcTargetPrice) {
+        window._lastKalshiPollTime = Date.now();
+        fetchKalshiDirect();
       }
 
       // If target benchmark is not loaded yet, fetch direct klines

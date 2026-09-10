@@ -1,29 +1,44 @@
 {
-  "timestamp": "2026-09-09 23:45:00+00:00",
+  "timestamp": "2026-09-10 00:15:00+00:00",
   "timeframe": "15M",
-  "price": 78257.87,
+  "price": 78248.98,
   "direction": "NEUTRAL / CHOPPY",
   "primary_bias": "NEUTRAL",
   "confluence_score": 9,
   "confidence_percent": 54,
   "reasons_bullish": [
-    "Candlestick: Three White Soldiers detected (+24)",
+    "Candlestick: Tweezer Bottom detected (+16)",
+    "Candlestick: Bullish Harami detected (+8)",
     "MACD histogram expanding upward (+4)",
     "Smart Money: Reacting to Bullish FVG between $78030.7 and $78074.4 (+$43.7) (+5)",
     "Smart Money: Reacting to Bullish FVG between $78169.6 and $78198.4 (+$28.8) (+5)"
   ],
   "reasons_bearish": [
     "Bearish EMA Ribbon (EMA 9 < 21 < 50 aligned) (-12)",
-    "RSI negative momentum at 48.3 (-3)",
+    "RSI negative momentum at 48.0 (-3)",
     "Market Structure: Lower Highs & Lower Lows (-8)",
-    "Trading below Session VWAP ($78728.2) - Seller edge (-6)"
+    "Trading below Session VWAP ($78724.0) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
-      "name": "Three White Soldiers",
+      "name": "Tweezer Bottom",
       "type": "BULLISH",
-      "strength": 3,
-      "description": "Three consecutive advancing green candles with higher highs and higher closes.",
+      "strength": 2,
+      "description": "Dual candle rejection at identical low level (78231.4).",
+      "candle_index": 249
+    },
+    {
+      "name": "Bullish Harami",
+      "type": "BULLISH",
+      "strength": 1,
+      "description": "Small green inside candle within previous red candle body indicating selling exhausted.",
+      "candle_index": 249
+    },
+    {
+      "name": "Doji (Indecision)",
+      "type": "NEUTRAL",
+      "strength": 1,
+      "description": "Open and close virtually equal, representing market consolidation or balance.",
       "candle_index": 249
     }
   ],
@@ -47,31 +62,31 @@
     ]
   },
   "indicators": {
-    "price": 78257.87,
-    "ema_9": 78148.58859432652,
-    "ema_21": 78240.44288446923,
-    "ema_50": 78490.24121130728,
-    "ema_200": 78780.21747665078,
+    "price": 78248.98,
+    "ema_9": 78187.63318036898,
+    "ema_21": 78243.65976928327,
+    "ema_50": 78472.53149324453,
+    "ema_200": 78769.29096765856,
     "bullish_ribbon": false,
     "bearish_ribbon": true,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 48.28,
+    "rsi": 47.97,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -133.01,
-    "macd_signal": -170.83,
-    "macd_hist": 37.81,
+    "macd_line": -100.39,
+    "macd_signal": -147.49,
+    "macd_hist": 47.09,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_UP",
-    "bb_upper": 78515.56,
-    "bb_lower": 77860.85,
+    "bb_upper": 78426.69,
+    "bb_lower": 77903.57,
     "bb_squeeze": true,
-    "atr": 201.01,
-    "volume": 7.7858,
-    "vol_ratio": 0.2,
+    "atr": 186.3,
+    "volume": 2.5917,
+    "vol_ratio": 0.07,
     "vol_surge": false,
-    "vwap": 78728.16,
+    "vwap": 78723.99,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
       {
@@ -79,7 +94,7 @@
         "top": 78453.41,
         "bottom": 78323.82,
         "size": 129.59,
-        "candle_index": 232,
+        "candle_index": 230,
         "time": 1788982200,
         "description": "Bearish FVG between $78323.8 and $78453.4 (-$129.6)"
       },
@@ -88,7 +103,7 @@
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 246,
+        "candle_index": 244,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -97,7 +112,7 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 248,
+        "candle_index": 246,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       }
@@ -105,63 +120,46 @@
   },
   "trade_setup": {
     "direction": "WAIT (NEUTRAL)",
-    "entry_price": 78257.87,
+    "entry_price": 78248.98,
     "stop_loss": 78025.0,
     "take_profit_1": 78323.32,
-    "take_profit_2": 78524.33,
+    "take_profit_2": 78509.62,
     "risk_reward_1": 1.0,
     "risk_reward_2": 1.5,
-    "risk_amount": 201.01,
-    "risk_percent": 0.26,
+    "risk_amount": 186.3,
+    "risk_percent": 0.24,
     "breakeven_rule": "Range trading - scalp tight limits",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78212.99,
-    "target_source": "Robinhood 15M Target",
+    "target_price": 78283.82,
+    "target_source": "Kalshi KXBTC15",
     "kalshi": {
-      "target_price": 78204.69,
-      "yes_prob": 96.0,
-      "no_prob": 4.0,
-      "ticker": "KXBTC15M-26SEP092000-00",
-      "close_time": "2026-09-10T00:00:00Z",
+      "target_price": 78283.82,
+      "yes_prob": 21.5,
+      "no_prob": 78.5,
+      "ticker": "KXBTC15M-26SEP092030-30",
+      "close_time": "2026-09-10T00:30:00Z",
       "status": "active",
-      "volume_24h": 715822.21,
+      "volume_24h": 928594.14,
       "source": "Kalshi KXBTC15M"
     },
-    "current_price": 78257.87,
-    "delta": 44.88,
-    "delta_pct": 0.057,
-    "status": "ABOVE",
-    "predicted_outcome": "ABOVE TARGET (OVER)",
-    "probability_percent": 67,
-    "confidence_badge": "MODERATE EDGE",
+    "current_price": 78248.98,
+    "delta": -34.84,
+    "delta_pct": -0.045,
+    "status": "BELOW",
+    "predicted_outcome": "BELOW TARGET (UNDER)",
+    "probability_percent": 56,
+    "confidence_badge": "TIGHT PIVOT BATTLE",
     "decision_factors": [
-      "Kalshi KXBTC15M Market Odds: 96.0% Yes / 4.0% No (Target: $78,204.69)",
-      "Price holding +$44.88 (+0.06%) above 15m target benchmark",
+      "Kalshi KXBTC15M Market Odds: 21.5% Yes / 78.5% No (Target: $78,283.82)",
+      "Price trading -$34.84 (-0.04%) below 15m target benchmark",
       "Bearish EMA 9 < 21 ribbon exerting downward pressure",
       "Current 15-minute candle printing green with active buyer absorption",
-      "Chart Pattern: Three White Soldiers detected (+18 pts bullish reversal)"
+      "Chart Pattern: Tweezer Bottom detected (+12 pts bullish reversal)",
+      "Chart Pattern: Bullish Harami detected (+6 pts bullish reversal)"
     ],
     "last_5_targets": [
-      {
-        "time": "22:30",
-        "price": 78016.96,
-        "delta": 0.49,
-        "delta_pct": 0.0,
-        "direction": "HIGHER",
-        "arrow": "\u25b2",
-        "color": "green"
-      },
-      {
-        "time": "22:45",
-        "price": 77892.29,
-        "delta": -124.67,
-        "delta_pct": -0.16,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
       {
         "time": "23:00",
         "price": 78131.65,
@@ -188,6 +186,24 @@
         "direction": "HIGHER",
         "arrow": "\u25b2",
         "color": "green"
+      },
+      {
+        "time": "23:45",
+        "price": 78283.98,
+        "delta": 78.8,
+        "delta_pct": 0.1,
+        "direction": "HIGHER",
+        "arrow": "\u25b2",
+        "color": "green"
+      },
+      {
+        "time": "00:00",
+        "price": 78246.24,
+        "delta": -37.74,
+        "delta_pct": -0.05,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
       }
     ],
     "streak_summary": "4 Higher / 1 Lower"

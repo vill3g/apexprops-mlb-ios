@@ -491,13 +491,12 @@ def get_live_15m_target_data() -> dict:
     except Exception:
         pass
 
-    target_source = "Robinhood 15M Target"
-    if rh_target:
+    if kalshi_m and kalshi_m.get("target_price"):
+        target_price = kalshi_m["target_price"]
+        target_source = "Kalshi KXBTC15"
+    elif rh_target:
         target_price = rh_target
         target_source = "Robinhood 15M Target"
-    elif kalshi_m and kalshi_m.get("target_price"):
-        target_price = kalshi_m["target_price"]
-        target_source = "Kalshi KXBTC15M"
     else:
         target_price = _target_cache["active_target"] or curr_price
         target_source = "15M Candle Close"
