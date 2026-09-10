@@ -8,13 +8,29 @@ Generates direction (UP/DOWN/NEUTRAL), confidence %, reason breakdown, and trade
 from dataclasses import dataclass, asdict
 import pandas as pd
 
+import math
+import time
+from datetime import datetime, timezone
+
 try:
     from backend.btc.indicators import add_all_indicators, extract_indicator_summary
-    from backend.btc.pattern_detector import detect_candlestick_patterns, analyze_market_structure
+    from backend.btc.pattern_detector import (
+        detect_candlestick_patterns,
+        analyze_market_structure,
+        detect_liquidity_sweeps,
+        detect_fair_value_gaps,
+        analyze_wick_absorption
+    )
     from backend.btc.kalshi_client import get_kalshi_15m_market
 except ImportError:
     from indicators import add_all_indicators, extract_indicator_summary
-    from pattern_detector import detect_candlestick_patterns, analyze_market_structure
+    from pattern_detector import (
+        detect_candlestick_patterns,
+        analyze_market_structure,
+        detect_liquidity_sweeps,
+        detect_fair_value_gaps,
+        analyze_wick_absorption
+    )
     from kalshi_client import get_kalshi_15m_market
 
 
@@ -57,9 +73,12 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     df_ind = add_all_indicators(df)
     ind_summary = extract_indicator_summary(df_ind)
 
-    # 2. Detect candlestick patterns & market structure
+    # 2. Detect candlestick patterns, market structure, sweeps, FVGs, & wicks
     patterns = detect_candlestick_patterns(df_ind)
     structure = analyze_market_structure(df_ind)
+    sweeps = detect_liquidity_sweeps(df_ind)
+    fvgs = detect_fair_value_gaps(df_ind)
+    wicks = analyze_wick_absorption(df_ind)
 
     curr_price = float(df_ind.iloc[-1]["close"])
     atr = ind_summary.get("atr", curr_price * 0.005)
@@ -356,125 +375,157 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     target_delta_pct = round((target_delta / (active_target + 1e-10)) * 100, 3)
     target_status = "ABOVE" if target_delta >= 0 else "BELOW"
 
-    # Evaluate Above vs Below Probability & Decision Criteria (Enhanced Engine)
+    # -------------------------------------------------------------------------
+    # UNIFIED 15M CONTRACT INTELLIGENCE ENGINE (DIFFUSION & CONFLUENCE BLEND)
+    # -------------------------------------------------------------------------
+    # 1. Dynamic Time-Decay & Brownian Volatility Diffusion
+    now_epoch = int(time.time())
+    seconds_in_15m = now_epoch % 900
+    seconds_remaining = max(10, 900 - seconds_in_15m)
+    minutes_remaining = max(0.15, seconds_remaining / 60.0)
+
+    atr_1m = max(4.0, atr / math.sqrt(15.0))
+    expected_stddev = atr_1m * math.sqrt(minutes_remaining)
+    z_score = target_delta / max(1.0, expected_stddev)
+
+    # Base mathematical probability of closing above target
+    p_decay_raw = 1.0 / (1.0 + math.exp(-1.702 * z_score))
+    p_decay = p_decay_raw * 100.0
+
     pred_weight = 0
     pred_factors = []
 
-    # A. Current Spread vs Target Benchmark
-    if abs(target_delta) > (atr * 0.1):
-        if target_delta > 0:
-            pred_weight += 25
-            pred_factors.append(f"Price holding +${target_delta:.2f} (+{target_delta_pct:.2f}%) above 15m target benchmark")
+    # A. Time-Decay Factor
+    min_str = f"{seconds_remaining // 60}m {seconds_remaining % 60}s"
+    if target_delta >= 0:
+        if seconds_remaining <= 180 and target_delta > (atr_1m * 0.8):
+            pred_factors.append(f"⏱️ Theta Lock: +${target_delta:.2f} lead with only {min_str} left (High probability lock)")
         else:
-            pred_weight -= 25
-            pred_factors.append(f"Price trading -${abs(target_delta):.2f} ({target_delta_pct:.2f}%) below 15m target benchmark")
+            pred_factors.append(f"⏱️ Time-Decay: Holding +${target_delta:.2f} lead ({min_str} remaining, Vol: ${expected_stddev:.1f})")
     else:
-        pred_factors.append(f"Price testing target level within narrow range (Spread: ${target_delta:+.2f})")
+        if seconds_remaining <= 180 and abs(target_delta) > (atr_1m * 0.8):
+            pred_factors.append(f"⏱️ Theta Deficit: -${abs(target_delta):.2f} deficit with only {min_str} left (Steep hurdle)")
+        else:
+            pred_factors.append(f"⏱️ Time-Decay: -${abs(target_delta):.2f} deficit ({min_str} remaining, Vol: ${expected_stddev:.1f})")
 
-    # B. 15m EMA Alignment & Micro Trend
+    # B. Multi-Timeframe Alignment (1H Macro + 15M + Micro)
+    macro_bull = ind_summary.get("macro_bull")
+    if macro_bull is True:
+        pred_weight += 14
+        pred_factors.append("🌐 MTF Context: 1H Macro Trend Bullish (Price above 200 EMA)")
+    elif macro_bull is False:
+        pred_weight -= 14
+        pred_factors.append("🌐 MTF Context: 1H Macro Trend Bearish (Price below 200 EMA)")
+
+    # 15M EMA Ribbon
     if ind_summary.get("bullish_ribbon"):
-        pred_weight += 20
-        pred_factors.append("Bullish EMA 9 > 21 ribbon providing upward thrust")
+        pred_weight += 18
+        pred_factors.append("📈 15M Ribbon: Bullish EMA 9 > 21 > 50 providing upward thrust")
     elif ind_summary.get("bearish_ribbon"):
-        pred_weight -= 20
-        pred_factors.append("Bearish EMA 9 < 21 ribbon exerting downward pressure")
+        pred_weight -= 18
+        pred_factors.append("📉 15M Ribbon: Bearish EMA 9 < 21 < 50 exerting downward pressure")
     elif ind_summary.get("ema_9", 0) > ind_summary.get("ema_21", 0):
-        pred_weight += 8
-        pred_factors.append("Short-term EMA 9 sloping above EMA 21")
+        pred_weight += 6
+        pred_factors.append("📈 Micro EMA: Short-term EMA 9 sloping above EMA 21")
     else:
-        pred_weight -= 8
-        pred_factors.append("Short-term EMA 9 sloping below EMA 21")
+        pred_weight -= 6
+        pred_factors.append("📉 Micro EMA: Short-term EMA 9 sloping below EMA 21")
 
-    # C. Candle Progression & RSI Momentum
+    # C. Smart Money Liquidity Sweeps (Judas Swings)
+    for sw in sweeps:
+        if sw["type"] == "BULLISH":
+            pred_weight += 24
+            pred_factors.append(f"🧲 SMC Sweep: {sw['name']} (+${sw['wick_depth']:.1f} dip reclaimed above target)")
+        elif sw["type"] == "BEARISH":
+            pred_weight -= 24
+            pred_factors.append(f"🧲 SMC Sweep: {sw['name']} (+${sw['wick_depth']:.1f} spike rejected below target)")
+
+    # D. Fair Value Gaps (FVG)
+    for fvg in fvgs[:2]:
+        if fvg["type"] == "BULLISH_FVG":
+            pred_weight += 10
+            pred_factors.append(f"📦 FVG Floor: Bullish imbalance support (${fvg['bottom']:.0f} - ${fvg['top']:.0f})")
+        elif fvg["type"] == "BEARISH_FVG":
+            pred_weight -= 10
+            pred_factors.append(f"📦 FVG Ceiling: Bearish imbalance resistance (${fvg['bottom']:.0f} - ${fvg['top']:.0f})")
+
+    # E. Order Flow & Wick Absorption
+    if wicks["bias"] == "BUYER_ABSORPTION":
+        pred_weight += 16
+        pred_factors.append(f"📊 Order Flow: Institutional Bid Absorption ({wicks['buyer_absorption_pct']}% lower wicks)")
+    elif wicks["bias"] == "SELLER_REJECTION":
+        pred_weight -= 16
+        pred_factors.append(f"📊 Order Flow: Heavy Overhead Capping ({wicks['seller_rejection_pct']}% upper wicks)")
+
+    # F. Candle Progression & RSI Momentum
     last_candle = df_ind.iloc[-1]
     candle_green = float(last_candle["close"]) >= float(last_candle["open"])
     if candle_green:
-        pred_weight += 12
-        pred_factors.append("Active candle is GREEN (buyers absorbing supply)")
+        pred_weight += 10
+        pred_factors.append("🟢 Active Candle: Green bar (buyers defending bid)")
     else:
-        pred_weight -= 12
-        pred_factors.append("Active candle is RED (sellers in control)")
+        pred_weight -= 10
+        pred_factors.append("🔴 Active Candle: Red bar (sellers in control)")
 
     rsi_val = ind_summary.get("rsi", 50)
     if rsi_val >= 58:
-        pred_weight += 12
-        pred_factors.append(f"RSI ({rsi_val:.1f}) in bullish expansion zone")
+        pred_weight += 10
+        pred_factors.append(f"⚡ RSI Momentum: Bullish expansion ({rsi_val:.1f})")
     elif rsi_val <= 42:
-        pred_weight -= 12
-        pred_factors.append(f"RSI ({rsi_val:.1f}) in bearish compression zone")
-    else:
-        pred_factors.append(f"RSI ({rsi_val:.1f}) neutral/pivoting")
+        pred_weight -= 10
+        pred_factors.append(f"⚡ RSI Momentum: Bearish compression ({rsi_val:.1f})")
 
-    # D. Detected Reversal & Continuation Patterns
-    active_patterns = patterns
-    for p in active_patterns:
-        p_type = p.get("type")
-        p_name = p.get("name")
-        p_str = p.get("strength", 1)
-        pts = p_str * 6
-        if p_type == "BULLISH":
-            pred_weight += pts
-            pred_factors.append(f"Chart Pattern: {p_name} detected (+{pts} pts bullish reversal)")
-        elif p_type == "BEARISH":
-            pred_weight -= pts
-            pred_factors.append(f"Chart Pattern: {p_name} detected (-{pts} pts bearish reversal)")
-
-    # E. Market Structure (BOS, CHoCH, Double Formations)
+    # G. Market Structure (BOS, CHoCH)
     bos_info = structure.get("bos")
     if bos_info:
         if bos_info.get("type") == "BULLISH_BOS":
-            pred_weight += 15
-            pred_factors.append("Market Structure: Bullish Break of Structure (BOS) confirmed")
+            pred_weight += 14
+            pred_factors.append("🏛️ Structure: Bullish Break of Structure (BOS) confirmed")
         elif bos_info.get("type") == "BEARISH_BOS":
-            pred_weight -= 15
-            pred_factors.append("Market Structure: Bearish Break of Structure (BOS) confirmed")
+            pred_weight -= 14
+            pred_factors.append("🏛️ Structure: Bearish Break of Structure (BOS) confirmed")
 
     choch_info = structure.get("choch")
     if choch_info:
         if choch_info.get("type") == "BULLISH_CHOCH":
-            pred_weight += 12
-            pred_factors.append("Market Structure: Bullish Change of Character (CHoCH)")
-        elif choch_info.get("type") == "BEARISH_CHOCH":
-            pred_weight -= 12
-            pred_factors.append("Market Structure: Bearish Change of Character (CHoCH)")
-
-    dbl_pattern = structure.get("double_pattern")
-    if dbl_pattern:
-        if dbl_pattern.get("type") == "DOUBLE_BOTTOM":
-            pred_weight += 12
-            pred_factors.append("Chart Pattern: Double Bottom support zone established")
-        elif dbl_pattern.get("type") == "DOUBLE_TOP":
-            pred_weight -= 12
-            pred_factors.append("Chart Pattern: Double Top resistance ceiling established")
-
-    # F. Volume Profile & Surge
-    if ind_summary.get("vol_surge"):
-        if candle_green:
             pred_weight += 10
-            pred_factors.append("Institutional Volume Surge detected on Green candle")
-        else:
+            pred_factors.append("🏛️ Structure: Bullish Change of Character (CHoCH)")
+        elif choch_info.get("type") == "BEARISH_CHOCH":
             pred_weight -= 10
-            pred_factors.append("Institutional Volume Surge detected on Red candle")
+            pred_factors.append("🏛️ Structure: Bearish Change of Character (CHoCH)")
 
-    # G. Key Levels & Structural Confluence
-    levels = {"nearest_support": near_support, "nearest_resistance": near_resistance}
-    if near_support and near_support >= active_target:
-        pred_weight += 12
-        pred_factors.append(f"Key structural support (${near_support:.1f}) sits ABOVE target, establishing price floor")
-    elif near_resistance and near_resistance <= active_target:
-        pred_weight -= 12
-        pred_factors.append(f"Key structural resistance (${near_resistance:.1f}) sits BELOW target, capping recovery")
+    # H. Triple Confluence Check
+    if macro_bull is True and candle_green and (ind_summary.get("bullish_ribbon") or sweeps):
+        pred_factors.insert(0, "🔥 TRIPLE MTF ALIGNMENT: 1H Macro + 15M Trend + Buyers in Sync")
+    elif macro_bull is False and (not candle_green) and (ind_summary.get("bearish_ribbon") or sweeps):
+        pred_factors.insert(0, "❄️ TRIPLE MTF ALIGNMENT: 1H Macro + 15M Trend + Sellers in Sync")
 
-    # Final Probability & Outcome Determination
-    if pred_weight >= 12:
-        pred_outcome = "ABOVE TARGET (OVER)"
-        pred_prob = min(94, max(56, int(52 + (abs(pred_weight) / 100.0) * 40)))
-    elif pred_weight <= -12:
-        pred_outcome = "BELOW TARGET (UNDER)"
-        pred_prob = min(94, max(56, int(52 + (abs(pred_weight) / 100.0) * 40)))
+    # -------------------------------------------------------------------------
+    # Calibrated Probability Blending
+    # -------------------------------------------------------------------------
+    p_tech_shift = (pred_weight / 140.0) * 35.0
+    decay_weight_factor = min(0.88, max(0.40, 1.0 - (minutes_remaining / 16.0)))
+    p_final = (decay_weight_factor * p_decay) + ((1.0 - decay_weight_factor) * (50.0 + p_tech_shift))
+
+    # Streak & Mean Reversion Dampener
+    if higher_count >= 4 and target_delta > 0:
+        p_final = max(52, p_final - 5)
+        pred_factors.append(f"⚠️ Streak Warning: {higher_count} consecutive UP closes (Pullback risk elevated)")
+    elif lower_count >= 4 and target_delta < 0:
+        p_final = min(48, p_final + 5)
+        pred_factors.append(f"⚠️ Streak Warning: {lower_count} consecutive DOWN closes (Oversold bounce risk elevated)")
+
+    pred_prob = int(round(max(5, min(95, p_final))))
+    pred_outcome = "ABOVE TARGET (OVER)" if pred_prob >= 50 else "BELOW TARGET (UNDER)"
+
+    if pred_prob >= 80 or pred_prob <= 20:
+        conf_badge = "LOCKED RUNWAY"
+    elif pred_prob >= 70 or pred_prob <= 30:
+        conf_badge = "HIGH CONVICTION"
+    elif pred_prob >= 60 or pred_prob <= 40:
+        conf_badge = "MODERATE EDGE"
     else:
-        pred_outcome = "ABOVE TARGET (OVER)" if target_delta >= 0 else "BELOW TARGET (UNDER)"
-        pred_prob = 52
+        conf_badge = "TIGHT PIVOT BATTLE"
 
     # Prepend Kalshi Market Odds factor if available
     kalshi_m = None
@@ -489,7 +540,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         "status": target_status,
         "predicted_outcome": pred_outcome,
         "probability_percent": pred_prob,
-        "confidence_badge": "HIGH CONVICTION" if pred_prob >= 72 else ("MODERATE EDGE" if pred_prob >= 62 else "TIGHT PIVOT BATTLE"),
+        "confidence_badge": conf_badge,
         "decision_factors": pred_factors,
         "last_5_targets": last_5_targets,
         "streak_summary": f"{higher_count} Higher / {lower_count} Lower"

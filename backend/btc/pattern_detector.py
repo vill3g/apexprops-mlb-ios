@@ -383,6 +383,148 @@ def analyze_market_structure(df: pd.DataFrame) -> dict:
     return structure
 
 
+def detect_liquidity_sweeps(df: pd.DataFrame, target_price: float = None) -> list[dict]:
+    """
+    Detects Liquidity Sweeps (Judas Swings) around previous swing points and the 15M target/open.
+    A sweep occurs when price pierces a key level (triggering breakout/stop orders)
+    and then sharply rejects and reclaims the level within the active window.
+    """
+    sweeps = []
+    if len(df) < 5:
+        return sweeps
+
+    curr = df.iloc[-1]
+    prev = df.iloc[-2]
+    open_price = float(target_price) if target_price else float(curr["open"])
+
+    # 1. Bullish Judas Swing / Liquidity Sweep below 15M Open or previous low
+    lowest_wick = min(float(curr["low"]), float(prev["low"]))
+    if lowest_wick < open_price and float(curr["close"]) > open_price:
+        wick_depth = open_price - lowest_wick
+        if wick_depth >= open_price * 0.0006:  # At least ~$50-60 on BTC
+            sweeps.append({
+                "name": "Bullish Liquidity Sweep (Judas Reclaim)",
+                "type": "BULLISH",
+                "strength": 3,
+                "reclaim_level": round(open_price, 2),
+                "wick_depth": round(wick_depth, 2),
+                "description": f"Price swept stops down to ${lowest_wick:.1f} and aggressively reclaimed above ${open_price:.1f}."
+            })
+
+    # 2. Bearish Judas Swing / Liquidity Sweep above 15M Open or previous high
+    highest_wick = max(float(curr["high"]), float(prev["high"]))
+    if highest_wick > open_price and float(curr["close"]) < open_price:
+        wick_height = highest_wick - open_price
+        if wick_height >= open_price * 0.0006:
+            sweeps.append({
+                "name": "Bearish Liquidity Sweep (Judas Rejection)",
+                "type": "BEARISH",
+                "strength": 3,
+                "reclaim_level": round(open_price, 2),
+                "wick_depth": round(wick_height, 2),
+                "description": f"Price swept liquidity up to ${highest_wick:.1f} and got rejected back below ${open_price:.1f}."
+            })
+
+    return sweeps
+
+
+def detect_fair_value_gaps(df: pd.DataFrame) -> list[dict]:
+    """
+    Detects active Fair Value Gaps (FVG) / Imbalances in recent candles.
+    Bullish FVG: Candle 1 High < Candle 3 Low (unfilled buying gap)
+    Bearish FVG: Candle 1 Low > Candle 3 High (unfilled selling gap)
+    """
+    fvgs = []
+    n = len(df)
+    if n < 4:
+        return fvgs
+
+    curr_price = float(df.iloc[-1]["close"])
+
+    # Scan last 10 candles for active FVGs
+    start_idx = max(2, n - 10)
+    for i in range(start_idx, n):
+        c1 = df.iloc[i - 2]
+        c3 = df.iloc[i]
+
+        # Bullish FVG
+        if float(c3["low"]) > float(c1["high"]):
+            gap_top = float(c3["low"])
+            gap_bottom = float(c1["high"])
+            gap_size = gap_top - gap_bottom
+            if gap_size > curr_price * 0.0004:
+                if curr_price >= gap_bottom * 0.998:
+                    fvgs.append({
+                        "type": "BULLISH_FVG",
+                        "top": round(gap_top, 2),
+                        "bottom": round(gap_bottom, 2),
+                        "size": round(gap_size, 2),
+                        "candle_index": i,
+                        "description": f"Bullish Fair Value Gap (${gap_bottom:.1f} - ${gap_top:.1f}) acting as price floor"
+                    })
+
+        # Bearish FVG
+        elif float(c3["high"]) < float(c1["low"]):
+            gap_top = float(c1["low"])
+            gap_bottom = float(c3["high"])
+            gap_size = gap_top - gap_bottom
+            if gap_size > curr_price * 0.0004:
+                if curr_price <= gap_top * 1.002:
+                    fvgs.append({
+                        "type": "BEARISH_FVG",
+                        "top": round(gap_top, 2),
+                        "bottom": round(gap_bottom, 2),
+                        "size": round(gap_size, 2),
+                        "candle_index": i,
+                        "description": f"Bearish Fair Value Gap (${gap_bottom:.1f} - ${gap_top:.1f}) acting as resistance ceiling"
+                    })
+
+    return fvgs
+
+
+def analyze_wick_absorption(df: pd.DataFrame) -> dict:
+    """
+    Measures the ratio of lower wick buying absorption vs upper wick selling rejection
+    over the latest 3-5 candles.
+    """
+    if len(df) < 3:
+        return {"buyer_absorption_pct": 50, "seller_rejection_pct": 50, "bias": "NEUTRAL", "description": "Neutral wick distribution"}
+
+    tail_df = df.tail(4)
+    lower_wicks = []
+    upper_wicks = []
+
+    for _, row in tail_df.iterrows():
+        b_low = min(float(row["open"]), float(row["close"]))
+        b_high = max(float(row["open"]), float(row["close"]))
+        lower_wicks.append(b_low - float(row["low"]))
+        upper_wicks.append(float(row["high"]) - b_high)
+
+    tot_lower = sum(lower_wicks)
+    tot_upper = sum(upper_wicks)
+    tot_wicks = tot_lower + tot_upper + 1e-6
+
+    lower_pct = int(round((tot_lower / tot_wicks) * 100))
+    upper_pct = 100 - lower_pct
+
+    if lower_pct >= 62:
+        bias = "BUYER_ABSORPTION"
+        desc = f"Strong buyer absorption ({lower_pct}% lower wicks soaking supply)"
+    elif upper_pct >= 62:
+        bias = "SELLER_REJECTION"
+        desc = f"Heavy seller rejection ({upper_pct}% upper wicks capping upside)"
+    else:
+        bias = "BALANCED"
+        desc = "Balanced wicks between buyers and sellers"
+
+    return {
+        "buyer_absorption_pct": lower_pct,
+        "seller_rejection_pct": upper_pct,
+        "bias": bias,
+        "description": desc
+    }
+
+
 if __name__ == "__main__":
     from data_fetcher import fetch_15m_candles
     df = fetch_15m_candles(limit=150)

@@ -2743,8 +2743,22 @@
 
       if (badge) {
         badge.innerText = tb.confidence_badge || "EVALUATING";
-        badge.style.background = isAbove ? "#10b981" : "#ef4444";
-        badge.style.color = isAbove ? "#020617" : "#ffffff";
+        if (tb.confidence_badge === "LOCKED RUNWAY") {
+          badge.style.background = isAbove ? "#10b981" : "#ef4444";
+          badge.style.color = "#ffffff";
+          badge.style.boxShadow = isAbove ? "0 0 12px rgba(16, 185, 129, 0.7)" : "0 0 12px rgba(239, 68, 68, 0.7)";
+          badge.innerText = "🔒 LOCKED RUNWAY";
+        } else if (tb.confidence_badge === "HIGH CONVICTION") {
+          badge.style.background = isAbove ? "#10b981" : "#ef4444";
+          badge.style.color = isAbove ? "#020617" : "#ffffff";
+          badge.style.boxShadow = "none";
+          badge.innerText = "⚡ HIGH CONVICTION";
+        } else {
+          badge.style.background = isAbove ? "#10b981" : "#ef4444";
+          badge.style.color = isAbove ? "#020617" : "#ffffff";
+          badge.style.boxShadow = "none";
+          badge.innerText = tb.confidence_badge || "MODERATE EDGE";
+        }
       }
 
       if (probText) probText.innerText = `${prob}% Probability`;

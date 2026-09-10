@@ -1,30 +1,38 @@
 {
-  "timestamp": "2026-09-10 03:00:00+00:00",
+  "timestamp": "2026-09-10 03:45:00+00:00",
   "timeframe": "15M",
-  "price": 78420.74,
+  "price": 78417.77,
   "direction": "STRONG BULLISH (UP)",
   "primary_bias": "UP",
-  "confluence_score": 55,
-  "confidence_percent": 75,
+  "confluence_score": 53,
+  "confidence_percent": 74,
   "reasons_bullish": [
     "Short-term EMA 9 above EMA 21 (+4)",
-    "Recent Bullish EMA 9/21 Golden Crossover (+8)",
-    "Candlestick: Three White Soldiers detected (+24)",
-    "RSI positive momentum at 57.2 (+3)",
+    "Candlestick: Bullish Engulfing detected (+24)",
+    "Candlestick: Tweezer Bottom detected (+16)",
+    "RSI positive momentum at 57.4 (+3)",
     "MACD histogram expanding upward (+4)",
     "Market Structure: Higher Highs & Higher Lows (+8)",
     "Smart Money: Reacting to Bullish FVG between $78049.7 and $78221.5 (+$171.8) (+5)",
     "Smart Money: Reacting to Bullish FVG between $78243.8 and $78305.8 (+$61.9) (+5)"
   ],
   "reasons_bearish": [
-    "Trading below Session VWAP ($78696.4) - Seller edge (-6)"
+    "Chart Pattern: Double Top formed near $78502.9 (-10)",
+    "Trading below Session VWAP ($78690.5) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
-      "name": "Three White Soldiers",
+      "name": "Bullish Engulfing",
       "type": "BULLISH",
       "strength": 3,
-      "description": "Three consecutive advancing green candles with higher highs and higher closes.",
+      "description": "Strong green candle completely engulfed the previous red candle's body.",
+      "candle_index": 249
+    },
+    {
+      "name": "Tweezer Bottom",
+      "type": "BULLISH",
+      "strength": 2,
+      "description": "Dual candle rejection at identical low level (78335.1).",
       "candle_index": 249
     }
   ],
@@ -33,7 +41,12 @@
     "trend_bias": "BULLISH",
     "bos": null,
     "choch": null,
-    "double_pattern": null,
+    "double_pattern": {
+      "type": "DOUBLE_TOP",
+      "neckline": 77939.19,
+      "level": 78502.85500000001,
+      "description": "Double Top formed near $78502.9"
+    },
     "nearest_support": 78060.08,
     "nearest_resistance": 78487.38,
     "support_levels": [
@@ -43,36 +56,36 @@
     ],
     "resistance_levels": [
       78487.38,
-      78570.83,
-      78901.04
+      78518.33,
+      78570.83
     ]
   },
   "indicators": {
-    "price": 78420.74,
-    "ema_9": 78220.6258182691,
-    "ema_21": 78213.23445568574,
-    "ema_50": 78371.34057701971,
-    "ema_200": 78726.73089224321,
+    "price": 78417.77,
+    "ema_9": 78288.77470695379,
+    "ema_21": 78247.91157587504,
+    "ema_50": 78368.8109877323,
+    "ema_200": 78696.28423724187,
     "bullish_ribbon": false,
     "bearish_ribbon": false,
     "macro_bull": false,
-    "ema_cross": "BULLISH_CROSS",
-    "rsi": 57.2,
+    "ema_cross": null,
+    "rsi": 57.42,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -26.94,
-    "macd_signal": -68.99,
-    "macd_hist": 42.04,
+    "macd_line": 7.92,
+    "macd_signal": -37.69,
+    "macd_hist": 45.62,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_UP",
-    "bb_upper": 78429.44,
-    "bb_lower": 77893.63,
-    "bb_squeeze": false,
-    "atr": 190.79,
-    "volume": 16.0646,
-    "vol_ratio": 0.51,
+    "bb_upper": 78454.16,
+    "bb_lower": 77980.23,
+    "bb_squeeze": true,
+    "atr": 175.55,
+    "volume": 2.0238,
+    "vol_ratio": 0.07,
     "vol_surge": false,
-    "vwap": 78696.39,
+    "vwap": 78690.46,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
       {
@@ -80,7 +93,7 @@
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 233,
+        "candle_index": 230,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -89,7 +102,7 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 235,
+        "candle_index": 232,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       },
@@ -98,7 +111,7 @@
         "top": 78221.53,
         "bottom": 78049.73,
         "size": 171.8,
-        "candle_index": 247,
+        "candle_index": 244,
         "time": 1789007400,
         "description": "Bullish FVG between $78049.7 and $78221.5 (+$171.8)"
       },
@@ -107,7 +120,7 @@
         "top": 78305.77,
         "bottom": 78243.84,
         "size": 61.93,
-        "candle_index": 248,
+        "candle_index": 245,
         "time": 1789008300,
         "description": "Bullish FVG between $78243.8 and $78305.8 (+$61.9)"
       }
@@ -115,63 +128,38 @@
   },
   "trade_setup": {
     "direction": "BUY (UP)",
-    "entry_price": 78420.74,
+    "entry_price": 78417.77,
     "stop_loss": 78060.08,
-    "take_profit_1": 78961.73,
-    "take_profit_2": 79322.39,
+    "take_profit_1": 78954.31,
+    "take_profit_2": 79312.0,
     "risk_reward_1": 1.5,
     "risk_reward_2": 2.5,
-    "risk_amount": 360.66,
+    "risk_amount": 357.69,
     "risk_percent": 0.46,
-    "breakeven_rule": "Move SL to Breakeven ($78420.74) after TP1 hit",
+    "breakeven_rule": "Move SL to Breakeven ($78417.77) after TP1 hit",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78326.11,
-    "target_source": "15M Start Price (3:00 AM UTC)",
+    "target_price": 78338.34,
+    "target_source": "15M Start Price (3:45 AM UTC)",
     "kalshi": null,
-    "current_price": 78420.74,
-    "delta": 94.63,
-    "delta_pct": 0.121,
+    "current_price": 78417.77,
+    "delta": 79.43,
+    "delta_pct": 0.101,
     "status": "ABOVE",
     "predicted_outcome": "ABOVE TARGET (OVER)",
-    "probability_percent": 77,
-    "confidence_badge": "HIGH CONVICTION",
+    "probability_percent": 56,
+    "confidence_badge": "TIGHT PIVOT BATTLE",
     "decision_factors": [
-      "Price holding +$94.63 (+0.12%) above 15m target benchmark",
-      "Short-term EMA 9 sloping above EMA 21",
-      "Active candle is GREEN (buyers absorbing supply)",
-      "RSI (57.2) neutral/pivoting",
-      "Chart Pattern: Three White Soldiers detected (+18 pts bullish reversal)"
+      "\u23f1\ufe0f Time-Decay: Holding +$79.43 lead (11m 2s remaining, Vol: $150.6)",
+      "\ud83d\udcc8 Micro EMA: Short-term EMA 9 sloping above EMA 21",
+      "\ud83d\udce6 FVG Floor: Bullish imbalance support ($78050 - $78222)",
+      "\ud83d\udce6 FVG Floor: Bullish imbalance support ($78244 - $78306)",
+      "\ud83d\udcca Order Flow: Heavy Overhead Capping (64% upper wicks)",
+      "\ud83d\udfe2 Active Candle: Green bar (buyers defending bid)",
+      "\u26a0\ufe0f Streak Warning: 4 consecutive UP closes (Pullback risk elevated)"
     ],
     "last_5_targets": [
-      {
-        "time": "1:45 AM",
-        "price": 78070.4,
-        "delta": -73.36,
-        "delta_pct": -0.09,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
-      {
-        "time": "2:00 AM",
-        "price": 78018.13,
-        "delta": -52.27,
-        "delta_pct": -0.07,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
-      {
-        "time": "2:15 AM",
-        "price": 77991.87,
-        "delta": -26.26,
-        "delta_pct": -0.03,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
       {
         "time": "2:30 AM",
         "price": 78239.22,
@@ -189,8 +177,35 @@
         "direction": "HIGHER",
         "arrow": "\u25b2",
         "color": "green"
+      },
+      {
+        "time": "3:00 AM",
+        "price": 78345.81,
+        "delta": 19.71,
+        "delta_pct": 0.03,
+        "direction": "HIGHER",
+        "arrow": "\u25b2",
+        "color": "green"
+      },
+      {
+        "time": "3:15 AM",
+        "price": 78357.79,
+        "delta": 11.98,
+        "delta_pct": 0.02,
+        "direction": "HIGHER",
+        "arrow": "\u25b2",
+        "color": "green"
+      },
+      {
+        "time": "3:30 AM",
+        "price": 78338.35,
+        "delta": -19.44,
+        "delta_pct": -0.02,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
       }
     ],
-    "streak_summary": "2 Higher / 3 Lower"
+    "streak_summary": "4 Higher / 1 Lower"
   }
 }
