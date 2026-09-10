@@ -1,22 +1,18 @@
 {
-  "timestamp": "2026-09-10 01:45:00+00:00",
+  "timestamp": "2026-09-10 02:00:00+00:00",
   "timeframe": "15M",
-  "price": 77972.33,
+  "price": 77985.94,
   "direction": "STRONG BEARISH (DOWN)",
   "primary_bias": "DOWN",
-  "confluence_score": -58,
-  "confidence_percent": 76,
-  "reasons_bullish": [
-    "Market Structure: Higher Highs & Higher Lows (+8)"
-  ],
+  "confluence_score": -49,
+  "confidence_percent": 72,
+  "reasons_bullish": [],
   "reasons_bearish": [
     "Bearish EMA Ribbon (EMA 9 < 21 < 50 aligned) (-12)",
     "Candlestick: Three Black Crows detected (-24)",
-    "RSI negative momentum at 39.7 (-3)",
+    "RSI negative momentum at 39.9 (-3)",
     "MACD histogram expanding downward (-4)",
-    "Structure Breakdown: Price broke below recent swing low ($78060.1) (-7)",
-    "Trend Shift: Change of Character: First break below swing low in uptrend (-10)",
-    "Trading below Session VWAP ($78708.3) - Seller edge (-6)"
+    "Trading below Session VWAP ($78705.8) - Seller edge (-6)"
   ],
   "detected_patterns": [
     {
@@ -28,22 +24,16 @@
     }
   ],
   "market_structure": {
-    "trend": "UPTREND (Higher Highs & Higher Lows)",
-    "trend_bias": "BULLISH",
-    "bos": {
-      "type": "BEARISH_BOS",
-      "broken_level": 78060.08,
-      "description": "Price broke below recent swing low ($78060.1)"
-    },
-    "choch": {
-      "type": "BEARISH_CHOCH",
-      "description": "Change of Character: First break below swing low in uptrend"
-    },
+    "trend": "EXPANDING BROADENING",
+    "trend_bias": "VOLATILE",
+    "bos": null,
+    "choch": null,
     "double_pattern": null,
     "nearest_support": 77915.58,
     "nearest_resistance": 78323.32,
     "support_levels": [
       77915.58,
+      77901.39,
       77727.0
     ],
     "resistance_levels": [
@@ -53,31 +43,31 @@
     ]
   },
   "indicators": {
-    "price": 77972.33,
-    "ema_9": 78142.21754501066,
-    "ema_21": 78199.63199526825,
-    "ema_50": 78403.57965960879,
-    "ema_200": 78736.22022924696,
+    "price": 77985.94,
+    "ema_9": 78126.65323600854,
+    "ema_21": 78188.31040892174,
+    "ema_50": 78390.89688125698,
+    "ema_200": 78730.05412371528,
     "bullish_ribbon": false,
     "bearish_ribbon": true,
     "macro_bull": false,
     "ema_cross": null,
-    "rsi": 39.7,
+    "rsi": 39.9,
     "rsi_status": "NEUTRAL",
     "divergences": [],
-    "macd_line": -81.79,
-    "macd_signal": -95.88,
-    "macd_hist": 14.09,
+    "macd_line": -83.05,
+    "macd_signal": -92.06,
+    "macd_hist": 9.01,
     "macd_cross": null,
     "macd_hist_direction": "EXPANDING_DOWN",
-    "bb_upper": 78405.05,
-    "bb_lower": 77877.55,
+    "bb_upper": 78394.94,
+    "bb_lower": 77873.49,
     "bb_squeeze": true,
-    "atr": 205.42,
-    "volume": 25.8623,
-    "vol_ratio": 0.8,
+    "atr": 198.33,
+    "volume": 24.7607,
+    "vol_ratio": 0.77,
     "vol_surge": false,
-    "vwap": 78708.31,
+    "vwap": 78705.79,
     "vwap_status": "BELOW_VWAP",
     "fvgs": [
       {
@@ -85,7 +75,7 @@
         "top": 78074.42,
         "bottom": 78030.74,
         "size": 43.68,
-        "candle_index": 238,
+        "candle_index": 237,
         "time": 1788994800,
         "description": "Bullish FVG between $78030.7 and $78074.4 (+$43.7)"
       },
@@ -94,7 +84,7 @@
         "top": 78198.39,
         "bottom": 78169.6,
         "size": 28.79,
-        "candle_index": 240,
+        "candle_index": 239,
         "time": 1788996600,
         "description": "Bullish FVG between $78169.6 and $78198.4 (+$28.8)"
       }
@@ -102,47 +92,36 @@
   },
   "trade_setup": {
     "direction": "SELL (DOWN)",
-    "entry_price": 77972.33,
+    "entry_price": 77985.94,
     "stop_loss": 78323.32,
-    "take_profit_1": 77445.85,
-    "take_profit_2": 77094.85,
+    "take_profit_1": 77479.87,
+    "take_profit_2": 77142.49,
     "risk_reward_1": 1.5,
     "risk_reward_2": 2.5,
-    "risk_amount": 350.99,
-    "risk_percent": 0.45,
-    "breakeven_rule": "Move SL to Breakeven ($77972.33) after TP1 hit",
+    "risk_amount": 337.38,
+    "risk_percent": 0.43,
+    "breakeven_rule": "Move SL to Breakeven ($77985.94) after TP1 hit",
     "timeframe": "15M"
   },
   "target_benchmark": {
-    "target_price": 78143.75,
-    "target_source": "15M Start Price (1:45 AM UTC)",
+    "target_price": 78070.4,
+    "target_source": "15M Start Price (2:15 AM UTC)",
     "kalshi": null,
-    "current_price": 77972.33,
-    "delta": -171.42,
-    "delta_pct": -0.219,
+    "current_price": 77985.94,
+    "delta": -84.46,
+    "delta_pct": -0.108,
     "status": "BELOW",
     "predicted_outcome": "BELOW TARGET (UNDER)",
-    "probability_percent": 94,
+    "probability_percent": 86,
     "confidence_badge": "HIGH CONVICTION",
     "decision_factors": [
-      "Price trading -$171.42 (-0.22%) below 15m target benchmark",
+      "Price trading -$84.46 (-0.11%) below 15m target benchmark",
       "Bearish EMA 9 < 21 ribbon exerting downward pressure",
       "Active candle is RED (sellers in control)",
-      "RSI (39.7) in bearish compression zone",
-      "Chart Pattern: Three Black Crows detected (-18 pts bearish reversal)",
-      "Market Structure: Bearish Break of Structure (BOS) confirmed",
-      "Market Structure: Bearish Change of Character (CHoCH)"
+      "RSI (39.9) in bearish compression zone",
+      "Chart Pattern: Three Black Crows detected (-18 pts bearish reversal)"
     ],
     "last_5_targets": [
-      {
-        "time": "12:30 AM",
-        "price": 78146.36,
-        "delta": -152.94,
-        "delta_pct": -0.2,
-        "direction": "LOWER",
-        "arrow": "\u25bc",
-        "color": "red"
-      },
       {
         "time": "12:45 AM",
         "price": 78151.72,
@@ -175,6 +154,15 @@
         "price": 78143.76,
         "delta": -1.76,
         "delta_pct": -0.0,
+        "direction": "LOWER",
+        "arrow": "\u25bc",
+        "color": "red"
+      },
+      {
+        "time": "1:45 AM",
+        "price": 78070.4,
+        "delta": -73.36,
+        "delta_pct": -0.09,
         "direction": "LOWER",
         "arrow": "\u25bc",
         "color": "red"
