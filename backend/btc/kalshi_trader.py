@@ -224,6 +224,36 @@ class KalshiTrader:
             print(f"[KalshiTrader] Error generating interval contract: {e}")
             return None
 
+    def get_market_result(self, ticker: str) -> Dict[str, Any]:
+        """Return Kalshi's official result for one exact market ticker."""
+        clean_ticker = str(ticker or "").strip()
+        if not clean_ticker or clean_ticker.endswith("_SYNTH"):
+            return {"success": False, "result": "", "error": "No official Kalshi ticker available."}
+
+        path = f"/trade-api/v2/markets/{quote(clean_ticker, safe='')}"
+        try:
+            resp = requests.get(
+                f"{BASE_URL}{path}",
+                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
+                timeout=5.0,
+            )
+            if resp.status_code != 200:
+                return {
+                    "success": False,
+                    "result": "",
+                    "error": f"HTTP {resp.status_code}: {resp.text}",
+                }
+            market = resp.json().get("market", {})
+            result = str(market.get("result") or "").strip().lower()
+            return {
+                "success": True,
+                "result": result if result in {"yes", "no"} else "",
+                "status": str(market.get("status") or "").lower(),
+                "market": market,
+            }
+        except Exception as e:
+            return {"success": False, "result": "", "error": str(e)}
+
     def get_positions(self) -> Dict[str, Any]:
         """
         Fetch current portfolio open positions.

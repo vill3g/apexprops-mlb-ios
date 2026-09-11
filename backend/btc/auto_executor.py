@@ -4,6 +4,8 @@ Monitors the 15-minute candle countdown, triggers algorithmic execution
 on high-conviction Grade A+/A setups, tracks paper/live trades, and computes P&L.
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import time
 import json
@@ -21,6 +23,18 @@ from backend.btc.analyzer import evaluate_next_15m_contract
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "trades_history.json")
 CONFIG_FILE = os.path.join(DATA_DIR, "trading_config.json")
+
+
+def normalize_prediction_direction(value: Any) -> str:
+    """Map analyzer and recommendation labels to the two Kalshi outcomes."""
+    label = str(value or "").upper().strip()
+    if not label or "PASS" in label or "CHOP" in label:
+        return "PASS"
+    if label in {"YES", "ABOVE", "UP"} or "BID YES" in label or "ABOVE" in label:
+        return "ABOVE"
+    if label in {"NO", "BELOW", "DOWN"} or "BID NO" in label or "BELOW" in label:
+        return "BELOW"
+    return "PASS"
 
 
 class AutoExecutor:
@@ -116,6 +130,7 @@ class AutoExecutor:
 
         # Update settlement for prior trades
         self.check_settlements(trades)
+        prediction_accuracy = self.get_prediction_accuracy(trades)
 
         # Filter stats by the current mode (PAPER or LIVE)
         mode_trades = [t for t in trades if t.get("mode", self.mode).upper() == self.mode]
@@ -159,76 +174,153 @@ class AutoExecutor:
             "open_trades_count": len(open_trades),
             "open_trades": open_trades,
             "recent_trades": mode_trades[-15:][::-1],  # latest 15 trades of current mode first
-            "active_market": active_market
+            "active_market": active_market,
+            "prediction_accuracy": prediction_accuracy,
+        }
+
+    def get_prediction_accuracy(self, trades: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+        """Return accuracy for settled, automated predictions only.
+
+        Historical manual/scalp records deliberately remain in the ledger but are
+        not valid inputs for this metric because they do not share an analyzer
+        prediction ID and official Kalshi outcome.
+        """
+        if trades is None:
+            trades = self.get_trades_history()
+
+        settled = [
+            trade for trade in trades
+            if trade.get("prediction_kind") == "AUTO"
+            and trade.get("prediction_id")
+            and trade.get("accuracy_eligible", True)
+            and trade.get("status") == "SETTLED"
+            and isinstance(trade.get("prediction_correct"), bool)
+        ][-100:]
+
+        correct = sum(1 for trade in settled if trade.get("prediction_correct"))
+        total = len(settled)
+        daily_history: Dict[str, Dict[str, int]] = {}
+        outcomes: List[Dict[str, Any]] = []
+        for trade in settled:
+            day = str(trade.get("settled_at") or trade.get("timestamp") or "")[:10]
+            if day:
+                stats = daily_history.setdefault(day, {"correct": 0, "total": 0})
+                stats["total"] += 1
+                if trade.get("prediction_correct"):
+                    stats["correct"] += 1
+
+            actual_result = str(trade.get("official_result", "")).upper()
+            outcome = {
+                "correct": bool(trade.get("prediction_correct")),
+                "predicted": trade.get("prediction_direction", trade.get("direction", "")),
+                "actual": "ABOVE" if actual_result == "YES" else "BELOW" if actual_result == "NO" else actual_result,
+                "time": trade.get("settled_at") or trade.get("timestamp"),
+            }
+            try:
+                target = float(trade.get("strike"))
+                settle = float(trade.get("settle_price"))
+                if target > 0 and settle > 0:
+                    outcome.update({"target": target, "settle": settle})
+            except (TypeError, ValueError):
+                pass
+            outcomes.append(outcome)
+
+        return {
+            "source": "server_auto_predictions",
+            "total_evaluated": total,
+            "correct_picks": correct,
+            "accuracy_percent": round((correct / total) * 100, 1) if total else None,
+            "ratio_text": f"{correct} of {total} Correct",
+            "recent_outcomes": outcomes[-5:],
+            "daily_history": daily_history,
         }
 
     def check_settlements(self, trades: Optional[List[Dict[str, Any]]] = None):
-        """
-        Scans open trades and checks if their 15-minute interval has concluded.
-        Settles them against the finalized Bitcoin price to update Win/Loss & P&L.
-        """
+        """Settle completed Kalshi trades from Kalshi's official YES/NO result."""
         if trades is None:
             trades = self.get_trades_history()
 
         modified = False
         now_ts = time.time()
+        settle_candles_df = None
+        official_results: Dict[str, Dict[str, Any]] = {}
 
         for t in trades:
-            if t.get("status") == "OPEN":
-                close_epoch = t.get("close_epoch", 0)
-                close_time_str = t.get("interval_close_time")
+            if t.get("status") != "OPEN":
+                continue
+            close_epoch = t.get("close_epoch", 0)
+            close_time_str = t.get("interval_close_time")
+            if not close_epoch and close_time_str:
+                try:
+                    close_epoch = datetime.fromisoformat(close_time_str.replace("Z", "+00:00")).timestamp()
+                except (TypeError, ValueError):
+                    continue
+            if not close_epoch or now_ts <= float(close_epoch) + 10:
+                continue
 
-                # Fallback: parse ISO close_time_str if close_epoch is missing
-                if not close_epoch and close_time_str:
+            try:
+                ticker = str(t.get("ticker", "")).strip()
+                if ticker and ticker not in official_results:
+                    official_results[ticker] = kalshi_trader.get_market_result(ticker)
+                official = official_results.get(ticker, {})
+                official_result = str(official.get("result", "")).upper()
+
+                if official.get("success") and official_result in {"YES", "NO"}:
+                    side = str(t.get("side", "")).upper()
+                    entry_price = float(t.get("entry_price", 0.50))
+                    count = int(t.get("count", 1))
+                    is_win = side == official_result
+                    market = official.get("market") or {}
+                    settle_price = market.get("settlement_value") or market.get("settlement_value_dollars")
                     try:
-                        dt = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
-                        close_epoch = dt.timestamp()
-                    except Exception:
-                        pass
+                        settle_price = float(settle_price)
+                    except (TypeError, ValueError):
+                        settle_price = None
 
-                # If interval has concluded
-                if close_epoch and (now_ts > close_epoch + 10):
-                    try:
-                        settle_price = 0.0
-                        # 1. Try finding finalized close from exchange candle history
-                        df = fetch_candles(timeframe="15m", limit=5)
-                        if len(df) >= 2:
-                            settle_price = float(df.iloc[-2]["close"])
-                        
-                        # 2. Fallback to live ticker if candle delayed
-                        if not settle_price or settle_price <= 0:
-                            from backend.btc.data_fetcher import get_btc_ticker
-                            settle_price = float(get_btc_ticker().get("price", 0.0))
+                    t["status"] = "SETTLED"
+                    t["result"] = "WIN" if is_win else "LOSS"
+                    t["official_result"] = official_result
+                    t["settlement_source"] = "kalshi_official"
+                    t["prediction_correct"] = is_win if t.get("prediction_kind") == "AUTO" else None
+                    if settle_price is not None and settle_price > 0:
+                        t["settle_price"] = settle_price
+                    t["pnl"] = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
+                    t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                    modified = True
+                    if t.get("mode", self.mode).upper() == "PAPER":
+                        try:
+                            from backend.btc.paper_balance import update_balance
+                            update_balance(float(count) if is_win else 0.0)
+                        except Exception as ep:
+                            logger.info(f"Failed to update paper balance: {ep}")
+                    continue
 
-                        if settle_price > 0:
-                            strike = float(t.get("strike", 0.0) or settle_price)
-                            side = t.get("side", "").upper()
-                            entry_price = float(t.get("entry_price", 0.50))
-                            count = int(t.get("count", 1))
+                # A Kalshi trade waits for Kalshi's posted outcome; an exchange
+                # candle must never decide whether an official contract won.
+                if t.get("prediction_kind") == "AUTO" or ticker.startswith("KX"):
+                    continue
 
-                            is_win = False
-                            if side == "YES" and settle_price >= strike:
-                                is_win = True
-                            elif side == "NO" and settle_price < strike:
-                                is_win = True
-
-                            pnl = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
-                            t["status"] = "SETTLED"
-                            t["result"] = "WIN" if is_win else "LOSS"
-                            t["settle_price"] = settle_price
-                            t["pnl"] = pnl
-                            t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
-                            modified = True
-                            
-                            # Update Paper Balance if this was a paper trade
-                            if t.get("mode", self.mode).upper() == "PAPER":
-                                try:
-                                    from backend.btc.paper_balance import update_balance
-                                    update_balance(pnl)
-                                except Exception as ep:
-                                    print(f"Failed to update paper balance: {ep}")
-                    except Exception as e:
-                        print(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
+                strike = float(t.get("strike", 0.0) or 0.0)
+                if strike <= 0:
+                    continue
+                if settle_candles_df is None:
+                    settle_candles_df = fetch_candles(timeframe="15m", limit=5)
+                if settle_candles_df is None or len(settle_candles_df) < 2:
+                    continue
+                settle_price = float(settle_candles_df.iloc[-2]["close"])
+                side = str(t.get("side", "")).upper()
+                entry_price = float(t.get("entry_price", 0.50))
+                count = int(t.get("count", 1))
+                is_win = (side == "YES" and settle_price >= strike) or (side == "NO" and settle_price < strike)
+                t.update({
+                    "status": "SETTLED", "result": "WIN" if is_win else "LOSS",
+                    "settlement_source": "legacy_exchange_candle", "settle_price": settle_price,
+                    "pnl": round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4),
+                    "settled_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                })
+                modified = True
+            except Exception as e:
+                logger.error(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
 
         if modified:
             self._save_trades_history(trades)
@@ -272,19 +364,27 @@ class AutoExecutor:
             self.last_traded_interval = current_interval_id
             return None
 
+        # A prediction without the contract's official target must never create
+        # an order; a zero target previously made NO trades settle incorrectly.
+        try:
+            strike = float(active_m.get("strike_price") or 0.0)
+        except (TypeError, ValueError):
+            strike = 0.0
+        if strike <= 0:
+            logger.error("[AutoExecutor] Active Kalshi market has no valid floor strike; skipping %s", current_interval_id)
+            return None
+
         # Fetch technical indicator data
         df = fetch_candles(timeframe="15m", limit=100)
         df_ind = add_all_indicators(df)
-
-        strike = active_m.get("strike_price")
         forecast = evaluate_next_15m_contract(df_ind, target_price=strike)
 
         rec = forecast.get("recommendation", "")
         grade = forecast.get("conviction_grade", "")
-        direction = forecast.get("direction", "")
+        direction = normalize_prediction_direction(forecast.get("direction") or rec)
 
         # Strict Filter 1: Skip all PASS / CHOP signals
-        if direction == "PASS" or "PASS" in rec or "CHOP" in rec:
+        if direction == "PASS":
             return None
 
         # Strict Filter 2: Conviction Threshold (Bypassed if prediction mode is enabled)
@@ -322,14 +422,27 @@ class AutoExecutor:
         if order_res.get("success", False):
             self.last_traded_interval = current_interval_id
             
-            # Parse close epoch
+            # The prediction record is the single source carried from analyzer
+            # to order to accuracy. It deliberately has its own stable ID.
+            prediction_id = str(uuid.uuid4())
+            prediction_generated_at = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
             close_time_str = active_m.get("close_time", "")
             close_epoch = now + sec_left
+            if close_time_str:
+                try:
+                    close_epoch = datetime.fromisoformat(close_time_str.replace("Z", "+00:00")).timestamp()
+                except (TypeError, ValueError):
+                    pass
 
             trade_record = {
                 "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
                 "client_order_id": order_res.get("client_order_id", ""),
-                "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                "timestamp": prediction_generated_at,
+                "prediction_id": prediction_id,
+                "prediction_kind": "AUTO",
+                "prediction_direction": direction,
+                "prediction_generated_at": prediction_generated_at,
+                "accuracy_eligible": True,
                 "interval_close_time": close_time_str,
                 "close_epoch": close_epoch,
                 "ticker": current_interval_id,

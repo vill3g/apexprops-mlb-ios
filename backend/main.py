@@ -393,57 +393,22 @@ def api_btc_analyze(timeframe: str = "15m"):
 
 @app.get("/api/btc/prediction/accuracy")
 def api_btc_prediction_accuracy():
-    """Return the latest forecast with profit/loss and correctness.
-    The endpoint checks the most recent settled paper trade (if any) and
-    compares its side with the analyzer's direction to set the `correct`
-    flag. It also includes the realized P/L.
-    """
+    """Return accuracy based only on settled automated Kalshi predictions."""
     try:
-        # Lazy import to avoid circular deps
         from backend.btc.auto_executor import auto_executor
         trades = auto_executor.get_trades_history()
-        # Find most recent settled paper trade for the current market
-        last_settled = None
-        for t in reversed(trades):
-            if t.get("status") == "SETTLED" and t.get("mode", auto_executor.mode).upper() == "PAPER":
-                last_settled = t
-                break
-
-        result = {
-            "forecast": None,
-            "trade": None,
-            "correct": False
-        }
-
-        if last_settled:
-            pnl = float(last_settled.get("pnl", 0.0))
-            side = str(last_settled.get("side", "")).upper()
-            result_str = str(last_settled.get("result", "")).upper()
-            trade_dir = "ABOVE" if side in ["YES", "ABOVE"] else "BELOW"
-            
-            # Correct if trade was a winning prediction
-            is_win = "WIN" in result_str or pnl > 0
-            correct = is_win
-            
-            result["forecast"] = {
-                "conviction_grade": last_settled.get("conviction_grade", "GRADE A SETUP"),
-                "direction": last_settled.get("direction", trade_dir),
-                "generated_at": last_settled.get("timestamp"),
-                "confidence": last_settled.get("probability_percent", 75)
-            }
-            
-            result["trade"] = {
-                "id": last_settled.get("id"),
-                "pnl": pnl,
-                "result": result_str,
-                "settled_at": last_settled.get("settled_at"),
-                "side": side,
-                "strike": last_settled.get("strike"),
-                "settle_price": last_settled.get("settle_price")
-            }
-            result["correct"] = correct
-
-        return JSONResponse(result)
+        auto_executor.check_settlements(trades)
+        accuracy = auto_executor.get_prediction_accuracy(trades)
+        latest = accuracy.get("recent_outcomes", [])[-1] if accuracy.get("recent_outcomes") else None
+        return JSONResponse({
+            "accuracy": accuracy,
+            "forecast": {
+                "direction": latest.get("predicted"),
+                "generated_at": latest.get("time"),
+            } if latest else None,
+            "trade": latest,
+            "correct": bool(latest.get("correct")) if latest else False,
+        })
     except Exception as e:
         print(f"[API] Error in prediction accuracy endpoint: {e}")
         raise e

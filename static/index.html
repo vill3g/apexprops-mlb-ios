@@ -3182,6 +3182,13 @@
 
     function renderBtcAccuracy(acc) {
       if (!acc) return;
+      // Once the server is available, it is authoritative: local browser
+      // guesses must not overwrite an official Kalshi-settled prediction.
+      if (window.serverPredictionAccuracy && acc.source !== "server_auto_predictions") return;
+      if (acc.source === "server_auto_predictions") {
+        window.serverPredictionAccuracy = acc;
+        renderPreviousDaysAccuracy(acc.daily_history || {});
+      }
       const pctEl = document.getElementById("btcAccuracyPct");
       const ratioEl = document.getElementById("btcAccuracyRatio");
       const barEl = document.getElementById("btcAccuracyBar");
@@ -3227,7 +3234,7 @@
             const isWin = typeof o === 'object' ? o.correct : o;
             
             let tooltipStr = isWin ? "Correct Prediction" : "Missed Prediction";
-            if (typeof o === 'object' && o.target !== undefined && o.settle !== undefined) {
+            if (typeof o === 'object' && Number.isFinite(Number(o.target)) && Number.isFinite(Number(o.settle))) {
               const diff = (o.settle - o.target).toFixed(2);
               const sign = diff >= 0 ? "+" : "";
               tooltipStr = `Prediction: ${o.predicted} | Actual: ${o.actual} | Target: $${o.target.toFixed(2)} | Settle: $${o.settle.toFixed(2)} (${sign}$${diff})`;
@@ -3829,6 +3836,10 @@
 
     // Client-side Accuracy Evaluator: Starts at 0 of 0 on boot, counts up per logged 15m close
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
+      if (window.serverPredictionAccuracy) {
+        renderBtcAccuracy(window.serverPredictionAccuracy);
+        return window.serverPredictionAccuracy;
+      }
       // Load live settlements saved in localStorage
       let liveSettlements = [];
       try {
@@ -4782,6 +4793,11 @@
         if (!res.ok) return;
         const data = await res.json();
         if (!data) return;
+
+        if (data.prediction_accuracy && data.prediction_accuracy.source === "server_auto_predictions") {
+          window.serverPredictionAccuracy = data.prediction_accuracy;
+          renderBtcAccuracy(data.prediction_accuracy);
+        }
 
         kalshiAutoTradeEnabled = !!data.enabled;
         kalshiTradingMode = data.mode || "PAPER";
