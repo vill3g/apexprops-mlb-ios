@@ -253,7 +253,6 @@ class AutoExecutor:
         is_prediction_window = 60 <= sec_elapsed <= 65 or 835 <= sec_left <= 840
 
         window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
-        
         if not window_valid and not (sec_left <= 10):
             return None
 
@@ -262,7 +261,8 @@ class AutoExecutor:
         if not active_m:
             return None
 
-        current_interval_id = active_m.get("ticker", "")
+        # Use market ticker for live orders if available; fallback to event_ticker
+        current_interval_id = active_m.get("ticker") or active_m.get("event_ticker", "")
         if not current_interval_id or current_interval_id == self.last_traded_interval:
             return None
 
@@ -310,11 +310,23 @@ class AutoExecutor:
         side = "yes" if direction == "ABOVE" else "no"
         market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
 
+        # Determine affordable contract count for live or paper
+        contracts_to_buy = self.max_contracts
+        if self.mode == "LIVE":
+            bal_res = kalshi_trader.get_balance()
+            if bal_res.get("success", False):
+                avail_bal = float(bal_res.get("balance_dollars", 0.0))
+                unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
+                if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
+                    affordable = int(avail_bal // unit_price)
+                    if affordable >= 1:
+                        contracts_to_buy = affordable
+
         # Execute Order (Paper or Live)
         order_res = kalshi_trader.place_order(
             ticker=current_interval_id,
             side=side,
-            count=self.max_contracts,
+            count=contracts_to_buy,
             limit_price_dollars=market_price,
             dry_run=(self.mode == "PAPER")
         )
@@ -342,8 +354,8 @@ class AutoExecutor:
                 "probability_percent": forecast.get("probability_percent", 50),
                 "side": side.upper(),
                 "entry_price": market_price,
-                "count": self.max_contracts,
-                "cost": round(market_price * self.max_contracts, 4),
+                "count": contracts_to_buy,
+                "cost": round(market_price * contracts_to_buy, 4),
                 "mode": self.mode,
                 "status": "OPEN",
                 "result": "PENDING",
@@ -370,10 +382,22 @@ class AutoExecutor:
         side = "yes" if direction.upper() == "ABOVE" else "no"
         market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
 
+        # Determine affordable contract count for live or paper
+        contracts_to_buy = self.max_contracts
+        if self.mode == "LIVE":
+            bal_res = kalshi_trader.get_balance()
+            if bal_res.get("success", False):
+                avail_bal = float(bal_res.get("balance_dollars", 0.0))
+                unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
+                if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
+                    affordable = int(avail_bal // unit_price)
+                    if affordable >= 1:
+                        contracts_to_buy = affordable
+
         order_res = kalshi_trader.place_order(
             ticker=active_m.get("ticker", ""),
             side=side,
-            count=self.max_contracts,
+            count=contracts_to_buy,
             limit_price_dollars=market_price,
             dry_run=(self.mode == "PAPER")
         )
@@ -406,8 +430,8 @@ class AutoExecutor:
                 "probability_percent": 65,
                 "side": side.upper(),
                 "entry_price": market_price,
-                "count": self.max_contracts,
-                "cost": round(market_price * self.max_contracts, 4),
+                "count": contracts_to_buy,
+                "cost": round(market_price * contracts_to_buy, 4),
                 "mode": self.mode,
                 "status": "OPEN",
                 "result": "PENDING",

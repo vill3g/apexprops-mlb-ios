@@ -12,7 +12,7 @@ import base64
 import requests
 from urllib.parse import quote
 from typing import Optional, Dict, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -136,93 +136,69 @@ class KalshiTrader:
 
         path = "/trade-api/v2/markets"
         try:
+            # Retrieve market list with signed authentication
+            headers = self._sign_headers('GET', path)
             resp = requests.get(
                 f"{BASE_URL}{path}",
                 params={"series_ticker": "KXBTC15M", "status": "open", "limit": 100},
-                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
-                timeout=3.0
+                headers=headers,
+                timeout=5.0,
             )
-            if resp.status_code == 200:
-                data = resp.json()
-                markets = data.get("markets", [])
-                import datetime
-                now_utc = datetime.datetime.now(datetime.timezone.utc)
-                valid_m = []
-                for m in markets:
-                    ct_str = m.get("close_time")
-                    if ct_str:
-                        try:
-                            ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                            if ct > now_utc and m.get("status") in ["active", "open"]:
-                                valid_m.append((ct, m))
-                        except Exception:
-                            pass
-                if valid_m:
-                    valid_m.sort(key=lambda x: x[0])
-                    active_m = valid_m[0][1]
-                    floor_strike = active_m.get("floor_strike")
-                    yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
-                    yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
-                    no_bid = float(active_m.get("no_bid_dollars") or (float(active_m.get("no_bid") or 0) / 100.0))
-                    no_ask = float(active_m.get("no_ask_dollars") or (float(active_m.get("no_ask") or 0) / 100.0))
-                    last_price = float(active_m.get("last_price_dollars") or (float(active_m.get("last_price") or 0) / 100.0))
-                    if yes_ask == 0.0: yes_ask = 0.58
-                    if no_ask == 0.0: no_ask = 0.42
-
-                    res_market = {
-                        "ticker": active_m.get("ticker", ""),
-                        "title": active_m.get("title", ""),
-                        "strike_price": float(floor_strike) if floor_strike is not None else None,
-                        "close_time": active_m.get("close_time", ""),
-                        "yes_bid": yes_bid,
-                        "yes_ask": yes_ask,
-                        "no_bid": no_bid,
-                        "no_ask": no_ask,
-                        "last_price": last_price,
-                        "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
-                        "status": active_m.get("status", "open"),
-                        "is_synthetic": False,
-                    }
-                    self._cached_market = res_market
-                    self._cached_market_time = now_ts
-                    return res_market
+            if resp.status_code != 200:
+                raise Exception(f"Market list request failed with status {resp.status_code}")
+            data = resp.json()
+            markets = data.get("markets", [])
+            now_utc = datetime.now(timezone.utc)
+            valid = []
+            for m in markets:
+                ct_str = m.get("close_time")
+                if ct_str:
+                    try:
+                        ct = datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
+                        if ct > now_utc and m.get("status") in ["active", "open"]:
+                            valid.append((ct, m))
+                    except Exception:
+                        pass
+            if valid:
+                ct, active_m = min(valid, key=lambda x: x[0])
+                res_market = {
+                    "ticker": active_m.get("ticker") or active_m.get("event_ticker"),
+                    "event_ticker": active_m.get("event_ticker", ""),
+                    "title": active_m.get("title", ""),
+                    "strike_price": active_m.get("strike_price", 0.0),
+                    "close_time": active_m.get("close_time", ""),
+                    "yes_bid": active_m.get("yes_bid", 0.0),
+                    "yes_ask": active_m.get("yes_ask", 0.0),
+                    "no_bid": active_m.get("no_bid", 0.0),
+                    "no_ask": active_m.get("no_ask", 0.0),
+                    "last_price": active_m.get("last_price", 0.0),
+                    "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
+                    "status": active_m.get("status", "open"),
+                    "exchange_index": active_m.get("exchange_index"),
+                    "is_synthetic": False,
+                }
+                self._cached_market = res_market
+                self._cached_market_time = now_ts
+                return res_market
         except Exception as e:
             print(f"[KalshiTrader] Error getting active 15M market: {e}")
-
-        if not allow_synthetic:
-            return None
-
-        # Interval Fallback: active contract for current 15M interval
-        try:
-            import datetime
-            now = datetime.datetime.now(datetime.timezone.utc)
-            mins = (now.minute // 15 + 1) * 15
-            close_dt = now.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(minutes=mins)
-            close_time_iso = close_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            ticker_suffix = close_dt.strftime("%y%b%d%H%M").upper()
-            ticker = f"KXBTC15M-{ticker_suffix}"
-
-            from backend.btc.data_fetcher import get_btc_ticker, get_live_15m_target_data
-            target_data = get_live_15m_target_data()
-            target_pr = target_data.get("target_price") or get_btc_ticker().get("price", 78000.0)
-
+        # Synthetic fallback if allowed
+        if allow_synthetic:
             return {
-                "ticker": ticker,
-                "title": f"Bitcoin above ${target_pr:,.2f} at {close_dt.strftime('%H:%M')} UTC",
-                "strike_price": target_pr,
-                "close_time": close_time_iso,
-                "yes_bid": 0.55,
-                "yes_ask": 0.58,
-                "no_bid": 0.42,
-                "no_ask": 0.45,
-                "last_price": 0.58,
-                "volume_24h": 1250.0,
-                "status": "active",
+                "ticker": "KXBTC15M_SYNTH",
+                "title": "Synthetic BTC 15M",
+                "strike_price": 0.0,
+                "close_time": "",
+                "yes_bid": 0.0,
+                "yes_ask": 0.0,
+                "no_bid": 0.0,
+                "no_ask": 0.0,
+                "last_price": 0.0,
+                "volume_24h": 0.0,
+                "status": "synthetic",
                 "is_synthetic": True,
             }
-        except Exception as e:
-            print(f"[KalshiTrader] Error generating interval contract: {e}")
-            return None
+        return None
 
     def get_positions(self) -> Dict[str, Any]:
         """
@@ -280,24 +256,32 @@ class KalshiTrader:
                 "message": f"Simulated BUY of {count} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
             }
 
-        # 2. LIVE TRADING EXECUTION
-        # Never submit a live order against a locally constructed ticker. Fetch
-        # Kalshi's open market immediately before ordering and require an exact
-        # ticker match to prevent market_not_found orders around contract rollover.
+        # Verify live market and determine correct ticker for V2 endpoint
         verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=True)
         if not verified_market or verified_market.get("is_synthetic"):
             return {
                 "success": False,
                 "error": "No verified open Kalshi BTC 15M market is available. Live order was not submitted."
             }
-        verified_ticker = verified_market.get("ticker", "")
-        if not verified_ticker or ticker != verified_ticker:
+        # Use market ticker for orders; fallback to event_ticker
+        verified_ticker = verified_market.get("ticker") or verified_market.get("event_ticker", "")
+        if not verified_ticker:
+            return {"success": False, "error": "Verified market missing ticker information."}
+        # Ensure the requested ticker corresponds to the current market (allow either form)
+        requested_ticker = ticker
+        if requested_ticker != verified_market.get("ticker") and requested_ticker != verified_market.get("event_ticker"):
             return {
                 "success": False,
                 "error": "Kalshi market changed or expired before submission. Refresh and select the currently open market.",
-                "requested_ticker": ticker,
+                "requested_ticker": requested_ticker,
                 "verified_ticker": verified_ticker
             }
+        # Use the verified event_ticker for the order payload
+        ticker = verified_ticker
+        # Clamp the outcome price before using it for balance validation.
+        # Add 0.04 slippage buffer to ensure immediate_or_cancel limit orders cross the book successfully.
+        raw_price = float(limit_price_dollars if limit_price_dollars else 0.65)
+        outcome_price = max(0.01, min(raw_price + 0.04, 0.99))
 
         # Confirm the exact ticker still exists and is open. The list endpoint
         # can cross a 15-minute rollover between discovery and submission.
@@ -318,11 +302,6 @@ class KalshiTrader:
                 }
         except Exception as e:
             return {"success": False, "error": f"Cannot re-verify Kalshi market: {e}. Live order was not submitted."}
-
-        # Clamp the outcome price before using it for balance validation.
-        # Add 0.04 slippage buffer to ensure immediate_or_cancel limit orders cross the book successfully.
-        raw_price = float(limit_price_dollars if limit_price_dollars else 0.65)
-        outcome_price = max(0.01, min(raw_price + 0.04, 0.99))
 
         # Double check balance before submitting
         bal_res = self.get_balance(force_refresh=True)
@@ -356,9 +335,9 @@ class KalshiTrader:
             "post_only": False,
             "cancel_order_on_pause": True,
             "reduce_only": False,
-            "subaccount": 0,
-            "exchange_index": 0
         }
+        if "exchange_index" in verified_market and verified_market["exchange_index"] is not None:
+            v2_payload["exchange_index"] = verified_market["exchange_index"]
 
         path = "/trade-api/v2/portfolio/events/orders"
         try:
