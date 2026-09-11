@@ -10,6 +10,7 @@ import json
 import uuid
 import base64
 import requests
+from urllib.parse import quote
 from typing import Optional, Dict, Any, Tuple
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -128,7 +129,10 @@ class KalshiTrader:
         """
         now_ts = time.time()
         if not force_refresh and self._cached_market and (now_ts - self._cached_market_time < 2.5):
-            return self._cached_market
+            # Synthetic contracts are useful only for paper trading. Never
+            # surface one to the live-order path from the short-lived cache.
+            if allow_synthetic or not self._cached_market.get("is_synthetic"):
+                return self._cached_market
 
         path = "/trade-api/v2/markets"
         try:
@@ -295,14 +299,36 @@ class KalshiTrader:
                 "verified_ticker": verified_ticker
             }
 
+        # Confirm the exact ticker still exists and is open. The list endpoint
+        # can cross a 15-minute rollover between discovery and submission.
+        market_path = f"/trade-api/v2/markets/{quote(verified_ticker, safe='')}"
+        try:
+            market_resp = requests.get(
+                f"{BASE_URL}{market_path}",
+                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
+                timeout=3.0,
+            )
+            market_data = market_resp.json().get("market", {}) if market_resp.status_code == 200 else {}
+            market_status = str(market_data.get("status", "")).lower()
+            if market_resp.status_code != 200 or market_status not in {"active", "open"}:
+                return {
+                    "success": False,
+                    "error": "Kalshi market expired or is no longer open. Live order was not submitted.",
+                    "verified_ticker": verified_ticker,
+                }
+        except Exception as e:
+            return {"success": False, "error": f"Cannot re-verify Kalshi market: {e}. Live order was not submitted."}
+
+        # Clamp the outcome price before using it for balance validation.
+        outcome_price = max(0.01, min(float(limit_price_dollars if limit_price_dollars else 0.65), 0.99))
+
         # Double check balance before submitting
         bal_res = self.get_balance(force_refresh=True)
         if not bal_res.get("success", False):
             return {"success": False, "error": f"Cannot verify live balance: {bal_res.get('error')}"}
 
         live_balance = bal_res.get("balance_dollars", 0.0)
-        est_price = limit_price_dollars if limit_price_dollars else 0.65
-        est_cost = est_price * count
+        est_cost = outcome_price * count
 
         if live_balance < est_cost:
             return {
@@ -310,22 +336,24 @@ class KalshiTrader:
                 "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
             }
 
-        # Clamp price to valid Kalshi range ($0.01 - $0.99)
-        est_price = max(0.01, min(float(est_price), 0.99))
-
         # V2 endpoint: POST /portfolio/events/orders
-        # side: "bid" = buy YES, "ask" = sell YES (economically = buy NO)
-        # price: fixed-point dollar string e.g. "0.6500"
+        # The V2 event book is always quoted from the YES side. "ask" is
+        # economically a buy-NO, so a NO price must be converted to its
+        # complementary YES price before submission.
         # count: fixed-point count string e.g. "1.00"
         v2_side = "bid" if side_clean == "yes" else "ask"
+        book_price = outcome_price if side_clean == "yes" else (1.0 - outcome_price)
         v2_payload = {
             "ticker": ticker,
             "client_order_id": client_order_id,
             "side": v2_side,
             "count": f"{int(count)}.00",
-            "price": f"{est_price:.4f}",
+            "price": f"{book_price:.4f}",
             "time_in_force": "immediate_or_cancel",
             "self_trade_prevention_type": "taker_at_cross",
+            "post_only": False,
+            "cancel_order_on_pause": True,
+            "reduce_only": False,
             "subaccount": 0,
             "exchange_index": 0
         }
@@ -340,7 +368,11 @@ class KalshiTrader:
                 self._cached_market_time = 0.0
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
-                avg_fill = float(res_data.get("average_fill_price", str(est_price)) or str(est_price))
+                avg_book_fill = float(res_data.get("average_fill_price", str(book_price)) or str(book_price))
+                avg_outcome_fill = round(
+                    avg_book_fill if side_clean == "yes" else (1.0 - avg_book_fill),
+                    4,
+                )
                 return {
                     "success": True,
                     "mode": "LIVE",
@@ -350,9 +382,9 @@ class KalshiTrader:
                     "side": side_clean.upper(),
                     "action": "BUY",
                     "count": count,
-                    "filled_price": avg_fill if fill_count > 0 else est_price,
+                    "filled_price": avg_outcome_fill if fill_count > 0 else outcome_price,
                     "fill_count": fill_count,
-                    "total_cost": round(avg_fill * fill_count if fill_count > 0 else est_price * count, 4),
+                    "total_cost": round(avg_outcome_fill * fill_count if fill_count > 0 else outcome_price * count, 4),
                     "status": "FILLED" if fill_count > 0 else "RESTING",
                     "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                     "raw_response": res_data
