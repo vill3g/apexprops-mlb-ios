@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Kalshi Crypto Event Contracts Client
 Pulls live 15-minute Bitcoin price targets and market-implied odds from Kalshi's CFTC-regulated KXBTC15M series.
@@ -78,10 +80,14 @@ def get_kalshi_15m_market():
                 from backend.btc.data_fetcher import get_live_15m_target_data, get_btc_ticker
                 target_data = get_live_15m_target_data()
                 target_price = float(target_data.get("target_price") or get_btc_ticker().get("price", 78000.0))
-            # Calculate Yes/No probability
-            yes_bid = float(active_m.get("yes_bid_dollars") or 0.0)
-            yes_ask = float(active_m.get("yes_ask_dollars") or 0.0)
-            last_p = float(active_m.get("last_price_dollars") or 0.5)
+            # Extract detailed top-of-book order metrics
+            yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
+            yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
+            no_bid = float(active_m.get("no_bid_dollars") or (float(active_m.get("no_bid") or 0) / 100.0))
+            no_ask = float(active_m.get("no_ask_dollars") or (float(active_m.get("no_ask") or 0) / 100.0))
+            last_p = float(active_m.get("last_price_dollars") or (float(active_m.get("last_price") or 50) / 100.0))
+            yes_bid_size = int(active_m.get("yes_bid_size") or active_m.get("yes_bid_count") or 0)
+            yes_ask_size = int(active_m.get("yes_ask_size") or active_m.get("yes_ask_count") or 0)
 
             if yes_bid > 0 and yes_ask > 0:
                 yes_prob = round(((yes_bid + yes_ask) / 2.0) * 100, 1)
@@ -92,20 +98,42 @@ def get_kalshi_15m_market():
 
             no_prob = round(100.0 - yes_prob, 1)
 
+            # Order book metrics
+            spread = round(max(0.0, yes_ask - yes_bid), 3) if (yes_bid > 0 and yes_ask > 0) else 0.04
+            total_size = yes_bid_size + yes_ask_size
+            orderbook_imbalance = round(((yes_bid_size - yes_ask_size) / float(total_size)) * 100, 1) if total_size > 0 else 0.0
+
+            if yes_prob >= 55.0:
+                market_bias = "BULLISH"
+            elif yes_prob <= 45.0:
+                market_bias = "BEARISH"
+            else:
+                market_bias = "NEUTRAL"
+
             result = {
                 "target_price": target_price,
                 "yes_prob": yes_prob,
                 "no_prob": no_prob,
+                "yes_bid": round(yes_bid, 2),
+                "yes_ask": round(yes_ask, 2),
+                "no_bid": round(no_bid, 2),
+                "no_ask": round(no_ask, 2),
+                "spread": spread,
+                "yes_bid_size": yes_bid_size,
+                "yes_ask_size": yes_ask_size,
+                "orderbook_imbalance": orderbook_imbalance,
+                "market_bias": market_bias,
                 "ticker": active_m.get("ticker", ""),
                 "close_time": active_m.get("close_time", ""),
                 "status": active_m.get("status", "active"),
-                "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
+                "volume_24h": float(active_m.get("volume_24h_fp") or active_m.get("volume_24h") or 0.0),
+                "open_interest": float(active_m.get("open_interest_fp") or active_m.get("open_interest") or 0.0),
                 "source": "Kalshi KXBTC15M"
             }
             _kalshi_cache = result
             _kalshi_cache_time = time.time()
             return result
     except Exception as e:
-        print(f"[Kalshi Client] Error fetching KXBTC15M: {e}")
+        logger.error(f"[Kalshi Client] Error fetching KXBTC15M: {e}")
 
     return _kalshi_cache

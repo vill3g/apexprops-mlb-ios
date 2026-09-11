@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Bitcoin 15-Minute Confluence Analyzer & Direction Predictor.
 Combines Candlestick Patterns, Market Structure (BOS/CHoCH), RSI Divergences,
@@ -144,6 +146,15 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         elif div["type"] == "BEARISH_RSI_DIVERGENCE":
             score -= 20
             bearish_reasons.append(f"HIGH CONVICTION: Bearish RSI Divergence ({div['description']}) (-20)")
+
+    # CVD Divergences
+    for cdiv in ind_summary.get("cvd_divergences", []):
+        if cdiv["type"] == "BULLISH_CVD_DIVERGENCE":
+            score += 18
+            bullish_reasons.append(f"CVD: Bullish Volume Delta Divergence ({cdiv['description']}) (+18)")
+        elif cdiv["type"] == "BEARISH_CVD_DIVERGENCE":
+            score -= 18
+            bearish_reasons.append(f"CVD: Bearish Volume Delta Divergence ({cdiv['description']}) (-18)")
 
     # RSI condition
     rsi = ind_summary.get("rsi", 50)
@@ -328,7 +339,6 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     last_5_targets = []
     higher_count = 0
     lower_count = 0
-    from datetime import datetime, timezone
 
     # Target benchmark is current 15m candle start/open price
     from zoneinfo import ZoneInfo
@@ -343,6 +353,33 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     else:
         active_target = float(curr_price)
         target_source = "15M Start Price"
+
+    # Override with Kalshi Official Strike if available
+    kalshi_m = None
+    try:
+        from backend.btc.kalshi_client import get_kalshi_15m_market
+        kalshi_m = get_kalshi_15m_market()
+        if kalshi_m and kalshi_m.get("target_price"):
+            active_target = float(kalshi_m["target_price"])
+            target_source = "Kalshi Official Strike (CME CF BRR)"
+    except Exception as e:
+        logger.error(f"Failed to fetch Kalshi market in analyzer: {e}")
+
+    # Fetch Binance Futures Data (Funding Rate, OI)
+    futures_data = None
+    try:
+        from backend.btc.data_fetcher import get_binance_futures_data
+        futures_data = get_binance_futures_data()
+    except Exception as e:
+        logger.error(f"Failed to fetch futures data in analyzer: {e}")
+
+    # Fetch Fear & Greed Index
+    fng_data = None
+    try:
+        from backend.btc.data_fetcher import get_fear_and_greed_index
+        fng_data = get_fear_and_greed_index()
+    except Exception as e:
+        logger.error(f"Failed to fetch Fear & Greed index in analyzer: {e}")
 
     if n_rows >= 7:
         # Last 5 completed targets (indices n - 6 to n - 2)
@@ -410,14 +447,43 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         else:
             pred_factors.append(f"⏱️ Time-Decay: -${abs(target_delta):.2f} deficit ({min_str} remaining, Vol: ${expected_stddev:.1f})")
 
-    # B. Multi-Timeframe Alignment (1H Macro + 15M + Micro)
-    macro_bull = ind_summary.get("macro_bull")
-    if macro_bull is True:
-        pred_weight += 14
-        pred_factors.append("🌐 MTF Context: 1H Macro Trend Bullish (Price above 200 EMA)")
-    elif macro_bull is False:
-        pred_weight -= 14
-        pred_factors.append("🌐 MTF Context: 1H Macro Trend Bearish (Price below 200 EMA)")
+    # B. Multi-Timeframe Alignment (1H & 4H Trend via Resampling)
+    try:
+        # Create a datetime-indexed copy to resample
+        df_dt = df.copy()
+        if not pd.api.types.is_datetime64_any_dtype(df_dt.index):
+            df_dt.set_index("datetime", inplace=True)
+            
+        df_1h = df_dt.resample('1h').agg({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}).dropna()
+        df_4h = df_dt.resample('4h').agg({'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}).dropna()
+        
+        # 1H Trend (compare current close vs 1H close 2 bars ago)
+        trend_1h_up = float(df_1h.iloc[-1]["close"]) >= float(df_1h.iloc[-3]["close"]) if len(df_1h) >= 3 else True
+        # 4H Trend (compare current close vs 4H open)
+        trend_4h_up = float(df_4h.iloc[-1]["close"]) >= float(df_4h.iloc[-1]["open"]) if len(df_4h) >= 1 else True
+
+        if trend_1h_up and trend_4h_up:
+            pred_weight += 16
+            pred_factors.append("🌐 MTF Context: 1H & 4H Macro Trends are BULLISH (Strong alignment)")
+        elif (not trend_1h_up) and (not trend_4h_up):
+            pred_weight -= 16
+            pred_factors.append("🌐 MTF Context: 1H & 4H Macro Trends are BEARISH (Strong downward pressure)")
+        elif trend_1h_up and not trend_4h_up:
+            pred_weight += 4
+            pred_factors.append("🌐 MTF Context: 1H Bullish, but 4H Bearish (Mixed Macro)")
+        else:
+            pred_weight -= 4
+            pred_factors.append("🌐 MTF Context: 1H Bearish, but 4H Bullish (Mixed Macro)")
+    except Exception as e:
+        logger.error(f"[MTF] Error resampling timeframe: {e}")
+        # fallback
+        macro_bull = ind_summary.get("macro_bull")
+        if macro_bull is True:
+            pred_weight += 10
+            pred_factors.append("🌐 MTF Context: 1H Macro Trend Bullish (Price above 200 EMA)")
+        elif macro_bull is False:
+            pred_weight -= 10
+            pred_factors.append("🌐 MTF Context: 1H Macro Trend Bearish (Price below 200 EMA)")
 
     # 15M EMA Ribbon
     if ind_summary.get("bullish_ribbon"):
@@ -496,18 +562,147 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
             pred_weight -= 10
             pred_factors.append("🏛️ Structure: Bearish Change of Character (CHoCH)")
 
-    # H. Triple Confluence Check
-    if macro_bull is True and candle_green and (ind_summary.get("bullish_ribbon") or sweeps):
-        pred_factors.insert(0, "🔥 TRIPLE MTF ALIGNMENT: 1H Macro + 15M Trend + Buyers in Sync")
-    elif macro_bull is False and (not candle_green) and (ind_summary.get("bearish_ribbon") or sweeps):
-        pred_factors.insert(0, "❄️ TRIPLE MTF ALIGNMENT: 1H Macro + 15M Trend + Sellers in Sync")
+    # I. Kalshi & Robinhood Top-of-Book Order Flow & Market Implied Odds
+    if kalshi_m and "yes_prob" in kalshi_m:
+        k_yes = float(kalshi_m["yes_prob"])
+        k_no = float(kalshi_m.get("no_prob", 100.0 - k_yes))
+        imbalance = float(kalshi_m.get("orderbook_imbalance", 0.0))
+        spread = float(kalshi_m.get("spread", 0.04))
+
+        if k_yes >= 58.0:
+            k_shift = min(22, int((k_yes - 50.0) * 0.7))
+            pred_weight += k_shift
+            pred_factors.append(f"🎲 Order Flow (Kalshi/RH): Implied market odds favor ABOVE ({k_yes:.1f}% YES, +{k_shift} pts)")
+        elif k_yes <= 42.0:
+            k_shift = min(22, int((50.0 - k_yes) * 0.7))
+            pred_weight -= k_shift
+            pred_factors.append(f"🎲 Order Flow (Kalshi/RH): Implied market odds favor BELOW ({k_no:.1f}% NO, -{k_shift} pts)")
+        elif k_yes >= 53.0:
+            pred_weight += 8
+            pred_factors.append(f"🎲 Order Flow (Kalshi/RH): Bullish market bias ({k_yes:.1f}% YES)")
+        elif k_yes <= 47.0:
+            pred_weight -= 8
+            pred_factors.append(f"🎲 Order Flow (Kalshi/RH): Bearish market bias ({k_no:.1f}% NO)")
+
+        if imbalance > 20.0:
+            pred_weight += 8
+            pred_factors.append(f"📊 Book Imbalance: Institutional Bid Pressure (+{imbalance:.1f}% net buy size)")
+        elif imbalance < -20.0:
+            pred_weight -= 8
+            pred_factors.append(f"📊 Book Imbalance: Institutional Ask Capping ({imbalance:.1f}% net sell size)")
+
+        if spread > 0 and spread <= 0.05:
+            pred_factors.append(f"⚡ Market Liquidity: Tight Top-of-Book Spread (${spread:.2f})")
+
+    # J. Advanced Signals: VWAP, Funding Rate, Volatility Regime
+    vwap_val = ind_summary.get("vwap")
+    if vwap_val and not pd.isna(vwap_val):
+        if curr_price > vwap_val:
+            pred_weight += 12
+            pred_factors.append(f"📈 VWAP Context: Bullish (Price ${curr_price:.0f} > VWAP ${vwap_val:.0f})")
+        else:
+            pred_weight -= 12
+            pred_factors.append(f"📉 VWAP Context: Bearish (Price ${curr_price:.0f} < VWAP ${vwap_val:.0f})")
+
+    if futures_data:
+        fr = futures_data.get("funding_rate", 0.0)
+        oi = futures_data.get("open_interest", 0.0)
+        
+        # Funding rate is usually very small (e.g. 0.0001 = 0.01%)
+        if fr > 0.0003: # High positive funding = overly long, risk of flush
+            pred_weight -= 8
+            pred_factors.append(f"⚠️ Funding Rate: Overheated (+{fr*100:.3f}%). Bearish contrarian signal.")
+        elif fr < -0.0001: # Negative funding = overly short, short squeeze risk
+            pred_weight += 8
+            pred_factors.append(f"🚀 Funding Rate: Negative ({fr*100:.3f}%). Bullish squeeze potential.")
+            
+        if oi > 0:
+            pred_factors.append(f"🧮 Futures Open Interest: {oi:,.0f} BTC")
+
+    atr_pct = ind_summary.get("atr_percentile", 50.0)
+    if atr_pct < 20.0:
+        # Chop regime: shrink edge
+        pred_weight = pred_weight * 0.7
+        pred_factors.append(f"🥱 Volatility Regime: Low volatility chop (ATR {atr_pct:.1f}th percentile). Edges reduced.")
+    elif atr_pct > 80.0:
+        pred_factors.append(f"🌪️ Volatility Regime: High expansion (ATR {atr_pct:.1f}th percentile). Expected larger swings.")
+
+    # Phase 3: Fear & Greed Index
+    if fng_data:
+        fng_val = fng_data.get("value", 50)
+        
+        if fng_val >= 80:
+            pred_weight -= 6
+            pred_factors.append(f"😱 Macro Sentiment: Extreme Greed ({fng_val}). Market overheated, mean-reversion risk.")
+        elif fng_val <= 25:
+            pred_weight += 6
+            pred_factors.append(f"🥶 Macro Sentiment: Extreme Fear ({fng_val}). Over-sold, relief bounce likely.")
+        else:
+            pred_factors.append(f"🧭 Macro Sentiment: {fng_data.get('classification', 'Neutral')} ({fng_val}).")
+
+    # Phase 3: Major Psychological Levels ($5k increments)
+    nearest_5k = round(curr_price / 5000.0) * 5000.0
+    dist_to_5k = curr_price - nearest_5k
+    if abs(dist_to_5k) < 150: # Within $150 of a major $5k level (e.g. $70,000, $75,000)
+        if dist_to_5k < 0:
+            # Approaching from below, acts as heavy resistance
+            pred_weight -= 10
+            pred_factors.append(f"🧱 Psychological Level: Heavy resistance approaching ${nearest_5k:,.0f} wall.")
+        else:
+            # Sitting just above, acts as heavy support
+            pred_weight += 10
+            pred_factors.append(f"🛡️ Psychological Level: Heavy support resting on ${nearest_5k:,.0f} floor.")
 
     # -------------------------------------------------------------------------
     # Calibrated Probability Blending
     # -------------------------------------------------------------------------
     p_tech_shift = (pred_weight / 140.0) * 35.0
     decay_weight_factor = min(0.88, max(0.40, 1.0 - (minutes_remaining / 16.0)))
-    p_final = (decay_weight_factor * p_decay) + ((1.0 - decay_weight_factor) * (50.0 + p_tech_shift))
+    
+    # 1. Base rule-based probability
+    p_rules = (decay_weight_factor * p_decay) + ((1.0 - decay_weight_factor) * (50.0 + p_tech_shift))
+
+    # Phase 4: Machine Learning Overlay
+    p_ml = 50.0
+    try:
+        from backend.btc.ml_engine import MLEngine
+        import os
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+        ml_engine = MLEngine(data_dir)
+        
+        # Build live features to pass to ML
+        current_raw_features = {
+            "rsi": float(ind_summary.get("rsi", 50)),
+            "bb_upper": float(ind_summary.get("bb_upper", curr_price)),
+            "bb_lower": float(ind_summary.get("bb_lower", curr_price)),
+            "ema_9": float(ind_summary.get("ema_9", curr_price)),
+            "ema_21": float(ind_summary.get("ema_21", curr_price)),
+            "ema_50": float(ind_summary.get("ema_50", curr_price)),
+            "atr": float(ind_summary.get("atr", 100)),
+            "price_vs_vwap": float(curr_price - ind_summary["vwap"]) if ind_summary.get("vwap") is not None else 0.0,
+            "cvd_value": float(df_ind["cvd"].iloc[-1]) if "cvd" in df_ind.columns else 0.0,
+            "delta_to_target": float(target_delta_pct),
+            "score": float(pred_weight)
+        }
+        
+        ml_prob_raw = ml_engine.predict_probability(current_raw_features)
+        p_ml = ml_prob_raw * 100.0
+        
+        if ml_engine.is_trained:
+            if p_ml >= 55.0:
+                pred_factors.append(f"🧠 ML Engine Overlay: AI Model favors UP ({p_ml:.1f}% Confidence based on historical trades)")
+            elif p_ml <= 45.0:
+                pred_factors.append(f"🧠 ML Engine Overlay: AI Model favors DOWN ({100.0 - p_ml:.1f}% Confidence based on historical trades)")
+            else:
+                pred_factors.append(f"🧠 ML Engine Overlay: AI Model is neutral ({p_ml:.1f}% Confidence)")
+    except Exception as e:
+        logger.error(f"[Analyzer] Failed to load or predict with ML Engine: {e}")
+
+    # Blend Rules + ML (if trained, give it 30% weight)
+    if p_ml != 50.0:
+        p_final = (p_rules * 0.70) + (p_ml * 0.30)
+    else:
+        p_final = p_rules
 
     # Streak & Mean Reversion Dampener
     if higher_count >= 4 and target_delta > 0:
@@ -532,11 +727,6 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     else:
         conf_badge = "TIGHT PIVOT BATTLE"
 
-    # Prepend Kalshi Market Odds factor if available
-    kalshi_m = None
-
-
-
     # -------------------------------------------------------------------------
     # 15M Prediction Accuracy Evaluator (Starts Counting Amount Right from 1)
     # -------------------------------------------------------------------------
@@ -544,21 +734,21 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
     last_cand = df_ind.iloc[-2] if n_rows >= 2 else df_ind.iloc[-1]
     prev_cand = df_ind.iloc[-3] if n_rows >= 3 else df_ind.iloc[-2] if n_rows >= 2 else df_ind.iloc[-1]
     
-    p_up = float(prev_cand["close"]) >= float(prev_cand["open"])
-    c_open = float(last_cand["open"])
-    c_close = float(last_cand["close"])
-    actual_is_above = (c_close >= c_open)
-    pred_is_above = p_up
-    is_hit = (pred_is_above == actual_is_above)
-
-    # Initial boot baseline starts at 0 of 0 (counts up as 15m closes are logged)
-    acc_total = 0
-    acc_correct = 0
-    acc_pct = 0.0
-    acc_outcomes = []
-
     # Autonomous Next 15M Contract Rollover Forecast Engine
-    next_contract_forecast = evaluate_next_15m_contract(df_ind, target_price=active_target, patterns=patterns, structure=structure)
+    next_contract_forecast = evaluate_next_15m_contract(df_ind, target_price=active_target, patterns=patterns, structure=structure, kalshi_m=kalshi_m)
+
+    # Extract Raw Features for ML Pipeline
+    raw_features = {
+        "rsi": ind_summary.get("rsi", 50),
+        "macd_hist": ind_summary.get("macd_hist", 0.0),
+        "atr_percentile": ind_summary.get("atr_percentile", 50.0),
+        "volume_ratio": ind_summary.get("vol_ratio", 1.0),
+        "funding_rate": futures_data.get("funding_rate", 0.0) if futures_data else 0.0,
+        "fng_index": fng_data.get("value", 50) if fng_data else 50,
+        "delta_to_target": target_delta_pct,
+        "minutes_remaining": minutes_remaining,
+        "cvd_value": float(df_ind["cvd"].iloc[-1]) if "cvd" in df_ind.columns else 0.0
+    }
 
     target_benchmark = {
         "target_price": active_target,
@@ -576,13 +766,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         "last_5_targets": last_5_targets,
         "streak_summary": f"{higher_count} Higher / {lower_count} Lower",
         "next_contract_forecast": next_contract_forecast,
-        "prediction_accuracy": {
-            "total_evaluated": acc_total,
-            "correct_picks": acc_correct,
-            "accuracy_percent": acc_pct,
-            "ratio_text": f"{acc_correct} of {acc_total} Correct",
-            "recent_outcomes": acc_outcomes[-5:]
-        }
+        "raw_features": raw_features
     }
 
     return {
@@ -605,7 +789,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
 
 
 
-def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None, patterns: list = None, structure: dict = None) -> dict:
+def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None, patterns: list = None, structure: dict = None, kalshi_m: dict = None) -> dict:
     """
     Evaluates the just-finalized 15-minute candle and pattern scanner to forecast
     whether to BID YES (Above Target) or BID NO (Below Target) on Kalshi/Robinhood.
@@ -815,7 +999,26 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
             grade = "GRADE B SETUP"
             badge = "⚠️ 3-STAR B (62%)"
             prob = 62
-            catalysts.append("Bearish Momentum Thrust: Lower 20% range close with negative EMA slope")
+        # B Setup 3: Order Flow & Market Implied Edge
+        elif kalshi_m and "yes_prob" in kalshi_m:
+            k_yes = float(kalshi_m.get("yes_prob", 50.0))
+            k_no = float(kalshi_m.get("no_prob", 100.0 - k_yes))
+            imbalance = float(kalshi_m.get("orderbook_imbalance", 0.0))
+
+            if k_yes >= 62.0 or imbalance >= 25.0:
+                pred = "BID YES (ABOVE TARGET)"
+                grade = "GRADE B SETUP"
+                badge = "⚠️ 3-STAR B (64%)"
+                prob = 64
+                catalysts.append(f"Market Implied Bullish Edge: Order book odds favor YES ({k_yes:.1f}%)")
+                catalysts.append(f"Institutional Order Flow: Net bid depth imbalance (+{imbalance:.1f}%)")
+            elif k_no >= 62.0 or imbalance <= -25.0:
+                pred = "BID NO (BELOW TARGET)"
+                grade = "GRADE B SETUP"
+                badge = "⚠️ 3-STAR B (64%)"
+                prob = 64
+                catalysts.append(f"Market Implied Bearish Edge: Order book odds favor NO ({k_no:.1f}%)")
+                catalysts.append(f"Institutional Order Flow: Net ask depth imbalance ({imbalance:.1f}%)")
 
     # 4. GRADE C / PASS (NO BID - CHOP)
     if not pred:
@@ -844,17 +1047,36 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         action = "BID NO"
 
     zone_str = f"${z_min:,.0f} - ${z_max:,.0f}"
+    prob = min(98, max(50, prob))
+    if direction == "PASS":
+        prob = 50
+
+    # Extract Raw Features for ML Pipeline
+    raw_features = {
+        "rsi": float(rsi),
+        "bb_upper": float(bb_upper),
+        "bb_lower": float(bb_lower),
+        "ema_9": float(ema_9),
+        "ema_21": float(ema_21),
+        "ema_50": float(ema_50),
+        "atr": float(atr),
+        "price_vs_vwap": float(c_close - c.get("vwap")) if c.get("vwap") is not None and not pd.isna(c.get("vwap")) else 0.0,
+        "cvd_value": float(df_ind["cvd"].iloc[-1]) if "cvd" in df_ind.columns else 0.0,
+        "delta_to_target": float((c_close - target) / max(target, 1e-9) * 100),
+        "score": float(prob)
+    }
 
     return {
-        "recommendation": pred,
+        "recommendation": f"{grade} ({direction})",
         "direction": direction,
-        "action_type": action,
-        "probability_percent": prob,
+        "action_type": pred,
+        "probability_percent": int(prob),
         "conviction_grade": grade,
         "conviction_badge": badge,
-        "target_settlement_zone": zone_str,
-        "primary_edge": catalysts[0] if catalysts else "Market structure analysis",
-        "catalysts": catalysts[:3]
+        "target_settlement_zone": "--",
+        "primary_edge": "High Confluence Setup" if "GRADE A" in grade else "Moderate Confluence Setup",
+        "catalysts": catalysts,
+        "raw_features": raw_features
     }
 
 
@@ -867,18 +1089,18 @@ if __name__ == "__main__":
     from data_fetcher import fetch_15m_candles
     df = fetch_15m_candles(limit=250)
     result = analyze_btc_15m(df)
-    print("=" * 60)
-    print(f"BTC 15-MINUTE ANALYSIS: {result['direction']}")
-    print(f"Current Price: ${result['price']:.2f}")
-    print(f"Confluence Score: {result['confluence_score']} / 100")
-    print(f"Confidence: {result['confidence_percent']}%")
-    print("=" * 60)
-    print("Bullish Factors:")
+    logger.info("=" * 60)
+    logger.info(f"BTC 15-MINUTE ANALYSIS: {result['direction']}")
+    logger.info(f"Current Price: ${result['price']:.2f}")
+    logger.info(f"Confluence Score: {result['confluence_score']} / 100")
+    logger.info(f"Confidence: {result['confidence_percent']}%")
+    logger.info("=" * 60)
+    logger.info("Bullish Factors:")
     for r in result["reasons_bullish"]:
-        print(f"  + {r}")
-    print("\nBearish Factors:")
+        logger.info(f"  + {r}")
+    logger.info("\nBearish Factors:")
     for r in result["reasons_bearish"]:
-        print(f"  - {r}")
-    print("\nTrade Setup:")
+        logger.info(f"  - {r}")
+    logger.info("\nTrade Setup:")
     for k, v in result["trade_setup"].items():
-        print(f"  {k}: {v}")
+        logger.info(f"  {k}: {v}")

@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Candlestick Pattern & Market Structure Detector for 15-Minute Bitcoin Candles.
 Detects single/multi-candle patterns, swing pivots, Market Structure (BOS, CHoCH, HH/HL),
@@ -319,26 +321,26 @@ def find_swing_points(df: pd.DataFrame, window: int = 2) -> tuple[list[dict], li
     n = len(df)
 
     for i in range(window, n - window):
-        high_i = df.loc[i, "high"]
-        low_i = df.loc[i, "low"]
+        high_i = df["high"].iloc[i]
+        low_i = df["low"].iloc[i]
 
         # Check swing high
-        is_swing_high = all(high_i > df.loc[i - k, "high"] for k in range(1, window + 1)) and \
-                        all(high_i >= df.loc[i + k, "high"] for k in range(1, window + 1))
+        is_swing_high = all(high_i > df["high"].iloc[i - k] for k in range(1, window + 1)) and \
+                        all(high_i >= df["high"].iloc[i + k] for k in range(1, window + 1))
         if is_swing_high:
             swing_highs.append({
                 "index": i,
-                "time": int(df.loc[i, "time"]),
+                "time": int(df["time"].iloc[i]) if "time" in df.columns else i,
                 "price": float(high_i)
             })
 
         # Check swing low
-        is_swing_low = all(low_i < df.loc[i - k, "low"] for k in range(1, window + 1)) and \
-                       all(low_i <= df.loc[i + k, "low"] for k in range(1, window + 1))
+        is_swing_low = all(low_i < df["low"].iloc[i - k] for k in range(1, window + 1)) and \
+                       all(low_i <= df["low"].iloc[i + k] for k in range(1, window + 1))
         if is_swing_low:
             swing_lows.append({
                 "index": i,
-                "time": int(df.loc[i, "time"]),
+                "time": int(df["time"].iloc[i]) if "time" in df.columns else i,
                 "price": float(low_i)
             })
 
@@ -676,10 +678,10 @@ if __name__ == "__main__":
     from data_fetcher import fetch_15m_candles
     df = fetch_15m_candles(limit=150)
     patterns = detect_candlestick_patterns(df)
-    print("Detected Candlestick Patterns in latest candles:")
+    logger.info("Detected Candlestick Patterns in latest candles:")
     for p in patterns:
-        print(f"  [{p['type']}] {p['name']} (Strength {p['strength']}): {p['description']}")
+        logger.info(f"  [{p['type']}] {p['name']} (Strength {p['strength']}): {p['description']}")
     struct = analyze_market_structure(df)
-    print("\nMarket Structure:")
+    logger.info("\nMarket Structure:")
     for k, v in struct.items():
-        print(f"  {k}: {v}")
+        logger.info(f"  {k}: {v}")

@@ -4,6 +4,8 @@ Handles RSA-PSS signed API communications, portfolio balance checks,
 market discovery for KXBTC15M contracts, and live/paper order execution.
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import time
 import json
@@ -41,7 +43,7 @@ class KalshiTrader:
             try:
                 self._private_key_obj = load_pem_private_key(self.private_key_pem.encode("utf-8"), password=None)
             except Exception as e:
-                print(f"[KalshiTrader] Error loading private key: {e}")
+                logger.error(f"[KalshiTrader] Error loading private key: {e}")
 
     def _load_from_credentials_file(self):
         if os.path.exists(CREDENTIALS_FILE):
@@ -51,7 +53,7 @@ class KalshiTrader:
                     self.key_id = data.get("key_id", self.key_id)
                     self.private_key_pem = data.get("private_key", self.private_key_pem)
             except Exception as e:
-                print(f"[KalshiTrader] Error reading credentials file: {e}")
+                logger.error(f"[KalshiTrader] Error reading credentials file: {e}")
 
     def is_authenticated(self) -> bool:
         return bool(self.key_id and self._private_key_obj)
@@ -161,17 +163,46 @@ class KalshiTrader:
                         pass
             if valid:
                 ct, active_m = min(valid, key=lambda x: x[0])
+
+                def _to_dollars(val):
+                    """Convert a Kalshi bid/ask value: if > 1.0 assume cents, divide by 100."""
+                    try:
+                        v = float(val or 0.0)
+                        return round(v / 100.0, 4) if v > 1.0 else v
+                    except Exception:
+                        return 0.0
+
+                yes_bid = _to_dollars(active_m.get("yes_bid") or active_m.get("yes_bid_dollars"))
+                yes_ask = _to_dollars(active_m.get("yes_ask") or active_m.get("yes_ask_dollars"))
+                no_bid  = _to_dollars(active_m.get("no_bid")  or active_m.get("no_bid_dollars"))
+                no_ask  = _to_dollars(active_m.get("no_ask")  or active_m.get("no_ask_dollars"))
+                last_price = _to_dollars(active_m.get("last_price") or active_m.get("last_price_dollars"))
+
+                # If the authenticated API returned all zeros, fallback to public client
+                if yes_bid == 0.0 and yes_ask == 0.0:
+                    try:
+                        from backend.btc.kalshi_client import get_kalshi_15m_market
+                        pub = get_kalshi_15m_market()
+                        if pub:
+                            yes_bid    = float(pub.get("yes_bid")  or yes_bid)
+                            yes_ask    = float(pub.get("yes_ask")  or yes_ask)
+                            no_bid     = float(pub.get("no_bid")   or no_bid)
+                            no_ask     = float(pub.get("no_ask")   or no_ask)
+                            last_price = float(pub.get("last_price") or pub.get("yes_bid") or last_price)
+                    except Exception:
+                        pass
+
                 res_market = {
                     "ticker": active_m.get("ticker") or active_m.get("event_ticker"),
                     "event_ticker": active_m.get("event_ticker", ""),
                     "title": active_m.get("title", ""),
                     "strike_price": active_m.get("strike_price", 0.0),
                     "close_time": active_m.get("close_time", ""),
-                    "yes_bid": active_m.get("yes_bid", 0.0),
-                    "yes_ask": active_m.get("yes_ask", 0.0),
-                    "no_bid": active_m.get("no_bid", 0.0),
-                    "no_ask": active_m.get("no_ask", 0.0),
-                    "last_price": active_m.get("last_price", 0.0),
+                    "yes_bid": yes_bid,
+                    "yes_ask": yes_ask,
+                    "no_bid": no_bid,
+                    "no_ask": no_ask,
+                    "last_price": last_price,
                     "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
                     "status": active_m.get("status", "open"),
                     "exchange_index": active_m.get("exchange_index"),
@@ -181,19 +212,30 @@ class KalshiTrader:
                 self._cached_market_time = now_ts
                 return res_market
         except Exception as e:
-            print(f"[KalshiTrader] Error getting active 15M market: {e}")
-        # Synthetic fallback if allowed
+            logger.error(f"[KalshiTrader] Error getting active 15M market: {e}")
+        # Synthetic fallback if allowed — enrich with public client data for live P&L
         if allow_synthetic:
+            pub_yes_bid, pub_yes_ask, pub_no_bid, pub_no_ask = 0.0, 0.0, 0.0, 0.0
+            try:
+                from backend.btc.kalshi_client import get_kalshi_15m_market
+                pub = get_kalshi_15m_market()
+                if pub:
+                    pub_yes_bid = float(pub.get("yes_bid") or 0.0)
+                    pub_yes_ask = float(pub.get("yes_ask") or 0.0)
+                    pub_no_bid  = float(pub.get("no_bid")  or 0.0)
+                    pub_no_ask  = float(pub.get("no_ask")  or 0.0)
+            except Exception:
+                pass
             return {
                 "ticker": "KXBTC15M_SYNTH",
                 "title": "Synthetic BTC 15M",
                 "strike_price": 0.0,
                 "close_time": "",
-                "yes_bid": 0.0,
-                "yes_ask": 0.0,
-                "no_bid": 0.0,
-                "no_ask": 0.0,
-                "last_price": 0.0,
+                "yes_bid": pub_yes_bid,
+                "yes_ask": pub_yes_ask,
+                "no_bid": pub_no_bid,
+                "no_ask": pub_no_ask,
+                "last_price": pub_yes_bid,
                 "volume_24h": 0.0,
                 "status": "synthetic",
                 "is_synthetic": True,
@@ -238,7 +280,7 @@ class KalshiTrader:
 
         # 1. PAPER TRADING (SIMULATION)
         if dry_run:
-            simulated_price = limit_price_dollars if limit_price_dollars else 0.50
+            simulated_price = limit_price_dollars if limit_price_dollars is not None else 0.50
             cost = round(simulated_price * count, 4)
             return {
                 "success": True,

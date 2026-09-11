@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 """
 FastAPI Application for ApexProps MLB & International Baseball Engine.
 Serves REST API and hosts the graphical user interface.
@@ -270,7 +273,7 @@ def get_international_h2h(league: str, game_id: str):
             "matchup": f"{match['away_team']['name']} vs {match['home_team']['name']}",
             "h2h_history": match.get("h2h_history")
         }
-    return {"error": "Game not found", "game_id": game_id}
+    return JSONResponse({"error": "Game not found", "game_id": game_id}, status_code=404)
 
 @app.get("/api/draftkings/odds")
 def get_draftkings_odds():
@@ -358,7 +361,7 @@ def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 15):
         }
         return df, analysis
     except Exception as e:
-        print(f"Error fetching live BTC candles for {tf}: {e}")
+        logger.error(f"Error fetching live BTC candles for {tf}: {e}")
         if tf in btc_timeframe_cache:
             return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
         raise e
@@ -445,7 +448,7 @@ def api_btc_prediction_accuracy():
 
         return JSONResponse(result)
     except Exception as e:
-        print(f"[API] Error in prediction accuracy endpoint: {e}")
+        logger.error(f"[API] Error in prediction accuracy endpoint: {e}")
         raise e
 
 @app.get("/api/btc/live")
@@ -461,7 +464,7 @@ def api_btc_live():
         try:
             auto_executor.check_and_execute_rollover()
         except Exception as e_trade:
-            print(f"[AutoExecutor Error]: {e_trade}")
+            logger.error(f"[AutoExecutor Error]: {e_trade}")
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
         return JSONResponse({
@@ -475,7 +478,7 @@ def api_btc_live():
             "last_5_targets": [],
             "streak_summary": "--",
             "error": str(e)
-        })
+        }, status_code=500)
 
 @app.get("/api/btc/ticker")
 def api_btc_ticker():
@@ -512,6 +515,50 @@ def api_btc_kalshi():
         return JSONResponse(data)
     except Exception as e:
         return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+
+@app.get("/api/btc/kalshi/orderbook")
+@app.get("/api/btc/kalshi/pricebook")
+def api_btc_kalshi_orderbook():
+    """Returns top-of-book market depth, spread, bid/ask sizes and order imbalance."""
+    try:
+        from backend.btc.kalshi_client import get_kalshi_15m_market
+        data = get_kalshi_15m_market()
+        if not data:
+            return JSONResponse({"status": "unavailable", "bids": [], "asks": []})
+        
+        yes_bid = data.get("yes_bid", 0.0)
+        yes_ask = data.get("yes_ask", 0.0)
+        no_bid = data.get("no_bid", 0.0)
+        no_ask = data.get("no_ask", 0.0)
+        spread = data.get("spread", 0.04)
+        yes_bid_size = data.get("yes_bid_size", 0)
+        yes_ask_size = data.get("yes_ask_size", 0)
+        imbalance = data.get("orderbook_imbalance", 0.0)
+        bias = data.get("market_bias", "NEUTRAL")
+
+        return JSONResponse({
+            "ticker": data.get("ticker", ""),
+            "target_price": data.get("target_price", 0.0),
+            "yes_prob": data.get("yes_prob", 50.0),
+            "no_prob": data.get("no_prob", 50.0),
+            "top_of_book": {
+                "yes_bid": yes_bid,
+                "yes_ask": yes_ask,
+                "no_bid": no_bid,
+                "no_ask": no_ask,
+                "yes_bid_size": yes_bid_size,
+                "yes_ask_size": yes_ask_size,
+                "spread": spread,
+                "spread_cents": round(spread * 100, 1),
+                "orderbook_imbalance_percent": imbalance,
+                "market_bias": bias
+            },
+            "bids": [{"side": "YES", "price": yes_bid, "size": yes_bid_size}, {"side": "NO", "price": no_bid, "size": 0}],
+            "asks": [{"side": "YES", "price": yes_ask, "size": yes_ask_size}, {"side": "NO", "price": no_ask, "size": 0}],
+            "timestamp": int(time.time())
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # =====================================================================
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS
@@ -555,6 +602,15 @@ def api_btc_trade_threshold(threshold: str = Query(...)):
 def api_btc_trade_contracts(count: int = Query(...)):
     """Set number of contracts per trade."""
     res = auto_executor.set_max_contracts(count)
+    return JSONResponse(res)
+
+@app.post("/api/btc/trade/risk_limits")
+def api_btc_trade_risk_limits(
+    max_daily_risk: Optional[float] = Query(None),
+    max_daily_trades: Optional[int] = Query(None)
+):
+    """Set maximum daily risk ($) and maximum daily trades."""
+    res = auto_executor.set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
 @app.post("/api/btc/trade/manual")
@@ -714,7 +770,7 @@ def _auto_trader_background_loop():
 def start_background_tasks():
     t = threading.Thread(target=_auto_trader_background_loop, daemon=True)
     t.start()
-    print("[AutoTrader] Background thread started.")
+    logger.info("[AutoTrader] Background thread started.")
 
 # Mount static directory and route index
 

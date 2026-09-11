@@ -232,6 +232,84 @@ _target_cache = {
     "last_5_targets": [],
     "streak_summary": ""
 }
+_target_lock = threading.Lock()
+
+# Cache for Binance Futures Data
+_futures_cache = {
+    "data": {"funding_rate": 0.0, "open_interest": 0.0},
+    "timestamp": 0.0
+}
+_futures_lock = threading.Lock()
+
+def get_binance_futures_data() -> dict:
+    """
+    Fetches live BTC funding rate and open interest from Binance Futures public API.
+    Cached for 10 seconds to avoid rate limits.
+    """
+    now = time.time()
+    with _futures_lock:
+        if _futures_cache["data"] and (now - _futures_cache["timestamp"] < 10.0):
+            return _futures_cache["data"]
+            
+    try:
+        # Funding Rate
+        fr_resp = requests.get("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT", timeout=3)
+        fr_data = fr_resp.json()
+        funding_rate = float(fr_data.get("lastFundingRate", 0.0))
+        
+        # Open Interest
+        oi_resp = requests.get("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT", timeout=3)
+        oi_data = oi_resp.json()
+        open_interest = float(oi_data.get("openInterest", 0.0))
+        
+        result = {
+            "funding_rate": funding_rate,
+            "open_interest": open_interest
+        }
+        
+        with _futures_lock:
+            _futures_cache["timestamp"] = now
+            _futures_cache["data"] = result
+        return result
+    except Exception as e:
+        logger.error(f"[DataFetcher] Error fetching Binance Futures data: {e}")
+        return {}
+
+# Cache for Fear & Greed (Updates daily, so 1 hour cache is very safe)
+_fng_cache = {
+    "timestamp": 0.0,
+    "data": None
+}
+_fng_lock = threading.Lock()
+
+def get_fear_and_greed_index() -> dict:
+    """
+    Fetches the Crypto Fear & Greed Index from alternative.me.
+    Cached for 1 hour to avoid rate limits since it only updates daily.
+    """
+    now = time.time()
+    with _fng_lock:
+        if _fng_cache["data"] and (now - _fng_cache["timestamp"] < 3600.0):
+            return _fng_cache["data"]
+            
+    try:
+        resp = requests.get("https://api.alternative.me/fng/?limit=1", timeout=4)
+        if resp.status_code == 200:
+            data = resp.json()
+            if "data" in data and len(data["data"]) > 0:
+                item = data["data"][0]
+                result = {
+                    "value": int(item.get("value", 50)),
+                    "classification": item.get("value_classification", "Neutral")
+                }
+                with _fng_lock:
+                    _fng_cache["timestamp"] = now
+                    _fng_cache["data"] = result
+                return result
+    except Exception as e:
+        logger.error(f"[DataFetcher] Error fetching Fear & Greed Index: {e}")
+        
+    return {"value": 50, "classification": "Neutral"}
 
 
 def get_btc_ticker() -> dict:
@@ -337,15 +415,17 @@ def get_btc_ticker() -> dict:
     if _ticker_cache["data"]:
         return _ticker_cache["data"]
     candles = fetch_candles(timeframe="15m", limit=2)
+    if candles is None or len(candles) == 0:
+        return {"price": 0.0, "open_24h": 0.0, "high_24h": 0.0, "low_24h": 0.0, "volume_24h": 0.0, "change_24h": 0.0, "source": "NoData"}
     last_close = float(candles.iloc[-1]["close"])
-    prev_close = float(candles.iloc[-2]["close"])
+    prev_close = float(candles.iloc[-2]["close"]) if len(candles) >= 2 else last_close
     result = {
         "price": round(last_close, 2),
         "open_24h": round(prev_close, 2),
         "high_24h": round(last_close, 2),
         "low_24h": round(last_close, 2),
         "volume_24h": round(float(candles.iloc[-1]["volume"]), 2),
-        "change_24h": round(((last_close - prev_close) / prev_close) * 100, 2),
+        "change_24h": round(((last_close - prev_close) / max(prev_close, 1e-9)) * 100, 2),
         "source": "CandleFallback",
     }
     _ticker_cache["timestamp"] = now
@@ -405,6 +485,7 @@ _live_target_result_cache = {
     "timestamp": 0.0,
     "data": None
 }
+_live_target_lock = threading.Lock()
 
 
 def get_live_15m_target_data() -> dict:
@@ -414,13 +495,14 @@ def get_live_15m_target_data() -> dict:
     Cached for 0.8s to provide sub-millisecond responses on 1s client polling.
     """
     now = time.time()
-    if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 1.2):
-        # Update countdown on the fly
-        cached = dict(_live_target_result_cache["data"])
-        cd = get_candle_countdown("15m")
-        cached["seconds_left"] = cd["seconds_left"]
-        cached["formatted_countdown"] = cd["formatted"]
-        return cached
+    with _live_target_lock:
+        if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 1.2):
+            # Update countdown on the fly
+            cached = dict(_live_target_result_cache["data"])
+            cd = get_candle_countdown("15m")
+            cached["seconds_left"] = cd["seconds_left"]
+            cached["formatted_countdown"] = cd["formatted"]
+            return cached
 
     ticker = get_btc_ticker()
     curr_price = float(ticker["price"])
@@ -433,70 +515,74 @@ def get_live_15m_target_data() -> dict:
     interval_id = int(interval_start_dt.timestamp())
     start_time_12hr = interval_start_dt.strftime("%I:%M %p").lstrip('0')
 
-    # Check if target benchmark needs refresh:
-    # 1. New 15-minute interval began (interval_id != cached interval_id)
-    # 2. No active target set yet
-    # 3. 5 minutes (300s) have passed since last verification check
-    needs_refresh = (
-        _target_cache.get("interval_id") != interval_id or
-        _target_cache["active_target"] is None or
-        (now - _target_cache["timestamp"] >= 300.0)
-    )
+    with _target_lock:
+        # Check if target benchmark needs refresh:
+        needs_refresh = (
+            _target_cache.get("interval_id") != interval_id or
+            _target_cache["active_target"] is None or
+            (now - _target_cache["timestamp"] >= 300.0)
+        )
 
-    if needs_refresh:
-        try:
-            df = fetch_candles("15m", limit=20)
-            n = len(df)
-            if n > 0:
-                # The BTC price at the start of current 15 minutes is the open of latest candle
-                curr_start_price = round(float(df.iloc[-1]["open"]), 2)
-                _target_cache["active_target"] = curr_start_price
-                _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                _target_cache["timestamp"] = now
+        if needs_refresh:
+            try:
+                df = fetch_candles("15m", limit=20)
+                n = len(df)
+                if n > 0:
+                    curr_start_price = round(float(df.iloc[-1]["open"]), 2)
+                    _target_cache["active_target"] = curr_start_price
+                    _target_cache["interval_id"] = interval_id
+                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache["timestamp"] = now
 
-                # Last 5 completed targets (minimal: close and direction)
-                last_5 = []
-                higher_count = 0
-                lower_count = 0
-                for i in range(max(1, n - 6), n - 1):
-                    c = df.iloc[i]
-                    p = df.iloc[i - 1]
-                    c_close = float(c["close"])
-                    p_close = float(p["close"])
-                    diff = round(c_close - p_close, 2)
-                    diff_pct = round((diff / (p_close + 1e-10)) * 100, 2)
-                    is_higher = diff >= 0
-                    if is_higher:
-                        higher_count += 1
-                    else:
-                        lower_count += 1
+                    last_5 = []
+                    higher_count = 0
+                    lower_count = 0
+                    for i in range(max(1, n - 6), n - 1):
+                        c = df.iloc[i]
+                        p = df.iloc[i - 1]
+                        c_close = float(c["close"])
+                        p_close = float(p["close"])
+                        diff = round(c_close - p_close, 2)
+                        diff_pct = round((diff / (p_close + 1e-10)) * 100, 2)
+                        is_higher = diff >= 0
+                        if is_higher:
+                            higher_count += 1
+                        else:
+                            lower_count += 1
 
-                    t_val = c.get("time")
-                    time_str = datetime.fromtimestamp(int(t_val), tz=ZoneInfo("America/New_York")).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
+                        t_val = c.get("time")
+                        time_str = datetime.fromtimestamp(int(t_val), tz=ZoneInfo("America/New_York")).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
 
-                    last_5.append({
-                        "time": time_str,
-                        "price": round(c_close, 2),
-                        "delta": diff,
-                        "delta_pct": diff_pct,
-                        "direction": "HIGHER" if is_higher else "LOWER",
-                        "arrow": "▲" if is_higher else "▼",
-                        "color": "green" if is_higher else "red"
-                    })
+                        last_5.append({
+                            "time": time_str,
+                            "price": round(c_close, 2),
+                            "delta": diff,
+                            "delta_pct": diff_pct,
+                            "direction": "HIGHER" if is_higher else "LOWER",
+                            "arrow": "▲" if is_higher else "▼",
+                            "color": "green" if is_higher else "red"
+                        })
 
-                _target_cache["last_5_targets"] = last_5
-                _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
-        except Exception as e:
-            if not _target_cache["active_target"]:
-                _target_cache["active_target"] = curr_price
-                _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                _target_cache["last_5_targets"] = []
-                _target_cache["streak_summary"] = "--"
+                    _target_cache["last_5_targets"] = last_5
+                    _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
+            except Exception as e:
+                if not _target_cache["active_target"]:
+                    _target_cache["active_target"] = curr_price
+                    _target_cache["interval_id"] = interval_id
+                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache["last_5_targets"] = []
+                    _target_cache["streak_summary"] = "--"
 
-    target_price = _target_cache["active_target"] or curr_price
-    target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
+        target_price = _target_cache["active_target"] or curr_price
+        target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
+        last_5_targets = _target_cache["last_5_targets"]
+        streak_summary = _target_cache["streak_summary"]
+
+    # Override with Kalshi Official Strike
+    kalshi_m = get_kalshi_15m_market()
+    if kalshi_m and kalshi_m.get("target_price"):
+        target_price = float(kalshi_m["target_price"])
+        target_source = "Kalshi Official Strike (CME CF BRR)"
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
@@ -509,25 +595,26 @@ def get_live_15m_target_data() -> dict:
         "delta": delta,
         "delta_pct": delta_pct,
         "status": status,
-        "kalshi": None,
+        "kalshi": kalshi_m,
         "change_24h": ticker["change_24h"],
         "high_24h": ticker["high_24h"],
         "low_24h": ticker["low_24h"],
         "volume_24h": ticker["volume_24h"],
         "seconds_left": countdown["seconds_left"],
         "formatted_countdown": countdown["formatted"],
-        "last_5_targets": _target_cache["last_5_targets"],
-        "streak_summary": _target_cache["streak_summary"],
+        "last_5_targets": last_5_targets,
+        "streak_summary": streak_summary,
         "latency_ms": round((time.time() - now) * 1000, 3)
     }
-    _live_target_result_cache["timestamp"] = time.time()
-    _live_target_result_cache["data"] = res
+    with _live_target_lock:
+        _live_target_result_cache["timestamp"] = time.time()
+        _live_target_result_cache["data"] = res
     return res
 
 
 if __name__ == "__main__":
-    print("Testing multi-timeframe fetcher...")
+    logger.info("Testing multi-timeframe fetcher...")
     for tf in ["1m", "5m", "15m", "1h", "4h", "1d"]:
         df = fetch_candles(timeframe=tf, limit=10)
         cd = get_candle_countdown(tf)
-        print(f"[{tf.upper()}] Fetched {len(df)} candles. Close in: {cd['formatted']} (Latest close: ${df.iloc[-1]['close']:.2f})")
+        logger.info(f"[{tf.upper()}] Fetched {len(df)} candles. Close in: {cd['formatted']} (Latest close: ${df.iloc[-1]['close']:.2f})")

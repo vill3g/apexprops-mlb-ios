@@ -4,6 +4,8 @@ Monitors the 15-minute candle countdown, triggers algorithmic execution
 on high-conviction Grade A+/A setups, tracks paper/live trades, and computes P&L.
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 import time
 import json
@@ -22,6 +24,9 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 HISTORY_FILE = os.path.join(DATA_DIR, "trades_history.json")
 CONFIG_FILE = os.path.join(DATA_DIR, "trading_config.json")
 
+import threading
+_history_lock = threading.Lock()
+
 
 class AutoExecutor:
     def __init__(self):
@@ -30,6 +35,8 @@ class AutoExecutor:
         self.min_conviction: str = "GRADE A SETUP"  # "GRADE A+ SETUP" or "GRADE A SETUP"
         self.max_contracts: int = 1
         self.prediction_mode: bool = False
+        self.max_daily_risk: float = 25.0
+        self.max_daily_trades: int = 10
         self.last_traded_interval: Optional[str] = None
         self.last_check_time: float = 0.0
 
@@ -41,13 +48,18 @@ class AutoExecutor:
             try:
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                     cfg = json.load(f)
-                    self.enabled = bool(cfg.get("enabled", False))
+                    # Always force auto-trading OFF on startup for safety
+                    self.enabled = False
                     self.mode = cfg.get("mode", "PAPER")
                     self.min_conviction = cfg.get("min_conviction", "GRADE A SETUP")
                     self.max_contracts = int(cfg.get("max_contracts", 1))
                     self.prediction_mode = bool(cfg.get("prediction_mode", False))
+                    self.max_daily_risk = float(cfg.get("max_daily_risk", 25.0))
+                    self.max_daily_trades = int(cfg.get("max_daily_trades", 10))
+                # Save the forced False state back to disk
+                self._save_config()
             except Exception as e:
-                print(f"[AutoExecutor] Error loading config: {e}")
+                logger.error(f"[AutoExecutor] Error loading config: {e}")
 
     def _save_config(self):
         try:
@@ -57,26 +69,30 @@ class AutoExecutor:
                     "mode": self.mode,
                     "min_conviction": self.min_conviction,
                     "max_contracts": self.max_contracts,
-                    "prediction_mode": self.prediction_mode
+                    "prediction_mode": self.prediction_mode,
+                    "max_daily_risk": self.max_daily_risk,
+                    "max_daily_trades": self.max_daily_trades
                 }, f, indent=2)
         except Exception as e:
-            print(f"[AutoExecutor] Error saving config: {e}")
+            logger.error(f"[AutoExecutor] Error saving config: {e}")
 
     def get_trades_history(self) -> List[Dict[str, Any]]:
         if os.path.exists(HISTORY_FILE):
             try:
-                with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                with _history_lock:
+                    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                        return json.load(f)
             except Exception:
                 return []
         return []
 
     def _save_trades_history(self, trades: List[Dict[str, Any]]):
         try:
-            with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-                json.dump(trades, f, indent=2)
+            with _history_lock:
+                with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                    json.dump(trades, f, indent=2)
         except Exception as e:
-            print(f"[AutoExecutor] Error saving trades: {e}")
+            logger.error(f"[AutoExecutor] Error saving trades: {e}")
 
     def set_enabled(self, enabled: bool) -> Dict[str, Any]:
         self.enabled = enabled
@@ -101,10 +117,22 @@ class AutoExecutor:
         return {"status": "ok", "min_conviction": self.min_conviction}
 
     def set_max_contracts(self, count: int) -> Dict[str, Any]:
-        c = max(1, min(int(count), 20))
+        c = max(1, min(int(count), 9999))
         self.max_contracts = c
         self._save_config()
         return {"status": "ok", "max_contracts": self.max_contracts}
+
+    def set_risk_limits(self, max_daily_risk: Optional[float] = None, max_daily_trades: Optional[int] = None) -> Dict[str, Any]:
+        if max_daily_risk is not None:
+            self.max_daily_risk = max(1.0, round(float(max_daily_risk), 2))
+        if max_daily_trades is not None:
+            self.max_daily_trades = max(1, int(max_daily_trades))
+        self._save_config()
+        return {
+            "status": "ok",
+            "max_daily_risk": self.max_daily_risk,
+            "max_daily_trades": self.max_daily_trades
+        }
 
     def get_status(self) -> Dict[str, Any]:
         """
@@ -126,7 +154,32 @@ class AutoExecutor:
         total_pnl = sum(float(t.get("pnl", 0.0)) for t in mode_trades)
         win_rate = round((wins / max(1, wins + losses)) * 100.0, 1) if (wins + losses) > 0 else 0.0
 
+        # Calculate daily ET statistics
+        from zoneinfo import ZoneInfo
+        today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        today_trades = [
+            t for t in mode_trades
+            if str(t.get("timestamp", "")).startswith(today_str)
+        ]
+        today_trade_count = len(today_trades)
+        today_realized_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades)
+
         active_market = kalshi_trader.get_active_15m_market()
+
+        # Compute live unrealized (mark-to-market) P&L for each open trade
+        open_pnl_dollars = 0.0
+        if active_market and open_trades:
+            am_yes_bid = float(active_market.get("yes_bid") or 0.0)
+            am_no_bid  = float(active_market.get("no_bid")  or 0.0)
+            for t in open_trades:
+                side = str(t.get("side", "YES")).upper()
+                entry = float(t.get("entry_price", 0.5))
+                count = int(t.get("count", 1))
+                current_bid = am_yes_bid if side == "YES" else am_no_bid
+                live_pnl = round((current_bid - entry) * count, 4) if current_bid > 0 else 0.0
+                t["live_pnl"] = live_pnl          # annotate trade dict for UI
+                t["current_bid"] = current_bid
+                open_pnl_dollars += live_pnl
 
         # Paper Trading Balance Logic
         if self.mode == "PAPER":
@@ -148,6 +201,10 @@ class AutoExecutor:
             "min_conviction": self.min_conviction,
             "max_contracts": self.max_contracts,
             "prediction_mode": self.prediction_mode,
+            "max_daily_risk": self.max_daily_risk,
+            "max_daily_trades": self.max_daily_trades,
+            "today_trade_count": today_trade_count,
+            "today_realized_pnl": round(today_realized_pnl, 2),
             "kalshi_connected": kalshi_trader.is_authenticated(),
             "balance_dollars": balance_info.get("balance_dollars", 0.0),
             "balance_cents": balance_info.get("balance_cents", 0),
@@ -158,6 +215,7 @@ class AutoExecutor:
             "total_pnl_dollars": round(total_pnl, 2),
             "open_trades_count": len(open_trades),
             "open_trades": open_trades,
+            "open_pnl_dollars": round(open_pnl_dollars, 4),   # live unrealized P&L
             "recent_trades": mode_trades[-15:][::-1],  # latest 15 trades of current mode first
             "active_market": active_market
         }
@@ -167,71 +225,84 @@ class AutoExecutor:
         Scans open trades and checks if their 15-minute interval has concluded.
         Settles them against the finalized Bitcoin price to update Win/Loss & P&L.
         """
-        if trades is None:
-            trades = self.get_trades_history()
-
-        modified = False
-        now_ts = time.time()
-
-        for t in trades:
-            if t.get("status") == "OPEN":
-                close_epoch = t.get("close_epoch", 0)
-                close_time_str = t.get("interval_close_time")
-
-                # Fallback: parse ISO close_time_str if close_epoch is missing
-                if not close_epoch and close_time_str:
+        with _history_lock:
+            if trades is None:
+                if os.path.exists(HISTORY_FILE):
                     try:
-                        dt = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
-                        close_epoch = dt.timestamp()
+                        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                            trades = json.load(f)
                     except Exception:
-                        pass
+                        trades = []
+                else:
+                    trades = []
 
-                # If interval has concluded
-                if close_epoch and (now_ts > close_epoch + 10):
-                    try:
-                        settle_price = 0.0
-                        # 1. Try finding finalized close from exchange candle history
-                        df = fetch_candles(timeframe="15m", limit=5)
-                        if len(df) >= 2:
-                            settle_price = float(df.iloc[-2]["close"])
-                        
-                        # 2. Fallback to live ticker if candle delayed
-                        if not settle_price or settle_price <= 0:
-                            from backend.btc.data_fetcher import get_btc_ticker
-                            settle_price = float(get_btc_ticker().get("price", 0.0))
+            modified = False
+            now_ts = time.time()
 
-                        if settle_price > 0:
-                            strike = float(t.get("strike", 0.0) or settle_price)
-                            side = t.get("side", "").upper()
-                            entry_price = float(t.get("entry_price", 0.50))
-                            count = int(t.get("count", 1))
+            for t in trades:
+                if t.get("status") == "OPEN":
+                    close_epoch = t.get("close_epoch", 0)
+                    close_time_str = t.get("interval_close_time")
 
-                            is_win = False
-                            if side == "YES" and settle_price >= strike:
-                                is_win = True
-                            elif side == "NO" and settle_price < strike:
-                                is_win = True
+                    # Fallback: parse ISO close_time_str if close_epoch is missing
+                    if not close_epoch and close_time_str:
+                        try:
+                            dt = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                            close_epoch = dt.timestamp()
+                        except Exception:
+                            pass
 
-                            pnl = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
-                            t["status"] = "SETTLED"
-                            t["result"] = "WIN" if is_win else "LOSS"
-                            t["settle_price"] = settle_price
-                            t["pnl"] = pnl
-                            t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
-                            modified = True
+                    # If interval has concluded
+                    if close_epoch and (now_ts > close_epoch + 10):
+                        try:
+                            settle_price = 0.0
+                            # 1. Try finding finalized close from exchange candle history
+                            df = fetch_candles(timeframe="15m", limit=5)
+                            if len(df) >= 2:
+                                settle_price = float(df.iloc[-2]["close"])
                             
-                            # Update Paper Balance if this was a paper trade
-                            if t.get("mode", self.mode).upper() == "PAPER":
-                                try:
-                                    from backend.btc.paper_balance import update_balance
-                                    update_balance(pnl)
-                                except Exception as ep:
-                                    print(f"Failed to update paper balance: {ep}")
-                    except Exception as e:
-                        print(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
+                            # 2. Fallback to live ticker if candle delayed
+                            if not settle_price or settle_price <= 0:
+                                from backend.btc.data_fetcher import get_btc_ticker
+                                settle_price = float(get_btc_ticker().get("price", 0.0))
 
-        if modified:
-            self._save_trades_history(trades)
+                            if settle_price > 0:
+                                strike = float(t.get("strike", 0.0) or settle_price)
+                                side = t.get("side", "").upper()
+                                entry_price = float(t.get("entry_price", 0.50))
+                                count = int(t.get("count", 1))
+
+                                is_win = False
+                                if side == "YES" and settle_price >= strike:
+                                    is_win = True
+                                elif side == "NO" and settle_price < strike:
+                                    is_win = True
+
+                                pnl = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
+                                t["status"] = "SETTLED"
+                                t["result"] = "WIN" if is_win else "LOSS"
+                                t["settle_price"] = settle_price
+                                t["pnl"] = pnl
+                                t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                                modified = True
+                                
+                                # Update Paper Balance if this was a paper trade
+                                if t.get("mode", self.mode).upper() == "PAPER":
+                                    payout = float(count) if is_win else 0.0
+                                    try:
+                                        from backend.btc.paper_balance import update_balance
+                                        update_balance(payout)
+                                    except Exception as ep:
+                                        logger.info(f"Failed to update paper balance: {ep}")
+                        except Exception as e:
+                            logger.error(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
+
+            if modified:
+                try:
+                    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                        json.dump(trades, f, indent=2)
+                except Exception as e:
+                    logger.error(f"[AutoExecutor] Error saving trades in check_settlements: {e}")
 
     def check_and_execute_rollover(self) -> Optional[Dict[str, Any]]:
         """
@@ -304,6 +375,23 @@ class AutoExecutor:
         if not self.enabled:
             return None
 
+        # Strict Filter 3: Enforce Max Daily Trades & Max Daily Risk
+        from zoneinfo import ZoneInfo
+        today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        today_trades = [
+            t for t in trades
+            if t.get("mode", self.mode).upper() == self.mode
+            and str(t.get("timestamp", "")).startswith(today_str)
+        ]
+        if len(today_trades) >= self.max_daily_trades:
+            logger.info(f"[AutoExecutor] Max daily trades reached ({len(today_trades)}/{self.max_daily_trades}). Skipping auto execution.")
+            return None
+
+        today_net_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades)
+        if today_net_pnl <= -abs(self.max_daily_risk):
+            logger.info(f"[AutoExecutor] Max daily risk limit reached (Loss: ${today_net_pnl:.2f} <= -${self.max_daily_risk:.2f}). Skipping auto execution.")
+            return None
+
         # Map signal to Kalshi contract side
         # "ABOVE" -> buy YES (anticipating price >= strike)
         # "BELOW" -> buy NO (anticipating price < strike)
@@ -332,8 +420,17 @@ class AutoExecutor:
         )
 
         if order_res.get("success", False):
+            if self.mode == "PAPER":
+                try:
+                    from backend.btc.paper_balance import update_balance
+                    cost = float(order_res.get("cost", market_price * contracts_to_buy))
+                    update_balance(-cost)
+                except Exception as e:
+                    logger.error(f"Paper deduction error: {e}")
+            elif self.mode == "LIVE":
+                kalshi_trader.get_balance(force_refresh=True)
+
             self.last_traded_interval = current_interval_id
-            
             # Parse close epoch
             close_time_str = active_m.get("close_time", "")
             close_epoch = now + sec_left
@@ -346,6 +443,14 @@ class AutoExecutor:
                 "close_epoch": close_epoch,
                 "ticker": current_interval_id,
                 "title": active_m.get("title", ""),
+                "market_snapshot": {
+                    "price": df_ind.iloc[-1]["close"],
+                    "target": strike,
+                    "confidence": forecast.get("probability_percent"),
+                    "conviction_grade": forecast.get("conviction_grade"),
+                    "primary_edge": forecast.get("primary_edge"),
+                    "raw_features": forecast.get("raw_features", {})
+                },
                 "strike": strike,
                 "direction": direction,
                 "recommendation": rec,
@@ -367,7 +472,7 @@ class AutoExecutor:
             self._save_trades_history(trades)
             return trade_record
         else:
-            print(f"[AutoExecutor] Order failed: {order_res.get('error')}")
+            logger.error(f"[AutoExecutor] Order failed: {order_res.get('error')}")
 
         return None
 
@@ -403,6 +508,16 @@ class AutoExecutor:
         )
 
         if order_res.get("success", False):
+            if self.mode == "PAPER":
+                try:
+                    from backend.btc.paper_balance import update_balance
+                    cost = float(order_res.get("cost", market_price * contracts_to_buy))
+                    update_balance(-cost)
+                except Exception as e:
+                    logger.error(f"Paper deduction error: {e}")
+            elif self.mode == "LIVE":
+                kalshi_trader.get_balance(force_refresh=True)
+
             trades = self.get_trades_history()
             close_time_str = active_m.get("close_time", "")
             countdown_info = get_candle_countdown(timeframe="15m")
@@ -445,21 +560,40 @@ class AutoExecutor:
         return order_res
 
     def close_specific_trade(self, trade_id: str, pnl: float) -> Dict[str, Any]:
-        """Close a single trade identified by ``trade_id``.
-        Used by ScalpEngine to close a trade when profit/loss thresholds are hit.
-        """
-        trades = self.get_trades_history()
-        for t in trades:
-            if t.get("id") == trade_id and t.get("status") == "OPEN":
-                from backend.btc.data_fetcher import get_btc_ticker
-                live_price = get_btc_ticker().get("price", 0.0)
-                t["status"] = "CLOSED"
-                t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
-                t["exit_price"] = live_price
-                t["pnl"] = pnl
-                t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
-                self._save_trades_history(trades)
-                return {"success": True, "trade_id": trade_id, "pnl": pnl}
+        """Close a single trade identified by ``trade_id``."""
+        with _history_lock:
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                        trades = json.load(f)
+                except Exception:
+                    trades = []
+            else:
+                trades = []
+            for t in trades:
+                if t.get("id") == trade_id and t.get("status") == "OPEN":
+                    from backend.btc.data_fetcher import get_btc_ticker
+                    live_price = get_btc_ticker().get("price", 0.0)
+                    t["status"] = "CLOSED"
+                    t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
+                    t["exit_price"] = live_price
+                    t["pnl"] = pnl
+                    t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                    if t.get("mode", self.mode).upper() == "PAPER":
+                        entry = float(t.get("entry_price", 0.50))
+                        count = int(t.get("count", 1))
+                        payout = (entry * count) + pnl
+                        try:
+                            from backend.btc.paper_balance import update_balance
+                            update_balance(payout)
+                        except Exception as ep:
+                            logger.info(f"Failed to update paper balance: {ep}")
+                    try:
+                        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                            json.dump(trades, f, indent=2)
+                    except Exception as e:
+                        logger.error(f"[AutoExecutor] Error saving in close_specific_trade: {e}")
+                    return {"success": True, "trade_id": trade_id, "pnl": pnl}
         return {"success": False, "error": f"Trade {trade_id} not found or not open"}
 
     def close_open_trades(self) -> Dict[str, Any]:
@@ -468,41 +602,61 @@ class AutoExecutor:
         Closes out any active open trades immediately at current market / live price,
         calculating realized P&L and recording result.
         """
-        trades = self.get_trades_history()
-        open_trades = [t for t in trades if t.get("status") == "OPEN"]
-        if not open_trades:
-            return {"success": False, "error": "No open trades to close."}
-
-        from backend.btc.data_fetcher import get_btc_ticker
-        live_price = get_btc_ticker().get("price", 0.0)
-        closed_count = 0
-        total_realized_pnl = 0.0
-
-        for t in open_trades:
-            strike = float(t.get("strike", 0.0) or live_price)
-            side = t.get("side", "YES").upper()
-            entry_price = float(t.get("entry_price", 0.50))
-            count = int(t.get("count", 1))
-
-            # Determine closing value based on current live price vs strike
-            if live_price and strike:
-                is_winning = (side == "YES" and live_price >= strike) or (side == "NO" and live_price < strike)
-                # Market estimate: 0.90 if winning, 0.10 if losing
-                est_exit = 0.90 if is_winning else 0.10
+        with _history_lock:
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                        trades = json.load(f)
+                except Exception:
+                    trades = []
             else:
-                est_exit = entry_price
+                trades = []
 
-            pnl = round((est_exit - entry_price) * count, 4)
-            t["status"] = "CLOSED"
-            t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
-            t["exit_price"] = est_exit
-            t["close_price"] = live_price
-            t["pnl"] = pnl
-            t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
-            closed_count += 1
-            total_realized_pnl += pnl
+            open_trades = [t for t in trades if t.get("status") == "OPEN"]
+            if not open_trades:
+                return {"success": False, "error": "No open trades to close."}
 
-        self._save_trades_history(trades)
+            from backend.btc.data_fetcher import get_btc_ticker
+            live_price = get_btc_ticker().get("price", 0.0)
+            closed_count = 0
+            total_realized_pnl = 0.0
+
+            for t in open_trades:
+                strike = float(t.get("strike", 0.0) or live_price)
+                side = t.get("side", "YES").upper()
+                entry_price = float(t.get("entry_price", 0.50))
+                count = int(t.get("count", 1))
+
+                # Determine closing value based on current live price vs strike
+                if live_price and strike:
+                    is_winning = (side == "YES" and live_price >= strike) or (side == "NO" and live_price < strike)
+                    est_exit = 0.90 if is_winning else 0.10
+                else:
+                    est_exit = entry_price
+
+                pnl = round((est_exit - entry_price) * count, 4)
+                t["status"] = "CLOSED"
+                t["result"] = "CLOSED_WIN" if pnl > 0 else ("CLOSED_LOSS" if pnl < 0 else "CLOSED_FLAT")
+                t["exit_price"] = est_exit
+                t["close_price"] = live_price
+                t["pnl"] = pnl
+                t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                if t.get("mode", self.mode).upper() == "PAPER":
+                    payout = est_exit * count
+                    try:
+                        from backend.btc.paper_balance import update_balance
+                        update_balance(payout)
+                    except Exception as ep:
+                        logger.info(f"Failed to update paper balance: {ep}")
+                closed_count += 1
+                total_realized_pnl += pnl
+
+            try:
+                with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+                    json.dump(trades, f, indent=2)
+            except Exception as e:
+                logger.error(f"[AutoExecutor] Error saving in close_open_trades: {e}")
+
         return {
             "success": True,
             "closed_count": closed_count,

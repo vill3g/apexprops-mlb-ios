@@ -832,12 +832,12 @@
                     <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
                     <div class="flex items-center">
                       <span class="text-cyan-400 font-bold text-[10px] mr-0.5">$</span>
-                      <input id="kalshiSizeInput" type="number" min="0.50" step="0.50" value="0.65" onchange="updateKalshiSize(this.value)" class="w-12 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1 py-0.5 focus:border-cyan-500 focus:outline-none text-center" />
+                      <input id="kalshiSizeInput" type="number" min="0.50" step="0.50" value="0.65" onchange="updateKalshiSize(this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1.5 py-0.5 focus:border-cyan-500 focus:outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                     </div>
                   </div>
                   <div class="flex items-center gap-1">
                     <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">-</button>
-                    <input id="kalshiContractsInput" type="number" min="1" max="1000" value="1" onchange="updateKalshiContracts(this.value)" class="w-10 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 focus:border-cyan-500 focus:outline-none" />
+                    <input id="kalshiContractsInput" type="number" min="1" max="9999" value="1" onchange="updateKalshiContracts(this.value)" class="w-16 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 px-1 focus:border-cyan-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                     <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">+</button>
                     <span class="text-[10px] text-slate-400 font-mono">ct</span>
                   </div>
@@ -859,15 +859,15 @@
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 pt-0.5">
                   <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-2 py-2 rounded-lg bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-md shadow-emerald-950/60 cursor-pointer">
-                    <span>▲</span> BID YES
+                    <span>▲</span> Bid Up
                   </button>
                   <button onclick="triggerManualKalshiTrade('BELOW')" class="px-2 py-2 rounded-lg bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all text-xs sm:text-sm font-black flex items-center justify-center gap-1 shadow-md shadow-red-950/60 cursor-pointer">
-                    <span>▼</span> BID NO
+                    <span>▼</span> Bid Down
                   </button>
                 </div>
                 <!-- 1-Click Close Trade Button -->
                 <button type="button" id="btnCloseTrade" onclick="triggerCloseTrade()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 active:scale-95 transition-all text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm shadow-amber-950/30 cursor-pointer">
-                  <span>✕</span> Close Active Trade
+                  <span>×</span> Close Active Trade
                 </button>
               </div>
 
@@ -983,12 +983,23 @@
 
                   <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
                     <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
-                      <span class="text-slate-400 text-[8px]">Max Daily Risk</span>
-                      <span class="text-white font-bold font-mono mt-0.5">$25.00</span>
+                      <div class="flex items-center justify-between text-slate-400 text-[8px]">
+                        <span>Max Daily Risk ($)</span>
+                        <span id="statTodayRiskLabel" class="text-slate-500 font-mono text-[7px]">$0.00 today</span>
+                      </div>
+                      <div class="flex items-center gap-1 mt-1">
+                        <span class="text-cyan-400 font-bold font-mono text-[10px]">$</span>
+                        <input type="number" id="settingMaxDailyRisk" value="25.00" min="1" max="10000" step="1"
+                               class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded px-1.5 py-0.5 text-cyan-300 font-mono font-bold text-[10px] focus:outline-none" />
+                      </div>
                     </div>
                     <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col">
-                      <span class="text-slate-400 text-[8px]">Max Open Trades</span>
-                      <span class="text-white font-bold font-mono mt-0.5">1 Trade</span>
+                      <div class="flex items-center justify-between text-slate-400 text-[8px]">
+                        <span>Max Daily Trades</span>
+                        <span id="statTodayTradesLabel" class="text-slate-500 font-mono text-[7px]">0 taken</span>
+                      </div>
+                      <input type="number" id="settingMaxDailyTrades" value="10" min="1" max="500" step="1"
+                             class="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded px-1.5 py-0.5 text-cyan-300 font-mono font-bold text-[10px] focus:outline-none mt-1" />
                     </div>
                   </div>
 
@@ -1099,7 +1110,7 @@
                   <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
                     <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
                       <span class="text-slate-400 text-[8px]">Contracts:</span>
-                      <input id="scalpMaxContracts" type="number" min="1" max="10" value="1" class="w-10 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
+                      <input id="scalpMaxContracts" type="number" min="1" max="9999" value="1" class="w-14 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                     </div>
                     <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
                       <span class="text-slate-400 text-[8px]">Max Trades:</span>
@@ -3367,14 +3378,14 @@
 
       // 1. GRADE A+ SETUPS (75% - 82% Historical Win Rate)
       if (cHigh >= bbUpper && upperWick >= 0.35 && rsi >= 62) {
-        pred = "BID NO (BELOW TARGET)";
+        pred = "BID DOWN (BELOW TARGET)";
         grade = "GRADE A+ SETUP";
         badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
         catalysts.push(`Upper Bollinger Rejection: Heavy upper wick pin (${Math.round(upperWick*100)}% of range)`);
         catalysts.push(`Overbought Exhaustion: RSI at ${rsi.toFixed(1)} rejected off band ceiling`);
       } else if (cLow <= bbLower && lowerWick >= 0.35 && rsi <= 38) {
-        pred = "BID YES (ABOVE TARGET)";
+        pred = "BID UP (ABOVE TARGET)";
         grade = "GRADE A+ SETUP";
         badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
@@ -3391,14 +3402,14 @@
         }
 
         if (cLow < low4 && cClose > low4 && cClose >= cOpen) {
-          pred = "BID YES (ABOVE TARGET)";
+          pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE A+ SETUP";
           badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
           catalysts.push(`Bullish Liquidity Sweep: Reclaimed 4-bar low ($${Math.round(low4).toLocaleString()})`);
           catalysts.push("Institutional Stop Hunt complete: Sellers trapped on dip");
         } else if (cHigh > high4 && cClose < high4 && cClose <= cOpen) {
-          pred = "BID NO (BELOW TARGET)";
+          pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE A+ SETUP";
           badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
@@ -3410,14 +3421,14 @@
       // 2. GRADE A SETUPS (65% - 74% Historical Win Rate)
       if (!pred) {
         if (cClose > cOpen && pClose > pOpen && p2Close > p2Open && rsi >= 64) {
-          pred = "BID NO (BELOW TARGET)";
+          pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE A SETUP";
           badge = "⚡ 4-STAR A (72%)";
           prob = 72;
           catalysts.push("Triple Green Climax: 3 consecutive bull candles into resistance");
           catalysts.push(`Momentum Deceleration: RSI at ${rsi.toFixed(1)} signals high pullback probability`);
         } else if (cClose < cOpen && pClose < pOpen && p2Close < p2Open && rsi <= 36) {
-          pred = "BID YES (ABOVE TARGET)";
+          pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE A SETUP";
           badge = "⚡ 4-STAR A (72%)";
           prob = 72;
@@ -3429,13 +3440,13 @@
       // 3. GRADE B SETUPS (60% - 64% Historical Win Rate)
       if (!pred) {
         if (cClose > cOpen && pClose > pOpen && rsi >= 58) {
-          pred = "BID NO (BELOW TARGET)";
+          pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE B SETUP";
           badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
           catalysts.push("Dual Green Surge: Consecutive bullish closes approaching mean reversion");
         } else if (cClose < cOpen && pClose < pOpen && rsi <= 42) {
-          pred = "BID YES (ABOVE TARGET)";
+          pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE B SETUP";
           badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
@@ -4553,6 +4564,9 @@
         // 3. Update Chart (Candles, Volume Histogram, Overlays)
         if (btcChart && btcCandleSeries && candlesData && candlesData.candles) {
           btcCandleSeries.setData(candlesData.candles);
+          if (candlesData.candles && candlesData.candles.length > 0) {
+            window.lastCandle = Object.assign({}, candlesData.candles[candlesData.candles.length - 1]);
+          }
           if (candlesData.volume && btcVolumeSeries) btcVolumeSeries.setData(candlesData.volume);
           if (candlesData.ema9 && btcEma9Series) btcEma9Series.setData(candlesData.ema9);
           if (candlesData.ema21 && btcEma21Series) btcEma21Series.setData(candlesData.ema21);
@@ -4860,6 +4874,32 @@
           }
         }
 
+        // Update Daily Risk & Trade Limit Inputs & Indicators
+        if (data.max_daily_risk !== undefined) {
+          const riskInput = document.getElementById("settingMaxDailyRisk");
+          if (riskInput && document.activeElement !== riskInput && !localStorage.getItem("kalshiGeneralSettings")) {
+            riskInput.value = parseFloat(data.max_daily_risk).toFixed(2);
+          }
+        }
+        if (data.max_daily_trades !== undefined) {
+          const tradesInput = document.getElementById("settingMaxDailyTrades");
+          if (tradesInput && document.activeElement !== tradesInput && !localStorage.getItem("kalshiGeneralSettings")) {
+            tradesInput.value = parseInt(data.max_daily_trades);
+          }
+        }
+        const todayRiskLabel = document.getElementById("statTodayRiskLabel");
+        if (todayRiskLabel && data.today_realized_pnl !== undefined) {
+          const pnlVal = parseFloat(data.today_realized_pnl);
+          const sign = pnlVal >= 0 ? "+" : "-";
+          const color = pnlVal >= 0 ? "text-emerald-400" : "text-red-400";
+          todayRiskLabel.className = `font-mono text-[7px] ${color}`;
+          todayRiskLabel.innerText = `${sign}$${Math.abs(pnlVal).toFixed(2)} today`;
+        }
+        const todayTradesLabel = document.getElementById("statTodayTradesLabel");
+        if (todayTradesLabel && data.today_trade_count !== undefined) {
+          todayTradesLabel.innerText = `${data.today_trade_count} taken today`;
+        }
+
         // Update Mode Button
         const btnMode = document.getElementById("btnToggleTradingMode");
         if (btnMode) {
@@ -4901,22 +4941,33 @@
           pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
         }
 
-        // Live P/L of Open Trades
+        // Live P/L of Open Trades — prefer server-calculated open_pnl_dollars
         const livePnlContainer = document.getElementById("topBarLivePnlContainer");
         const livePnlText = document.getElementById("topBarLivePnlText");
         if (livePnlContainer && livePnlText) {
           const modeTrades = (data.open_trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
-          if (modeTrades.length > 0 && data.active_market) {
+          if (modeTrades.length > 0) {
             let totalLivePnl = 0;
-            modeTrades.forEach(t => {
-              const side = String(t.side || "YES").toUpperCase();
-              const entry = parseFloat(t.entry_price || 0);
-              const count = parseInt(t.count || 1);
-              let exitPrice = entry;
-              if (side === "YES" && data.active_market.yes_bid !== undefined) exitPrice = parseFloat(data.active_market.yes_bid);
-              else if (side === "NO" && data.active_market.no_bid !== undefined) exitPrice = parseFloat(data.active_market.no_bid);
-              totalLivePnl += (exitPrice - entry) * count;
-            });
+            // 1. Use server-precomputed open_pnl_dollars if available
+            if (data.open_pnl_dollars !== undefined && data.open_pnl_dollars !== null) {
+              totalLivePnl = parseFloat(data.open_pnl_dollars);
+            } else if (data.active_market) {
+              // 2. Fall back to client-side mark-to-market
+              modeTrades.forEach(t => {
+                // Prefer server-annotated live_pnl on each trade
+                if (t.live_pnl !== undefined) {
+                  totalLivePnl += parseFloat(t.live_pnl);
+                } else {
+                  const side = String(t.side || "YES").toUpperCase();
+                  const entry = parseFloat(t.entry_price || 0);
+                  const count = parseInt(t.count || 1);
+                  let exitPrice = entry;
+                  if (side === "YES" && data.active_market.yes_bid > 0) exitPrice = parseFloat(data.active_market.yes_bid);
+                  else if (side === "NO" && data.active_market.no_bid > 0) exitPrice = parseFloat(data.active_market.no_bid);
+                  totalLivePnl += (exitPrice - entry) * count;
+                }
+              });
+            }
             livePnlText.innerText = `${totalLivePnl >= 0 ? "+" : ""}$${totalLivePnl.toFixed(2)}`;
             livePnlText.className = `text-lg sm:text-xl font-black font-mono whitespace-nowrap ${totalLivePnl >= 0 ? "text-emerald-400" : "text-red-400"}`;
             livePnlContainer.classList.remove("hidden");
@@ -4957,19 +5008,24 @@
         let statusBadge = "OPEN";
         let pnlText = "Pending";
 
-        if (!isClosed && activeMarket && t.entry_price) {
-            // Live PNL calculation
-            const side = String(t.side || "YES").toUpperCase();
-            const entryCost = parseFloat(t.entry_price);
-            const count = parseInt(t.count || 1);
-            let exitPrice = entryCost; // fallback
-
-            if (side === "YES" && activeMarket.yes_bid !== undefined) exitPrice = parseFloat(activeMarket.yes_bid);
-            else if (side === "NO" && activeMarket.no_bid !== undefined) exitPrice = parseFloat(activeMarket.no_bid);
-
-            pnlNum = (exitPrice - entryCost) * count;
-            pnlText = pnlNum >= 0 ? `+$${pnlNum.toFixed(2)}` : `-$${Math.abs(pnlNum).toFixed(2)}`;
-            colorClass = pnlNum >= 0 ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : "text-red-400 border-red-800/40 bg-red-950/30";
+        if (!isClosed && t.entry_price) {
+            // Live PNL — prefer server-annotated live_pnl
+            if (t.live_pnl !== undefined) {
+                pnlNum = parseFloat(t.live_pnl);
+                pnlText = pnlNum >= 0 ? `+$${pnlNum.toFixed(2)}` : `-$${Math.abs(pnlNum).toFixed(2)}`;
+                colorClass = pnlNum >= 0 ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : "text-red-400 border-red-800/40 bg-red-950/30";
+            } else if (activeMarket) {
+                // Fall back to client-side calc
+                const side = String(t.side || "YES").toUpperCase();
+                const entryCost = parseFloat(t.entry_price);
+                const count = parseInt(t.count || 1);
+                let exitPrice = entryCost;
+                if (side === "YES" && parseFloat(activeMarket.yes_bid) > 0) exitPrice = parseFloat(activeMarket.yes_bid);
+                else if (side === "NO" && parseFloat(activeMarket.no_bid) > 0) exitPrice = parseFloat(activeMarket.no_bid);
+                pnlNum = (exitPrice - entryCost) * count;
+                pnlText = pnlNum >= 0 ? `+$${pnlNum.toFixed(2)}` : `-$${Math.abs(pnlNum).toFixed(2)}`;
+                colorClass = pnlNum >= 0 ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : "text-red-400 border-red-800/40 bg-red-950/30";
+            }
         } else if (isWin) {
           colorClass = "text-emerald-400 border-emerald-800/40 bg-emerald-950/30";
           statusBadge = statStr === "CLOSED" ? "CLSD WIN" : "WIN";
@@ -5311,7 +5367,7 @@
       }
     }
 
-    async function setConvictionFilter(type) {
+    async function setConvictionFilter(type, showToast = true) {
       kalshiConvictionFilter = type;
       const btnAPlus = document.getElementById("btnFilterAPlus");
       const btnA = document.getElementById("btnFilterA");
@@ -5353,7 +5409,9 @@
       try {
         const apiBase = getKalshiApiBase();
         await fetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
-        showAppToast("Filter Updated", `Conviction set to ${labelText}`, "info");
+        if (showToast) {
+            showAppToast("Filter Updated", `Conviction set to ${labelText}`, "info");
+        }
       } catch (e) {
         console.error("Failed to update conviction threshold:", e);
       }
@@ -5365,6 +5423,8 @@
         const predMode = document.getElementById("settingPredictionMode")?.checked || false;
         const trendGuard = document.getElementById("settingTrendGuard")?.checked || false;
         const autoTp = document.getElementById("settingAutoTakeProfit")?.checked || false;
+        const maxDailyRisk = parseFloat(document.getElementById("settingMaxDailyRisk")?.value) || 25.0;
+        const maxDailyTrades = parseInt(document.getElementById("settingMaxDailyTrades")?.value) || 10;
         
         const settings = {
           tradingMode: kalshiTradingMode,
@@ -5374,16 +5434,21 @@
           triggerWindow,
           predMode,
           trendGuard,
-          autoTp
+          autoTp,
+          maxDailyRisk,
+          maxDailyTrades
         };
         
         localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
         
-        // Push backend toggles if needed (e.g. prediction mode)
+        // Push backend toggles & risk limits
         const apiBase = getKalshiApiBase();
-        await fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{});
+        await Promise.all([
+          fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{}),
+          fetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }).catch(()=>{})
+        ]);
         
-        showAppToast("Settings Saved", "Trade parameters applied successfully", "success");
+        showAppToast("Settings Saved", "Trade parameters and daily limits applied successfully", "success");
       } catch(e) {
         showAppToast("Save Error", String(e), "error");
       }
@@ -5409,7 +5474,7 @@
         }
         
         if (settings.convictionFilter) {
-          setConvictionFilter(settings.convictionFilter);
+          setConvictionFilter(settings.convictionFilter, false);
         }
         
         if (settings.contractsCount) {
@@ -5435,10 +5500,38 @@
         
         const autoTpCb = document.getElementById("settingAutoTakeProfit");
         if (autoTpCb && typeof settings.autoTp === 'boolean') autoTpCb.checked = settings.autoTp;
+
+        if (settings.maxDailyRisk !== undefined) {
+          const riskInput = document.getElementById("settingMaxDailyRisk");
+          if (riskInput) riskInput.value = parseFloat(settings.maxDailyRisk).toFixed(2);
+        }
+
+        if (settings.maxDailyTrades !== undefined) {
+          const tradesInput = document.getElementById("settingMaxDailyTrades");
+          if (tradesInput) tradesInput.value = parseInt(settings.maxDailyTrades);
+        }
         
       } catch(e) {
         console.warn("Failed to load general settings from storage:", e);
       }
+    }
+
+    function resetKalshiSettingsDefaults() {
+      const riskEl = document.getElementById("settingMaxDailyRisk");
+      if (riskEl) riskEl.value = "25.00";
+      const tradesEl = document.getElementById("settingMaxDailyTrades");
+      if (tradesEl) tradesEl.value = "10";
+      const winSelect = document.getElementById("settingTriggerWindow");
+      if (winSelect) winSelect.value = "standard";
+      const predCb = document.getElementById("settingPredictionMode");
+      if (predCb) predCb.checked = false;
+      const tgCb = document.getElementById("settingTrendGuard");
+      if (tgCb) tgCb.checked = true;
+      const autoTpCb = document.getElementById("settingAutoTakeProfit");
+      if (autoTpCb) autoTpCb.checked = true;
+      setConvictionFilter("A", false);
+      saveKalshiSettings();
+      showAppToast("Settings Reset", "Default parameters and risk limits restored", "info");
     }
     
     async function resetPaperBalanceUI() {
@@ -5731,6 +5824,12 @@
               const p = parseFloat(data.price);
               if (!isNaN(p)) {
                 renderBtcHeroHud({ price: p });
+                if (typeof btcCandleSeries !== "undefined" && btcCandleSeries && window.lastCandle) {
+                   window.lastCandle.close = p;
+                   if (p > window.lastCandle.high) window.lastCandle.high = p;
+                   if (p < window.lastCandle.low) window.lastCandle.low = p;
+                   btcCandleSeries.update(window.lastCandle);
+                }
               }
             }
           } catch (e) {}
