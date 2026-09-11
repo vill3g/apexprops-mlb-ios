@@ -5,7 +5,7 @@ Pulls live 15-minute Bitcoin price targets and market-implied odds from Kalshi's
 import time
 import requests
 
-KALSHI_API_URL = "https://api.elections.kalshi.com/trade-api/v2/markets"
+KALSHI_API_URL = "https://external-api.kalshi.com/trade-api/v2/markets"
 
 _kalshi_cache = None
 _kalshi_cache_time = 0.0

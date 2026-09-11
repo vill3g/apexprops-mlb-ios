@@ -519,6 +519,9 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
 
     pred_prob = int(round(max(5, min(95, p_final))))
     pred_outcome = "ABOVE TARGET (OVER)" if pred_prob >= 50 else "BELOW TARGET (UNDER)"
+    # `pred_prob` represents the probability of an ABOVE close. Expose a
+    # direction-aligned confidence for UI cards that display the chosen side.
+    predicted_outcome_probability = pred_prob if pred_prob >= 50 else 100 - pred_prob
 
     if pred_prob >= 80 or pred_prob <= 20:
         conf_badge = "LOCKED RUNWAY"
@@ -567,6 +570,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         "status": target_status,
         "predicted_outcome": pred_outcome,
         "probability_percent": pred_prob,
+        "predicted_outcome_probability": predicted_outcome_probability,
         "confidence_badge": conf_badge,
         "decision_factors": pred_factors,
         "last_5_targets": last_5_targets,

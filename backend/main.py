@@ -12,6 +12,7 @@ import os
 import time
 import json
 import pandas as pd
+from datetime import datetime, timezone
 
 from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown, get_live_15m_target_data, format_volume_series
 from backend.btc.indicators import add_all_indicators
@@ -347,6 +348,9 @@ def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 15):
     try:
         df = fetch_candles(timeframe=tf, limit=250)
         analysis = analyze_btc(df, timeframe=tf)
+        # Preserve when this prediction was calculated. The candle timestamp is
+        # market-data time, which can be several minutes older than the signal.
+        analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
         btc_timeframe_cache[tf] = {
             "df": df,
             "analysis": analysis,

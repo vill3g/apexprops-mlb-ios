@@ -332,6 +332,17 @@
       .btc-card-structure  { grid-column: span 1 !important; }
     }
 
+    /* Keep the iPad header clear of the iOS status area. The tablet layout
+       previously replaced the safe-area padding with a fixed value. */
+    body.device-ipad .app-main-wrapper {
+      padding-top: max(0.6rem, calc(env(safe-area-inset-top, 0px) + 0.35rem)) !important;
+    }
+    body.device-ipad header {
+      background: #020617 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
     
     /* Lock Horizontal Scroll on Right Panel */
     .btc-right-panel {
@@ -518,7 +529,9 @@
       
       <!-- Brand & New BTC 15M Logo -->
       <div class="flex items-center gap-2.5 sm:gap-3.5 shrink-0">
-        <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="BTC 15M Logo" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover shadow-lg shadow-amber-500/25 border border-amber-500/40 shrink-0">
+        <button type="button" onclick="showBtcLogoMessage()" class="shrink-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400/80" aria-label="Show BTC 15M Analyzer message">
+          <img id="mainAppLogo" src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="BTC 15M Logo" class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover shadow-lg shadow-amber-500/25 border border-amber-500/40 cursor-pointer active:scale-95 transition-transform">
+        </button>
         <div>
           <div class="flex items-center gap-1.5 sm:gap-2">
             <h1 class="text-sm sm:text-base lg:text-lg font-black tracking-tight text-white whitespace-nowrap">BTC <span class="text-amber-400">15M</span></h1>
@@ -550,6 +563,7 @@
               <span id="btcPredOutcomeText" class="text-xs sm:text-sm lg:text-base font-black font-mono text-white leading-none whitespace-nowrap">--</span>
               <span id="btcPredConfidenceTag" class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded font-bold uppercase text-slate-400 bg-slate-950 font-mono self-end mb-0.5">--</span>
             </div>
+            <span id="btcPredMadeTime" class="mt-0.5 text-[7px] sm:text-[8px] font-mono text-slate-500 whitespace-nowrap">Made --:--</span>
           </div>
           <!-- Hidden preservation elements for JS backward compatibility -->
           <div class="hidden">
@@ -616,12 +630,17 @@
           <span id="btcStructBos"></span>
         </div>
 
-        <!-- Dedicated Manual Refresh Button -->
+        <!-- Live Open Trades P/L Display -->
+        <div id="topBarLivePnlContainer" class="flex flex-col items-end justify-center mr-2 leading-none hidden">
+          <span class="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400">Open P/L</span>
+          <span id="topBarLivePnlText" class="text-lg sm:text-xl font-black font-mono whitespace-nowrap">$0.00</span>
+        </div>
+
+        <!-- Dedicated Manual Refresh Button (Shrunk size per request) -->
         <button id="btnTopBarRefresh" type="button" onclick="triggerManualRefresh()" 
-                class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-black transition-all bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/25 flex items-center gap-1.5 cursor-pointer border border-amber-300/40">
-          <span id="topBarRefreshIcon" class="text-sm sm:text-base font-black">⟳</span>
-          <span class="whitespace-nowrap font-black hidden md:inline">Refresh Data</span>
-          <span class="whitespace-nowrap font-black md:hidden">Refresh</span>
+                class="px-2 py-1 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-black transition-all bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/25 flex items-center gap-1 cursor-pointer border border-amber-300/40">
+          <span id="topBarRefreshIcon" class="text-sm font-black leading-none">⟳</span>
+          <span class="whitespace-nowrap font-black">Refresh</span>
         </button>
 
         <!-- Sound Toggle Button (Starts ON) -->
@@ -631,6 +650,17 @@
         </button>
       </div>
     </header>
+
+    <!-- BTC 15M logo message -->
+    <div id="btcLogoMessageModal" class="hidden fixed inset-0 z-[100] items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-labelledby="btcLogoMessageTitle" onclick="if (event.target === this) closeBtcLogoMessage()">
+      <div class="w-full max-w-xs rounded-2xl border border-amber-400/40 bg-slate-900 p-5 text-center shadow-2xl shadow-black/60">
+        <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/40 bg-amber-400/10 text-xl">⚡</div>
+        <h2 id="btcLogoMessageTitle" class="text-base font-black text-white">BTC 15M Analyzer</h2>
+        <p class="mt-2 text-sm leading-relaxed text-slate-300">Live market data, predictions, and trade tools are active.</p>
+        <p class="mt-3 text-[10px] font-mono font-semibold uppercase tracking-wide text-slate-500">Designed by Orville Graham · OOG LLC · Est. 2021</p>
+        <button type="button" onclick="closeBtcLogoMessage()" class="mt-4 rounded-lg bg-amber-400 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-amber-300 active:scale-95">Got it</button>
+      </div>
+    </div>
 
     <!-- ============================================================= -->
     <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
@@ -699,6 +729,10 @@
             </div>
 
 <!-- Center: 15M Prediction Accuracy Tracker -->
+            <div id="btcPreviousDaysAccuracy" class="hidden sm:flex flex-col items-end px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 font-mono shadow-sm shrink-0" title="Accuracy for recently completed calendar days">
+              <span class="text-[7px] font-black text-slate-500 uppercase tracking-wider">Previous days</span>
+              <span id="btcPreviousDaysAccuracyValue" class="text-[8px] font-bold text-slate-300 whitespace-nowrap">--</span>
+            </div>
             <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
               <div class="hidden sm:flex items-center gap-0.5">
                 <span class="text-[10px]">🎯</span>
@@ -847,7 +881,7 @@
               <div class="flex flex-col flex-1 min-h-0 border-t border-slate-800/80 pt-1" style="height: 40%; min-height: 40%; max-height: 40%;">
                 <div class="flex flex-col gap-0.5 pb-1 mb-1 text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-wider shrink-0 border-b border-slate-800">
                   <div class="flex items-center justify-between">
-                    <span>Recent Trades Log</span>
+                    <span>AI Trades</span>
                     <span class="text-cyan-400 text-[8px]">Live History</span>
                   </div>
                   <div class="flex items-center justify-between text-[7.5px] mt-0.5">
@@ -1132,7 +1166,16 @@
     }
 
     // Run on load and listen to viewport adjustments
-    window.addEventListener("DOMContentLoaded", detectAndAdaptDevice);
+    window.addEventListener("DOMContentLoaded", () => {
+      detectAndAdaptDevice();
+      loadKalshiSettingsFromStorage();
+      loadScalpSettingsFromStorage();
+    });
+    
+    // Auto Refresh 60s
+    setInterval(() => {
+        triggerBtcAnalysis();
+    }, 60000);
     window.addEventListener("resize", () => {
       detectAndAdaptDevice();
     });
@@ -1176,10 +1219,19 @@
 
     // Verified Player Photo Registry & Error Fallback
     let playerPhotoRegistry = null;
+
+    async function fetchBundledData(filename) {
+      // The FastAPI server exposes these files under /static; iOS standalone
+      // builds keep them beside index.html in a relative data/ directory.
+      const serverResponse = await fetch(`/static/data/${filename}`).catch(() => null);
+      if (serverResponse && serverResponse.ok) return serverResponse;
+      return fetch(`data/${filename}`);
+    }
+
     async function loadPlayerPhotoRegistry() {
       if (playerPhotoRegistry) return playerPhotoRegistry;
       try {
-        const res = await fetch('data/player_photos.json');
+        const res = await fetchBundledData('player_photos.json');
         if (res.ok) playerPhotoRegistry = await res.json();
       } catch (e) {}
       return playerPhotoRegistry || {};
@@ -1773,6 +1825,25 @@
         t.classList.add("opacity-0", "-translate-y-4");
       }, 2600);
     }
+
+    function showBtcLogoMessage() {
+      const modal = document.getElementById("btcLogoMessageModal");
+      if (!modal) return;
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      modal.querySelector("button")?.focus();
+    }
+
+    function closeBtcLogoMessage() {
+      const modal = document.getElementById("btcLogoMessageModal");
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeBtcLogoMessage();
+    });
 
     function launchDraftKingsDirect() {
       if (activeSlip.length === 0) {
@@ -2575,7 +2646,19 @@
     let tvWidget = null;
     let currentTvInterval = null;
 
-    function initTradingViewChart(tf = "15m") {
+    function initTradingViewChart(tf = null) {
+      if (!tf) {
+        try {
+          const saved = localStorage.getItem("btcChartConfig");
+          if (saved) {
+            const cfg = JSON.parse(saved);
+            tf = cfg.timeframe || "15m";
+          } else {
+            tf = "15m";
+          }
+        } catch(e) { tf = "15m"; }
+      }
+      btcCurrentTimeframe = tf;
       const container = document.getElementById("tradingview_btc_chart");
       if (!container) return;
 
@@ -2667,6 +2750,7 @@
       const chartStatus = document.getElementById("btcChartStatus");
       if (chartStatus) chartStatus.innerText = `Switching to ${tfUpper}...`;
 
+      try { localStorage.setItem("btcChartConfig", JSON.stringify({ timeframe: tf })); } catch(e){}
       initTradingViewChart(tf);
       triggerBtcAnalysis();
       updateBtcCountdown();
@@ -3484,9 +3568,21 @@
       const barAbove = document.getElementById("btcPredProbBarAbove");
       const factorsList = document.getElementById("btcPredFactorsList");
       const banner = document.getElementById("btcPredBanner");
+      const madeTime = document.getElementById("btcPredMadeTime");
+
+      if (madeTime) {
+        const generatedAt = tb.prediction_generated_at || tb.generated_at;
+        const generatedDate = generatedAt ? new Date(generatedAt) : null;
+        madeTime.innerText = generatedDate && !Number.isNaN(generatedDate.getTime())
+          ? `Made ${generatedDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+          : "Made --:--";
+      }
 
       const isAbove = (tb.predicted_outcome || "").includes("ABOVE");
-      const prob = Number(tb.probability_percent || 50);
+      // Server analyses provide the chance of an ABOVE close as
+      // `probability_percent`; use the direction-aligned value for the card.
+      // Client-locked forecasts already provide confidence in their own side.
+      const prob = Number(tb.predicted_outcome_probability ?? tb.probability_percent ?? 50);
 
       if (outcomeText) {
         const simpleText = isAbove ? "▲ UP" : "▼ DOWN";
@@ -3687,8 +3783,9 @@
             actual: actual,
             correct: isHit
           });
-          if (stored.length > 40) stored = stored.slice(-40);
+          if (stored.length > 100) stored = stored.slice(-100);
           localStorage.setItem("btc_15m_live_settlements", JSON.stringify(stored));
+          updateDailyAccuracyHistory(stored, tracker.intervalStart);
         } catch (e) {}
 
         window._activeWindowTracker = null;
@@ -3698,19 +3795,73 @@
       }
     }
 
+    const BTC_ACCURACY_HISTORY_KEY = "btc_15m_live_settlements";
+    const BTC_DAILY_ACCURACY_HISTORY_KEY = "btc_15m_daily_accuracy";
+
+    function accuracyDateKey(intervalStart) {
+      const date = new Date(intervalStart * 1000);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDailyAccuracyHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(BTC_DAILY_ACCURACY_HISTORY_KEY) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function updateDailyAccuracyHistory(settlements, changedIntervalStart) {
+      const daily = getDailyAccuracyHistory();
+      const dateKeys = Object.keys(daily).length === 0
+        ? [...new Set(settlements.map(s => accuracyDateKey(s.time)))]
+        : [accuracyDateKey(changedIntervalStart)];
+      dateKeys.forEach(dateKey => {
+        const daySettlements = settlements.filter(s => accuracyDateKey(s.time) === dateKey);
+        daily[dateKey] = {
+          total: daySettlements.length,
+          correct: daySettlements.filter(s => s.correct).length
+        };
+      });
+      localStorage.setItem(BTC_DAILY_ACCURACY_HISTORY_KEY, JSON.stringify(daily));
+      return daily;
+    }
+
+    function renderPreviousDaysAccuracy(daily) {
+      const valueEl = document.getElementById("btcPreviousDaysAccuracyValue");
+      if (!valueEl) return;
+
+      const today = accuracyDateKey(Math.floor(Date.now() / 1000));
+      const previousDays = Object.entries(daily)
+        .filter(([date, stats]) => date < today && stats && stats.total > 0)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 3);
+
+      valueEl.innerText = previousDays.length
+        ? previousDays.map(([date, stats]) => {
+            const label = new Date(`${date}T12:00:00`).toLocaleDateString([], { weekday: "short" });
+            return `${label} ${Math.round((stats.correct / stats.total) * 100)}%`;
+          }).join(" · ")
+        : "No prior days";
+    }
+
     // Client-side Accuracy Evaluator: Starts at 0 of 0 on boot, counts up per logged 15m close
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
       // Load live settlements saved in localStorage
       let liveSettlements = [];
       try {
-        const stored = localStorage.getItem("btc_15m_live_settlements");
+        const stored = localStorage.getItem(BTC_ACCURACY_HISTORY_KEY);
         if (stored) {
           liveSettlements = JSON.parse(stored);
           if (!Array.isArray(liveSettlements)) liveSettlements = [];
           // If stored contains legacy dummy data with missing settle price, clear it to start clean
           if (liveSettlements.some(s => s.settle === undefined && s.target === undefined)) {
             liveSettlements = [];
-            localStorage.removeItem("btc_15m_live_settlements");
+            localStorage.removeItem(BTC_ACCURACY_HISTORY_KEY);
           }
         }
       } catch (e) {
@@ -3732,11 +3883,19 @@
 
       window.cachedBtcAccuracy = accData;
       renderBtcAccuracy(accData);
+      const dailyHistory = getDailyAccuracyHistory();
+      if (Object.keys(dailyHistory).length === 0 && liveSettlements.length > 0) {
+        liveSettlements.forEach(settlement => updateDailyAccuracyHistory(liveSettlements, settlement.time));
+      }
+      renderPreviousDaysAccuracy(getDailyAccuracyHistory());
       return accData;
     }
 
     function resetBtcAccuracyCounter() {
-      try { localStorage.removeItem("btc_15m_live_settlements"); } catch (e) {}
+      try {
+        localStorage.removeItem(BTC_ACCURACY_HISTORY_KEY);
+        localStorage.removeItem(BTC_DAILY_ACCURACY_HISTORY_KEY);
+      } catch (e) {}
       evaluateClientAccuracy(window._lastRawCandles || [], window._lastIsCoinbaseFormat || true);
     }
 
@@ -3757,6 +3916,17 @@
       if (barEl) {
         const pct = ((900 - secondsLeft) / 900) * 100;
         barEl.style.width = `${pct.toFixed(1)}%`;
+      }
+
+      // Exact 1-minute post-rollover refresh logic
+      if (secondsLeft === 840) {
+        const currentBucket = Math.floor(Date.now() / (15 * 60 * 1000));
+        if (window._last1MinuteRefreshBucket !== currentBucket) {
+           window._last1MinuteRefreshBucket = currentBucket;
+           console.log("Exactly 1 minute after contract start. Triggering mandatory prediction refresh.");
+           fetchBtcKlinesDirect();
+           setTimeout(triggerBtcAnalysis, 1000);
+        }
       }
 
       // Instant 15M Window Rollover & Expiration Detector (Predicts Next 15M Immediately at T=0)
@@ -3824,7 +3994,7 @@
         // 0. If on standalone mobile, check bundled desktop analysis first
         if (!window.cachedBtcTargetPrice) {
           try {
-            const staticResp = await fetch('data/btc_analysis.json');
+            const staticResp = await fetchBundledData('btc_analysis.json');
             if (staticResp.ok) {
               const staticData = await staticResp.json();
               if (staticData && staticData.target_benchmark && staticData.target_benchmark.target_price) {
@@ -4293,7 +4463,7 @@
           .then(async (data) => {
              if (data) return data;
              try {
-                const fallbackResp = await fetch(`data/btc_analysis.json`);
+                const fallbackResp = await fetchBundledData('btc_analysis.json');
                 if (fallbackResp.ok) return await fallbackResp.json();
              } catch(e) {}
              return null;
@@ -4478,7 +4648,10 @@
           if (analysisData.target_benchmark) {
             renderBtcHeroHud({ ...analysisData.target_benchmark, price: analysisData.price || analysisData.target_benchmark.current_price });
             renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
-            renderBtcPredictor(analysisData.target_benchmark);
+            renderBtcPredictor({
+              ...analysisData.target_benchmark,
+              prediction_generated_at: analysisData.generated_at
+            });
             if (analysisData.target_benchmark && analysisData.target_benchmark.prediction_accuracy && !window.cachedBtcAccuracy) {
               renderBtcAccuracy(analysisData.target_benchmark.prediction_accuracy);
             }
@@ -4728,6 +4901,30 @@
           pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
         }
 
+        // Live P/L of Open Trades
+        const livePnlContainer = document.getElementById("topBarLivePnlContainer");
+        const livePnlText = document.getElementById("topBarLivePnlText");
+        if (livePnlContainer && livePnlText) {
+          const modeTrades = (data.open_trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+          if (modeTrades.length > 0 && data.active_market) {
+            let totalLivePnl = 0;
+            modeTrades.forEach(t => {
+              const side = String(t.side || "YES").toUpperCase();
+              const entry = parseFloat(t.entry_price || 0);
+              const count = parseInt(t.count || 1);
+              let exitPrice = entry;
+              if (side === "YES" && data.active_market.yes_bid !== undefined) exitPrice = parseFloat(data.active_market.yes_bid);
+              else if (side === "NO" && data.active_market.no_bid !== undefined) exitPrice = parseFloat(data.active_market.no_bid);
+              totalLivePnl += (exitPrice - entry) * count;
+            });
+            livePnlText.innerText = `${totalLivePnl >= 0 ? "+" : ""}$${totalLivePnl.toFixed(2)}`;
+            livePnlText.className = `text-lg sm:text-xl font-black font-mono whitespace-nowrap ${totalLivePnl >= 0 ? "text-emerald-400" : "text-red-400"}`;
+            livePnlContainer.classList.remove("hidden");
+          } else {
+            livePnlContainer.classList.add("hidden");
+          }
+        }
+
         // Render Recent Trades
         renderKalshiTradesList(data.recent_trades || [], data.active_market);
       } catch (err) {
@@ -4787,16 +4984,24 @@
           pnlText = `$${pnlNum.toFixed(2)}`;
         }
         
-        // Format Timestamp in NYC (America/New_York) ET Time
-        let timeStr = "";
-        try {
-            if (t.timestamp) {
-                let tsRaw = t.timestamp.replace(" ET", "").replace(" UTC", "");
-                let dObj = new Date(tsRaw.includes("T") ? tsRaw : tsRaw.replace(" ", "T") + "Z");
-                if (isNaN(dObj.getTime())) dObj = new Date(tsRaw);
-                timeStr = dObj.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
-            }
-        } catch(e) {}
+        const formatTradeDateTime = (value) => {
+          if (!value) return "--";
+          const raw = String(value).trim();
+          // Trade records already store an ET date/time string. Preserve it so
+          // a browser does not reinterpret it in a different timezone.
+          if (/^\d{4}-\d{2}-\d{2}\s+/.test(raw)) return raw;
+          const date = new Date(raw);
+          return Number.isNaN(date.getTime())
+            ? raw
+            : date.toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true,
+                timeZoneName: 'short'
+              });
+        };
+        const openedAt = formatTradeDateTime(t.timestamp);
+        const settledAt = isClosed ? formatTradeDateTime(t.settled_at) : "";
 
         return `
           <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1">
@@ -4807,7 +5012,7 @@
                 <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
                 <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
               </div>
-              <span class="text-[7px] text-slate-500">${timeStr}</span>
+              <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` · Settled: ${settledAt}` : ""}</span>
             </div>
             <div class="flex items-center gap-1 font-bold">
               <span>${statusBadge}</span>
@@ -5155,7 +5360,76 @@
     }
 
     async function saveKalshiSettings() {
-      showAppToast("Settings Saved", "Trade parameters applied successfully", "success");
+      try {
+        const triggerWindow = document.getElementById("settingTriggerWindow")?.value || "standard";
+        const predMode = document.getElementById("settingPredictionMode")?.checked || false;
+        const trendGuard = document.getElementById("settingTrendGuard")?.checked || false;
+        const autoTp = document.getElementById("settingAutoTakeProfit")?.checked || false;
+        
+        const settings = {
+          tradingMode: kalshiTradingMode,
+          convictionFilter: typeof kalshiConvictionFilter !== 'undefined' ? kalshiConvictionFilter : 'APLUS',
+          contractsCount: kalshiCurrentContracts,
+          audioEnabled: btcAudioEnabled,
+          triggerWindow,
+          predMode,
+          trendGuard,
+          autoTp
+        };
+        
+        localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
+        
+        // Push backend toggles if needed (e.g. prediction mode)
+        const apiBase = getKalshiApiBase();
+        await fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{});
+        
+        showAppToast("Settings Saved", "Trade parameters applied successfully", "success");
+      } catch(e) {
+        showAppToast("Save Error", String(e), "error");
+      }
+    }
+
+    async function loadKalshiSettingsFromStorage() {
+      try {
+        const saved = localStorage.getItem("kalshiGeneralSettings");
+        if (!saved) return;
+        const settings = JSON.parse(saved);
+        
+        if (settings.tradingMode && settings.tradingMode !== kalshiTradingMode) {
+          toggleKalshiTradingMode(); // will flip it
+        }
+        
+        if (settings.convictionFilter) {
+          setConvictionFilter(settings.convictionFilter);
+        }
+        
+        if (settings.contractsCount) {
+          kalshiCurrentContracts = settings.contractsCount;
+          const input = document.getElementById("kalshiContractSizeInput");
+          if (input) input.value = (kalshiCurrentContracts * kalshiCurrentPriceEst).toFixed(2);
+        }
+        
+        if (typeof settings.audioEnabled === 'boolean') {
+          if (settings.audioEnabled !== btcAudioEnabled) toggleBtcAudio();
+        }
+        
+        const winSelect = document.getElementById("settingTriggerWindow");
+        if (winSelect && settings.triggerWindow) winSelect.value = settings.triggerWindow;
+        
+        const predCb = document.getElementById("settingPredictionMode");
+        if (predCb && typeof settings.predMode === 'boolean') {
+           predCb.checked = settings.predMode;
+        }
+        
+        const tgCb = document.getElementById("settingTrendGuard");
+        if (tgCb && typeof settings.trendGuard === 'boolean') tgCb.checked = settings.trendGuard;
+        
+        const autoTpCb = document.getElementById("settingAutoTakeProfit");
+        if (autoTpCb && typeof settings.autoTp === 'boolean') autoTpCb.checked = settings.autoTp;
+        
+      } catch(e) {
+        console.warn("Failed to load general settings from storage:", e);
+      }
     }
     
     async function resetPaperBalanceUI() {
@@ -5212,6 +5486,21 @@
         if (btnGeneral) btnGeneral.className = inactiveClass;
         loadScalpConfigUI();
       }
+    }
+
+    async function loadScalpSettingsFromStorage() {
+      try {
+        const saved = localStorage.getItem("scalpSettings");
+        if (saved) {
+          const cfg = JSON.parse(saved);
+          if (cfg.price_move_threshold) document.getElementById("scalpPriceMoveThreshold").value = cfg.price_move_threshold;
+          if (cfg.profit_target) document.getElementById("scalpProfitTarget").value = cfg.profit_target;
+          if (cfg.loss_target) document.getElementById("scalpLossTarget").value = cfg.loss_target;
+          if (cfg.minimum_conviction) document.getElementById("scalpMinConviction").value = cfg.minimum_conviction;
+          if (cfg.max_contracts) document.getElementById("scalpMaxContracts").value = cfg.max_contracts;
+          if (cfg.max_trades_per_interval) document.getElementById("scalpMaxTradesPerInterval").value = cfg.max_trades_per_interval;
+        }
+      } catch(e) {}
     }
 
     async function loadScalpConfigUI() {
@@ -5314,6 +5603,7 @@
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        localStorage.setItem("scalpSettings", JSON.stringify(patchBody));
         showAppToast("Scalper Saved", "Scalp parameters updated successfully", "success");
         loadScalpConfigUI();
       } catch (err) {
