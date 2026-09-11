@@ -3548,7 +3548,10 @@
       }
 
       const isAbove = (tb.predicted_outcome || "").includes("ABOVE");
-      const prob = Number(tb.probability_percent || 50);
+      // Server analyses provide the chance of an ABOVE close as
+      // `probability_percent`; use the direction-aligned value for the card.
+      // Client-locked forecasts already provide confidence in their own side.
+      const prob = Number(tb.predicted_outcome_probability ?? tb.probability_percent ?? 50);
 
       if (outcomeText) {
         const simpleText = isAbove ? "▲ UP" : "▼ DOWN";
