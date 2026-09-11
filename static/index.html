@@ -5396,7 +5396,16 @@
         const settings = JSON.parse(saved);
         
         if (settings.tradingMode && settings.tradingMode !== kalshiTradingMode) {
-          toggleKalshiTradingMode(); // will flip it
+          kalshiTradingMode = settings.tradingMode;
+          const btnMode = document.getElementById("btnToggleTradingMode");
+          if (btnMode) {
+            btnMode.innerText = kalshiTradingMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
+            btnMode.className = kalshiTradingMode === "LIVE" 
+              ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
+              : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+          }
+          const apiBase = getKalshiApiBase();
+          fetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
         }
         
         if (settings.convictionFilter) {

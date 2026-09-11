@@ -320,7 +320,9 @@ class KalshiTrader:
             return {"success": False, "error": f"Cannot re-verify Kalshi market: {e}. Live order was not submitted."}
 
         # Clamp the outcome price before using it for balance validation.
-        outcome_price = max(0.01, min(float(limit_price_dollars if limit_price_dollars else 0.65), 0.99))
+        # Add 0.04 slippage buffer to ensure immediate_or_cancel limit orders cross the book successfully.
+        raw_price = float(limit_price_dollars if limit_price_dollars else 0.65)
+        outcome_price = max(0.01, min(raw_price + 0.04, 0.99))
 
         # Double check balance before submitting
         bal_res = self.get_balance(force_refresh=True)
