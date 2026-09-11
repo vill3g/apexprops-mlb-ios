@@ -4951,16 +4951,24 @@
           pnlText = `$${pnlNum.toFixed(2)}`;
         }
         
-        // Format Timestamp in NYC (America/New_York) ET Time
-        let timeStr = "";
-        try {
-            if (t.timestamp) {
-                let tsRaw = t.timestamp.replace(" ET", "").replace(" UTC", "");
-                let dObj = new Date(tsRaw.includes("T") ? tsRaw : tsRaw.replace(" ", "T") + "Z");
-                if (isNaN(dObj.getTime())) dObj = new Date(tsRaw);
-                timeStr = dObj.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true });
-            }
-        } catch(e) {}
+        const formatTradeDateTime = (value) => {
+          if (!value) return "--";
+          const raw = String(value).trim();
+          // Trade records already store an ET date/time string. Preserve it so
+          // a browser does not reinterpret it in a different timezone.
+          if (/^\d{4}-\d{2}-\d{2}\s+/.test(raw)) return raw;
+          const date = new Date(raw);
+          return Number.isNaN(date.getTime())
+            ? raw
+            : date.toLocaleString('en-US', {
+                timeZone: 'America/New_York',
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit', hour12: true,
+                timeZoneName: 'short'
+              });
+        };
+        const openedAt = formatTradeDateTime(t.timestamp);
+        const settledAt = isClosed ? formatTradeDateTime(t.settled_at) : "";
 
         return `
           <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1">
@@ -4971,7 +4979,7 @@
                 <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
                 <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
               </div>
-              <span class="text-[7px] text-slate-500">${timeStr}</span>
+              <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` · Settled: ${settledAt}` : ""}</span>
             </div>
             <div class="flex items-center gap-1 font-bold">
               <span>${statusBadge}</span>
