@@ -258,7 +258,7 @@ class AutoExecutor:
             return None
 
         # Fetch active Kalshi KXBTC15M market
-        active_m = kalshi_trader.get_active_15m_market()
+        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
         if not active_m:
             return None
 
@@ -363,7 +363,7 @@ class AutoExecutor:
         """
         Enables user to click 1-click execution for the current interval directly from the UI.
         """
-        active_m = kalshi_trader.get_active_15m_market()
+        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
         if not active_m:
             return {"success": False, "error": "No active KXBTC15M market found."}
 

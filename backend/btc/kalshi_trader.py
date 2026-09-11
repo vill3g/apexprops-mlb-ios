@@ -17,7 +17,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
-BASE_URL = "https://api.elections.kalshi.com"
+# Kalshi's documented production Trade API host.
+BASE_URL = "https://external-api.kalshi.com"
 CREDENTIALS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kalshi_credentials.json")
 
 
@@ -133,7 +134,7 @@ class KalshiTrader:
         try:
             resp = requests.get(
                 f"{BASE_URL}{path}",
-                params={"series_ticker": "KXBTC15M", "limit": 100},
+                params={"series_ticker": "KXBTC15M", "status": "open", "limit": 100},
                 headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
                 timeout=3.0
             )
@@ -175,7 +176,8 @@ class KalshiTrader:
                         "no_ask": no_ask,
                         "last_price": last_price,
                         "volume_24h": float(active_m.get("volume_24h_fp") or 0.0),
-                        "status": active_m.get("status", "open")
+                        "status": active_m.get("status", "open"),
+                        "is_synthetic": False,
                     }
                     self._cached_market = res_market
                     self._cached_market_time = now_ts
@@ -211,7 +213,8 @@ class KalshiTrader:
                 "no_ask": 0.45,
                 "last_price": 0.58,
                 "volume_24h": 1250.0,
-                "status": "active"
+                "status": "active",
+                "is_synthetic": True,
             }
         except Exception as e:
             print(f"[KalshiTrader] Error generating interval contract: {e}")
@@ -274,6 +277,24 @@ class KalshiTrader:
             }
 
         # 2. LIVE TRADING EXECUTION
+        # Never submit a live order against a locally constructed ticker. Fetch
+        # Kalshi's open market immediately before ordering and require an exact
+        # ticker match to prevent market_not_found orders around contract rollover.
+        verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=True)
+        if not verified_market or verified_market.get("is_synthetic"):
+            return {
+                "success": False,
+                "error": "No verified open Kalshi BTC 15M market is available. Live order was not submitted."
+            }
+        verified_ticker = verified_market.get("ticker", "")
+        if not verified_ticker or ticker != verified_ticker:
+            return {
+                "success": False,
+                "error": "Kalshi market changed or expired before submission. Refresh and select the currently open market.",
+                "requested_ticker": ticker,
+                "verified_ticker": verified_ticker
+            }
+
         # Double check balance before submitting
         bal_res = self.get_balance(force_refresh=True)
         if not bal_res.get("success", False):
@@ -306,7 +327,7 @@ class KalshiTrader:
             "time_in_force": "immediate_or_cancel",
             "self_trade_prevention_type": "taker_at_cross",
             "subaccount": 0,
-            "exchange_index": 2
+            "exchange_index": 0
         }
 
         path = "/trade-api/v2/portfolio/events/orders"
