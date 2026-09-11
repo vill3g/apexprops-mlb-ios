@@ -550,6 +550,7 @@
               <span id="btcPredOutcomeText" class="text-xs sm:text-sm lg:text-base font-black font-mono text-white leading-none whitespace-nowrap">--</span>
               <span id="btcPredConfidenceTag" class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded font-bold uppercase text-slate-400 bg-slate-950 font-mono self-end mb-0.5">--</span>
             </div>
+            <span id="btcPredMadeTime" class="mt-0.5 text-[7px] sm:text-[8px] font-mono text-slate-500 whitespace-nowrap">Made --:--</span>
           </div>
           <!-- Hidden preservation elements for JS backward compatibility -->
           <div class="hidden">
@@ -3489,6 +3490,15 @@
       const barAbove = document.getElementById("btcPredProbBarAbove");
       const factorsList = document.getElementById("btcPredFactorsList");
       const banner = document.getElementById("btcPredBanner");
+      const madeTime = document.getElementById("btcPredMadeTime");
+
+      if (madeTime) {
+        const generatedAt = tb.prediction_generated_at || tb.generated_at;
+        const generatedDate = generatedAt ? new Date(generatedAt) : null;
+        madeTime.innerText = generatedDate && !Number.isNaN(generatedDate.getTime())
+          ? `Made ${generatedDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+          : "Made --:--";
+      }
 
       const isAbove = (tb.predicted_outcome || "").includes("ABOVE");
       const prob = Number(tb.probability_percent || 50);
@@ -4483,7 +4493,10 @@
           if (analysisData.target_benchmark) {
             renderBtcHeroHud({ ...analysisData.target_benchmark, price: analysisData.price || analysisData.target_benchmark.current_price });
             renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
-            renderBtcPredictor(analysisData.target_benchmark);
+            renderBtcPredictor({
+              ...analysisData.target_benchmark,
+              prediction_generated_at: analysisData.generated_at
+            });
             if (analysisData.target_benchmark && analysisData.target_benchmark.prediction_accuracy && !window.cachedBtcAccuracy) {
               renderBtcAccuracy(analysisData.target_benchmark.prediction_accuracy);
             }
