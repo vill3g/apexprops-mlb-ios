@@ -332,6 +332,17 @@
       .btc-card-structure  { grid-column: span 1 !important; }
     }
 
+    /* Keep the iPad header clear of the iOS status area. The tablet layout
+       previously replaced the safe-area padding with a fixed value. */
+    body.device-ipad .app-main-wrapper {
+      padding-top: max(0.6rem, calc(env(safe-area-inset-top, 0px) + 0.35rem)) !important;
+    }
+    body.device-ipad header {
+      background: #020617 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
     
     /* Lock Horizontal Scroll on Right Panel */
     .btc-right-panel {
