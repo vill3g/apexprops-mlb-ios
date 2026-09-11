@@ -705,6 +705,10 @@
             </div>
 
 <!-- Center: 15M Prediction Accuracy Tracker -->
+            <div id="btcPreviousDaysAccuracy" class="hidden sm:flex flex-col items-end px-2 py-0.5 rounded-lg bg-slate-950/80 border border-slate-800 font-mono shadow-sm shrink-0" title="Accuracy for recently completed calendar days">
+              <span class="text-[7px] font-black text-slate-500 uppercase tracking-wider">Previous days</span>
+              <span id="btcPreviousDaysAccuracyValue" class="text-[8px] font-bold text-slate-300 whitespace-nowrap">--</span>
+            </div>
             <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0 mx-auto">
               <div class="hidden sm:flex items-center gap-0.5">
                 <span class="text-[10px]">🎯</span>
@@ -3702,8 +3706,9 @@
             actual: actual,
             correct: isHit
           });
-          if (stored.length > 40) stored = stored.slice(-40);
+          if (stored.length > 100) stored = stored.slice(-100);
           localStorage.setItem("btc_15m_live_settlements", JSON.stringify(stored));
+          updateDailyAccuracyHistory(stored, tracker.intervalStart);
         } catch (e) {}
 
         window._activeWindowTracker = null;
@@ -3713,19 +3718,73 @@
       }
     }
 
+    const BTC_ACCURACY_HISTORY_KEY = "btc_15m_live_settlements";
+    const BTC_DAILY_ACCURACY_HISTORY_KEY = "btc_15m_daily_accuracy";
+
+    function accuracyDateKey(intervalStart) {
+      const date = new Date(intervalStart * 1000);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getDailyAccuracyHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(BTC_DAILY_ACCURACY_HISTORY_KEY) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function updateDailyAccuracyHistory(settlements, changedIntervalStart) {
+      const daily = getDailyAccuracyHistory();
+      const dateKeys = Object.keys(daily).length === 0
+        ? [...new Set(settlements.map(s => accuracyDateKey(s.time)))]
+        : [accuracyDateKey(changedIntervalStart)];
+      dateKeys.forEach(dateKey => {
+        const daySettlements = settlements.filter(s => accuracyDateKey(s.time) === dateKey);
+        daily[dateKey] = {
+          total: daySettlements.length,
+          correct: daySettlements.filter(s => s.correct).length
+        };
+      });
+      localStorage.setItem(BTC_DAILY_ACCURACY_HISTORY_KEY, JSON.stringify(daily));
+      return daily;
+    }
+
+    function renderPreviousDaysAccuracy(daily) {
+      const valueEl = document.getElementById("btcPreviousDaysAccuracyValue");
+      if (!valueEl) return;
+
+      const today = accuracyDateKey(Math.floor(Date.now() / 1000));
+      const previousDays = Object.entries(daily)
+        .filter(([date, stats]) => date < today && stats && stats.total > 0)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 3);
+
+      valueEl.innerText = previousDays.length
+        ? previousDays.map(([date, stats]) => {
+            const label = new Date(`${date}T12:00:00`).toLocaleDateString([], { weekday: "short" });
+            return `${label} ${Math.round((stats.correct / stats.total) * 100)}%`;
+          }).join(" · ")
+        : "No prior days";
+    }
+
     // Client-side Accuracy Evaluator: Starts at 0 of 0 on boot, counts up per logged 15m close
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
       // Load live settlements saved in localStorage
       let liveSettlements = [];
       try {
-        const stored = localStorage.getItem("btc_15m_live_settlements");
+        const stored = localStorage.getItem(BTC_ACCURACY_HISTORY_KEY);
         if (stored) {
           liveSettlements = JSON.parse(stored);
           if (!Array.isArray(liveSettlements)) liveSettlements = [];
           // If stored contains legacy dummy data with missing settle price, clear it to start clean
           if (liveSettlements.some(s => s.settle === undefined && s.target === undefined)) {
             liveSettlements = [];
-            localStorage.removeItem("btc_15m_live_settlements");
+            localStorage.removeItem(BTC_ACCURACY_HISTORY_KEY);
           }
         }
       } catch (e) {
@@ -3747,11 +3806,19 @@
 
       window.cachedBtcAccuracy = accData;
       renderBtcAccuracy(accData);
+      const dailyHistory = getDailyAccuracyHistory();
+      if (Object.keys(dailyHistory).length === 0 && liveSettlements.length > 0) {
+        liveSettlements.forEach(settlement => updateDailyAccuracyHistory(liveSettlements, settlement.time));
+      }
+      renderPreviousDaysAccuracy(getDailyAccuracyHistory());
       return accData;
     }
 
     function resetBtcAccuracyCounter() {
-      try { localStorage.removeItem("btc_15m_live_settlements"); } catch (e) {}
+      try {
+        localStorage.removeItem(BTC_ACCURACY_HISTORY_KEY);
+        localStorage.removeItem(BTC_DAILY_ACCURACY_HISTORY_KEY);
+      } catch (e) {}
       evaluateClientAccuracy(window._lastRawCandles || [], window._lastIsCoinbaseFormat || true);
     }
 
