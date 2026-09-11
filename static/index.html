@@ -1210,10 +1210,19 @@
 
     // Verified Player Photo Registry & Error Fallback
     let playerPhotoRegistry = null;
+
+    async function fetchBundledData(filename) {
+      // The FastAPI server exposes these files under /static; iOS standalone
+      // builds keep them beside index.html in a relative data/ directory.
+      const serverResponse = await fetch(`/static/data/${filename}`).catch(() => null);
+      if (serverResponse && serverResponse.ok) return serverResponse;
+      return fetch(`data/${filename}`);
+    }
+
     async function loadPlayerPhotoRegistry() {
       if (playerPhotoRegistry) return playerPhotoRegistry;
       try {
-        const res = await fetch('data/player_photos.json');
+        const res = await fetchBundledData('player_photos.json');
         if (res.ok) playerPhotoRegistry = await res.json();
       } catch (e) {}
       return playerPhotoRegistry || {};
@@ -3952,7 +3961,7 @@
         // 0. If on standalone mobile, check bundled desktop analysis first
         if (!window.cachedBtcTargetPrice) {
           try {
-            const staticResp = await fetch('data/btc_analysis.json');
+            const staticResp = await fetchBundledData('btc_analysis.json');
             if (staticResp.ok) {
               const staticData = await staticResp.json();
               if (staticData && staticData.target_benchmark && staticData.target_benchmark.target_price) {
@@ -4421,7 +4430,7 @@
           .then(async (data) => {
              if (data) return data;
              try {
-                const fallbackResp = await fetch(`data/btc_analysis.json`);
+                const fallbackResp = await fetchBundledData('btc_analysis.json');
                 if (fallbackResp.ok) return await fallbackResp.json();
              } catch(e) {}
              return null;
