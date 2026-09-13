@@ -312,6 +312,10 @@ class AutoExecutor:
                 "predicted": trade.get("prediction_direction", trade.get("direction", "")),
                 "actual": "ABOVE" if actual_result == "YES" else "BELOW" if actual_result == "NO" else actual_result,
                 "time": trade.get("settled_at") or trade.get("timestamp"),
+                "settled_at": trade.get("settled_at") or trade.get("timestamp"),
+                "pnl": trade.get("pnl", 0.0),
+                "conviction_grade": trade.get("conviction_grade", ""),
+                "confidence": trade.get("probability_percent"),
             }
             try:
                 target = float(trade.get("strike"))
