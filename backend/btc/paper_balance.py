@@ -1,40 +1,44 @@
 import json
 import os
 import threading
+from backend.btc.io_utils import atomic_json_write
 
-_lock = threading.Lock()
+_lock = threading.RLock()
 BALANCE_PATH = os.path.join(os.path.dirname(__file__), "paper_balance.json")
+_cached_balance: float = 500.0
+_cached_balance_mtime: float = 0.0
 
 def load_balance() -> float:
+    global _cached_balance, _cached_balance_mtime
     if not os.path.exists(BALANCE_PATH):
         return 500.0
     try:
+        mtime = os.path.getmtime(BALANCE_PATH)
         with _lock:
+            if _cached_balance_mtime == mtime:
+                return _cached_balance
             with open(BALANCE_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return data.get("balance", 500.0)
+                _cached_balance = float(data.get("balance", 500.0))
+                _cached_balance_mtime = mtime
+                return _cached_balance
     except Exception:
-        return 500.0
+        return _cached_balance
 
 def update_balance(delta: float) -> float:
+    global _cached_balance, _cached_balance_mtime
     with _lock:
-        try:
-            if os.path.exists(BALANCE_PATH):
-                with open(BALANCE_PATH, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    balance = data.get("balance", 500.0)
-            else:
-                balance = 500.0
-        except Exception:
-            balance = 500.0
-            
-        new_balance = balance + delta
-        with open(BALANCE_PATH, "w", encoding="utf-8") as f:
-            json.dump({"balance": new_balance}, f, indent=2)
+        current = load_balance()
+        new_balance = round(current + delta, 4)
+        atomic_json_write(BALANCE_PATH, {"balance": new_balance})
+        _cached_balance = new_balance
+        _cached_balance_mtime = os.path.getmtime(BALANCE_PATH)
         return new_balance
 
 def reset_balance() -> float:
+    global _cached_balance, _cached_balance_mtime
     with _lock:
-        with open(BALANCE_PATH, "w", encoding="utf-8") as f:
-            json.dump({"balance": 500.0}, f, indent=2)
+        atomic_json_write(BALANCE_PATH, {"balance": 500.0})
+        _cached_balance = 500.0
+        _cached_balance_mtime = os.path.getmtime(BALANCE_PATH)
         return 500.0
