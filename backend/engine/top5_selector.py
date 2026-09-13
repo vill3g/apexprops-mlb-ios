@@ -536,7 +536,7 @@ class Top5Selector:
             return 4.20
 
     def _get_curated_slate_fallback(self) -> List[Dict[str, Any]]:
-        return [
+        fallback = [
             {
                 "id": 39832, "rank": 1, "name": "Shohei Ohtani", "team": "LAD", "team_name": "Los Angeles Dodgers",
                 "team_logo": "https://a.espncdn.com/i/teamlogos/mlb/500/lad.png",

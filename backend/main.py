@@ -1,9 +1,12 @@
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 """
 FastAPI Application for ApexProps MLB & International Baseball Engine.
 Serves REST API and hosts the graphical user interface.
 """
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Request, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -11,8 +14,10 @@ from typing import Optional, List, Dict, Any
 import os
 import time
 import json
+import threading
 import pandas as pd
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown, get_live_15m_target_data, format_volume_series
 from backend.btc.indicators import add_all_indicators
@@ -59,7 +64,7 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "4.0.0", "service": "BTC 15M Engine"}
+    return {"status": "ok", "version": "4.1.0", "service": "BTC 15M Engine"}
 
 @app.get("/api/slate")
 def get_slate():
@@ -270,7 +275,7 @@ def get_international_h2h(league: str, game_id: str):
             "matchup": f"{match['away_team']['name']} vs {match['home_team']['name']}",
             "h2h_history": match.get("h2h_history")
         }
-    return {"error": "Game not found", "game_id": game_id}
+    return JSONResponse({"error": "Game not found", "game_id": game_id}, status_code=404)
 
 @app.get("/api/draftkings/odds")
 def get_draftkings_odds():
@@ -333,34 +338,39 @@ def live_poll():
         "games": live_games
     }
 
-# =====================================================================
-# BITCOIN 15M PATTERN ANALYZER & CONFLUENCE ENGINE
-# =====================================================================
 btc_timeframe_cache: Dict[str, Any] = {}
+_btc_cache_lock = threading.Lock()
 
-def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 15):
+def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 10):
     """Retrieve or compute BTC analysis with smart per-timeframe caching."""
     now = time.time()
     tf = timeframe.lower()
-    if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
-        return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+    with _btc_cache_lock:
+        if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
+            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        # AUDIT FIX #4a: Stampede protection — claim the cache slot immediately so concurrent
+        # requests see it as "fresh" and don't all pile in to refetch simultaneously.
+        if tf not in btc_timeframe_cache:
+            btc_timeframe_cache[tf] = {"df": None, "analysis": None, "last_fetched": now}
+        else:
+            btc_timeframe_cache[tf]["last_fetched"] = now
 
     try:
-        df = fetch_candles(timeframe=tf, limit=250)
+        df = fetch_candles(timeframe=tf, limit=1000)
         analysis = analyze_btc(df, timeframe=tf)
-        # Preserve when this prediction was calculated. The candle timestamp is
-        # market-data time, which can be several minutes older than the signal.
         analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
-        btc_timeframe_cache[tf] = {
-            "df": df,
-            "analysis": analysis,
-            "last_fetched": now
-        }
+        with _btc_cache_lock:
+            btc_timeframe_cache[tf] = {
+                "df": df,
+                "analysis": analysis,
+                "last_fetched": time.time()
+            }
         return df, analysis
     except Exception as e:
-        print(f"Error fetching live BTC candles for {tf}: {e}")
-        if tf in btc_timeframe_cache:
-            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        logger.error(f"Error fetching live BTC candles for {tf}: {e}")
+        with _btc_cache_lock:
+            if tf in btc_timeframe_cache:
+                return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
         raise e
 
 def sanitize_btc_json(val):
@@ -410,23 +420,24 @@ def api_btc_prediction_accuracy():
             "correct": bool(latest.get("correct")) if latest else False,
         })
     except Exception as e:
-        print(f"[API] Error in prediction accuracy endpoint: {e}")
-        raise e
+        logger.error(f"[API] Error in prediction accuracy endpoint: {e}")
+        return JSONResponse({
+            "accuracy": {"total_evaluated": 0, "correct_picks": 0, "ratio_text": "0 of 0 Correct", "recent_outcomes": []},
+            "forecast": None,
+            "trade": None,
+            "correct": False,
+            "error": str(e)
+        }, status_code=500)
 
 @app.get("/api/btc/live")
 def api_btc_live():
     """
     Ultra-low latency endpoint returning live price, 15m target benchmark,
     spread delta, 5-target trend box, and candle countdown for 1s polling.
-    Also triggers autonomous rollover execution if window is open.
+    Autonomous rollover execution is handled in a dedicated background worker.
     """
     try:
         data = get_live_15m_target_data()
-        # Trigger autonomous check non-blockingly
-        try:
-            auto_executor.check_and_execute_rollover()
-        except Exception as e_trade:
-            print(f"[AutoExecutor Error]: {e_trade}")
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
         return JSONResponse({
@@ -440,7 +451,7 @@ def api_btc_live():
             "last_5_targets": [],
             "streak_summary": "--",
             "error": str(e)
-        })
+        }, status_code=500)
 
 @app.get("/api/btc/ticker")
 def api_btc_ticker():
@@ -477,6 +488,50 @@ def api_btc_kalshi():
         return JSONResponse(data)
     except Exception as e:
         return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+
+@app.get("/api/btc/kalshi/orderbook")
+@app.get("/api/btc/kalshi/pricebook")
+def api_btc_kalshi_orderbook():
+    """Returns top-of-book market depth, spread, bid/ask sizes and order imbalance."""
+    try:
+        from backend.btc.kalshi_client import get_kalshi_15m_market
+        data = get_kalshi_15m_market()
+        if not data:
+            return JSONResponse({"status": "unavailable", "bids": [], "asks": []})
+        
+        yes_bid = data.get("yes_bid", 0.0)
+        yes_ask = data.get("yes_ask", 0.0)
+        no_bid = data.get("no_bid", 0.0)
+        no_ask = data.get("no_ask", 0.0)
+        spread = data.get("spread", 0.04)
+        yes_bid_size = data.get("yes_bid_size", 0)
+        yes_ask_size = data.get("yes_ask_size", 0)
+        imbalance = data.get("orderbook_imbalance", 0.0)
+        bias = data.get("market_bias", "NEUTRAL")
+
+        return JSONResponse({
+            "ticker": data.get("ticker", ""),
+            "target_price": data.get("target_price", 0.0),
+            "yes_prob": data.get("yes_prob", 50.0),
+            "no_prob": data.get("no_prob", 50.0),
+            "top_of_book": {
+                "yes_bid": yes_bid,
+                "yes_ask": yes_ask,
+                "no_bid": no_bid,
+                "no_ask": no_ask,
+                "yes_bid_size": yes_bid_size,
+                "yes_ask_size": yes_ask_size,
+                "spread": spread,
+                "spread_cents": round(spread * 100, 1),
+                "orderbook_imbalance_percent": imbalance,
+                "market_bias": bias
+            },
+            "bids": [{"side": "YES", "price": yes_bid, "size": yes_bid_size}, {"side": "NO", "price": no_bid, "size": 0}],
+            "asks": [{"side": "YES", "price": yes_ask, "size": yes_ask_size}, {"side": "NO", "price": no_ask, "size": 0}],
+            "timestamp": int(time.time())
+        })
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 # =====================================================================
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS
@@ -520,6 +575,28 @@ def api_btc_trade_threshold(threshold: str = Query(...)):
 def api_btc_trade_contracts(count: int = Query(...)):
     """Set number of contracts per trade."""
     res = auto_executor.set_max_contracts(count)
+    return JSONResponse(res)
+
+
+@app.post("/api/btc/trade/ai_settings")
+async def api_btc_trade_ai_settings(request: Request):
+    try:
+        data = await request.json()
+        res = auto_executor.set_ai_settings(data)
+        from backend.btc.ml_engine import get_ml_engine
+        ml_eng = get_ml_engine()
+        ml_eng.apply_settings(data)
+        return JSONResponse({"status": "ok", "settings": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)})
+
+@app.post("/api/btc/trade/risk_limits")
+def api_btc_trade_risk_limits(
+    max_daily_risk: Optional[float] = Query(None),
+    max_daily_trades: Optional[int] = Query(None)
+):
+    """Set maximum daily risk ($) and maximum daily trades."""
+    res = auto_executor.set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
 @app.post("/api/btc/trade/manual")
@@ -576,6 +653,11 @@ def api_btc_scalp_stop():
 def api_btc_scalp_config():
     """Get current scalp engine configuration."""
     return JSONResponse(scalp_engine.load_config())
+
+@app.get("/api/btc/scalp/status")
+def api_btc_scalp_status():
+    """Get current scalp engine runtime status and monitored positions."""
+    return JSONResponse(scalp_engine.get_status())
 
 @app.patch("/api/btc/scalp/config")
 def api_btc_scalp_config_update(body: dict):
@@ -662,33 +744,90 @@ def api_btc_candles(timeframe: str = "15m"):
 
 
 # =====================================================================
-# BACKGROUND AUTO-TRADER TASK
+# BACKGROUND AUTO-TRADER TASK & WATCHDOG
 # =====================================================================
 import threading
-import time
+_last_autotrader_heartbeat = time.time()
 
 def _auto_trader_background_loop():
+    global _last_autotrader_heartbeat
+    settle_tick = 0
+    logger.info("[AutoTrader Worker] Loop started.")
     while True:
         try:
+            _last_autotrader_heartbeat = time.time()
             auto_executor.check_and_execute_rollover()
+            settle_tick += 1
+            if settle_tick % 5 == 0:  # Periodically check settlements every 10s
+                auto_executor.check_settlements()
+            _last_autotrader_heartbeat = time.time()
         except Exception as e:
-            pass
+            logger.error(f"[AutoTrader Background] Error in loop: {e}", exc_info=True)
         time.sleep(2)
+
+def _watchdog_monitor_loop():
+    """AUDIT FIX #8: Watchdog thread to monitor and revive the auto-trader thread if it terminates."""
+    global _last_autotrader_heartbeat
+    while True:
+        try:
+            time.sleep(15)
+            stalled_seconds = time.time() - _last_autotrader_heartbeat
+            if stalled_seconds > 60:
+                logger.warning(f"[AutoTrader Watchdog] Background worker stalled or inactive for {stalled_seconds:.1f}s. Reviving worker thread...")
+                _last_autotrader_heartbeat = time.time()
+                t = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderRevived")
+                t.start()
+        except Exception as e:
+            logger.error(f"[AutoTrader Watchdog] Error: {e}")
 
 @app.on_event("startup")
 def start_background_tasks():
-    t = threading.Thread(target=_auto_trader_background_loop, daemon=True)
-    t.start()
-    print("[AutoTrader] Background thread started.")
+    t1 = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderMain")
+    t1.start()
+    t2 = threading.Thread(target=_watchdog_monitor_loop, daemon=True, name="AutoTraderWatchdog")
+    t2.start()
+    logger.info("[AutoTrader] Background thread & watchdog monitor started.")
 
 # Mount static directory and route index
 
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+@app.get("/api/ui_version")
+def get_ui_version():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    mtime = os.path.getmtime(index_path) if os.path.exists(index_path) else 0
+    return JSONResponse(
+        {"version": "4.1.0", "mtime": mtime},
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
 @app.api_route("/", methods=["GET", "HEAD"])
 def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
-        return FileResponse(index_path)
+        return FileResponse(
+            index_path,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return {"message": "ApexProps Backend Running. Frontend index.html not found."}
+
+@app.api_route("/trades", methods=["GET", "HEAD"])
+@app.api_route("/trade-list", methods=["GET", "HEAD"])
+def serve_trades():
+    trades_path = os.path.join(STATIC_DIR, "trades.html")
+    if os.path.exists(trades_path):
+        return FileResponse(
+            trades_path,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    return {"message": "Trade list page not found."}
+

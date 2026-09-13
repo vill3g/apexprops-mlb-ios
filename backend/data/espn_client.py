@@ -191,7 +191,8 @@ class ESPNClient:
             status = ev.get("status", {}).get("type", {}).get("state", "pre")
             status_detail = ev.get("status", {}).get("type", {}).get("shortDetail", "")
             
-            comp = ev.get("competitions", [{}])[0]
+            competitions = ev.get("competitions")
+            comp = competitions[0] if (competitions and isinstance(competitions, list)) else {}
             venue = comp.get("venue", {}).get("fullName", "Standard Park")
             venue_city = comp.get("venue", {}).get("address", {}).get("city", "")
 

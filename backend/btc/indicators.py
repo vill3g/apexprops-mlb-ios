@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 """
 Technical Indicators & Momentum Calculations for 15-Minute Bitcoin Analysis.
 Includes EMAs (9, 21, 50, 200), RSI (14) with Bullish/Bearish Divergence,
@@ -62,6 +64,17 @@ def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     return atr
 
 
+def compute_cvd_proxy(df: pd.DataFrame) -> pd.Series:
+    """
+    Approximates Cumulative Volume Delta (CVD) using candle structure.
+    Formula: Volume * ((Close - Open) / (High - Low + epsilon))
+    """
+    # Use replace(0) then clip to avoid doji candles producing inf/nan in delta
+    range_hl = (df["high"] - df["low"]).replace(0, 1e-9)
+    range_hl = range_hl.where(range_hl.abs() >= 1e-9, 1e-9)
+    delta_proxy = df["volume"] * ((df["close"] - df["open"]) / range_hl)
+    return delta_proxy.cumsum()
+
 def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     """
     Detect regular bullish and bearish RSI divergences.
@@ -69,6 +82,9 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     - Bearish: Price Higher High while RSI Lower High (in overbought/toppy territory > 55).
     """
     divergences = []
+    if df is None or len(df) == 0:
+        return divergences
+    df = df.reset_index(drop=True)
     n = len(df)
     if n < lookback + 5:
         return divergences
@@ -123,6 +139,37 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     return divergences
 
 
+def detect_cvd_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
+    """
+    Detect CVD (Cumulative Volume Delta) divergences against price action.
+    Bullish Divergence: Price making Lower Lows, but CVD making Higher Lows.
+    Bearish Divergence: Price making Higher Highs, but CVD making Lower Highs.
+    """
+    divs = []
+    if len(df) < lookback + 5 or "cvd" not in df.columns:
+        return divs
+        
+    window = df.tail(lookback)
+    p_highs, p_lows = window["high"].values, window["low"].values
+    c_vals = window["cvd"].values
+    
+    # Bearish CVD Divergence (Price HH, CVD LH)
+    if p_highs[-1] >= max(p_highs[:-1]) and c_vals[-1] < max(c_vals[:-1]):
+        divs.append({
+            "type": "BEARISH_CVD_DIVERGENCE",
+            "description": "Price pushing to local highs but aggressive Volume Delta (CVD) is dropping (Fakeout up)"
+        })
+        
+    # Bullish CVD Divergence (Price LL, CVD HL)
+    if p_lows[-1] <= min(p_lows[:-1]) and c_vals[-1] > min(c_vals[:-1]):
+        divs.append({
+            "type": "BULLISH_CVD_DIVERGENCE",
+            "description": "Price pushing to local lows but aggressive Volume Delta (CVD) is rising (Absorption)"
+        })
+        
+    return divs
+
+
 def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Append all technical indicators to the DataFrame.
@@ -163,16 +210,47 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     # VWAP
     df["vwap"] = compute_vwap(df)
+    
+    # CVD Proxy
+    df["cvd"] = compute_cvd_proxy(df)
 
     return df
 
 
 def compute_vwap(df: pd.DataFrame) -> pd.Series:
-    """Calculate Intraday Session Volume Weighted Average Price (VWAP)."""
+    """Calculate Intraday Session (Daily) Volume Weighted Average Price (VWAP)."""
     typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
-    cum_vol_price = (typical_price * df["volume"]).cumsum()
-    cum_vol = df["volume"].cumsum() + 1e-10
-    return cum_vol_price / cum_vol
+    vol_price = typical_price * df["volume"]
+    
+    # We need a date column to group by. If 'timestamp' exists and is datetime, use it.
+    if pd.api.types.is_datetime64_any_dtype(df.index):
+        dates = df.index.date
+    elif "datetime" in df.columns:
+        dates = pd.to_datetime(df["datetime"]).dt.date
+    else:
+        # Fallback to cumulative if no datetime available
+        cum_vol_price = vol_price.cumsum()
+        cum_vol = df["volume"].cumsum().replace(0, np.nan)
+        return cum_vol_price / cum_vol
+        
+    vwap = vol_price.groupby(dates).cumsum() / (df["volume"].groupby(dates).cumsum() + 1e-10)
+    return vwap
+
+def compute_atr_percentile(df: pd.DataFrame, period: int = 14, lookback: int = 100) -> float:
+    """Calculates the current ATR as a percentile of its recent history (volatility regime)."""
+    if "atr" not in df.columns:
+        df["atr"] = compute_atr(df, period)
+    
+    if len(df) < lookback:
+        return 50.0  # default middle ground
+        
+    recent_atrs = df["atr"].dropna().tail(lookback)
+    if recent_atrs.empty:
+        return 50.0
+        
+    current_atr = recent_atrs.iloc[-1]
+    percentile = (recent_atrs < current_atr).mean() * 100.0
+    return round(percentile, 1)
 
 
 def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[dict]:
@@ -201,7 +279,7 @@ def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[
                     "bottom": round(float(c1["high"]), 2),
                     "size": round(float(gap_size), 2),
                     "candle_index": i - 1,
-                    "time": int(c2["time"]),
+                    "time": int(c2.get("time", 0)),
                     "description": f"Bullish FVG between ${c1['high']:.1f} and ${c3['low']:.1f} (+${gap_size:.1f})"
                 })
         elif c1["low"] > c3["high"]:
@@ -214,7 +292,7 @@ def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[
                     "bottom": round(float(c3["high"]), 2),
                     "size": round(float(gap_size), 2),
                     "candle_index": i - 1,
-                    "time": int(c2["time"]),
+                    "time": int(c2.get("time", 0)),
                     "description": f"Bearish FVG between ${c3['high']:.1f} and ${c1['low']:.1f} (-${gap_size:.1f})"
                 })
     return fvgs
@@ -248,6 +326,7 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
 
     # Divergences
     divergences = detect_rsi_divergences(df)
+    cvd_divergences = detect_cvd_divergences(df)
 
     # MACD crossover
     macd_cross = None
@@ -257,6 +336,8 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
         macd_cross = "BEARISH_CROSS"
 
     macd_hist_direction = "EXPANDING_UP" if last["macd_hist"] > prev["macd_hist"] else "EXPANDING_DOWN"
+
+    atr_percentile = compute_atr_percentile(df)
 
     return {
         "price": float(last["close"]),
@@ -271,6 +352,7 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
         "rsi": round(rsi_val, 2),
         "rsi_status": rsi_status,
         "divergences": divergences,
+        "cvd_divergences": cvd_divergences,
         "macd_line": round(float(last["macd_line"]), 2),
         "macd_signal": round(float(last["macd_signal"]), 2),
         "macd_hist": round(float(last["macd_hist"]), 2),
@@ -280,6 +362,7 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
         "bb_lower": round(float(last["bb_lower"]), 2),
         "bb_squeeze": bool(last["bb_squeeze"]),
         "atr": round(float(last["atr"]), 2),
+        "atr_percentile": atr_percentile,
         "volume": round(float(last["volume"]), 4),
         "vol_ratio": round(float(last["vol_ratio"]), 2),
         "vol_surge": bool(last["vol_surge"]),
@@ -294,6 +377,6 @@ if __name__ == "__main__":
     df = fetch_15m_candles(limit=250)
     df = add_all_indicators(df)
     summary = extract_indicator_summary(df)
-    print("Indicator Summary:")
+    logger.info("Indicator Summary:")
     for k, v in summary.items():
-        print(f"  {k}: {v}")
+        logger.info(f"  {k}: {v}")

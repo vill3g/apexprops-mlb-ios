@@ -8,12 +8,22 @@ import time
 from datetime import datetime, timezone
 import requests
 import pandas as pd
+import numpy as np
 import os
 import logging
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
 logger = logging.getLogger(__name__)
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
+
+_HTTP_SESSION = requests.Session()
+_adapter = HTTPAdapter(pool_connections=20, pool_maxsize=50, max_retries=Retry(total=2, backoff_factor=0.2))
+_HTTP_SESSION.mount("https://", _adapter)
+_HTTP_SESSION.mount("http://", _adapter)
+_HTTP_SESSION.headers.update(HEADERS)
 
 try:
     from .kalshi_client import get_kalshi_15m_market
@@ -55,7 +65,7 @@ def _fetch_from_coinbase(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     cfg = TIMEFRAMES.get(timeframe, TIMEFRAMES["15m"])
     url = "https://api.exchange.coinbase.com/products/BTC-USD/candles"
     params = {"granularity": cfg["coinbase"]}
-    resp = requests.get(url, params=params, headers=HEADERS, timeout=8)
+    resp = _HTTP_SESSION.get(url, params=params, timeout=3)
     resp.raise_for_status()
     raw = resp.json()
     if not isinstance(raw, list) or len(raw) == 0:
@@ -84,7 +94,7 @@ def _fetch_from_kraken(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame
     cfg = TIMEFRAMES.get(timeframe, TIMEFRAMES["15m"])
     url = "https://api.kraken.com/0/public/OHLC"
     params = {"pair": "XBTUSD", "interval": cfg["kraken"]}
-    resp = requests.get(url, params=params, headers=HEADERS, timeout=8)
+    resp = _HTTP_SESSION.get(url, params=params, timeout=3)
     resp.raise_for_status()
     data = resp.json()
     if data.get("error"):
@@ -115,7 +125,7 @@ def _fetch_from_binance_us(timeframe: str = "15m", limit: int = 300) -> pd.DataF
     cfg = TIMEFRAMES.get(timeframe, TIMEFRAMES["15m"])
     url = "https://api.binance.us/api/v3/klines"
     params = {"symbol": "BTCUSDT", "interval": cfg["binance"], "limit": min(limit, 500)}
-    resp = requests.get(url, params=params, headers=HEADERS, timeout=8)
+    resp = _HTTP_SESSION.get(url, params=params, timeout=3)
     resp.raise_for_status()
     raw = resp.json()
     if not isinstance(raw, list) or len(raw) == 0:
@@ -149,18 +159,11 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     
     hist = hist.reset_index()
     time_col = "Datetime" if "Datetime" in hist.columns else "Date"
-    records = []
-    for _, row in hist.iterrows():
-        ts = int(row[time_col].timestamp())
-        records.append({
-            "time": ts,
-            "open": float(row["Open"]),
-            "high": float(row["High"]),
-            "low": float(row["Low"]),
-            "close": float(row["Close"]),
-            "volume": float(row["Volume"])
-        })
-    df = pd.DataFrame(records).sort_values("time").reset_index(drop=True)
+    
+    # Vectorized conversion instead of iterrows
+    hist["time"] = hist[time_col].astype(int) // 10**9
+    hist = hist.rename(columns={"Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"})
+    df = hist[["time", "open", "high", "low", "close", "volume"]].sort_values("time").reset_index(drop=True)
     if timeframe == "4h":
         df = _aggregate_to_4h(df)
     return df.tail(limit).reset_index(drop=True)
@@ -206,15 +209,14 @@ def format_volume_series(df: pd.DataFrame) -> list[dict]:
     """Format volume bars with green/red colors for Lightweight Charts histogram."""
     if df.empty or "volume" not in df.columns:
         return []
-    series = []
-    for _, row in df.iterrows():
-        is_green = float(row["close"]) >= float(row["open"])
-        series.append({
-            "time": int(row["time"]),
-            "value": round(float(row["volume"]), 4),
-            "color": "rgba(16, 185, 129, 0.45)" if is_green else "rgba(239, 68, 68, 0.45)"
-        })
-    return series
+    is_green = df["close"].astype(float) >= df["open"].astype(float)
+    colors = np.where(is_green, "rgba(16, 185, 129, 0.45)", "rgba(239, 68, 68, 0.45)")
+    times = df["time"].astype(int).values
+    volumes = np.round(df["volume"].astype(float).values, 4)
+    return [
+        {"time": int(t), "value": float(v), "color": str(c)}
+        for t, v, c in zip(times, volumes, colors)
+    ]
 
 
 import threading
@@ -232,7 +234,98 @@ _target_cache = {
     "last_5_targets": [],
     "streak_summary": ""
 }
+_target_lock = threading.Lock()
 
+# Cache for Binance Futures Data
+_futures_cache = {
+    "data": {"funding_rate": 0.0, "open_interest": 0.0},
+    "timestamp": 0.0
+}
+_futures_lock = threading.Lock()
+
+def get_binance_futures_data() -> dict:
+    """
+    Fetches live BTC funding rate and open interest from Binance Futures public API.
+    Cached for 10 seconds (or 120 seconds on error to prevent blocking delays).
+    """
+    now = time.time()
+    with _futures_lock:
+        if _futures_cache["data"] is not None and (now - _futures_cache["timestamp"] < 10.0):
+            return _futures_cache["data"]
+            
+    try:
+        # Funding Rate
+        fr_resp = _HTTP_SESSION.get("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT", timeout=2)
+        fr_data = fr_resp.json()
+        funding_rate = float(fr_data.get("lastFundingRate", 0.0))
+        
+        # Open Interest
+        oi_resp = _HTTP_SESSION.get("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT", timeout=2)
+        oi_data = oi_resp.json()
+        open_interest = float(oi_data.get("openInterest", 0.0))
+        
+        result = {
+            "funding_rate": funding_rate,
+            "open_interest": open_interest
+        }
+        
+        with _futures_lock:
+            _futures_cache["timestamp"] = now
+            _futures_cache["data"] = result
+        return result
+    except Exception as e:
+        logger.debug(f"[DataFetcher] Binance Futures unavailable (geo-blocked or rate limited): {e}")
+        fallback = {"funding_rate": 0.0, "open_interest": 0.0}
+        with _futures_lock:
+            # Cache failure for 120 seconds to prevent hammering network on every request
+            _futures_cache["timestamp"] = now + 120.0
+            _futures_cache["data"] = fallback
+        return fallback
+
+# Cache for Fear & Greed (Updates daily, so 1 hour cache is very safe)
+_fng_cache = {
+    "timestamp": 0.0,
+    "data": None
+}
+_fng_lock = threading.Lock()
+
+def get_fear_and_greed_index() -> dict:
+    """
+    Fetches the Crypto Fear & Greed Index from alternative.me.
+    Cached for 1 hour to avoid rate limits since it only updates daily.
+    """
+    now = time.time()
+    with _fng_lock:
+        if _fng_cache["data"] and (now - _fng_cache["timestamp"] < 3600.0):
+            return _fng_cache["data"]
+            
+    try:
+        resp = _HTTP_SESSION.get("https://api.alternative.me/fng/?limit=1", timeout=4)
+        if resp.status_code == 200:
+            data = resp.json()
+            if "data" in data and len(data["data"]) > 0:
+                item = data["data"][0]
+                result = {
+                    "value": int(item.get("value", 50)),
+                    "classification": item.get("value_classification", "Neutral")
+                }
+                with _fng_lock:
+                    _fng_cache["timestamp"] = now
+                    _fng_cache["data"] = result
+                return result
+    except Exception as e:
+        logger.debug(f"[DataFetcher] Fear & Greed API unavailable: {e}")
+        fallback = {"value": 50, "classification": "Neutral"}
+        with _fng_lock:
+            _fng_cache["timestamp"] = now + 300.0
+            _fng_cache["data"] = fallback
+        return fallback
+
+
+def _save_ticker_cache(result: dict, now: float):
+    with _ticker_lock:
+        _ticker_cache["timestamp"] = now
+        _ticker_cache["data"] = result
 
 def get_btc_ticker() -> dict:
     """
@@ -244,39 +337,13 @@ def get_btc_ticker() -> dict:
     with _ticker_lock:
         if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 0.75):
             return _ticker_cache["data"]
-
-    # Attempt Robinhood Crypto Live Market Data
-    try:
-        rh_url = "https://api.robinhood.com/marketdata/forex/quotes/3d961844-d360-45fc-989b-f6fca761d511/"
-        rh_resp = requests.get(rh_url, headers=HEADERS, timeout=3)
-        if rh_resp.status_code == 200:
-            rh_data = rh_resp.json()
-            mark_price = float(rh_data.get("mark_price", 0))
-            if mark_price > 0:
-                open_p = float(rh_data.get("open_price", mark_price))
-                high_p = float(rh_data.get("high_price", mark_price))
-                low_p = float(rh_data.get("low_price", mark_price))
-                vol = float(rh_data.get("volume", 0))
-                chg = ((mark_price - open_p) / open_p) * 100 if open_p > 0 else 0.0
-                result = {
-                    "price": round(mark_price, 2),
-                    "open_24h": round(open_p, 2),
-                    "high_24h": round(high_p, 2),
-                    "low_24h": round(low_p, 2),
-                    "volume_24h": round(vol, 2),
-                    "change_24h": round(chg, 2),
-                    "source": "Robinhood Crypto",
-                }
-                _ticker_cache["timestamp"] = now
-                _ticker_cache["data"] = result
-                return result
-    except Exception as e:
-        logger.warning(f"Robinhood Crypto request failed: {e} – falling back to other sources.")
+        # Temporary lock extension to prevent concurrent stampede
+        _ticker_cache["timestamp"] = now + 1.0
 
     # Original Coinbase logic (fastest endpoint)
     try:
         url = "https://api.exchange.coinbase.com/products/BTC-USD/ticker"
-        resp = requests.get(url, headers=HEADERS, timeout=3)
+        resp = _HTTP_SESSION.get(url, timeout=3)
         if resp.status_code == 200:
             tick = resp.json()
             last_price = float(tick["price"])
@@ -286,7 +353,7 @@ def get_btc_ticker() -> dict:
             if not stats_cached or (now - stats_cached.get("ts", 0) > 30):
                 try:
                     s_url = "https://api.exchange.coinbase.com/products/BTC-USD/stats"
-                    s_resp = requests.get(s_url, headers=HEADERS, timeout=4)
+                    s_resp = _HTTP_SESSION.get(s_url, timeout=4)
                     if s_resp.status_code == 200:
                         s_data = s_resp.json()
                         stats_cached = {"open": float(s_data["open"]), "high": float(s_data["high"]), "low": float(s_data["low"]), "ts": now}
@@ -306,8 +373,7 @@ def get_btc_ticker() -> dict:
                 "change_24h": round(change_24h, 2),
                 "source": "Coinbase",
             }
-            _ticker_cache["timestamp"] = now
-            _ticker_cache["data"] = result
+            _save_ticker_cache(result, now)
             return result
     except Exception:
         pass
@@ -315,7 +381,7 @@ def get_btc_ticker() -> dict:
     # Fallback to Binance.US
     try:
         url = "https://api.binance.us/api/v3/ticker/24hr?symbol=BTCUSDT"
-        resp = requests.get(url, headers=HEADERS, timeout=3)
+        resp = _HTTP_SESSION.get(url, timeout=3)
         if resp.status_code == 200:
             data = resp.json()
             result = {
@@ -327,29 +393,30 @@ def get_btc_ticker() -> dict:
                 "change_24h": round(float(data["priceChangePercent"]), 2),
                 "source": "Binance.US",
             }
-            _ticker_cache["timestamp"] = now
-            _ticker_cache["data"] = result
+            _save_ticker_cache(result, now)
             return result
     except Exception:
         pass
 
     # Fallback to candles
-    if _ticker_cache["data"]:
-        return _ticker_cache["data"]
+    with _ticker_lock:
+        if _ticker_cache["data"]:
+            return _ticker_cache["data"]
     candles = fetch_candles(timeframe="15m", limit=2)
+    if candles is None or len(candles) == 0:
+        return {"price": 0.0, "open_24h": 0.0, "high_24h": 0.0, "low_24h": 0.0, "volume_24h": 0.0, "change_24h": 0.0, "source": "NoData"}
     last_close = float(candles.iloc[-1]["close"])
-    prev_close = float(candles.iloc[-2]["close"])
+    prev_close = float(candles.iloc[-2]["close"]) if len(candles) >= 2 else last_close
     result = {
         "price": round(last_close, 2),
         "open_24h": round(prev_close, 2),
         "high_24h": round(last_close, 2),
         "low_24h": round(last_close, 2),
         "volume_24h": round(float(candles.iloc[-1]["volume"]), 2),
-        "change_24h": round(((last_close - prev_close) / prev_close) * 100, 2),
+        "change_24h": round(((last_close - prev_close) / max(prev_close, 1e-9)) * 100, 2),
         "source": "CandleFallback",
     }
-    _ticker_cache["timestamp"] = now
-    _ticker_cache["data"] = result
+    _save_ticker_cache(result, now)
     return result
 
 
@@ -405,6 +472,7 @@ _live_target_result_cache = {
     "timestamp": 0.0,
     "data": None
 }
+_live_target_lock = threading.Lock()
 
 
 def get_live_15m_target_data() -> dict:
@@ -414,13 +482,17 @@ def get_live_15m_target_data() -> dict:
     Cached for 0.8s to provide sub-millisecond responses on 1s client polling.
     """
     now = time.time()
-    if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 1.2):
-        # Update countdown on the fly
-        cached = dict(_live_target_result_cache["data"])
-        cd = get_candle_countdown("15m")
-        cached["seconds_left"] = cd["seconds_left"]
-        cached["formatted_countdown"] = cd["formatted"]
-        return cached
+    with _live_target_lock:
+        if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 0.8):
+            # Update countdown on the fly
+            cached = dict(_live_target_result_cache["data"])
+            cd = get_candle_countdown("15m")
+            cached["seconds_left"] = cd["seconds_left"]
+            cached["formatted_countdown"] = cd["formatted"]
+            return cached
+        # AUDIT FIX #4b: Stampede protection — claim the cache slot immediately
+        # so concurrent 1s polls don't all pile in to refetch simultaneously.
+        _live_target_result_cache["timestamp"] = now
 
     ticker = get_btc_ticker()
     curr_price = float(ticker["price"])
@@ -433,29 +505,22 @@ def get_live_15m_target_data() -> dict:
     interval_id = int(interval_start_dt.timestamp())
     start_time_12hr = interval_start_dt.strftime("%I:%M %p").lstrip('0')
 
-    # Check if target benchmark needs refresh:
-    # 1. New 15-minute interval began (interval_id != cached interval_id)
-    # 2. No active target set yet
-    # 3. 5 minutes (300s) have passed since last verification check
-    needs_refresh = (
-        _target_cache.get("interval_id") != interval_id or
-        _target_cache["active_target"] is None or
-        (now - _target_cache["timestamp"] >= 300.0)
-    )
+    with _target_lock:
+        # Check if target benchmark needs refresh:
+        needs_refresh = (
+            _target_cache.get("interval_id") != interval_id or
+            _target_cache["active_target"] is None or
+            (now - _target_cache["timestamp"] >= 300.0)
+        )
+        if needs_refresh:
+            _target_cache["timestamp"] = now + 10.0  # Prevent stampede while fetching
 
     if needs_refresh:
         try:
             df = fetch_candles("15m", limit=20)
             n = len(df)
             if n > 0:
-                # The BTC price at the start of current 15 minutes is the open of latest candle
                 curr_start_price = round(float(df.iloc[-1]["open"]), 2)
-                _target_cache["active_target"] = curr_start_price
-                _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                _target_cache["timestamp"] = now
-
-                # Last 5 completed targets (minimal: close and direction)
                 last_5 = []
                 higher_count = 0
                 lower_count = 0
@@ -485,18 +550,33 @@ def get_live_15m_target_data() -> dict:
                         "color": "green" if is_higher else "red"
                     })
 
-                _target_cache["last_5_targets"] = last_5
-                _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
+                with _target_lock:
+                    _target_cache["active_target"] = curr_start_price
+                    _target_cache["interval_id"] = interval_id
+                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache["timestamp"] = now
+                    _target_cache["last_5_targets"] = last_5
+                    _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
         except Exception as e:
-            if not _target_cache["active_target"]:
-                _target_cache["active_target"] = curr_price
-                _target_cache["interval_id"] = interval_id
-                _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                _target_cache["last_5_targets"] = []
-                _target_cache["streak_summary"] = "--"
+            with _target_lock:
+                if not _target_cache["active_target"]:
+                    _target_cache["active_target"] = curr_price
+                    _target_cache["interval_id"] = interval_id
+                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache["last_5_targets"] = []
+                    _target_cache["streak_summary"] = "--"
 
-    target_price = _target_cache["active_target"] or curr_price
-    target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
+    with _target_lock:
+        target_price = _target_cache["active_target"] or curr_price
+        target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
+        last_5_targets = _target_cache["last_5_targets"]
+        streak_summary = _target_cache["streak_summary"]
+
+    # Override with Kalshi Official Strike
+    kalshi_m = get_kalshi_15m_market()
+    if kalshi_m and kalshi_m.get("target_price"):
+        target_price = float(kalshi_m["target_price"])
+        target_source = "Kalshi Official Strike"
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
@@ -509,25 +589,63 @@ def get_live_15m_target_data() -> dict:
         "delta": delta,
         "delta_pct": delta_pct,
         "status": status,
-        "kalshi": None,
+        "kalshi": kalshi_m,
         "change_24h": ticker["change_24h"],
         "high_24h": ticker["high_24h"],
         "low_24h": ticker["low_24h"],
         "volume_24h": ticker["volume_24h"],
         "seconds_left": countdown["seconds_left"],
         "formatted_countdown": countdown["formatted"],
-        "last_5_targets": _target_cache["last_5_targets"],
-        "streak_summary": _target_cache["streak_summary"],
+        "last_5_targets": last_5_targets,
+        "streak_summary": streak_summary,
         "latency_ms": round((time.time() - now) * 1000, 3)
     }
-    _live_target_result_cache["timestamp"] = time.time()
-    _live_target_result_cache["data"] = res
+    with _live_target_lock:
+        _live_target_result_cache["timestamp"] = time.time()
+        _live_target_result_cache["data"] = res
     return res
 
 
 if __name__ == "__main__":
-    print("Testing multi-timeframe fetcher...")
+    logger.info("Testing multi-timeframe fetcher...")
     for tf in ["1m", "5m", "15m", "1h", "4h", "1d"]:
         df = fetch_candles(timeframe=tf, limit=10)
         cd = get_candle_countdown(tf)
-        print(f"[{tf.upper()}] Fetched {len(df)} candles. Close in: {cd['formatted']} (Latest close: ${df.iloc[-1]['close']:.2f})")
+        logger.info(f"[{tf.upper()}] Fetched {len(df)} candles. Close in: {cd['formatted']} (Latest close: ${df.iloc[-1]['close']:.2f})")
+
+
+_ob_cache = {"time": 0.0, "data": None}
+_ob_lock = threading.Lock()
+
+def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
+    global _ob_cache
+    now = time.time()
+    with _ob_lock:
+        if _ob_cache["data"] is not None and (now - _ob_cache["time"]) < 4.0:
+            return dict(_ob_cache["data"])
+
+    try:
+        url = 'https://api.exchange.coinbase.com/products/BTC-USD/book?level=2'
+        resp = _HTTP_SESSION.get(url, headers={'Accept': 'application/json'}, timeout=3)
+        if resp.status_code == 200:
+            data = resp.json()
+            bids = data.get('bids', [])
+            asks = data.get('asks', [])
+            if not bids or not asks:
+                return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0}
+            best_bid = float(bids[0][0])
+            best_ask = float(asks[0][0])
+            mid = (best_bid + best_ask) / 2.0
+            bid_vol = sum(float(b[1]) for b in bids if float(b[0]) >= mid * (1 - depth_percent/100))
+            ask_vol = sum(float(a[1]) for a in asks if float(a[0]) <= mid * (1 + depth_percent/100))
+            total = bid_vol + ask_vol
+            imbalance = ((bid_vol - ask_vol) / total * 100) if total > 0 else 0.0
+            res = {'imbalance': round(imbalance, 2), 'bid_vol': round(bid_vol, 2), 'ask_vol': round(ask_vol, 2)}
+            with _ob_lock:
+                _ob_cache["time"] = time.time()
+                _ob_cache["data"] = res
+            return res
+    except Exception:
+        pass
+    return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0}
+

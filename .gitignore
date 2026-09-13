@@ -14,3 +14,16 @@ __pycache__/
 
 # Runtime data & trade history
 backend/data/trades_history.json
+backend/btc/paper_balance.json
+backend/data/prediction_trader.json
+backend/data/trading_config.json
+*.log
+scratch/
+fix*.py
+patch*.py
+script_*.js
+test*.py
+test.json
+js_settings.txt
+apply_features.py
+start_btc_server.vbs
