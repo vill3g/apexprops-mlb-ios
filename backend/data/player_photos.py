@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
 import json
 from typing import Optional, Dict, Any
@@ -23,7 +25,7 @@ class PlayerPhotoResolver:
                 with open(REGISTRY_PATH, 'r', encoding='utf-8') as f:
                     self.registry = json.load(f)
             except Exception as e:
-                print(f'Error loading player photo registry: {e}')
+                logger.error(f'Error loading player photo registry: {e}')
 
     def get_headshot(self, player_name: str, player_id: Any = None, team: str = '') -> str:
         if not player_name or player_name in ['Player', 'Probable Pitcher']:
