@@ -4361,7 +4361,7 @@
       const dotsEl = document.getElementById("btcAccuracyRecentDots");
 
       const total = acc.total_evaluated !== undefined ? Number(acc.total_evaluated) : (acc.total || 0);
-      const correct = acc.correct !== undefined ? Number(acc.correct) : 0;
+      const correct = acc.correct_picks !== undefined ? Number(acc.correct_picks) : (acc.correct || 0);
       
       if (total === 0 || acc.accuracy_percent === null || acc.accuracy_percent === undefined) {
         if (ratioEl) ratioEl.innerText = "0/0";
@@ -6657,7 +6657,7 @@
     async function togglePredictionMode(enabled) {
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${enabled}`, { method: "POST" });
+        const res = await authFetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${enabled}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         showAppToast("Prediction Mode", enabled ? "1-Min locked predictions active" : "Prediction mode disabled", enabled ? "success" : "info");
         pollKalshiTradingStatus();
@@ -7085,7 +7085,7 @@
               : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
           }
           const apiBase = getKalshiApiBase();
-          fetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
+          authFetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
         }
         
         if (settings.convictionFilter) {
@@ -7168,7 +7168,7 @@
                 
                 // Push to backend on load to ensure consistency
                 const apiBase = getKalshiApiBase();
-                fetch(`${apiBase}/api/btc/trade/ai_settings`, {
+                authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(aiSet)
@@ -7213,7 +7213,7 @@
       
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
+        const res = await authFetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
         if (res.ok) {
           const data = await res.json();
           const balEl = document.getElementById("kalshiSettingsPaperBalance");
@@ -7273,7 +7273,7 @@
     async function loadScalpConfigUI() {
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/scalp/config`);
+        const res = await authFetch(`${apiBase}/api/btc/scalp/config`);
         if (!res.ok) return;
         const cfg = await res.json();
         if (!cfg) return;
@@ -7337,7 +7337,7 @@
       try {
         const apiBase = getKalshiApiBase();
         const endpoint = nextState ? "/api/btc/scalp/start" : "/api/btc/scalp/stop";
-        const res = await fetch(`${apiBase}${endpoint}`, { method: "POST" });
+        const res = await authFetch(`${apiBase}${endpoint}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         scalpEngineActive = nextState;
         showAppToast("Scalp Engine", nextState ? "Autonomous scalper active" : "Scalper paused", nextState ? "success" : "info");
@@ -7368,7 +7368,7 @@
         };
 
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
+        const res = await authFetch(`${apiBase}/api/btc/scalp/config`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patchBody)
@@ -7396,7 +7396,7 @@
 
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
+        const res = await authFetch(`${apiBase}/api/btc/scalp/config`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(defaultCfg)
