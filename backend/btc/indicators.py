@@ -69,7 +69,9 @@ def compute_cvd_proxy(df: pd.DataFrame) -> pd.Series:
     Approximates Cumulative Volume Delta (CVD) using candle structure.
     Formula: Volume * ((Close - Open) / (High - Low + epsilon))
     """
-    range_hl = df["high"] - df["low"] + 1e-10
+    # Use replace(0) then clip to avoid doji candles producing inf/nan in delta
+    range_hl = (df["high"] - df["low"]).replace(0, 1e-9)
+    range_hl = range_hl.where(range_hl.abs() >= 1e-9, 1e-9)
     delta_proxy = df["volume"] * ((df["close"] - df["open"]) / range_hl)
     return delta_proxy.cumsum()
 
@@ -80,6 +82,9 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     - Bearish: Price Higher High while RSI Lower High (in overbought/toppy territory > 55).
     """
     divergences = []
+    if df is None or len(df) == 0:
+        return divergences
+    df = df.reset_index(drop=True)
     n = len(df)
     if n < lookback + 5:
         return divergences
@@ -225,7 +230,7 @@ def compute_vwap(df: pd.DataFrame) -> pd.Series:
     else:
         # Fallback to cumulative if no datetime available
         cum_vol_price = vol_price.cumsum()
-        cum_vol = df["volume"].cumsum() + 1e-10
+        cum_vol = df["volume"].cumsum().replace(0, np.nan)
         return cum_vol_price / cum_vol
         
     vwap = vol_price.groupby(dates).cumsum() / (df["volume"].groupby(dates).cumsum() + 1e-10)
@@ -274,7 +279,7 @@ def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[
                     "bottom": round(float(c1["high"]), 2),
                     "size": round(float(gap_size), 2),
                     "candle_index": i - 1,
-                    "time": int(c2["time"]),
+                    "time": int(c2.get("time", 0)),
                     "description": f"Bullish FVG between ${c1['high']:.1f} and ${c3['low']:.1f} (+${gap_size:.1f})"
                 })
         elif c1["low"] > c3["high"]:
@@ -287,7 +292,7 @@ def detect_fair_value_gaps(df: pd.DataFrame, min_gap_pct: float = 0.03) -> list[
                     "bottom": round(float(c3["high"]), 2),
                     "size": round(float(gap_size), 2),
                     "candle_index": i - 1,
-                    "time": int(c2["time"]),
+                    "time": int(c2.get("time", 0)),
                     "description": f"Bearish FVG between ${c3['high']:.1f} and ${c1['low']:.1f} (-${gap_size:.1f})"
                 })
     return fvgs
