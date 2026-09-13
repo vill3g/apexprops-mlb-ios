@@ -1,0 +1,16 @@
+# Pinned exact versions for deploy reproducibility (this app autonomously
+# places real-money trades on Kalshi — do not switch back to >= ranges).
+# Bump deliberately, one dependency at a time, with a full PAPER-mode
+# regression pass before merging.
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+xgboost==2.1.3
+requests==2.32.3
+urllib3==2.2.3
+cryptography==43.0.3
+python-dateutil==2.9.0.post0
+websockets==13.1
+yfinance==0.2.50
