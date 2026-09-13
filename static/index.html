@@ -4361,7 +4361,7 @@
       const dotsEl = document.getElementById("btcAccuracyRecentDots");
 
       const total = acc.total_evaluated !== undefined ? Number(acc.total_evaluated) : (acc.total || 0);
-      const correct = acc.correct !== undefined ? Number(acc.correct) : 0;
+      const correct = acc.correct_picks !== undefined ? Number(acc.correct_picks) : (acc.correct || 0);
       
       if (total === 0 || acc.accuracy_percent === null || acc.accuracy_percent === undefined) {
         if (ratioEl) ratioEl.innerText = "0/0";
