@@ -13,7 +13,7 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("the_odds_client")
 
-THE_ODDS_API_KEY = os.environ.get("THE_ODDS_API_KEY", "d071932f8bc476d8b101319c8fc87b1e")
+THE_ODDS_API_KEY = os.environ.get("THE_ODDS_API_KEY", "")
 BASE_URL = "https://api.the-odds-api.com/v4"
 CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "the_odds_cache.json")
 
@@ -56,8 +56,10 @@ ABBR_TO_TEAM_MAP = {v: k for k, v in TEAM_ABBR_MAP.items()}
 
 
 class TheOddsClient:
-    def __init__(self, api_key: str = THE_ODDS_API_KEY):
-        self.api_key = api_key
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key if api_key is not None else THE_ODDS_API_KEY
+        if not self.api_key:
+            logger.warning("[TheOddsClient] THE_ODDS_API_KEY is not configured; live odds requests will be skipped.")
         self.cache_ttl_games = 600.0   # 10 minutes cache for game odds
         self.cache_ttl_props = 1800.0  # 30 minutes cache for player props
         self._cache = self._load_disk_cache()
@@ -90,6 +92,9 @@ class TheOddsClient:
 
         if not force_refresh and (now - last_fetch < self.cache_ttl_games) and self._cache.get("games"):
             return self._cache["games"]
+
+        if not self.api_key:
+            return self._cache.get("games", {})
 
         url = f"{BASE_URL}/sports/baseball_mlb/odds"
         params = {
@@ -200,6 +205,9 @@ class TheOddsClient:
 
         if not force_refresh and (now - fetched_at_map.get(event_id, 0.0) < self.cache_ttl_props) and event_id in props_cache:
             return props_cache[event_id]
+
+        if not self.api_key:
+            return props_cache.get(event_id, {})
 
         url = f"{BASE_URL}/sports/baseball_mlb/events/{event_id}/odds"
         params = {

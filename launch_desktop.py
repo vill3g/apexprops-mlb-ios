@@ -12,10 +12,39 @@ import urllib.request
 import webbrowser
 import threading
 
+import secrets
+
 PORT = 8056
-LOCAL_URL = f"http://localhost:{PORT}"
-HEALTH_URL = f"http://localhost:{PORT}/api/health"
+BIND_HOST = "0.0.0.0" if "--lan" in sys.argv else "127.0.0.1"
+HEALTH_URL = f"http://127.0.0.1:{PORT}/api/health"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Ensure local APP_API_TOKEN exists
+LOCAL_TOKEN_FILE = os.path.join(APP_DIR, ".local_token")
+def get_or_create_local_token() -> str:
+    token = os.environ.get("APP_API_TOKEN", "").strip()
+    if token:
+        return token
+    if os.path.exists(LOCAL_TOKEN_FILE):
+        try:
+            with open(LOCAL_TOKEN_FILE, "r", encoding="utf-8") as f:
+                token = f.read().strip()
+                if token:
+                    os.environ["APP_API_TOKEN"] = token
+                    return token
+        except Exception:
+            pass
+    token = secrets.token_hex(24)
+    try:
+        with open(LOCAL_TOKEN_FILE, "w", encoding="utf-8") as f:
+            f.write(token)
+    except Exception:
+        pass
+    os.environ["APP_API_TOKEN"] = token
+    return token
+
+ACTIVE_TOKEN = get_or_create_local_token()
+LOCAL_URL = f"http://localhost:{PORT}/?token={ACTIVE_TOKEN}"
 
 def is_server_running() -> bool:
     try:
@@ -40,19 +69,19 @@ def main():
 
     if is_server_running():
         print(f"\n[+] Server is already active on port {PORT}!")
-        print(f"[+] Opening dashboard in browser: {LOCAL_URL}")
+        print(f"[+] Opening authenticated dashboard in browser: {LOCAL_URL}")
         webbrowser.open(LOCAL_URL)
         print("[+] Done.")
         time.sleep(1.5)
         return
 
-    print(f"\n[+] Starting server on port {PORT}...")
-    print(f"[+] Browser will launch automatically once server is live at {LOCAL_URL}")
+    print(f"\n[+] Starting server on {BIND_HOST}:{PORT}...")
+    print(f"[+] Browser will launch automatically with local token handshake at {LOCAL_URL}")
     threading.Thread(target=open_browser, daemon=True).start()
 
     import uvicorn
     sys.path.insert(0, APP_DIR)
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=PORT, reload=True, app_dir=APP_DIR)
+    uvicorn.run("backend.main:app", host=BIND_HOST, port=PORT, reload=False, app_dir=APP_DIR)
 
 if __name__ == "__main__":
     main()

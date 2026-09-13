@@ -4,7 +4,12 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port 
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.10
+      - key: APP_API_TOKEN
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+

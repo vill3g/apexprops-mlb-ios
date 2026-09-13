@@ -2157,6 +2157,52 @@
       root.classList.toggle("is-iphone-portrait", isIphonePortrait);
     }
 
+    // =========================================================================
+    // API Authentication Token Handshake (C1/C5)
+    // =========================================================================
+    function getAppApiToken() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get("token") || urlParams.get("api_token");
+      if (urlToken) {
+        localStorage.setItem("app_api_token", urlToken);
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+        return urlToken;
+      }
+      return localStorage.getItem("app_api_token") || "";
+    }
+
+    function setAppApiToken(token) {
+      if (token) {
+        localStorage.setItem("app_api_token", token.trim());
+      } else {
+        localStorage.removeItem("app_api_token");
+      }
+    }
+
+    function getAuthHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      const token = getAppApiToken();
+      if (token) {
+        headers["X-API-Token"] = token;
+      }
+      return headers;
+    }
+
+    async function authFetch(url, options = {}) {
+      options.headers = getAuthHeaders(options.headers || {});
+      const res = await fetch(url, options);
+      if (res.status === 401) {
+        const entered = prompt("Enter Server API Token (APP_API_TOKEN):");
+        if (entered) {
+          setAppApiToken(entered);
+          options.headers = getAuthHeaders(options.headers || {});
+          return await fetch(url, options);
+        }
+      }
+      return res;
+    }
+
     // Run on load and listen to viewport adjustments
     window.addEventListener("DOMContentLoaded", () => {
       detectAndAdaptDevice();

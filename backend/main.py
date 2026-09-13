@@ -6,7 +6,7 @@ FastAPI Application for ApexProps MLB & International Baseball Engine.
 Serves REST API and hosts the graphical user interface.
 """
 
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, Header, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -15,6 +15,7 @@ import os
 import time
 import json
 import threading
+import hmac
 import pandas as pd
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -41,13 +42,41 @@ app = FastAPI(
     description="Real-time Bitcoin 15-Minute Pattern & Confluence Analyzer."
 )
 
+# Allowed CORS origins
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = [
+        "http://localhost:8056",
+        "http://127.0.0.1:8056",
+        "http://localhost:8055",
+        "http://127.0.0.1:8055",
+        "capacitor://localhost",
+        "https://localhost",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Token", "Accept"],
 )
+
+# Shared-Secret API Authentication for Sensitive Trading & Scalp Endpoints
+API_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
+
+def require_auth(x_api_token: Optional[str] = Header(None, alias="X-API-Token")):
+    """Shared-secret authentication dependency for sensitive trading and scalp routes."""
+    if not API_TOKEN:
+        # Fail-closed: deny access if API_TOKEN is not configured
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication token not configured on server. Please set APP_API_TOKEN."
+        )
+    if not x_api_token or not hmac.compare_digest(x_api_token, API_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Token header.")
+
 
 # Initialize singletons
 espn_client = ESPNClient(cache_ttl_seconds=300)
@@ -537,7 +566,7 @@ def api_btc_kalshi_orderbook():
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS
 # =====================================================================
 
-@app.get("/api/btc/trade/status")
+@app.get("/api/btc/trade/status", dependencies=[Depends(require_auth)])
 def api_btc_trade_status():
     """Returns full status of the Kalshi automated trading engine."""
     try:
@@ -546,39 +575,44 @@ def api_btc_trade_status():
     except Exception as e:
         return JSONResponse({"error": str(e), "enabled": False, "mode": "PAPER"}, status_code=500)
 
-@app.post("/api/btc/trade/toggle")
+@app.post("/api/btc/trade/toggle", dependencies=[Depends(require_auth)])
 def api_btc_trade_toggle(enabled: bool = Query(...)):
     """Toggle auto-trading execution ON or OFF."""
     res = auto_executor.set_enabled(enabled)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/mode")
+@app.post("/api/btc/trade/mode", dependencies=[Depends(require_auth)])
 def api_btc_trade_mode(mode: str = Query(...)):
     """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
+    if str(mode).upper() == "LIVE" and not API_TOKEN:
+        raise HTTPException(
+            status_code=403,
+            detail="APP_API_TOKEN must be configured before switching to LIVE trading."
+        )
     res = auto_executor.set_mode(mode)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/prediction_mode")
+@app.post("/api/btc/trade/prediction_mode", dependencies=[Depends(require_auth)])
 def api_btc_trade_prediction_mode(enabled: bool = Query(...)):
     """Toggle prediction mode ON or OFF."""
     auto_executor.prediction_mode = enabled
     auto_executor._save_config()
     return JSONResponse({"status": "ok", "prediction_mode": enabled})
 
-@app.post("/api/btc/trade/threshold")
+@app.post("/api/btc/trade/threshold", dependencies=[Depends(require_auth)])
 def api_btc_trade_threshold(threshold: str = Query(...)):
     """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
     res = auto_executor.set_conviction_threshold(threshold)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/contracts")
+@app.post("/api/btc/trade/contracts", dependencies=[Depends(require_auth)])
 def api_btc_trade_contracts(count: int = Query(...)):
     """Set number of contracts per trade."""
     res = auto_executor.set_max_contracts(count)
     return JSONResponse(res)
 
 
-@app.post("/api/btc/trade/ai_settings")
+@app.post("/api/btc/trade/ai_settings", dependencies=[Depends(require_auth)])
 async def api_btc_trade_ai_settings(request: Request):
     try:
         data = await request.json()
@@ -590,7 +624,7 @@ async def api_btc_trade_ai_settings(request: Request):
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)})
 
-@app.post("/api/btc/trade/risk_limits")
+@app.post("/api/btc/trade/risk_limits", dependencies=[Depends(require_auth)])
 def api_btc_trade_risk_limits(
     max_daily_risk: Optional[float] = Query(None),
     max_daily_trades: Optional[int] = Query(None)
@@ -599,19 +633,19 @@ def api_btc_trade_risk_limits(
     res = auto_executor.set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/manual")
+@app.post("/api/btc/trade/manual", dependencies=[Depends(require_auth)])
 def api_btc_trade_manual(direction: str = Query(...)):
     """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
     res = auto_executor.execute_manual_trade(direction)
     return JSONResponse(sanitize_btc_json(res))
 
-@app.post("/api/btc/trade/close")
+@app.post("/api/btc/trade/close", dependencies=[Depends(require_auth)])
 def api_btc_trade_close():
     """1-Click manual close of all open trades."""
     res = auto_executor.close_open_trades()
     return JSONResponse(sanitize_btc_json(res))
 
-@app.get("/api/btc/trade/history")
+@app.get("/api/btc/trade/history", dependencies=[Depends(require_auth)])
 def api_btc_trade_history(mode: str = None):
     """Returns list of all historical trades and P&L results."""
     history = auto_executor.get_trades_history()
@@ -619,16 +653,16 @@ def api_btc_trade_history(mode: str = None):
         history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
 
-@app.get("/api/btc/mode")
+@app.get("/api/btc/mode", dependencies=[Depends(require_auth)])
 def api_btc_mode():
     return JSONResponse({"mode": auto_executor.mode})
 
-@app.get("/api/btc/paper/balance")
+@app.get("/api/btc/paper/balance", dependencies=[Depends(require_auth)])
 def api_btc_paper_balance():
     from backend.btc.paper_balance import load_balance
     return JSONResponse({"balance": load_balance()})
 
-@app.post("/api/btc/paper/balance/reset")
+@app.post("/api/btc/paper/balance/reset", dependencies=[Depends(require_auth)])
 def api_btc_paper_balance_reset():
     from backend.btc.paper_balance import reset_balance
     new_bal = reset_balance()
@@ -637,29 +671,29 @@ def api_btc_paper_balance_reset():
 # ── Scalp Engine Endpoints ────────────────────────────────────────────
 from backend.btc.scalp_engine import scalp_engine
 
-@app.post("/api/btc/scalp/start")
+@app.post("/api/btc/scalp/start", dependencies=[Depends(require_auth)])
 def api_btc_scalp_start():
     """Start the scalp engine background monitor."""
     scalp_engine.start()
     return JSONResponse({"status": "scalp engine started"})
 
-@app.post("/api/btc/scalp/stop")
+@app.post("/api/btc/scalp/stop", dependencies=[Depends(require_auth)])
 def api_btc_scalp_stop():
     """Stop the scalp engine background monitor."""
     scalp_engine.stop()
     return JSONResponse({"status": "scalp engine stopped"})
 
-@app.get("/api/btc/scalp/config")
+@app.get("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
 def api_btc_scalp_config():
     """Get current scalp engine configuration."""
     return JSONResponse(scalp_engine.load_config())
 
-@app.get("/api/btc/scalp/status")
+@app.get("/api/btc/scalp/status", dependencies=[Depends(require_auth)])
 def api_btc_scalp_status():
     """Get current scalp engine runtime status and monitored positions."""
     return JSONResponse(scalp_engine.get_status())
 
-@app.patch("/api/btc/scalp/config")
+@app.patch("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
 def api_btc_scalp_config_update(body: dict):
     """Update scalp engine configuration."""
     scalp_engine.save_config(body)

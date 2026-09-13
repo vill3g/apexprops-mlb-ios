@@ -177,11 +177,34 @@
       renderTrades(cachedTrades);
     }
 
+    function getAuthHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get("token") || urlParams.get("api_token");
+      if (urlToken) {
+        localStorage.setItem("app_api_token", urlToken);
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      const token = localStorage.getItem("app_api_token") || "";
+      if (token) {
+        headers["X-API-Token"] = token;
+      }
+      return headers;
+    }
+
     async function fetchTradesHistory() {
       const refreshIcon = document.getElementById("refreshIcon");
       if (refreshIcon) refreshIcon.classList.add("animate-spin");
       try {
-        const res = await fetch("/api/btc/trade/history");
+        const res = await fetch("/api/btc/trade/history", { headers: getAuthHeaders() });
+        if (res.status === 401) {
+          const entered = prompt("Enter Server API Token (APP_API_TOKEN):");
+          if (entered) {
+            localStorage.setItem("app_api_token", entered.trim());
+            return fetchTradesHistory();
+          }
+        }
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
         cachedTrades = Array.isArray(data) ? data : [];
