@@ -46,6 +46,13 @@ class KalshiTrader:
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
 
+        # Dedicated session for order-mutating endpoints (place_order, close_position)
+        # with max_retries=0 to prevent duplicate fills on network timeouts.
+        self.order_session = requests.Session()
+        order_adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=0)
+        self.order_session.mount("https://", order_adapter)
+        self.order_session.mount("http://", order_adapter)
+
         if self.private_key_pem:
             try:
                 self._private_key_obj = load_pem_private_key(self.private_key_pem.encode("utf-8"), password=None)
@@ -419,7 +426,7 @@ class KalshiTrader:
         if quote_data.get("exchange_index") is not None:
             payload["exchange_index"] = quote_data["exchange_index"]
         try:
-            resp = self.session.post(f"{BASE_URL}{path}", json=payload, headers=self._sign_headers("POST", path), timeout=5.0)
+            resp = self.order_session.post(f"{BASE_URL}{path}", json=payload, headers=self._sign_headers("POST", path), timeout=5.0)
             if resp.status_code not in {200, 201}:
                 return {"success": False, "error": f"Kalshi close rejected (HTTP {resp.status_code}): {resp.text}"}
             data = resp.json()
@@ -466,23 +473,42 @@ class KalshiTrader:
         count: int = 1,
         limit_price_dollars: Optional[float] = None,
         dry_run: bool = True,
-        order_type: str = "limit"
+        order_type: str = "limit",
+        slippage_buffer_cents: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Executes a buy order on the specified contract side (YES = above target, NO = below target).
         In dry_run=True, simulates the trade and returns immediate simulated fill.
         In dry_run=False, signs and sends the order to the Kalshi live API with strict safety bounds.
         """
+        # H5: Validate contract count is a strictly positive whole integer
+        try:
+            if not isinstance(count, (int, float)) or count <= 0:
+                return {"success": False, "error": f"Invalid order count: {count}. Must be a positive whole integer."}
+            if isinstance(count, float) and not count.is_integer():
+                return {"success": False, "error": f"Invalid fractional contract count: {count}. Kalshi event contracts require whole integers."}
+            count_int = int(count)
+        except Exception:
+            return {"success": False, "error": f"Invalid order count: {count}."}
+
         side_clean = side.lower().strip()
         if side_clean not in ["yes", "no"]:
             return {"success": False, "error": f"Invalid side: {side}. Must be 'yes' or 'no'."}
 
         client_order_id = str(uuid.uuid4())
 
+        # Slippage buffer: Default 0.04 or configurable value clamped safely [0.00, 0.15]
+        buf = 0.04
+        if slippage_buffer_cents is not None:
+            try:
+                buf = max(0.0, min(float(slippage_buffer_cents), 0.15))
+            except (ValueError, TypeError):
+                buf = 0.04
+
         # 1. PAPER TRADING (SIMULATION)
         if dry_run:
             simulated_price = limit_price_dollars if limit_price_dollars is not None else 0.50
-            cost = round(simulated_price * count, 4)
+            cost = round(simulated_price * count_int, 4)
             return {
                 "success": True,
                 "mode": "PAPER",
@@ -491,12 +517,14 @@ class KalshiTrader:
                 "ticker": ticker,
                 "side": side_clean.upper(),
                 "action": "BUY",
-                "count": count,
+                "count": count_int,
+                "requested_price": simulated_price,
                 "filled_price": simulated_price,
                 "total_cost": cost,
+                "slippage_buffer": buf,
                 "status": "FILLED (SIMULATED)",
                 "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
-                "message": f"Simulated BUY of {count} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
+                "message": f"Simulated BUY of {count_int} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
             }
 
         # Fast-Path: Use active market (from cache or fast fetch) without redundant GET roundtrips
@@ -516,16 +544,21 @@ class KalshiTrader:
             
         ticker = verified_ticker
         
-        # Clamp price with 0.04 slippage buffer to guarantee Immediate-Or-Cancel (IOC) book cross
+        # Clamp price with slippage buffer to guarantee Immediate-Or-Cancel (IOC) book cross
         raw_price = float(limit_price_dollars if limit_price_dollars else 0.65)
-        outcome_price = max(0.01, min(raw_price + 0.04, 0.99))
+        outcome_price = max(0.01, min(raw_price + buf, 0.99))
 
-        # Fast balance validation via cached state
-        bal_res = self.get_balance(force_refresh=False)
-        live_balance = bal_res.get("balance_dollars", 100.0) if bal_res.get("success") else 100.0
-        est_cost = outcome_price * count
+        # H4: Fail-closed balance check on live trading
+        bal_res = self.get_balance(force_refresh=True)
+        if not bal_res.get("success"):
+            return {
+                "success": False,
+                "error": f"Live order aborted: Unable to verify Kalshi account balance ({bal_res.get('error', 'Balance check failed')})."
+            }
+        live_balance = float(bal_res.get("balance_dollars", 0.0))
+        est_cost = outcome_price * count_int
 
-        if live_balance < est_cost and bal_res.get("success"):
+        if live_balance < est_cost:
             return {
                 "success": False,
                 "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
@@ -542,7 +575,7 @@ class KalshiTrader:
             "ticker": ticker,
             "client_order_id": client_order_id,
             "side": v2_side,
-            "count": f"{int(count)}.00",
+            "count": f"{count_int}.00",
             "price": f"{book_price:.4f}",
             "time_in_force": "immediate_or_cancel",
             "self_trade_prevention_type": "taker_at_cross",
@@ -556,7 +589,8 @@ class KalshiTrader:
         path = "/trade-api/v2/portfolio/events/orders"
         try:
             headers = self._sign_headers("POST", path)
-            resp = self.session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
+            # H6: Use order_session (max_retries=0) for mutating orders
+            resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
 
             if resp.status_code in [200, 201]:
                 self._cached_balance_time = 0.0
@@ -584,8 +618,10 @@ class KalshiTrader:
                     "side": side_clean.upper(),
                     "action": "BUY",
                     "count": fill_count,
+                    "requested_price": raw_price,
                     "filled_price": avg_outcome_fill,
                     "total_cost": round(avg_outcome_fill * fill_count, 4),
+                    "slippage_buffer": buf,
                     "status": "FILLED",
                     "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                     "raw_response": res_data

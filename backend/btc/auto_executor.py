@@ -677,21 +677,28 @@ class AutoExecutor:
                     if affordable >= 1:
                         contracts_to_buy = affordable
 
+        slippage_buffer = float(self.ai_settings.get("slippageBufferCents", 0.04))
+
         # Execute Order (Paper or Live)
         order_res = kalshi_trader.place_order(
             ticker=current_interval_id,
             side=side,
             count=contracts_to_buy,
             limit_price_dollars=market_price,
-            dry_run=dry_run
+            dry_run=dry_run,
+            slippage_buffer_cents=slippage_buffer
         )
 
         if order_res.get("success", False):
+            # H1 & H2: Record actual fill metrics and fix paper balance cost key
+            fill_price = float(order_res.get("filled_price", market_price))
+            fill_count = float(order_res.get("count", contracts_to_buy))
+            fill_cost = float(order_res.get("total_cost", round(fill_price * fill_count, 4)))
+
             if self.mode == "PAPER":
                 try:
                     from backend.btc.paper_balance import update_balance
-                    cost = float(order_res.get("cost", market_price * contracts_to_buy))
-                    update_balance(-cost)
+                    update_balance(-fill_cost)
                 except Exception as e:
                     logger.error(f"Paper deduction error: {e}")
             elif self.mode == "LIVE":
@@ -739,9 +746,13 @@ class AutoExecutor:
                 "conviction_badge": forecast.get("conviction_badge", ""),
                 "probability_percent": forecast.get("probability_percent", 50),
                 "side": side.upper(),
-                "entry_price": market_price,
-                "count": contracts_to_buy,
-                "cost": round(market_price * contracts_to_buy, 4),
+                "requested_price": market_price,
+                "entry_price": fill_price,
+                "requested_count": contracts_to_buy,
+                "count": fill_count,
+                "cost": fill_cost,
+                "slippage_cents": round(abs(fill_price - market_price), 4),
+                "slippage_buffer_used": slippage_buffer,
                 "mode": self.mode,
                 "status": "OPEN",
                 "result": "PENDING",
@@ -812,20 +823,27 @@ class AutoExecutor:
                     if affordable >= 1:
                         contracts_to_buy = affordable
 
+        slippage_buffer = float(self.ai_settings.get("slippageBufferCents", 0.04))
+
         order_res = kalshi_trader.place_order(
             ticker=active_m.get("ticker", ""),
             side=side,
             count=contracts_to_buy,
             limit_price_dollars=market_price,
-            dry_run=dry_run
+            dry_run=dry_run,
+            slippage_buffer_cents=slippage_buffer
         )
 
         if order_res.get("success", False):
+            # H1 & H2: Record actual fill metrics and fix paper balance cost key
+            fill_price = float(order_res.get("filled_price", market_price))
+            fill_count = float(order_res.get("count", contracts_to_buy))
+            fill_cost = float(order_res.get("total_cost", round(fill_price * fill_count, 4)))
+
             if self.mode == "PAPER":
                 try:
                     from backend.btc.paper_balance import update_balance
-                    cost = float(order_res.get("cost", market_price * contracts_to_buy))
-                    update_balance(-cost)
+                    update_balance(-fill_cost)
                 except Exception as e:
                     logger.error(f"Paper deduction error: {e}")
             elif self.mode == "LIVE":
@@ -857,9 +875,13 @@ class AutoExecutor:
                 "conviction_badge": "MANUAL TRADE",
                 "probability_percent": 65,
                 "side": side.upper(),
-                "entry_price": market_price,
-                "count": contracts_to_buy,
-                "cost": round(market_price * contracts_to_buy, 4),
+                "requested_price": market_price,
+                "entry_price": fill_price,
+                "requested_count": contracts_to_buy,
+                "count": fill_count,
+                "cost": fill_cost,
+                "slippage_cents": round(abs(fill_price - market_price), 4),
+                "slippage_buffer_used": slippage_buffer,
                 "mode": self.mode,
                 "status": "OPEN",
                 "result": "PENDING",
