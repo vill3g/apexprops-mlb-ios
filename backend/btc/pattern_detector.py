@@ -580,7 +580,15 @@ def analyze_wick_absorption(df: pd.DataFrame) -> dict:
 
     tot_lower = sum(lower_wicks)
     tot_upper = sum(upper_wicks)
-    tot_wicks = tot_lower + tot_upper + 1e-6
+    tot_wicks = tot_lower + tot_upper
+
+    if tot_wicks < 0.0001:
+        return {
+            "buyer_absorption_pct": 50,
+            "seller_rejection_pct": 50,
+            "bias": "BALANCED",
+            "description": "No wicks present (Flat Marubozu)"
+        }
 
     lower_pct = int(round((tot_lower / tot_wicks) * 100))
     upper_pct = 100 - lower_pct
