@@ -781,11 +781,15 @@ class AutoExecutor:
         """
         Enables user to click 1-click execution for the current interval directly from the UI.
         """
+        dir_clean = str(direction or "").upper().strip()
+        if dir_clean not in ["ABOVE", "BELOW"]:
+            return {"success": False, "error": f"Invalid trade direction: '{direction}'. Must be 'ABOVE' or 'BELOW'."}
+
         active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
         if not active_m:
             return {"success": False, "error": "No active KXBTC15M market found."}
 
-        side = "yes" if direction.upper() == "ABOVE" else "no"
+        side = "yes" if dir_clean == "ABOVE" else "no"
         market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
 
         # Determine affordable contract count for live or paper
@@ -794,12 +798,15 @@ class AutoExecutor:
         max_cap = float(self.ai_settings.get("maxCap", 0.0))
         unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
         
+        ABSOLUTE_MAX_CONTRACTS = 50
         if max_cap > 0:
             contracts_to_buy = int(max_cap // unit_price_est)
             if contracts_to_buy < 1:
                 contracts_to_buy = 1
         else:
             contracts_to_buy = self.max_contracts
+
+        contracts_to_buy = min(contracts_to_buy, ABSOLUTE_MAX_CONTRACTS)
 
         # 2. Dry Run
         dry_run = (self.mode == "PAPER")

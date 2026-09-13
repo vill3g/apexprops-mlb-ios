@@ -10,7 +10,12 @@ from fastapi import FastAPI, Request, Query, Header, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from enum import Enum
 from typing import Optional, List, Dict, Any
+
+class DirectionEnum(str, Enum):
+    ABOVE = "ABOVE"
+    BELOW = "BELOW"
 import os
 import time
 import json
@@ -634,9 +639,9 @@ def api_btc_trade_risk_limits(
     return JSONResponse(res)
 
 @app.post("/api/btc/trade/manual", dependencies=[Depends(require_auth)])
-def api_btc_trade_manual(direction: str = Query(...)):
+def api_btc_trade_manual(direction: DirectionEnum = Query(...)):
     """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
-    res = auto_executor.execute_manual_trade(direction)
+    res = auto_executor.execute_manual_trade(direction.value)
     return JSONResponse(sanitize_btc_json(res))
 
 @app.post("/api/btc/trade/close", dependencies=[Depends(require_auth)])

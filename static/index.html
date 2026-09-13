@@ -6402,7 +6402,14 @@
 
       const filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
 
-      const tradesKey = JSON.stringify(filteredTrades.slice(0, 5).map(t => [t.id, t.status, t.result, t.pnl, t.live_pnl]));
+      const tradesKey = JSON.stringify(filteredTrades.slice(0, 5).map(t => [
+        t.id,
+        t.status,
+        t.result,
+        t.pnl,
+        t.live_pnl !== undefined ? Math.round(parseFloat(t.live_pnl) * 100) / 100 : null,
+        t.current_bid !== undefined ? Math.round(parseFloat(t.current_bid) * 100) / 100 : null
+      ]));
       if (window._lastKalshiTradesKey === tradesKey) return;
       window._lastKalshiTradesKey = tradesKey;
 
@@ -6907,12 +6914,16 @@
 
       try {
         const apiBase = getKalshiApiBase();
-        await fetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
+        const res = await authFetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${await res.text().catch(()=>'')}`);
+        }
         if (showToast) {
             showAppToast("Filter Updated", `Conviction set to ${labelText}`, "info");
         }
       } catch (e) {
         console.error("Failed to update conviction threshold:", e);
+        showAppToast("Filter Error", String(e), "error");
       }
     }
 
@@ -6940,15 +6951,19 @@
         
         localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
         
-        // Push backend toggles & risk limits
+        // Push backend toggles & risk limits with verified responses
         const apiBase = getKalshiApiBase();
         const minConviction = document.getElementById("settingMinConviction")?.value || "B";
-        await Promise.all([
-          fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{}),
-          fetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }).catch(()=>{}),
-          fetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(minConviction)}`, { method: "POST" }).catch(()=>{})
-        ]);
         
+        const [resPred, resRisk, resThresh] = await Promise.all([
+          authFetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }),
+          authFetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }),
+          authFetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(minConviction)}`, { method: "POST" })
+        ]);
+
+        if (!resPred.ok) throw new Error(`Prediction mode update failed (HTTP ${resPred.status})`);
+        if (!resRisk.ok) throw new Error(`Risk limits update failed (HTTP ${resRisk.status})`);
+        if (!resThresh.ok) throw new Error(`Threshold update failed (HTTP ${resThresh.status})`);
         
         const aiSettings = {
             modelChoice: document.getElementById("settingModelChoice")?.value || "LogisticRegression",
@@ -6968,11 +6983,12 @@
             ignorePass: document.getElementById("settingIgnorePass")?.checked || false
         };
         
-        await fetch(`${apiBase}/api/btc/trade/ai_settings`, {
+        const resAi = await authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(aiSettings)
-        }).catch(()=>{});
+        });
+        if (!resAi.ok) throw new Error(`AI settings update failed (HTTP ${resAi.status})`);
         
         localStorage.setItem("kalshiAiSettings", JSON.stringify(aiSettings));
 
