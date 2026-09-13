@@ -6061,6 +6061,37 @@
       return (typeof localStorage !== 'undefined' && localStorage.getItem("kalshi_server_url")) || 'http://192.168.1.222:8056';
     }
 
+    function getAuthHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get("token") || urlParams.get("api_token");
+      if (urlToken) {
+        localStorage.setItem("app_api_token", urlToken);
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      const token = localStorage.getItem("app_api_token") || "";
+      if (token) {
+        headers["X-API-Token"] = token;
+      }
+      return headers;
+    }
+
+    async function authFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.headers = getAuthHeaders(opts.headers || {});
+      const res = await fetch(url, opts);
+      if (res.status === 401) {
+        const entered = prompt("Enter Server API Token (APP_API_TOKEN) to unlock trading console:");
+        if (entered) {
+          localStorage.setItem("app_api_token", entered.trim());
+          opts.headers = getAuthHeaders(options.headers || {});
+          return fetch(url, opts);
+        }
+      }
+      return res;
+    }
+
     let kalshiCurrentPriceEst = 0.65;
     let kalshiFixedSize = 35.00; // Track current estimated contract price
 
@@ -6098,7 +6129,7 @@
     async function saveKalshiContractsCount(count) {
       try {
         const apiBase = getKalshiApiBase();
-        await fetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
+        await authFetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
       } catch (err) {
         console.warn("Failed to persist contracts count:", err);
       }
@@ -6126,7 +6157,7 @@
           localStorage.setItem("kalshiAiSettings", JSON.stringify(aiSet));
           
           const apiBase = getKalshiApiBase();
-          await fetch(`${apiBase}/api/btc/trade/ai_settings`, {
+          await authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(aiSet)
@@ -6177,7 +6208,7 @@
         const apiBase = getKalshiApiBase();
         let res;
         try {
-          res = await fetch(`${apiBase}/api/btc/trade/status`, { signal: controller.signal });
+          res = await authFetch(`${apiBase}/api/btc/trade/status`, { signal: controller.signal });
         } finally {
           clearTimeout(timeoutId);
         }
@@ -6629,7 +6660,7 @@
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         let res;
         try {
-          res = await fetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, {
+          res = await authFetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, {
             method: "POST",
             signal: controller.signal
           });
@@ -6715,7 +6746,7 @@
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         let res;
         try {
-          res = await fetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, {
+          res = await authFetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, {
             method: "POST",
             signal: controller.signal
           });
@@ -6769,7 +6800,7 @@
       }
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
+        const res = await authFetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
           showAppToast(
@@ -6810,7 +6841,7 @@
       }
       try {
         const apiBase = getKalshiApiBase();
-        const res = await fetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
+        const res = await authFetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
           showAppToast("Position Closed", data.message || "Active trade closed successfully", "success");
