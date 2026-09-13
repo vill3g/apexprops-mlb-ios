@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "mode": "PAPER",
+  "price_move_threshold": 0.25,
+  "profit_target": 0.25,
+  "loss_target": 0.25,
+  "take_profit_atr": 1.5,
+  "max_contracts": 6,
+  "max_trades_per_interval": 3,
+  "interval_seconds": 900,
+  "minimum_conviction": "A",
+  "conviction_mapping": {
+    "A+": "GRADE A+ SETUP",
+    "A": "GRADE A SETUP",
+    "B+": "GRADE B+ SETUP",
+    "B": "GRADE B SETUP",
+    "C": "GRADE C / PASS",
+    "D": "GRADE D SETUP"
+  }
+}
