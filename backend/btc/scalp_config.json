@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "mode": "PAPER",
-  "price_move_threshold": 0.25,
+  "price_move_threshold": 0.5,
   "profit_target": 0.25,
   "loss_target": 0.25,
   "take_profit_atr": 1.5,
