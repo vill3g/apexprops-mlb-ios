@@ -518,10 +518,12 @@ def api_btc_kalshi():
         from backend.btc.kalshi_client import get_kalshi_15m_market
         data = get_kalshi_15m_market()
         if not data:
-            return JSONResponse({"status": "unavailable", "target_price": None})
+            return JSONResponse({"status": "unavailable", "target_price": None, "is_synthetic": True})
+        data = dict(data)
+        data["is_synthetic"] = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
         return JSONResponse(data)
     except Exception as e:
-        return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+        return JSONResponse({"error": str(e), "target_price": None, "is_synthetic": True}, status_code=500)
 
 @app.get("/api/btc/kalshi/orderbook")
 @app.get("/api/btc/kalshi/pricebook")
@@ -531,8 +533,9 @@ def api_btc_kalshi_orderbook():
         from backend.btc.kalshi_client import get_kalshi_15m_market
         data = get_kalshi_15m_market()
         if not data:
-            return JSONResponse({"status": "unavailable", "bids": [], "asks": []})
+            return JSONResponse({"status": "unavailable", "bids": [], "asks": [], "is_synthetic": True})
         
+        is_synthetic = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
         yes_bid = data.get("yes_bid", 0.0)
         yes_ask = data.get("yes_ask", 0.0)
         no_bid = data.get("no_bid", 0.0)
@@ -548,6 +551,7 @@ def api_btc_kalshi_orderbook():
             "target_price": data.get("target_price", 0.0),
             "yes_prob": data.get("yes_prob", 50.0),
             "no_prob": data.get("no_prob", 50.0),
+            "is_synthetic": is_synthetic,
             "top_of_book": {
                 "yes_bid": yes_bid,
                 "yes_ask": yes_ask,
@@ -558,14 +562,15 @@ def api_btc_kalshi_orderbook():
                 "spread": spread,
                 "spread_cents": round(spread * 100, 1),
                 "orderbook_imbalance_percent": imbalance,
-                "market_bias": bias
+                "market_bias": bias,
+                "is_synthetic": is_synthetic
             },
             "bids": [{"side": "YES", "price": yes_bid, "size": yes_bid_size}, {"side": "NO", "price": no_bid, "size": 0}],
             "asks": [{"side": "YES", "price": yes_ask, "size": yes_ask_size}, {"side": "NO", "price": no_ask, "size": 0}],
             "timestamp": int(time.time())
         })
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse({"error": str(e), "is_synthetic": True}, status_code=500)
 
 # =====================================================================
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS

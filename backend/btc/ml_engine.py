@@ -199,21 +199,25 @@ class MLEngine:
                 return 0
             try:
                 mtime = os.path.getmtime(self.history_file)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"[MLEngine] Could not read mtime for {self.history_file}: {e}")
                 mtime = 0.0
                 
             if not force and self.is_trained and mtime <= self.last_trained_mtime:
                 return 0  # Already up to date
                 
-            res = self._extract_features_and_labels(time_filter=time_filter)
-            if res[0] is not None and len(res[0]) >= 10:
-                X, y, weights = res
-                logger.info(f"[MLEngine] Training custom ML model on {len(X)} historical trades with Loss Recency Weighting (filter={time_filter})...")
-                self.model.fit(X, y, sample_weight=weights)
-                self.is_trained = True
-                self.last_trained_mtime = mtime
-                logger.info("[MLEngine] Training complete.")
-                return len(X)
+            try:
+                res = self._extract_features_and_labels(time_filter=time_filter)
+                if res[0] is not None and len(res[0]) >= 10:
+                    X, y, weights = res
+                    logger.info(f"[MLEngine] Training custom ML model on {len(X)} historical trades with Loss Recency Weighting (filter={time_filter})...")
+                    self.model.fit(X, y, sample_weight=weights)
+                    self.is_trained = True
+                    self.last_trained_mtime = mtime
+                    logger.info("[MLEngine] Training complete.")
+                    return len(X)
+            except Exception as e:
+                logger.error(f"[MLEngine] Training failed: {e}", exc_info=True)
             return 0
             
     def self_train_on_historical_market(self, df_ind, time_filter: str = "all") -> int:

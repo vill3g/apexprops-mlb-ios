@@ -574,9 +574,12 @@ def get_live_15m_target_data() -> dict:
 
     # Override with Kalshi Official Strike
     kalshi_m = get_kalshi_15m_market()
+    if kalshi_m:
+        kalshi_m = dict(kalshi_m)
+        kalshi_m["is_synthetic"] = (kalshi_m.get("status") == "synthetic") or (kalshi_m.get("source") == "Kalshi Synthetic")
     if kalshi_m and kalshi_m.get("target_price"):
         target_price = float(kalshi_m["target_price"])
-        target_source = "Kalshi Official Strike"
+        target_source = "Kalshi Official Strike" if not kalshi_m.get("is_synthetic") else "Simulated (Kalshi Offline)"
 
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)

@@ -31,36 +31,8 @@ _history_lock = threading.RLock()
 
 import tempfile
 
-def _atomic_json_write(filepath: str, data, indent: int = 2):
-    """AUDIT FIX #2: Atomic JSON write — write to temp file then os.replace(), with fallback for Windows locking."""
-    dir_name = os.path.dirname(filepath)
-    tmp_path = None
-    try:
-        fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=indent)
-        try:
-            os.replace(tmp_path, filepath)
-        except PermissionError:
-            # On Windows, antivirus or open file handles can briefly block replace
-            time.sleep(0.05)
-            try:
-                os.replace(tmp_path, filepath)
-            except Exception:
-                with open(filepath, "w", encoding="utf-8") as fallback_f:
-                    json.dump(data, fallback_f, indent=indent)
-                if os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except Exception:
-                        pass
-    except Exception:
-        if tmp_path and os.path.exists(tmp_path):
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-        raise
+# Atomic JSON write shared utility — extracted to io_utils for reuse by paper_balance, etc.
+from backend.btc.io_utils import atomic_json_write as _atomic_json_write
 
 def normalize_prediction_direction(value: Any) -> str:
     """Map analyzer and recommendation labels to the two Kalshi outcomes."""
@@ -426,7 +398,7 @@ class AutoExecutor:
                                 from backend.btc.loss_analyzer import loss_analyzer
                                 t["loss_analysis"] = loss_analyzer.diagnose_loss(t)
                             except Exception as ele:
-                                logger.warning(f"[AutoExecutor] Loss diagnosis error: {ele}")
+                                logger.warning(f"[AutoExecutor] Loss diagnosis error for {t.get('ticker', t.get('id'))}: {ele}")
                         if settle_price is not None and settle_price > 0:
                             t["settle_price"] = settle_price
                         t["pnl"] = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
@@ -452,7 +424,8 @@ class AutoExecutor:
                     if settle_candles_df is None:
                         try:
                             settle_candles_df = fetch_candles(timeframe="15m", limit=5)
-                        except Exception:
+                        except Exception as ce:
+                            logger.debug(f"[AutoExecutor] Legacy settlement data unavailable for {ticker}: {ce}")
                             settle_candles_df = None
                     if settle_candles_df is None or len(settle_candles_df) < 2:
                         continue
@@ -478,8 +451,8 @@ class AutoExecutor:
                     try:
                         from backend.btc.ml_engine import get_ml_engine
                         get_ml_engine().train()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning(f"[AutoExecutor] Post-settlement ML retrain failed: {e}")
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error saving trades in check_settlements: {e}")
 

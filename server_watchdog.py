@@ -10,7 +10,7 @@ import time
 import subprocess
 import logging
 
-APP_DIR = r"C:\Users\vill3\.gemini\antigravity\scratch\mlb_props_app"
+APP_DIR = os.environ.get("APP_DIR", os.path.dirname(os.path.abspath(__file__)))
 PYTHON_EXE = sys.executable
 LOG_FILE = os.path.join(APP_DIR, "server_watchdog.log")
 

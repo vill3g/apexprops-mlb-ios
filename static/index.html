@@ -1246,6 +1246,7 @@
             <div class="flex items-center gap-1">
               <span class="text-[10px] sm:text-xs">🎯</span>
               <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-emerald-400 tracking-[0.05em]">15M TARGET</span>
+              <span id="topBarTargetSimBadge" class="hidden text-[6px] sm:text-[7px] font-mono font-black px-1 py-0.2 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider animate-pulse" title="Simulated fallback market data (Kalshi unavailable)">SIMULATED</span>
             </div>
             <span id="topBarTargetDelta" class="text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded-md">(--)</span>
           </div>
@@ -1566,7 +1567,10 @@
               <!-- Active Target & 1-Click Execution -->
               <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1 shrink-0">
                 <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
-                  <span class="text-slate-400 truncate max-w-[140px] font-bold" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
+                  <div class="flex items-center gap-1.5 truncate max-w-[160px]">
+                    <span class="text-slate-400 truncate font-bold" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
+                    <span id="kalshiSimulatedBadge" class="hidden text-[7px] sm:text-[8px] font-mono font-black px-1.5 py-0.2 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider animate-pulse" title="Simulated fallback market data (Kalshi unavailable)">SIMULATED</span>
+                  </div>
                   <span id="kalshiConvictionPill" class="px-1.5 py-0.2 rounded font-bold uppercase text-[8px] bg-slate-800 text-cyan-400">Min: A+, A & B+</span>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 pt-0.5">
@@ -4793,6 +4797,10 @@
 
       // Render Kalshi Market Odds vs Model Prediction
       const kData = tb.kalshi || window.cachedKalshiData;
+      const isSynth = !!(kData && (kData.is_synthetic || kData.status === "synthetic" || kData.source === "Kalshi Synthetic"));
+      if (typeof updateKalshiSyntheticBadges === 'function') {
+        updateKalshiSyntheticBadges(isSynth);
+      }
       const kYesEl = getDomEl("btcKalshiYesProb");
       const kNoEl = getDomEl("btcKalshiNoProb");
       const btnProbAbove = getDomEl("btnProbAbove");
@@ -4872,19 +4880,37 @@
     let isFetchingKlinesDirect = false;
     let isFetchingKalshiDirect = false;
 
+    // Synthetic market indicator badge manager (surfaces simulated vs live Kalshi data)
+    function updateKalshiSyntheticBadges(isSynthetic) {
+      const b1 = document.getElementById("kalshiSimulatedBadge");
+      const b2 = document.getElementById("topBarTargetSimBadge");
+      if (b1) {
+        if (isSynthetic) b1.classList.remove("hidden");
+        else b1.classList.add("hidden");
+      }
+      if (b2) {
+        if (isSynthetic) b2.classList.remove("hidden");
+        else b2.classList.add("hidden");
+      }
+    }
+
     // Direct Kalshi 15M Market Fetcher (with local fallback)
     // Direct Kalshi 15M Market Odds Fetcher (Probabilities ONLY - never overrides target price)
     async function fetchKalshiDirect() {
       if (isFetchingKalshiDirect) return;
       isFetchingKalshiDirect = true;
       try {
-        // 1. Try backend endpoint first
+        // 1. Try backend endpoint first (normalizes payload and tags is_synthetic flag)
         try {
-          const res = await fetch('/api/btc/kalshi');
+          const apiBase = getKalshiApiBase();
+          const res = await fetch(`${apiBase}/api/btc/kalshi`);
           if (res.ok) {
             const data = await res.json();
             if (data) {
               window.cachedKalshiData = data;
+              const isSynth = !!(data.is_synthetic || data.status === "synthetic" || data.source === "Kalshi Synthetic");
+              updateKalshiSyntheticBadges(isSynth);
+
               const kYes = getDomEl("btcKalshiYesProb");
               const kNo = getDomEl("btcKalshiNoProb");
               if (kYes && data.yes_prob !== undefined) kYes.innerText = `${data.yes_prob}% Yes`;
@@ -4900,49 +4926,53 @@
           }
         } catch (e) {}
 
-        // 2. Try direct public Kalshi API (first with open status, then general)
-        let kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
+        // 2. Direct public Kalshi API fallback (for standalone/mobile when local backend is unreachable).
+        // Kalshi documented Trade API v2 host: https://external-api.kalshi.com.
+        // Standardized on external-api.kalshi.com to match backend; api.elections.kalshi.com was a legacy elections-specific domain.
+        let kRes = await fetch('https://external-api.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
         let kJson = kRes.ok ? await kRes.json() : null;
         if (!kJson || !kJson.markets || kJson.markets.length === 0) {
-          kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M');
+          kRes = await fetch('https://external-api.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M');
           kJson = kRes.ok ? await kRes.json() : null;
         }
         if (kJson && kJson.markets && kJson.markets.length > 0) {
+          updateKalshiSyntheticBadges(false);
           const markets = kJson.markets;
           const m = markets[0];
-            const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
-            const yesP = Math.round(yesBid * 100);
-            const noP = 100 - yesP;
-            const kObj = {
-              strike: parseFloat(m.floor_strike || 0),
-              yes_prob: yesP,
-              no_prob: noP,
-              ticker: m.ticker,
-              source: "Kalshi KXBTC15M"
-            };
-            window.cachedKalshiData = kObj;
-            if (kObj.strike > 0) {
-              window.cachedBtcTargetPrice = kObj.strike;
-              const targetHero = getDomEl("btcTargetPriceHero");
-              if (targetHero) {
-                targetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              }
-              const topTargetHero = getDomEl("topBarTargetPrice");
-              if (topTargetHero) {
-                topTargetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-              }
+          const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
+          const yesP = Math.round(yesBid * 100);
+          const noP = 100 - yesP;
+          const kObj = {
+            strike: parseFloat(m.floor_strike || 0),
+            yes_prob: yesP,
+            no_prob: noP,
+            ticker: m.ticker,
+            source: "Kalshi KXBTC15M",
+            is_synthetic: false
+          };
+          window.cachedKalshiData = kObj;
+          if (kObj.strike > 0) {
+            window.cachedBtcTargetPrice = kObj.strike;
+            const targetHero = getDomEl("btcTargetPriceHero");
+            if (targetHero) {
+              targetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
-
-            const kYes = getDomEl("btcKalshiYesProb");
-            const kNo = getDomEl("btcKalshiNoProb");
-            if (kYes) kYes.innerText = `${yesP}% Yes`;
-            if (kNo) kNo.innerText = `${noP}% No`;
-
-            const btnProbAbove = getDomEl("btnProbAbove");
-            const btnProbBelow = getDomEl("btnProbBelow");
-            if (btnProbAbove) btnProbAbove.innerText = `${yesP}%`;
-            if (btnProbBelow) btnProbBelow.innerText = `${noP}%`;
+            const topTargetHero = getDomEl("topBarTargetPrice");
+            if (topTargetHero) {
+              topTargetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
           }
+
+          const kYes = getDomEl("btcKalshiYesProb");
+          const kNo = getDomEl("btcKalshiNoProb");
+          if (kYes) kYes.innerText = `${yesP}% Yes`;
+          if (kNo) kNo.innerText = `${noP}% No`;
+
+          const btnProbAbove = getDomEl("btnProbAbove");
+          const btnProbBelow = getDomEl("btnProbBelow");
+          if (btnProbAbove) btnProbAbove.innerText = `${yesP}%`;
+          if (btnProbBelow) btnProbBelow.innerText = `${noP}%`;
+        }
       } catch (err) {
         console.warn("Direct Kalshi fetch fallback:", err);
       } finally {
@@ -5697,6 +5727,10 @@
           }
           if (liveData.kalshi) {
             window.cachedKalshiData = liveData.kalshi;
+            const isSynth = !!(liveData.kalshi.is_synthetic || liveData.kalshi.status === "synthetic" || liveData.kalshi.source === "Kalshi Synthetic");
+            if (typeof updateKalshiSyntheticBadges === 'function') {
+              updateKalshiSyntheticBadges(isSynth);
+            }
             const kYes = getDomEl("btcKalshiYesProb");
             const kNo = getDomEl("btcKalshiNoProb");
             const btnProbAbove = getDomEl("btnProbAbove");
