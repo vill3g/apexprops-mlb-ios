@@ -123,13 +123,13 @@ def main():
     parser = argparse.ArgumentParser(description="Push select project files to a GitHub repo via the Contents API.")
     parser.add_argument(
         "--repo",
-        default=os.environ.get("GITHUB_TARGET_REPO", "vill3g/apexprops-mlb-ios"),
-        help="owner/repo, e.g. vill3g/apexprops-mlb-ios (defaults to GITHUB_TARGET_REPO env var or vill3g/apexprops-mlb-ios)"
+        default=os.environ.get("GITHUB_TARGET_REPO"),
+        help="owner/repo, e.g. vill3g/apexprops-mlb-ios. Required via --repo or GITHUB_TARGET_REPO env var; no default."
     )
     args = parser.parse_args()
 
     if not args.repo:
-        raise SystemExit("Specify --repo owner/name or set GITHUB_TARGET_REPO.")
+        raise SystemExit("Specify --repo owner/name or set GITHUB_TARGET_REPO. No default repo is assumed.")
 
     upload_files(args.repo)
 
