@@ -11,7 +11,7 @@
     "trainWindow": 500,
     "regC": 0.6,
     "classWeight": "balanced",
-    "maxCap": 2.5,
+    "maxCap": 3,
     "minConf": 60,
     "minConviction": "B",
     "edgeWeightOn": true,
