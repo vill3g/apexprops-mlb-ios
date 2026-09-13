@@ -449,6 +449,8 @@ def api_btc_prediction_accuracy():
             "forecast": {
                 "direction": latest.get("predicted"),
                 "generated_at": latest.get("time"),
+                "conviction_grade": latest.get("conviction_grade"),
+                "confidence": latest.get("confidence"),
             } if latest else None,
             "trade": latest,
             "correct": bool(latest.get("correct")) if latest else False,
