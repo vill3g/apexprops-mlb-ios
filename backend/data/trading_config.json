@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "mode": "LIVE",
+  "min_conviction": "GRADE A SETUP",
+  "max_contracts": 5,
+  "prediction_mode": true,
+  "max_daily_risk": 50.0,
+  "max_daily_trades": 100,
+  "ai_settings": {
+    "modelChoice": "XGBoost",
+    "trainWindow": 500,
+    "regC": 0.6,
+    "classWeight": "balanced",
+    "maxCap": 2.5,
+    "minConf": 60,
+    "minConviction": "B",
+    "edgeWeightOn": true,
+    "edgeWeightFactor": 1,
+    "orderType": "market",
+    "execDelay": 1,
+    "pollInterval": 5,
+    "verboseLog": true,
+    "dryRun": false,
+    "ignorePass": true
+  }
+}
