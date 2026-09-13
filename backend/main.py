@@ -6,16 +6,24 @@ FastAPI Application for ApexProps MLB & International Baseball Engine.
 Serves REST API and hosts the graphical user interface.
 """
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Request, Query, Header, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from enum import Enum
 from typing import Optional, List, Dict, Any
+
+class DirectionEnum(str, Enum):
+    ABOVE = "ABOVE"
+    BELOW = "BELOW"
 import os
 import time
 import json
+import threading
+import hmac
 import pandas as pd
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown, get_live_15m_target_data, format_volume_series
 from backend.btc.indicators import add_all_indicators
@@ -39,13 +47,41 @@ app = FastAPI(
     description="Real-time Bitcoin 15-Minute Pattern & Confluence Analyzer."
 )
 
+# Allowed CORS origins
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+if not allowed_origins:
+    allowed_origins = [
+        "http://localhost:8056",
+        "http://127.0.0.1:8056",
+        "http://localhost:8055",
+        "http://127.0.0.1:8055",
+        "capacitor://localhost",
+        "https://localhost",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Token", "Accept"],
 )
+
+# Shared-Secret API Authentication for Sensitive Trading & Scalp Endpoints
+API_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
+
+def require_auth(x_api_token: Optional[str] = Header(None, alias="X-API-Token")):
+    """Shared-secret authentication dependency for sensitive trading and scalp routes."""
+    if not API_TOKEN:
+        # Fail-closed: deny access if API_TOKEN is not configured
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication token not configured on server. Please set APP_API_TOKEN."
+        )
+    if not x_api_token or not hmac.compare_digest(x_api_token, API_TOKEN):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Token header.")
+
 
 # Initialize singletons
 espn_client = ESPNClient(cache_ttl_seconds=300)
@@ -62,7 +98,7 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "version": "4.0.0", "service": "BTC 15M Engine"}
+    return {"status": "ok", "version": "4.1.0", "service": "BTC 15M Engine"}
 
 @app.get("/api/slate")
 def get_slate():
@@ -336,34 +372,39 @@ def live_poll():
         "games": live_games
     }
 
-# =====================================================================
-# BITCOIN 15M PATTERN ANALYZER & CONFLUENCE ENGINE
-# =====================================================================
 btc_timeframe_cache: Dict[str, Any] = {}
+_btc_cache_lock = threading.Lock()
 
-def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 15):
+def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 10):
     """Retrieve or compute BTC analysis with smart per-timeframe caching."""
     now = time.time()
     tf = timeframe.lower()
-    if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
-        return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+    with _btc_cache_lock:
+        if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
+            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        # AUDIT FIX #4a: Stampede protection — claim the cache slot immediately so concurrent
+        # requests see it as "fresh" and don't all pile in to refetch simultaneously.
+        if tf not in btc_timeframe_cache:
+            btc_timeframe_cache[tf] = {"df": None, "analysis": None, "last_fetched": now}
+        else:
+            btc_timeframe_cache[tf]["last_fetched"] = now
 
     try:
-        df = fetch_candles(timeframe=tf, limit=250)
+        df = fetch_candles(timeframe=tf, limit=1000)
         analysis = analyze_btc(df, timeframe=tf)
-        # Preserve when this prediction was calculated. The candle timestamp is
-        # market-data time, which can be several minutes older than the signal.
         analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
-        btc_timeframe_cache[tf] = {
-            "df": df,
-            "analysis": analysis,
-            "last_fetched": now
-        }
+        with _btc_cache_lock:
+            btc_timeframe_cache[tf] = {
+                "df": df,
+                "analysis": analysis,
+                "last_fetched": time.time()
+            }
         return df, analysis
     except Exception as e:
         logger.error(f"Error fetching live BTC candles for {tf}: {e}")
-        if tf in btc_timeframe_cache:
-            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        with _btc_cache_lock:
+            if tf in btc_timeframe_cache:
+                return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
         raise e
 
 def sanitize_btc_json(val):
@@ -396,75 +437,41 @@ def api_btc_analyze(timeframe: str = "15m"):
 
 @app.get("/api/btc/prediction/accuracy")
 def api_btc_prediction_accuracy():
-    """Return the latest forecast with profit/loss and correctness.
-    The endpoint checks the most recent settled paper trade (if any) and
-    compares its side with the analyzer's direction to set the `correct`
-    flag. It also includes the realized P/L.
-    """
+    """Return accuracy based only on settled automated Kalshi predictions."""
     try:
-        # Lazy import to avoid circular deps
         from backend.btc.auto_executor import auto_executor
         trades = auto_executor.get_trades_history()
-        # Find most recent settled paper trade for the current market
-        last_settled = None
-        for t in reversed(trades):
-            if t.get("status") == "SETTLED" and t.get("mode", auto_executor.mode).upper() == "PAPER":
-                last_settled = t
-                break
-
-        result = {
-            "forecast": None,
-            "trade": None,
-            "correct": False
-        }
-
-        if last_settled:
-            pnl = float(last_settled.get("pnl", 0.0))
-            side = str(last_settled.get("side", "")).upper()
-            result_str = str(last_settled.get("result", "")).upper()
-            trade_dir = "ABOVE" if side in ["YES", "ABOVE"] else "BELOW"
-            
-            # Correct if trade was a winning prediction
-            is_win = "WIN" in result_str or pnl > 0
-            correct = is_win
-            
-            result["forecast"] = {
-                "conviction_grade": last_settled.get("conviction_grade", "GRADE A SETUP"),
-                "direction": last_settled.get("direction", trade_dir),
-                "generated_at": last_settled.get("timestamp"),
-                "confidence": last_settled.get("probability_percent", 75)
-            }
-            
-            result["trade"] = {
-                "id": last_settled.get("id"),
-                "pnl": pnl,
-                "result": result_str,
-                "settled_at": last_settled.get("settled_at"),
-                "side": side,
-                "strike": last_settled.get("strike"),
-                "settle_price": last_settled.get("settle_price")
-            }
-            result["correct"] = correct
-
-        return JSONResponse(result)
+        auto_executor.check_settlements(trades)
+        accuracy = auto_executor.get_prediction_accuracy(trades)
+        latest = accuracy.get("recent_outcomes", [])[-1] if accuracy.get("recent_outcomes") else None
+        return JSONResponse({
+            "accuracy": accuracy,
+            "forecast": {
+                "direction": latest.get("predicted"),
+                "generated_at": latest.get("time"),
+            } if latest else None,
+            "trade": latest,
+            "correct": bool(latest.get("correct")) if latest else False,
+        })
     except Exception as e:
         logger.error(f"[API] Error in prediction accuracy endpoint: {e}")
-        raise e
+        return JSONResponse({
+            "accuracy": {"total_evaluated": 0, "correct_picks": 0, "ratio_text": "0 of 0 Correct", "recent_outcomes": []},
+            "forecast": None,
+            "trade": None,
+            "correct": False,
+            "error": str(e)
+        }, status_code=500)
 
 @app.get("/api/btc/live")
 def api_btc_live():
     """
     Ultra-low latency endpoint returning live price, 15m target benchmark,
     spread delta, 5-target trend box, and candle countdown for 1s polling.
-    Also triggers autonomous rollover execution if window is open.
+    Autonomous rollover execution is handled in a dedicated background worker.
     """
     try:
         data = get_live_15m_target_data()
-        # Trigger autonomous check non-blockingly
-        try:
-            auto_executor.check_and_execute_rollover()
-        except Exception as e_trade:
-            logger.error(f"[AutoExecutor Error]: {e_trade}")
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
         return JSONResponse({
@@ -511,10 +518,12 @@ def api_btc_kalshi():
         from backend.btc.kalshi_client import get_kalshi_15m_market
         data = get_kalshi_15m_market()
         if not data:
-            return JSONResponse({"status": "unavailable", "target_price": None})
+            return JSONResponse({"status": "unavailable", "target_price": None, "is_synthetic": True})
+        data = dict(data)
+        data["is_synthetic"] = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
         return JSONResponse(data)
     except Exception as e:
-        return JSONResponse({"error": str(e), "target_price": None}, status_code=500)
+        return JSONResponse({"error": str(e), "target_price": None, "is_synthetic": True}, status_code=500)
 
 @app.get("/api/btc/kalshi/orderbook")
 @app.get("/api/btc/kalshi/pricebook")
@@ -524,8 +533,9 @@ def api_btc_kalshi_orderbook():
         from backend.btc.kalshi_client import get_kalshi_15m_market
         data = get_kalshi_15m_market()
         if not data:
-            return JSONResponse({"status": "unavailable", "bids": [], "asks": []})
+            return JSONResponse({"status": "unavailable", "bids": [], "asks": [], "is_synthetic": True})
         
+        is_synthetic = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
         yes_bid = data.get("yes_bid", 0.0)
         yes_ask = data.get("yes_ask", 0.0)
         no_bid = data.get("no_bid", 0.0)
@@ -541,6 +551,7 @@ def api_btc_kalshi_orderbook():
             "target_price": data.get("target_price", 0.0),
             "yes_prob": data.get("yes_prob", 50.0),
             "no_prob": data.get("no_prob", 50.0),
+            "is_synthetic": is_synthetic,
             "top_of_book": {
                 "yes_bid": yes_bid,
                 "yes_ask": yes_ask,
@@ -551,20 +562,21 @@ def api_btc_kalshi_orderbook():
                 "spread": spread,
                 "spread_cents": round(spread * 100, 1),
                 "orderbook_imbalance_percent": imbalance,
-                "market_bias": bias
+                "market_bias": bias,
+                "is_synthetic": is_synthetic
             },
             "bids": [{"side": "YES", "price": yes_bid, "size": yes_bid_size}, {"side": "NO", "price": no_bid, "size": 0}],
             "asks": [{"side": "YES", "price": yes_ask, "size": yes_ask_size}, {"side": "NO", "price": no_ask, "size": 0}],
             "timestamp": int(time.time())
         })
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse({"error": str(e), "is_synthetic": True}, status_code=500)
 
 # =====================================================================
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS
 # =====================================================================
 
-@app.get("/api/btc/trade/status")
+@app.get("/api/btc/trade/status", dependencies=[Depends(require_auth)])
 def api_btc_trade_status():
     """Returns full status of the Kalshi automated trading engine."""
     try:
@@ -573,38 +585,56 @@ def api_btc_trade_status():
     except Exception as e:
         return JSONResponse({"error": str(e), "enabled": False, "mode": "PAPER"}, status_code=500)
 
-@app.post("/api/btc/trade/toggle")
+@app.post("/api/btc/trade/toggle", dependencies=[Depends(require_auth)])
 def api_btc_trade_toggle(enabled: bool = Query(...)):
     """Toggle auto-trading execution ON or OFF."""
     res = auto_executor.set_enabled(enabled)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/mode")
+@app.post("/api/btc/trade/mode", dependencies=[Depends(require_auth)])
 def api_btc_trade_mode(mode: str = Query(...)):
     """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
+    if str(mode).upper() == "LIVE" and not API_TOKEN:
+        raise HTTPException(
+            status_code=403,
+            detail="APP_API_TOKEN must be configured before switching to LIVE trading."
+        )
     res = auto_executor.set_mode(mode)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/prediction_mode")
+@app.post("/api/btc/trade/prediction_mode", dependencies=[Depends(require_auth)])
 def api_btc_trade_prediction_mode(enabled: bool = Query(...)):
     """Toggle prediction mode ON or OFF."""
     auto_executor.prediction_mode = enabled
     auto_executor._save_config()
     return JSONResponse({"status": "ok", "prediction_mode": enabled})
 
-@app.post("/api/btc/trade/threshold")
+@app.post("/api/btc/trade/threshold", dependencies=[Depends(require_auth)])
 def api_btc_trade_threshold(threshold: str = Query(...)):
     """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
     res = auto_executor.set_conviction_threshold(threshold)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/contracts")
+@app.post("/api/btc/trade/contracts", dependencies=[Depends(require_auth)])
 def api_btc_trade_contracts(count: int = Query(...)):
     """Set number of contracts per trade."""
     res = auto_executor.set_max_contracts(count)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/risk_limits")
+
+@app.post("/api/btc/trade/ai_settings", dependencies=[Depends(require_auth)])
+async def api_btc_trade_ai_settings(request: Request):
+    try:
+        data = await request.json()
+        res = auto_executor.set_ai_settings(data)
+        from backend.btc.ml_engine import get_ml_engine
+        ml_eng = get_ml_engine()
+        ml_eng.apply_settings(data)
+        return JSONResponse({"status": "ok", "settings": data})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)})
+
+@app.post("/api/btc/trade/risk_limits", dependencies=[Depends(require_auth)])
 def api_btc_trade_risk_limits(
     max_daily_risk: Optional[float] = Query(None),
     max_daily_trades: Optional[int] = Query(None)
@@ -613,19 +643,19 @@ def api_btc_trade_risk_limits(
     res = auto_executor.set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/manual")
-def api_btc_trade_manual(direction: str = Query(...)):
+@app.post("/api/btc/trade/manual", dependencies=[Depends(require_auth)])
+def api_btc_trade_manual(direction: DirectionEnum = Query(...)):
     """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
-    res = auto_executor.execute_manual_trade(direction)
+    res = auto_executor.execute_manual_trade(direction.value)
     return JSONResponse(sanitize_btc_json(res))
 
-@app.post("/api/btc/trade/close")
+@app.post("/api/btc/trade/close", dependencies=[Depends(require_auth)])
 def api_btc_trade_close():
     """1-Click manual close of all open trades."""
     res = auto_executor.close_open_trades()
     return JSONResponse(sanitize_btc_json(res))
 
-@app.get("/api/btc/trade/history")
+@app.get("/api/btc/trade/history", dependencies=[Depends(require_auth)])
 def api_btc_trade_history(mode: str = None):
     """Returns list of all historical trades and P&L results."""
     history = auto_executor.get_trades_history()
@@ -633,16 +663,16 @@ def api_btc_trade_history(mode: str = None):
         history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
 
-@app.get("/api/btc/mode")
+@app.get("/api/btc/mode", dependencies=[Depends(require_auth)])
 def api_btc_mode():
     return JSONResponse({"mode": auto_executor.mode})
 
-@app.get("/api/btc/paper/balance")
+@app.get("/api/btc/paper/balance", dependencies=[Depends(require_auth)])
 def api_btc_paper_balance():
     from backend.btc.paper_balance import load_balance
     return JSONResponse({"balance": load_balance()})
 
-@app.post("/api/btc/paper/balance/reset")
+@app.post("/api/btc/paper/balance/reset", dependencies=[Depends(require_auth)])
 def api_btc_paper_balance_reset():
     from backend.btc.paper_balance import reset_balance
     new_bal = reset_balance()
@@ -651,24 +681,29 @@ def api_btc_paper_balance_reset():
 # ── Scalp Engine Endpoints ────────────────────────────────────────────
 from backend.btc.scalp_engine import scalp_engine
 
-@app.post("/api/btc/scalp/start")
+@app.post("/api/btc/scalp/start", dependencies=[Depends(require_auth)])
 def api_btc_scalp_start():
     """Start the scalp engine background monitor."""
     scalp_engine.start()
     return JSONResponse({"status": "scalp engine started"})
 
-@app.post("/api/btc/scalp/stop")
+@app.post("/api/btc/scalp/stop", dependencies=[Depends(require_auth)])
 def api_btc_scalp_stop():
     """Stop the scalp engine background monitor."""
     scalp_engine.stop()
     return JSONResponse({"status": "scalp engine stopped"})
 
-@app.get("/api/btc/scalp/config")
+@app.get("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
 def api_btc_scalp_config():
     """Get current scalp engine configuration."""
     return JSONResponse(scalp_engine.load_config())
 
-@app.patch("/api/btc/scalp/config")
+@app.get("/api/btc/scalp/status", dependencies=[Depends(require_auth)])
+def api_btc_scalp_status():
+    """Get current scalp engine runtime status and monitored positions."""
+    return JSONResponse(scalp_engine.get_status())
+
+@app.patch("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
 def api_btc_scalp_config_update(body: dict):
     """Update scalp engine configuration."""
     scalp_engine.save_config(body)
@@ -753,33 +788,90 @@ def api_btc_candles(timeframe: str = "15m"):
 
 
 # =====================================================================
-# BACKGROUND AUTO-TRADER TASK
+# BACKGROUND AUTO-TRADER TASK & WATCHDOG
 # =====================================================================
 import threading
-import time
+_last_autotrader_heartbeat = time.time()
 
 def _auto_trader_background_loop():
+    global _last_autotrader_heartbeat
+    settle_tick = 0
+    logger.info("[AutoTrader Worker] Loop started.")
     while True:
         try:
+            _last_autotrader_heartbeat = time.time()
             auto_executor.check_and_execute_rollover()
+            settle_tick += 1
+            if settle_tick % 5 == 0:  # Periodically check settlements every 10s
+                auto_executor.check_settlements()
+            _last_autotrader_heartbeat = time.time()
         except Exception as e:
-            pass
+            logger.error(f"[AutoTrader Background] Error in loop: {e}", exc_info=True)
         time.sleep(2)
+
+def _watchdog_monitor_loop():
+    """AUDIT FIX #8: Watchdog thread to monitor and revive the auto-trader thread if it terminates."""
+    global _last_autotrader_heartbeat
+    while True:
+        try:
+            time.sleep(15)
+            stalled_seconds = time.time() - _last_autotrader_heartbeat
+            if stalled_seconds > 60:
+                logger.warning(f"[AutoTrader Watchdog] Background worker stalled or inactive for {stalled_seconds:.1f}s. Reviving worker thread...")
+                _last_autotrader_heartbeat = time.time()
+                t = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderRevived")
+                t.start()
+        except Exception as e:
+            logger.error(f"[AutoTrader Watchdog] Error: {e}")
 
 @app.on_event("startup")
 def start_background_tasks():
-    t = threading.Thread(target=_auto_trader_background_loop, daemon=True)
-    t.start()
-    logger.info("[AutoTrader] Background thread started.")
+    t1 = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderMain")
+    t1.start()
+    t2 = threading.Thread(target=_watchdog_monitor_loop, daemon=True, name="AutoTraderWatchdog")
+    t2.start()
+    logger.info("[AutoTrader] Background thread & watchdog monitor started.")
 
 # Mount static directory and route index
 
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+@app.get("/api/ui_version")
+def get_ui_version():
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    mtime = os.path.getmtime(index_path) if os.path.exists(index_path) else 0
+    return JSONResponse(
+        {"version": "4.1.0", "mtime": mtime},
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+    )
+
 @app.api_route("/", methods=["GET", "HEAD"])
 def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_path):
-        return FileResponse(index_path)
+        return FileResponse(
+            index_path,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return {"message": "ApexProps Backend Running. Frontend index.html not found."}
+
+@app.api_route("/trades", methods=["GET", "HEAD"])
+@app.api_route("/trade-list", methods=["GET", "HEAD"])
+def serve_trades():
+    trades_path = os.path.join(STATIC_DIR, "trades.html")
+    if os.path.exists(trades_path):
+        return FileResponse(
+            trades_path,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    return {"message": "Trade list page not found."}
+
