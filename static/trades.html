@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-black text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BTC 15M // Trade List & Prediction Details</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#000000">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --sat: env(safe-area-inset-top, 54px);
+      --sab: env(safe-area-inset-bottom, 20px);
+    }
+    html, body {
+      background-color: #000000 !important;
+      background: #000000 !important;
+      color: #ffffff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+      touch-action: pan-y;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-font-smoothing: antialiased !important;
+      overflow-x: hidden !important;
+    }
+
+    /* Fixed Top Navigation Bar:
+       Solid pitch black background fills behind Dynamic Island.
+       Content is safely offset by env(safe-area-inset-top) + 2px so it NEVER touches the status bar or triggers iOS blur! */
+    .trade-nav-header {
+      position: sticky !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 100 !important;
+      width: 100% !important;
+      background-color: #000000 !important;
+      background: #000000 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+      padding-top: calc(env(safe-area-inset-top, 54px) + 2px) !important;
+      padding-bottom: 8px !important;
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+      box-sizing: border-box !important;
+    }
+
+    .trade-nav-header *,
+    .trade-nav-header a,
+    .trade-nav-header button,
+    .trade-nav-header span,
+    .trade-nav-header h1 {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+    }
+
+    .trade-card {
+      background: #090e1a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      transition: all 0.2s ease;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .trade-card:hover {
+      border-color: rgba(6, 182, 212, 0.4);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
+    }
+    .trade-win {
+      border-left: 4px solid #10b981 !important;
+    }
+    .trade-loss {
+      border-left: 4px solid #ef4444 !important;
+    }
+    .trade-open {
+      border-left: 4px solid #f59e0b !important;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION BAR (Solid black, starts below Dynamic Island) -->
+  <header class="trade-nav-header flex items-center justify-between w-full">
+    <a href="/" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-white/15 text-xs font-bold text-slate-200 hover:text-white hover:border-cyan-400 active:scale-95 transition-all cursor-pointer">
+      <span class="text-amber-400 text-sm leading-none">←</span>
+      <span>Back to Chart</span>
+    </a>
+
+    <div class="flex flex-col items-center">
+      <div class="flex items-center gap-1.5">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <h1 class="text-xs sm:text-sm font-black tracking-tight text-white font-sans uppercase">BTC 15M Trade List</h1>
+      </div>
+      <span class="text-[9px] font-mono text-cyan-400 mt-0.5">Last 10 Executions & Model Predictions</span>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <button onclick="fetchTradesHistory()" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center text-xs font-bold hover:bg-slate-800 text-slate-300 active:scale-95 transition-all cursor-pointer" title="Refresh Trades">
+        <span id="refreshIcon" class="text-xs">⟳</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN SCROLLABLE WRAPPER -->
+  <div class="px-3 sm:px-6 py-2 sm:py-4 max-w-4xl mx-auto w-full flex-1 flex flex-col" style="padding-bottom: max(env(safe-area-inset-bottom, 24px), 24px);">
+
+    <!-- SUMMARY STATS BAR -->
+    <section class="grid grid-cols-3 gap-2 my-2 sm:my-3">
+      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
+        <span class="text-[8.5px] uppercase font-bold text-slate-400">10-Trade Win Rate</span>
+        <span id="statWinRate" class="text-sm sm:text-base font-black text-emerald-400 mt-0.5">--%</span>
+        <span id="statRecord" class="text-[8px] text-slate-500 mt-0.5">0W - 0L</span>
+      </div>
+
+      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
+        <span class="text-[8.5px] uppercase font-bold text-slate-400">Realized P&L</span>
+        <span id="statTotalPnl" class="text-sm sm:text-base font-black text-white mt-0.5">$0.00</span>
+        <span id="statRoi" class="text-[8px] text-slate-500 mt-0.5">--% ROI</span>
+      </div>
+
+      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
+        <span class="text-[8.5px] uppercase font-bold text-slate-400">Avg Conviction</span>
+        <span id="statAvgConviction" class="text-sm sm:text-base font-black text-cyan-300 mt-0.5">--%</span>
+        <span class="text-[8px] text-slate-500 mt-0.5">AI Confidence</span>
+      </div>
+    </section>
+
+    <!-- FILTER & VIEW CONTROLS -->
+    <div class="flex items-center justify-between mb-2.5 px-1 font-mono text-[10px]">
+      <div class="flex items-center gap-1.5">
+        <span class="text-slate-400">View:</span>
+        <button id="btnFilter10" onclick="setViewLimit(10)" class="px-2 py-0.5 rounded font-bold transition-all bg-cyan-600 text-white shadow-sm cursor-pointer">Last 10 Trades</button>
+        <button id="btnFilterAll" onclick="setViewLimit(50)" class="px-2 py-0.5 rounded font-bold transition-all bg-slate-900 text-slate-400 hover:text-white cursor-pointer">All History</button>
+      </div>
+      <div class="flex items-center gap-1">
+        <span id="tradeModeBadge" class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 font-bold uppercase text-[9px] text-cyan-400">Mode: ALL</span>
+      </div>
+    </div>
+
+    <!-- TRADES LIST CONTAINER -->
+    <main id="tradesContainer" class="space-y-2.5 flex-1 pb-6">
+      <div class="text-center py-10 font-mono text-xs text-slate-500 animate-pulse">
+        Loading trade history & prediction telemetry...
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto py-3 text-center border-t border-white/10 font-mono text-[9px] text-slate-500">
+      <span>Kalshi KXBTC15M Autonomous AI Trader · OOG LLC · Verified Execution Log</span>
+    </footer>
+
+  </div>
+
+  <script>
+    let currentLimit = 10;
+    let cachedTrades = [];
+
+    function setViewLimit(limit) {
+      currentLimit = limit;
+      document.getElementById("btnFilter10").className = limit === 10 
+        ? "px-2 py-0.5 rounded font-bold transition-all bg-cyan-600 text-white shadow-sm cursor-pointer"
+        : "px-2 py-0.5 rounded font-bold transition-all bg-slate-900 text-slate-400 hover:text-white cursor-pointer";
+      document.getElementById("btnFilterAll").className = limit !== 10 
+        ? "px-2 py-0.5 rounded font-bold transition-all bg-cyan-600 text-white shadow-sm cursor-pointer"
+        : "px-2 py-0.5 rounded font-bold transition-all bg-slate-900 text-slate-400 hover:text-white cursor-pointer";
+      renderTrades(cachedTrades);
+    }
+
+    function getAuthHeaders(customHeaders = {}) {
+      const headers = { ...customHeaders };
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get("token") || urlParams.get("api_token");
+      if (urlToken) {
+        localStorage.setItem("app_api_token", urlToken);
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+      const token = localStorage.getItem("app_api_token") || "";
+      if (token) {
+        headers["X-API-Token"] = token;
+      }
+      return headers;
+    }
+
+    async function fetchTradesHistory() {
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.add("animate-spin");
+      try {
+        const res = await fetch("/api/btc/trade/history", { headers: getAuthHeaders() });
+        if (res.status === 401) {
+          const entered = prompt("Enter Server API Token (APP_API_TOKEN):");
+          if (entered) {
+            localStorage.setItem("app_api_token", entered.trim());
+            return fetchTradesHistory();
+          }
+        }
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        cachedTrades = Array.isArray(data) ? data : [];
+        renderTrades(cachedTrades);
+      } catch (err) {
+        console.error("Failed to load trades history:", err);
+        document.getElementById("tradesContainer").innerHTML = `
+          <div class="text-center py-8 font-mono text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded-xl p-4">
+            Failed to connect to /api/btc/trade/history: ${err.message}. Retrying in 5s...
+          </div>
+        `;
+      } finally {
+        if (refreshIcon) setTimeout(() => refreshIcon.classList.remove("animate-spin"), 500);
+      }
+    }
+
+    function renderTrades(trades) {
+      const container = document.getElementById("tradesContainer");
+      if (!trades || trades.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 font-mono text-xs text-slate-500 bg-slate-950 border border-white/5 rounded-2xl p-6">
+            No trades recorded yet. Stand by for active 15M contract window.
+          </div>
+        `;
+        return;
+      }
+
+      const displayList = (trades || []).filter(t => t && typeof t === 'object').slice(0, currentLimit);
+
+      // Compute statistics for displayList
+      let wins = 0, losses = 0, totalPnl = 0, totalCost = 0, totalProb = 0, probCount = 0;
+      displayList.forEach(t => {
+        const res = String(t.result || "").toUpperCase();
+        const pnl = parseFloat(t.realized_pnl ?? t.pnl ?? 0);
+        const cost = parseFloat(t.cost || 0);
+        totalPnl += pnl;
+        totalCost += cost;
+        if (res.includes("WIN")) wins++;
+        else if (res.includes("LOSS")) losses++;
+
+        const prob = parseFloat(t.probability_percent || 0);
+        if (prob > 0) {
+          totalProb += prob;
+          probCount++;
+        }
+      });
+
+      const winRate = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+      const roi = totalCost > 0 ? ((totalPnl / totalCost) * 100).toFixed(1) : "0.0";
+
+      const wrEl = document.getElementById("statWinRate");
+      if (wrEl) wrEl.innerText = `${winRate}%`;
+      const recEl = document.getElementById("statRecord");
+      if (recEl) recEl.innerText = `${wins}W - ${losses}L (${displayList.length} total)`;
+      
+      const pnlEl = document.getElementById("statTotalPnl");
+      if (pnlEl) {
+        pnlEl.innerText = `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`;
+        pnlEl.classList.remove("text-emerald-400", "text-red-400");
+        pnlEl.classList.add(totalPnl >= 0 ? "text-emerald-400" : "text-red-400");
+      }
+      
+      const roiEl = document.getElementById("statRoi");
+      if (roiEl) roiEl.innerText = `${roi >= 0 ? "+" : ""}${roi}% ROI`;
+      const avgConvEl = document.getElementById("statAvgConviction");
+      if (avgConvEl) avgConvEl.innerText = probCount > 0 ? `${Math.round(totalProb / probCount)}%` : "--%";
+
+      // Render Individual Trade Cards
+      container.innerHTML = displayList.map((t, idx) => {
+        const resStr = String(t.result || "").toUpperCase();
+        const statStr = String(t.status || "").toUpperCase();
+        const isWin = resStr.includes("WIN");
+        const isLoss = resStr.includes("LOSS");
+        const isClosed = statStr === "CLOSED" || statStr === "SETTLED";
+
+        let borderClass = "trade-open";
+        let badgeBg = "bg-amber-500/15 text-amber-300 border-amber-500/30";
+        let statusBadgeText = "ACTIVE / OPEN";
+
+        if (isWin) {
+          borderClass = "trade-win";
+          badgeBg = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+          statusBadgeText = "WIN";
+        } else if (isLoss) {
+          borderClass = "trade-loss";
+          badgeBg = "bg-red-500/15 text-red-400 border-red-500/30";
+          statusBadgeText = "LOSS";
+        } else if (isClosed) {
+          borderClass = "trade-open";
+          badgeBg = "bg-slate-800 text-slate-300 border-slate-700";
+          statusBadgeText = "CLOSED";
+        }
+
+        const pnlVal = parseFloat(t.realized_pnl ?? t.pnl ?? 0);
+        const pnlFormatted = `${pnlVal >= 0 ? "+" : ""}$${pnlVal.toFixed(2)}`;
+        const pnlColor = pnlVal >= 0 ? "text-emerald-400" : "text-red-400";
+
+        const direction = String(t.direction || t.side || "").toUpperCase();
+        const isUp = direction.includes("UP") || direction.includes("ABOVE") || direction.includes("YES");
+        const dirArrow = isUp ? "▲" : "▼";
+        const dirText = isUp ? "BID UP (YES)" : "BID DOWN (NO)";
+
+        const entryPrice = t.entry_price ? `$${parseFloat(t.entry_price).toFixed(2)}` : "--";
+        const exitPrice = t.exit_price ?? t.last_exit_price ? `$${parseFloat(t.exit_price ?? t.last_exit_price).toFixed(2)}` : "--";
+        const strike = t.strike ? `$${Number(t.strike).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "--";
+        const count = t.count ? `${t.count} ct` : "1 ct";
+        const cost = t.cost ? `$${parseFloat(t.cost).toFixed(2)}` : "--";
+        const mode = (t.mode || "LIVE").toUpperCase();
+
+        const convictionPct = t.probability_percent ? `${t.probability_percent}%` : "--%";
+        const convictionGrade = t.conviction_grade || "AI MODEL";
+        const convictionBadge = t.conviction_badge || (t.recommendation ? t.recommendation.replace("MANUAL ", "") : "AUTONOMOUS");
+        const exitReason = t.exit_reason ? t.exit_reason.replace(/_/g, " ") : (isClosed ? "SETTLED" : "IN PROGRESS");
+
+        // Catalysts / Prediction reasons list
+        const catalysts = Array.isArray(t.catalysts) && t.catalysts.length > 0 ? t.catalysts : ["Technical Momentum Confluence", "15M Target Strike Delta Alignment"];
+
+        return `
+          <div class="trade-card ${borderClass} p-3 sm:p-4 font-mono space-y-3">
+            <!-- Row 1: Header with Index, Ticker, Timestamp & Result Badge -->
+            <div class="flex items-center justify-between flex-wrap gap-2 border-b border-white/10 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-slate-900 border border-white/15 text-[9px] font-black text-slate-300">#${idx + 1}</span>
+                <span class="text-xs sm:text-sm font-black text-white font-sans">${t.ticker || "KXBTC15M"}</span>
+                <span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase ${mode === 'LIVE' ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'}">${mode}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[9px] text-slate-400">${t.timestamp || t.closed_at || "--"}</span>
+                <span class="px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-wider ${badgeBg}">
+                  ${statusBadgeText} ${isClosed ? `(${pnlFormatted})` : ''}
+                </span>
+              </div>
+            </div>
+
+            <!-- Row 2: Financials & Trade Execution Details -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] bg-slate-950/70 p-2.5 rounded-xl border border-white/5">
+              <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 uppercase">Target Strike</span>
+                <span class="font-bold text-white text-xs sm:text-sm">${strike}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 uppercase">Side / Action</span>
+                <div class="inline-flex items-center gap-1 font-bold text-xs ${isUp ? 'text-emerald-400' : 'text-red-400'}">
+                  <span>${dirArrow}</span>
+                  <span>${dirText}</span>
+                </div>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 uppercase">Entry → Exit</span>
+                <span class="font-bold text-slate-200">${entryPrice} → ${exitPrice}</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 uppercase">Size / P&L</span>
+                <span class="font-bold ${pnlColor}">${count} (${cost}) → ${pnlFormatted}</span>
+              </div>
+            </div>
+
+            <!-- Row 3: Dedicated Prediction & ML Intelligence Panel -->
+            <div class="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/25 space-y-2">
+              <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-cyan-400 font-black tracking-wider uppercase">🧠 PREDICTION METRICS:</span>
+                  <span class="px-1.5 py-0.2 rounded font-black text-[8px] uppercase bg-cyan-950 border border-cyan-400/40 text-cyan-300">${convictionGrade}</span>
+                </div>
+                <div class="flex items-center gap-1 text-[9px]">
+                  <span class="text-slate-400">Exit Reason:</span>
+                  <span class="text-amber-300 font-bold uppercase">${exitReason}</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9px]">
+                <div class="flex items-center justify-between px-2 py-1 rounded bg-black/40 border border-white/5">
+                  <span class="text-slate-400">Model Conviction:</span>
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div class="h-full bg-cyan-400" style="width: ${parseInt(t.probability_percent || 65)}%;"></div>
+                    </div>
+                    <span class="font-bold text-cyan-300 font-mono">${convictionPct}</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between px-2 py-1 rounded bg-black/40 border border-white/5">
+                  <span class="text-slate-400">Signal Directive:</span>
+                  <span class="font-bold text-slate-200 truncate max-w-[150px]">${t.recommendation || convictionBadge}</span>
+                </div>
+              </div>
+
+              <!-- Catalysts / Confluence Tags -->
+              <div class="flex flex-wrap items-center gap-1 pt-0.5">
+                <span class="text-[7.5px] uppercase font-bold text-slate-500 mr-1">Catalysts:</span>
+                ${catalysts.map(c => `
+                  <span class="text-[7.5px] font-sans px-1.5 py-0.5 rounded bg-slate-900/90 text-slate-300 border border-white/10 flex items-center gap-1">
+                    <span class="text-cyan-400">•</span> ${c}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    let isFetchingHistory = false;
+    async function fetchTradesHistorySafe() {
+      if (isFetchingHistory) return;
+      isFetchingHistory = true;
+      try {
+        await fetchTradesHistory();
+      } catch (err) {
+        console.warn("fetchTradesHistory error:", err);
+      } finally {
+        isFetchingHistory = false;
+      }
+    }
+
+    // Auto load on start & refresh every 5 seconds
+    fetchTradesHistorySafe();
+    setInterval(fetchTradesHistorySafe, 5000);
+  </script>
+</body>
+</html>
