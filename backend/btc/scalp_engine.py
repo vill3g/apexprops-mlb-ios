@@ -170,10 +170,11 @@ class ScalpEngine:
                             # FIX #6: Import analyzer/data_fetcher directly instead of backend.main
                             # to eliminate the scalp_engine <-> main circular import dependency.
                             try:
+                                # FIX: Use a much smaller limit (45) to drastically reduce HTTP latency for the spike monitor
                                 from backend.btc.data_fetcher import fetch_candles
                                 from backend.btc.indicators import add_all_indicators
                                 from backend.btc.analyzer import analyze_btc
-                                _df = fetch_candles(timeframe="15m", limit=200)
+                                _df = fetch_candles(timeframe="15m", limit=45)
                                 analysis = analyze_btc(add_all_indicators(_df))
 
                                 next_forecast = analysis.get("target_benchmark", {}).get("next_contract_forecast", {})
@@ -218,7 +219,7 @@ class ScalpEngine:
                                 logger.info(f"[ScalpEngine] Analyzer check failed: {e}")
             except Exception as e:
                 logger.error(f"[ScalpEngine] Monitoring error: {e}")
-            time.sleep(1)
+            time.sleep(0.5)  # Reduce latency for initial scalp trigger
         self._active_trade.clear()
 
     # ------------------------------------------------------------------
@@ -436,8 +437,26 @@ class ScalpEngine:
             # Convert BTC price move to a percentage
             rel = (btc_pnl / btc_entry) * 100.0 if btc_entry != 0 else 0
             
-            if rel >= profit_target or rel <= -loss_target:
-                reason = "SCALP_PROFIT_TARGET" if rel >= profit_target else "SCALP_STOP_LOSS"
+            # Smart Trailing Stop logic
+            if rel > highest_pnl_pct:
+                highest_pnl_pct = rel
+                
+            current_loss_target = loss_target
+            if highest_pnl_pct >= trailing_activation:
+                # Move to break-even once we reach 40% of our target
+                current_loss_target = -(trailing_activation * 0.1)
+                
+                # Trail tightly if we get past 75% of target
+                if highest_pnl_pct >= profit_target * 0.75:
+                    current_loss_target = -(highest_pnl_pct - (profit_target * 0.25))
+
+            if rel >= profit_target or rel <= -current_loss_target:
+                if rel >= profit_target:
+                    reason = "SCALP_PROFIT_TARGET"
+                elif current_loss_target < loss_target:
+                    reason = "SCALP_TRAILING_STOP"
+                else:
+                    reason = "SCALP_STOP_LOSS"
                 logger.info(f"[ScalpEngine] Triggering early exit for {trade_id} ({reason}): BTC move {rel:+.3f}% (target: {profit_target:.3f}%)")
 
                 # Calculate realistic contract price for paper/simulated trades
@@ -464,7 +483,7 @@ class ScalpEngine:
                     break
                 trade["contract_count"] = close_res.get("remaining_count", trade.get("contract_count", 0))
                 logger.info(f"[ScalpEngine] Partial exit for {trade['id']}; {trade['contract_count']} contracts remain.")
-            time.sleep(1)
+            time.sleep(0.3)  # Faster polling for less slippage
 
     # ------------------------------------------------------------------
     # Config accessors
