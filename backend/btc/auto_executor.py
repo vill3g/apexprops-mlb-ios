@@ -797,6 +797,7 @@ class AutoExecutor:
 
             one_shot_ai = bool(self.ai_settings.get("oneShotAiStartTrade", False))
             ignore_pass = bool(self.ai_settings.get("ignorePass", False))
+            ignore_pass_technical_only = bool(self.ai_settings.get("ignorePassTechnicalOnly", False))
             reverse_cvd = bool(self.ai_settings.get("reverseCvd", False))
             is_reverse = False
             is_forced_pass = False
@@ -821,6 +822,19 @@ class AutoExecutor:
                     f"[AutoExecutor] [{'100% AI MODE (UNTIL TOGGLED OFF)' if ignore_pass else '1-SHOT AI MODE'}] Trading 100% on AI Prediction: "
                     f"{direction} ({raw_score:.1f}% Conf, Raw ML: {ai_model_prob*100:.1f}%). Technical and PASS filters bypassed."
                 )
+            elif ignore_pass_technical_only and direction == "PASS":
+                # Only force trade if there was a real technical chart setup detected (not just ML fallback)
+                if "ML MODEL" not in pre_gate_grade and pre_gate_dir in ["ABOVE", "BELOW"]:
+                    direction = pre_gate_dir
+                    raw_score = pre_gate_prob
+                    grade = "GRADE A+ (TECH FORCE)"
+                    badge = f"🎯 TECH FORCE ({raw_score:.0f}%)"
+                    rec = f"Technical Force Trade: {'YES' if direction == 'ABOVE' else 'NO'}"
+                    is_forced_pass = True
+                    logger.info(f"[AutoExecutor] [TECHNICAL FORCE TRADE] Overriding PASS using Technical Setup: {direction} ({raw_score:.1f}% Conf). ML/Macro blockers bypassed.")
+                else:
+                    logger.info("[AutoExecutor] [TECHNICAL FORCE TRADE] Active, but no technical chart setup was present. Remaining PASS.")
+                    return None
             # Handle PASS direction filtering or CVD Divergence
             elif direction == "PASS":
                 # Determine best underlying direction from pre-gate analysis or ML model

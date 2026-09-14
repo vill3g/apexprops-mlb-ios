@@ -2514,6 +2514,16 @@
                         <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
                       </label>
                     </div>
+                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-teal-950/30 border border-teal-500/40 shadow-sm shadow-teal-500/10" title="Override PASS state and force trade using ONLY the Technical Chart Setup direction (ignores ML direction)">
+                      <div class="flex flex-col">
+                        <span class="text-teal-300 font-bold cursor-help flex items-center gap-1">? Force Trade on PASS</span>
+                        <span class="text-[7.5px] text-teal-400 font-mono">Technical Chart Setups Only</span>
+                      </div>
+                      <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="settingIgnorePassTechnicalOnly" onchange="onToggleForceTradePassTechnicalOnly(this.checked)" class="sr-only peer">
+                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-teal-500"></div>
+                      </label>
+                    </div>
                     <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="Align trade direction with CVD instead of PASSING on divergence">
                       <span class="text-indigo-400 cursor-help flex items-center gap-1">🔄 Reverse on CVD Divergence</span>
                       <label class="relative inline-flex items-center cursor-pointer">
@@ -8319,9 +8329,25 @@
       }
     }
 
+    
+    function onToggleForceTradePassTechnicalOnly(checked) {
+      if (checked) {
+        showAppToast("Technical Force Trade Active", "Force Trade on PASS is ON (Technical Only). Trades will force based strictly on chart patterns.", "warning");
+        if (document.getElementById("settingIgnorePass")?.checked) {
+           document.getElementById("settingIgnorePass").checked = false;
+        }
+      } else {
+        showAppToast("Normal Filters Restored", "Technical Force Trade toggled OFF.", "info");
+      }
+      saveKalshiSettings(false);
+    }
+
     function onToggleForceTradePass(checked) {
       if (checked) {
         showAppToast("100% AI Prediction Active", "Force Trade on PASS is ON: Trading 100% on AI Prediction until toggled off.", "warning");
+        if (document.getElementById("settingIgnorePassTechnicalOnly")?.checked) {
+           document.getElementById("settingIgnorePassTechnicalOnly").checked = false;
+        }
       } else {
         showAppToast("Normal Filters Restored", "Force Trade on PASS toggled OFF. Standard conviction & PASS filters active.", "info");
       }
@@ -8383,6 +8409,7 @@
             verboseLog: document.getElementById("settingVerboseLog")?.checked || false,
             dryRun: document.getElementById("settingDryRun")?.checked || false,
             ignorePass: document.getElementById("settingIgnorePass")?.checked || false,
+            ignorePassTechnicalOnly: document.getElementById("settingIgnorePassTechnicalOnly")?.checked || false,
             reverseCvd: document.getElementById("settingReverseCvd")?.checked || false,
             cvdBearLimit: document.getElementById("settingCvdBearLimit") ? parseFloat(document.getElementById("settingCvdBearLimit").value) : -2,
             cvdBullLimit: document.getElementById("settingCvdBullLimit") ? parseFloat(document.getElementById("settingCvdBullLimit").value) : 2,
