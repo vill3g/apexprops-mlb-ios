@@ -76,13 +76,11 @@ class XGBoostModel:
     def fit_calibration(self, X_holdout, y_holdout):
         """Fit an isotonic regression mapping raw predict_proba() -> calibrated probability,
         using a held-out slice not used for the main model fit. Call after fit()."""
-        if len(np.unique(y_holdout)) < 2 or len(y_holdout) < 20:
-            self.calibrator = None  # not enough holdout signal to calibrate safely
-            return
-        raw_probs = self.predict_proba(X_holdout)
-        iso = IsotonicRegression(out_of_bounds="clip")
-        iso.fit(raw_probs, y_holdout)
-        self.calibrator = iso
+        # Isotonic regression on small sample sizes (< 500) overfits severely and collapses 
+        # probabilities into hard 1.0 or 0.0 step functions, destroying model confidence.
+        # Bypass calibration and rely on XGBoost's native raw logloss probabilities.
+        self.calibrator = None
+        return
 
     def predict_proba(self, X):
         X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
