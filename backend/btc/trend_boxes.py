@@ -156,8 +156,8 @@ def enrich_targets_with_ml(targets: List[Dict[str, Any]], df_ind, ml_engine: Any
         # Locked-in target price from prior contract close
         t_target = float(t.get("target_price", p_close))
 
-        # Real historical delta_to_target: settlement relative to locked-in target
-        delta_to_target = float(((c_close - t_target) / max(t_target, 1e-9)) * 100.0)
+        # Real historical delta_to_target: at the start of the interval, use c_open, NOT c_close (which is the final settlement and would be data leakage)
+        delta_to_target = float(((c_open - t_target) / max(t_target, 1e-9)) * 100.0)
 
         # Real historical technical score from RSI and EMA trend alignment
         # (matches analyze_btc live formula: (rsi - 50) * 0.8 + 10 / -10 clamped to [-50, 50])
