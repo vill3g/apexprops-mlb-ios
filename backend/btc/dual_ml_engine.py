@@ -22,8 +22,9 @@ class DualMLEngine:
 
     @property
     def is_trained(self):
-        # Both daytime and nighttime models must be trained for reliable 24/7 operation
-        return self.day_engine.is_trained and self.night_engine.is_trained
+        if self._is_night_time():
+            return self.night_engine.is_trained or self.day_engine.is_trained
+        return self.day_engine.is_trained
 
     @property
     def feature_keys(self):

@@ -805,12 +805,12 @@ class AutoExecutor:
                 logger.info(f"[AutoExecutor] Strike Pin Risk active (price within $15 of strike target in low volatility). Sitting out to protect win rate.")
                 return None
 
-            if one_shot_ai or ignore_pass:
+            if (one_shot_ai or ignore_pass) and raw_ml_prob != 0.50:
                 # 100% AI Prediction mode (until toggled off if ignore_pass, or 1-shot if one_shot_ai)
                 # Use raw unmolested ML probability directly from the model
                 ai_model_prob = raw_ml_prob
-                direction = "ABOVE" if ai_model_prob >= 0.50 else "BELOW"
-                raw_score = max(51.0, ai_model_prob * 100.0) if ai_model_prob >= 0.50 else max(51.0, (1.0 - ai_model_prob) * 100.0)
+                direction = "ABOVE" if ai_model_prob > 0.50 else "BELOW"
+                raw_score = max(51.0, ai_model_prob * 100.0) if ai_model_prob > 0.50 else max(51.0, (1.0 - ai_model_prob) * 100.0)
                 if pre_gate_prob and pre_gate_dir == direction and pre_gate_prob > raw_score:
                     raw_score = pre_gate_prob
                 grade = "GRADE A+ (100% AI)"
