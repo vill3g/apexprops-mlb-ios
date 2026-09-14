@@ -1,34 +1,44 @@
-# Environment and credentials
-.env
-kalshi_key.pem
-kalshi_credentials.json
+# Secrets / credentials — never commit
 backend/kalshi_credentials.json
+kalshi_credentials.json
+.local_token
+*.pem
+kalshi_key.pem
 backend/kalshi_key.pem
+.env
+.env.*
 
-# Python artifacts
+# Local runtime state — do not commit real trading history/balances
+backend/data/trades_history.json
+backend/btc/paper_balance.json
+backend/btc/scalp_config.json
+backend/data/prediction_trader.json
+backend/data/backtest_candles_cache.json
+backend/data/backtest_report.json
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .pytest_cache/
+.venv/
+venv/
 
-# Runtime data & trade history
-backend/data/trades_history.json
-backend/btc/paper_balance.json
-backend/data/prediction_trader.json
-backend/data/trading_config.json
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs & scratch
 *.log
+server_watchdog.log
 scratch/
-fix*.py
-patch*.py
-script_*.js
-test*.py
-test.json
-js_settings.txt
-apply_features.py
-start_btc_server.vbs
-.local_token
+/test*.py
+_test*.js
 
 # Build and distribution artifacts
 *.ipa
 dist/
+node_modules/

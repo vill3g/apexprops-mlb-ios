@@ -141,7 +141,7 @@ class KalshiTrader:
                 "balance_cents": 0
             }
 
-    def get_active_15m_market(self, allow_synthetic: bool = True, force_refresh: bool = False) -> Optional[Dict[str, Any]]:
+    def get_active_15m_market(self, allow_synthetic: bool = True, force_refresh: bool = False, min_seconds_left: int = 0) -> Optional[Dict[str, Any]]:
         """
         Finds the active KXBTC15M market (cached for 2.5s for ultra-low latency real-time feeds).
         """
@@ -151,7 +151,16 @@ class KalshiTrader:
                 # Synthetic contracts are useful only for paper trading. Never
                 # surface one to the live-order path from the short-lived cache.
                 if allow_synthetic or not self._cached_market.get("is_synthetic"):
-                    return self._cached_market
+                    cached_close = self._cached_market.get("close_time")
+                    if cached_close and min_seconds_left > 0:
+                        try:
+                            ct = datetime.fromisoformat(cached_close.replace("Z", "+00:00"))
+                            if (ct - datetime.now(timezone.utc)).total_seconds() > min_seconds_left:
+                                return self._cached_market
+                        except Exception:
+                            return self._cached_market
+                    else:
+                        return self._cached_market
 
         path = "/trade-api/v2/markets"
         try:
@@ -174,7 +183,8 @@ class KalshiTrader:
                 if ct_str:
                     try:
                         ct = datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                        if ct > now_utc and m.get("status") in ["active", "open"]:
+                        seconds_left = (ct - now_utc).total_seconds()
+                        if (min_seconds_left <= 0 or seconds_left > min_seconds_left) and m.get("status") in ["active", "open"]:
                             valid.append((ct, m))
                     except Exception:
                         pass
@@ -409,6 +419,33 @@ class KalshiTrader:
         else:
             book_price = min(0.99, max(0.01, (1.0 - exit_price) + 0.02))
 
+        pre_positions = []
+        try:
+            pre_res = self.get_positions()
+            if pre_res.get("success"):
+                pre_positions = pre_res.get("positions", [])
+        except Exception as pre_err:
+            logger.warning(f"[KalshiTrader] Failed to snapshot pre-close positions: {pre_err}")
+
+        # Self-healing: if Kalshi reports the position is already flat (0.00), return success
+        matching_pos = [p for p in pre_positions if p.get("ticker") == quote_data.get("ticker")]
+        if matching_pos:
+            try:
+                pos_qty = float(matching_pos[0].get("position_fp", 0.0) or 0.0)
+            except (ValueError, TypeError):
+                pos_qty = 0.0
+            if pos_qty <= 0.0:
+                logger.info(f"[KalshiTrader] Position for {quote_data.get('ticker')} is already flat on Kalshi (0.00). Reconciling as closed.")
+                return {
+                    "success": True,
+                    "mode": "LIVE",
+                    "filled_count": requested_count,
+                    "remaining_count": 0.0,
+                    "exit_price": exit_price if exit_price > 0 else 0.50,
+                    "fee_paid": 0.0,
+                    "source": "kalshi_reconciled_flat",
+                }
+
         client_order_id = str(uuid.uuid4())
         path = "/trade-api/v2/portfolio/events/orders"
         payload = {
@@ -448,6 +485,30 @@ class KalshiTrader:
                 "fee_paid": round(average_fee * filled_count, 4),
                 "source": "kalshi_reduce_only_exit",
             }
+        except requests.exceptions.Timeout as e:
+            logger.warning(
+                f"[KalshiTrader] Close request timed out for {ticker} (client_order_id={client_order_id}). "
+                f"Attempting reconciliation against live positions..."
+            )
+            reconciled = self._reconcile_after_timeout(
+                ticker=quote_data.get("ticker", ticker),
+                client_order_id=client_order_id,
+                side=side,
+                pre_positions=pre_positions,
+                requested_count=requested_count,
+                action="CLOSE",
+                price=exit_price
+            )
+            if reconciled is not None:
+                return reconciled
+            return {
+                "success": False,
+                "error": f"Kalshi close request timed out and could not be confirmed against Kalshi positions: {e}. "
+                         f"MANUAL VERIFICATION REQUIRED — check Kalshi positions before retrying.",
+                "ambiguous": True,
+                "client_order_id": client_order_id,
+                "ticker": ticker,
+            }
         except Exception as e:
             return {"success": False, "error": f"Kalshi close request failed: {e}"}
 
@@ -466,6 +527,145 @@ class KalshiTrader:
         except Exception as e:
             return {"success": False, "error": str(e), "positions": []}
 
+    def _extract_side_position(self, pos_entry: Dict[str, Any], side: str) -> float:
+        """
+        Extract contract count for the specified side (YES or NO) from a Kalshi position object.
+        Supports both split sub-positions (yes_sub_position / no_sub_position) and net signed positions.
+        """
+        if not pos_entry or not isinstance(pos_entry, dict):
+            return 0.0
+
+        side_upper = str(side or "").upper().strip()
+        if side_upper == "YES":
+            if "yes_sub_position" in pos_entry and pos_entry["yes_sub_position"] is not None:
+                try:
+                    return float(pos_entry["yes_sub_position"] or 0)
+                except (ValueError, TypeError):
+                    pass
+        elif side_upper == "NO":
+            if "no_sub_position" in pos_entry and pos_entry["no_sub_position"] is not None:
+                try:
+                    return float(pos_entry["no_sub_position"] or 0)
+                except (ValueError, TypeError):
+                    pass
+
+        pos_side = str(pos_entry.get("side", "")).upper().strip()
+        raw_val = pos_entry.get("position", pos_entry.get("position_count", pos_entry.get("count", 0)))
+        try:
+            val = float(raw_val or 0)
+        except (ValueError, TypeError):
+            val = 0.0
+
+        if pos_side == side_upper:
+            return abs(val)
+        elif pos_side and pos_side != side_upper:
+            return 0.0
+
+        # Signed convention without explicit side: positive = YES, negative = NO
+        if side_upper == "YES":
+            return max(0.0, val)
+        else:
+            return max(0.0, -val)
+
+    def _reconcile_after_timeout(
+        self,
+        ticker: str,
+        client_order_id: str,
+        side: str,
+        pre_positions: Optional[list] = None,
+        requested_count: float = 1.0,
+        action: str = "BUY",
+        price: Optional[float] = None,
+        slippage_buffer: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Reconciles order status against live exchange positions following a network timeout.
+        If a position change matching the attempted order is verified, returns a success
+        response matching the standard fill response shape with source='reconciled_after_timeout'.
+        Returns None if no matching exchange position change can be confirmed.
+        """
+        try:
+            post_res = self.get_positions()
+            if not post_res.get("success"):
+                logger.warning(f"[KalshiTrader] Reconciliation failed to fetch live positions: {post_res.get('error')}")
+                return None
+
+            post_positions = post_res.get("positions", [])
+            pre_positions = pre_positions or []
+
+            def _find_pos(pos_list, tk):
+                for p in pos_list:
+                    if isinstance(p, dict):
+                        p_tk = str(p.get("ticker", "")).strip() or str(p.get("market_ticker", "")).strip()
+                        if p_tk == str(tk).strip():
+                            return p
+                return {}
+
+            pre_pos_entry = _find_pos(pre_positions, ticker)
+            post_pos_entry = _find_pos(post_positions, ticker)
+
+            pre_qty = self._extract_side_position(pre_pos_entry, side)
+            post_qty = self._extract_side_position(post_pos_entry, side)
+
+            side_upper = str(side or "").upper().strip()
+            action_upper = str(action or "BUY").upper().strip()
+
+            if action_upper == "BUY":
+                delta = post_qty - pre_qty
+                if delta > 0:
+                    fill_count = round(delta, 2)
+                    fill_price = float(price if price is not None else 0.50)
+                    fill_cost = round(fill_price * fill_count, 4)
+                    buf = float(slippage_buffer if slippage_buffer is not None else 0.04)
+                    logger.info(
+                        f"[KalshiTrader] Reconciled timeout for BUY order {client_order_id} on {ticker}: "
+                        f"found position increase of {fill_count} {side_upper} (pre: {pre_qty}, post: {post_qty})"
+                    )
+                    return {
+                        "success": True,
+                        "mode": "LIVE",
+                        "order_id": client_order_id,
+                        "client_order_id": client_order_id,
+                        "ticker": ticker,
+                        "side": side_upper,
+                        "action": "BUY",
+                        "count": fill_count,
+                        "requested_price": price,
+                        "filled_price": fill_price,
+                        "total_cost": fill_cost,
+                        "slippage_buffer": buf,
+                        "status": "FILLED",
+                        "source": "reconciled_after_timeout",
+                        "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                        "message": f"Order reconciled after network timeout: confirmed +{fill_count} {side_upper} on {ticker}"
+                    }
+            elif action_upper in ["CLOSE", "SELL"]:
+                delta = pre_qty - post_qty
+                if delta > 0:
+                    filled_count = round(delta, 2)
+                    exit_price = float(price if price is not None else 0.50)
+                    remaining = max(0.0, round(requested_count - filled_count, 4))
+                    logger.info(
+                        f"[KalshiTrader] Reconciled timeout for CLOSE order {client_order_id} on {ticker}: "
+                        f"found position decrease of {filled_count} {side_upper} (pre: {pre_qty}, post: {post_qty})"
+                    )
+                    return {
+                        "success": True,
+                        "mode": "LIVE",
+                        "order_id": client_order_id,
+                        "client_order_id": client_order_id,
+                        "filled_count": filled_count,
+                        "remaining_count": remaining,
+                        "exit_price": round(exit_price, 4),
+                        "fee_paid": 0.0,
+                        "source": "reconciled_after_timeout",
+                        "message": f"Position close reconciled after network timeout: confirmed -{filled_count} {side_upper} on {ticker}"
+                    }
+        except Exception as err:
+            logger.error(f"[KalshiTrader] Error during timeout reconciliation for {ticker}: {err}", exc_info=True)
+
+        return None
+
     def place_order(
         self,
         ticker: str,
@@ -474,7 +674,7 @@ class KalshiTrader:
         limit_price_dollars: Optional[float] = None,
         dry_run: bool = True,
         order_type: str = "limit",
-        slippage_buffer_cents: Optional[float] = None
+        slippage_buffer_dollars: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Executes a buy order on the specified contract side (YES = above target, NO = below target).
@@ -497,11 +697,11 @@ class KalshiTrader:
 
         client_order_id = str(uuid.uuid4())
 
-        # Slippage buffer: Default 0.04 or configurable value clamped safely [0.00, 0.15]
+        # Slippage buffer: Default 0.04 or configurable dollar value clamped safely [0.00, 0.15]
         buf = 0.04
-        if slippage_buffer_cents is not None:
+        if slippage_buffer_dollars is not None:
             try:
-                buf = max(0.0, min(float(slippage_buffer_cents), 0.15))
+                buf = max(0.0, min(float(slippage_buffer_dollars), 0.15))
             except (ValueError, TypeError):
                 buf = 0.04
 
@@ -528,20 +728,42 @@ class KalshiTrader:
             }
 
         # Fast-Path: Use active market (from cache or fast fetch) without redundant GET roundtrips
-        verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=False)
+        # Requires at least 30s before expiration to prevent entering dying contracts
+        verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=False, min_seconds_left=30)
         if not verified_market or verified_market.get("is_synthetic"):
             # Fallback to force refresh if cache empty
-            verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=True)
+            verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=True, min_seconds_left=30)
             if not verified_market or verified_market.get("is_synthetic"):
                 return {
                     "success": False,
-                    "error": "No verified open Kalshi BTC 15M market is available. Live order was not submitted."
+                    "error": "No verified open Kalshi BTC 15M market is available (>30s remaining required). Live order was not submitted."
                 }
         
         verified_ticker = verified_market.get("ticker") or verified_market.get("event_ticker", "")
         if not verified_ticker:
             return {"success": False, "error": "Verified market missing ticker information."}
+
+        # Safeguard: Reject order if contract expires in less than 30 seconds
+        close_time_str = verified_market.get("close_time")
+        if close_time_str:
+            try:
+                ct = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                sec_remaining = (ct - datetime.now(timezone.utc)).total_seconds()
+                if sec_remaining < 30:
+                    logger.warning(
+                        f"[KalshiTrader] Refusing to place order: contract '{verified_ticker}' expires in {sec_remaining:.1f}s (< 30s remaining)."
+                    )
+                    return {
+                        "success": False,
+                        "error": f"Contract '{verified_ticker}' expires in {int(sec_remaining)}s (< 30s remaining). Live order rejected to prevent instant settlement."
+                    }
+            except Exception:
+                pass
             
+        if ticker and ticker.strip() and ticker.strip() != verified_ticker:
+            logger.warning(
+                f"[KalshiTrader] place_order() called with ticker='{ticker}' but verified active market is '{verified_ticker}'. Using verified ticker."
+            )
         ticker = verified_ticker
         
         # Clamp price with slippage buffer to guarantee Immediate-Or-Cancel (IOC) book cross
@@ -585,6 +807,14 @@ class KalshiTrader:
         }
         if "exchange_index" in verified_market and verified_market["exchange_index"] is not None:
             v2_payload["exchange_index"] = verified_market["exchange_index"]
+
+        pre_positions = []
+        try:
+            pre_res = self.get_positions()
+            if pre_res.get("success"):
+                pre_positions = pre_res.get("positions", [])
+        except Exception as pre_err:
+            logger.warning(f"[KalshiTrader] Failed to snapshot pre-order positions: {pre_err}")
 
         path = "/trade-api/v2/portfolio/events/orders"
         try:
@@ -639,6 +869,31 @@ class KalshiTrader:
                     "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {user_msg}",
                     "payload_sent": v2_payload
                 }
+        except requests.exceptions.Timeout as e:
+            logger.warning(
+                f"[KalshiTrader] Order request timed out for {ticker} (client_order_id={client_order_id}). "
+                f"Attempting reconciliation against live positions..."
+            )
+            reconciled = self._reconcile_after_timeout(
+                ticker=ticker,
+                client_order_id=client_order_id,
+                side=side_clean,
+                pre_positions=pre_positions,
+                requested_count=float(count_int),
+                action="BUY",
+                price=outcome_price,
+                slippage_buffer=buf
+            )
+            if reconciled is not None:
+                return reconciled
+            return {
+                "success": False,
+                "error": f"Order request timed out and could not be confirmed against Kalshi positions: {e}. "
+                         f"MANUAL VERIFICATION REQUIRED — check Kalshi positions before retrying.",
+                "ambiguous": True,
+                "client_order_id": client_order_id,
+                "ticker": ticker,
+            }
         except Exception as e:
             return {"success": False, "error": f"Order execution exception: {str(e)}"}
 

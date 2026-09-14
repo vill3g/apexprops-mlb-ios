@@ -151,48 +151,68 @@
     "last_5_targets": [
       {
         "time": "6:00 AM",
+        "pred_time": "5:45:00 AM",
         "price": 78500.05,
+        "target_price": 78386.51,
         "delta": 113.54,
         "delta_pct": 0.14,
         "direction": "HIGHER",
         "arrow": "\u25b2",
-        "color": "green"
+        "color": "green",
+        "ml_prediction": "62% UP",
+        "predicted_correctly": true
       },
       {
         "time": "6:15 AM",
+        "pred_time": "6:00:00 AM",
         "price": 78281.0,
+        "target_price": 78500.05,
         "delta": -219.05,
         "delta_pct": -0.28,
         "direction": "LOWER",
         "arrow": "\u25bc",
-        "color": "red"
+        "color": "red",
+        "ml_prediction": "62% DOWN",
+        "predicted_correctly": true
       },
       {
         "time": "6:30 AM",
+        "pred_time": "6:15:00 AM",
         "price": 78190.07,
+        "target_price": 78281.0,
         "delta": -90.93,
         "delta_pct": -0.12,
         "direction": "LOWER",
         "arrow": "\u25bc",
-        "color": "red"
+        "color": "red",
+        "ml_prediction": "PASS",
+        "predicted_correctly": null
       },
       {
         "time": "6:45 AM",
+        "pred_time": "6:30:00 AM",
         "price": 78177.22,
+        "target_price": 78190.07,
         "delta": -12.85,
         "delta_pct": -0.02,
         "direction": "LOWER",
         "arrow": "\u25bc",
-        "color": "red"
+        "color": "red",
+        "ml_prediction": "58% UP",
+        "predicted_correctly": false
       },
       {
         "time": "7:00 AM",
+        "pred_time": "6:45:00 AM",
         "price": 78394.43,
+        "target_price": 78177.22,
         "delta": 217.21,
         "delta_pct": 0.28,
         "direction": "HIGHER",
         "arrow": "\u25b2",
-        "color": "green"
+        "color": "green",
+        "ml_prediction": "65% UP",
+        "predicted_correctly": true
       }
     ],
     "streak_summary": "2 Higher / 3 Lower",

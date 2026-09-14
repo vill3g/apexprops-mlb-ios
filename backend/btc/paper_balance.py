@@ -10,11 +10,11 @@ _cached_balance_mtime: float = 0.0
 
 def load_balance() -> float:
     global _cached_balance, _cached_balance_mtime
-    if not os.path.exists(BALANCE_PATH):
-        return 500.0
-    try:
-        mtime = os.path.getmtime(BALANCE_PATH)
-        with _lock:
+    with _lock:
+        if not os.path.exists(BALANCE_PATH):
+            return 500.0
+        try:
+            mtime = os.path.getmtime(BALANCE_PATH)
             if _cached_balance_mtime == mtime:
                 return _cached_balance
             with open(BALANCE_PATH, "r", encoding="utf-8") as f:
@@ -22,8 +22,8 @@ def load_balance() -> float:
                 _cached_balance = float(data.get("balance", 500.0))
                 _cached_balance_mtime = mtime
                 return _cached_balance
-    except Exception:
-        return _cached_balance
+        except Exception:
+            return _cached_balance
 
 def update_balance(delta: float) -> float:
     global _cached_balance, _cached_balance_mtime

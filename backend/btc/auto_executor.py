@@ -19,6 +19,8 @@ from backend.btc.kalshi_trader import kalshi_trader
 from backend.btc.data_fetcher import fetch_candles, get_candle_countdown
 from backend.btc.indicators import add_all_indicators
 from backend.btc.analyzer import evaluate_next_15m_contract
+from backend.btc.pattern_detector import detect_candlestick_patterns
+from backend.btc.loss_analyzer import loss_analyzer
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "trades_history.json")
@@ -58,15 +60,18 @@ class AutoExecutor:
         self.last_traded_interval: Optional[str] = None
         self.last_check_time: float = 0.0
         self.ai_settings: dict = {}
+        self._rollover_lock = threading.Lock()
         # Instance-level trade cache (not class-level, to avoid cross-instance contamination)
         self._cached_trades: List[Dict[str, Any]] = []
         self._cached_trades_mtime: float = 0.0
+        self._settled_since_drift_check: int = 0
 
         os.makedirs(DATA_DIR, exist_ok=True)
         self._load_config()
 
     def set_ai_settings(self, data: dict):
         self.ai_settings = data
+        self.ai_settings.pop("maxEntryPriceDollars", None)
         self._save_config()
         return {"status": "ok"}
 
@@ -82,7 +87,44 @@ class AutoExecutor:
                     self.prediction_mode = bool(cfg.get("prediction_mode", True))
                     self.max_daily_risk = float(cfg.get("max_daily_risk", 25.0))
                     self.max_daily_trades = int(cfg.get("max_daily_trades", 10))
-                    self.ai_settings = cfg.get("ai_settings", {})
+                    self.ai_settings = cfg.get("ai_settings") or {}
+                    if not isinstance(self.ai_settings, dict):
+                        self.ai_settings = {}
+                    if "dryRun" not in self.ai_settings:
+                        self.ai_settings["dryRun"] = True
+                    if "ignorePass" not in self.ai_settings:
+                        self.ai_settings["ignorePass"] = False
+                    if "dynamicStopLoss" not in self.ai_settings:
+                        self.ai_settings["dynamicStopLoss"] = True
+                    if "stopLossMoveDollars" not in self.ai_settings:
+                        self.ai_settings["stopLossMoveDollars"] = 45.0
+                    if "stopLossMaxMinutes" not in self.ai_settings:
+                        self.ai_settings["stopLossMaxMinutes"] = 8.0
+                    if "positionReversal" not in self.ai_settings:
+                        self.ai_settings["positionReversal"] = False
+                    if "reversalMaxPriceCents" not in self.ai_settings:
+                        self.ai_settings["reversalMaxPriceCents"] = 65.0
+                    if "reversalMinMinutesLeft" not in self.ai_settings:
+                        self.ai_settings["reversalMinMinutesLeft"] = 6.0
+                    if "reversalMinConfidence" not in self.ai_settings:
+                        self.ai_settings["reversalMinConfidence"] = 75.0
+                    if "slippageBufferDollars" not in self.ai_settings:
+                        if "slippageBufferCents" in self.ai_settings:
+                            self.ai_settings["slippageBufferDollars"] = self.ai_settings.pop("slippageBufferCents")
+                        else:
+                            self.ai_settings["slippageBufferDollars"] = 0.04
+                    self.ai_settings.pop("maxEntryPriceDollars", None)
+                    if "oneShotAiStartTrade" not in self.ai_settings:
+                        self.ai_settings["oneShotAiStartTrade"] = False
+                    # Finding 1: Startup safety override
+                    if self.mode == "LIVE" and not os.path.exists(HISTORY_FILE):
+                        logger.warning(
+                            "[AutoExecutor] SAFETY OVERRIDE: Deployment has mode=LIVE but no trades_history.json found. "
+                            "Demoting mode to 'PAPER' and setting enabled=False for safety."
+                        )
+                        self.mode = "PAPER"
+                        self.enabled = False
+                        self._save_config()
             except Exception as e:
                 logger.error(f"[AutoExecutor] Error loading config: {e}")
 
@@ -102,10 +144,10 @@ class AutoExecutor:
             logger.error(f"[AutoExecutor] Error saving config: {e}")
 
     def get_trades_history(self) -> List[Dict[str, Any]]:
-        if os.path.exists(HISTORY_FILE):
-            try:
-                mtime = os.path.getmtime(HISTORY_FILE)
-                with _history_lock:
+        with _history_lock:
+            if os.path.exists(HISTORY_FILE):
+                try:
+                    mtime = os.path.getmtime(HISTORY_FILE)
                     if self._cached_trades and self._cached_trades_mtime == mtime:
                         return list(self._cached_trades)
                     with open(HISTORY_FILE, "r", encoding="utf-8") as f:
@@ -113,8 +155,9 @@ class AutoExecutor:
                         self._cached_trades = trades
                         self._cached_trades_mtime = mtime
                         return list(trades)
-            except Exception:
-                return list(self._cached_trades) if self._cached_trades else []
+                except Exception as e:
+                    logger.warning(f"Swallowed exception: {e}")
+                    return list(self._cached_trades) if self._cached_trades else []
         return []
 
     def get_history(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -138,6 +181,10 @@ class AutoExecutor:
     def set_mode(self, mode: str) -> Dict[str, Any]:
         mode_clean = mode.upper().strip()
         if mode_clean in ["PAPER", "LIVE"]:
+            if mode_clean == "LIVE":
+                from backend.btc.kalshi_trader import kalshi_trader
+                if not kalshi_trader.is_authenticated():
+                    return {"status": "error", "message": "Kalshi authentication required before switching to LIVE trading."}
             self.mode = mode_clean
             self._save_config()
             return {"status": "ok", "mode": self.mode}
@@ -155,7 +202,10 @@ class AutoExecutor:
         return {"status": "ok", "min_conviction": self.min_conviction}
 
     def set_max_contracts(self, count: int) -> Dict[str, Any]:
-        c = max(1, min(int(count), 9999))
+        # FIX #10: Clamp at ABSOLUTE_MAX_CONTRACTS (50) so the stored value always reflects
+        # the true effective ceiling — prevents UI from showing a value that is silently
+        # ignored at execution time.
+        c = max(1, min(int(count), 50))
         self.max_contracts = c
         self._save_config()
         return {"status": "ok", "max_contracts": self.max_contracts}
@@ -172,6 +222,38 @@ class AutoExecutor:
             "max_daily_trades": self.max_daily_trades,
                     "ai_settings": self.ai_settings
         }
+
+    def check_risk_budget(self, trades: Optional[List[Dict[str, Any]]] = None) -> Optional[str]:
+        """Returns None if trading is allowed, or a human-readable reason string if blocked.
+
+        Enforces today's ET trade count limit (max_daily_trades) and effective risk limit (max_daily_risk),
+        where effective risk = settled net PnL minus open trade collateral.
+        """
+        if trades is None:
+            trades = self.get_trades_history()
+        from zoneinfo import ZoneInfo
+        today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        today_trades = [
+            t for t in trades
+            if t.get("mode", self.mode).upper() == self.mode
+            and str(t.get("timestamp", "")).startswith(today_str)
+        ]
+        if len(today_trades) >= self.max_daily_trades:
+            return f"Max daily trades reached ({len(today_trades)}/{self.max_daily_trades})"
+
+        today_net_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades if t.get("status") in ["SETTLED", "CLOSED"])
+        open_collateral = sum(
+            float(t.get("entry_price", 0.50)) * int(t.get("count", 1))
+            for t in today_trades
+            if t.get("status") in ["OPEN", "PENDING"]
+        )
+        effective_risk = today_net_pnl - open_collateral
+        if effective_risk <= -abs(self.max_daily_risk):
+            return (
+                f"Max daily risk limit reached (Settled PnL: ${today_net_pnl:.2f}, "
+                f"Open Collateral: ${open_collateral:.2f}, Effective: ${effective_risk:.2f} <= -${self.max_daily_risk:.2f})"
+            )
+        return None
 
     def get_status(self) -> Dict[str, Any]:
         """
@@ -191,6 +273,30 @@ class AutoExecutor:
         wins = sum(1 for t in mode_trades if "WIN" in str(t.get("result", "")).upper())
         losses = sum(1 for t in mode_trades if "LOSS" in str(t.get("result", "")).upper())
         open_trades = [t for t in mode_trades if t.get("status") == "OPEN"]
+
+        # Reconcile LIVE open trades against Kalshi portfolio to prevent ghost open positions
+        if self.mode == "LIVE" and open_trades and kalshi_trader.is_authenticated():
+            try:
+                pos_res = kalshi_trader.get_positions()
+                if pos_res.get("success"):
+                    pos_list = pos_res.get("positions", [])
+                    kalshi_pos_map = {p.get("ticker"): float(p.get("position_fp", 0.0) or 0.0) for p in pos_list}
+                    reconciled_any = False
+                    for t in list(open_trades):
+                        ticker = t.get("ticker")
+                        if kalshi_pos_map.get(ticker, 0.0) <= 0.0 or str(t.get("id", "")).startswith("sim_"):
+                            logger.info(f"[AutoExecutor] Auto-reconciled flat Kalshi position for trade {t.get('id')} ({ticker}).")
+                            t["status"] = "CLOSED"
+                            t["result"] = "CLOSED_FLAT"
+                            t["exit_reason"] = "KALSHI_POSITION_RECONCILED"
+                            t["closed_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                            reconciled_any = True
+                    if reconciled_any:
+                        self._save_trades_history(trades)
+                        open_trades = [t for t in mode_trades if t.get("status") == "OPEN"]
+            except Exception as pos_err:
+                logger.debug(f"[AutoExecutor] Live position check skipped: {pos_err}")
+
         total_pnl = sum(float(t.get("pnl", 0.0)) for t in mode_trades)
         win_rate = round((wins / max(1, wins + losses)) * 100.0, 1) if (wins + losses) > 0 else 0.0
 
@@ -204,22 +310,30 @@ class AutoExecutor:
         today_trade_count = len(today_trades)
         today_realized_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades)
 
-        active_market = kalshi_trader.get_active_15m_market()
+        active_market = kalshi_trader.get_active_15m_market(force_refresh=True)
 
-        # Compute live unrealized (mark-to-market) P&L for each open trade
+        # Compute live unrealized (mark-to-market) P&L for each open trade.
+        # FIX #1: Work on deep copies so we never mutate the shared _cached_trades objects
+        # without holding _history_lock (background settlement loop touches those dicts too).
+        import copy
         open_pnl_dollars = 0.0
+        annotated_open_trades = []
         if active_market and open_trades:
             am_yes_bid = float(active_market.get("yes_bid") or 0.0)
             am_no_bid  = float(active_market.get("no_bid")  or 0.0)
             for t in open_trades:
-                side = str(t.get("side", "YES")).upper()
-                entry = float(t.get("entry_price", 0.5))
-                count = int(t.get("count", 1))
+                t_copy = copy.copy(t)  # shallow copy is enough — we only add top-level keys
+                side = str(t_copy.get("side", "YES")).upper()
+                entry = float(t_copy.get("entry_price", 0.5))
+                count = int(t_copy.get("count", 1))
                 current_bid = am_yes_bid if side == "YES" else am_no_bid
                 live_pnl = round((current_bid - entry) * count, 4) if current_bid > 0 else 0.0
-                t["live_pnl"] = live_pnl          # annotate trade dict for UI
-                t["current_bid"] = current_bid
+                t_copy["live_pnl"] = live_pnl
+                t_copy["current_bid"] = current_bid
                 open_pnl_dollars += live_pnl
+                annotated_open_trades.append(t_copy)
+        else:
+            annotated_open_trades = list(open_trades)
 
         # Paper Trading Balance Logic
         if self.mode == "PAPER":
@@ -256,7 +370,7 @@ class AutoExecutor:
             "prediction_mode": self.prediction_mode,
             "max_daily_risk": self.max_daily_risk,
             "max_daily_trades": self.max_daily_trades,
-                    "ai_settings": self.ai_settings,
+            "ai_settings": self.ai_settings,
             "today_trade_count": today_trade_count,
             "today_realized_pnl": round(today_realized_pnl, 2),
             "kalshi_connected": kalshi_trader.is_authenticated(),
@@ -267,8 +381,8 @@ class AutoExecutor:
             "losses": losses,
             "win_rate_pct": win_rate,
             "total_pnl_dollars": round(total_pnl, 2),
-            "open_trades_count": len(open_trades),
-            "open_trades": open_trades,
+            "open_trades_count": len(annotated_open_trades),
+            "open_trades": annotated_open_trades,
             "open_pnl_dollars": round(open_pnl_dollars, 4),   # live unrealized P&L
             "recent_trades": mode_trades[-15:][::-1],  # latest 15 trades of current mode first
             "active_market": active_market,
@@ -336,6 +450,93 @@ class AutoExecutor:
             "daily_history": daily_history,
         }
 
+    def check_live_calibration_drift(self, min_samples: int = 40, window: int = 100) -> Dict[str, Any]:
+        """
+        Computes 10-bucket calibration over trailing settled trades (up to window) and checks
+        for systematic calibration drift / overconfidence using analyze_calibration_overconfidence.
+        If drift is detected, logs a warning and triggers async ml_engine.train(force=True).
+        """
+        trades = self.get_trades_history()
+        settled_trades = [
+            t for t in trades
+            if t.get("status") in ["SETTLED", "CLOSED"]
+            and t.get("result") in ["WIN", "LOSS"]
+            and (t.get("predicted_probability") is not None or t.get("probability_percent") is not None)
+        ]
+        trailing = settled_trades[-window:] if len(settled_trades) > window else settled_trades
+
+        if len(trailing) < min_samples:
+            return {
+                "status": "insufficient_data",
+                "sample_count": len(trailing),
+                "min_samples": min_samples,
+                "drift_detected": False,
+                "calibration_table": [],
+            }
+
+        import numpy as np
+        preds = []
+        actuals = []
+        for t in trailing:
+            p = t.get("predicted_probability")
+            if p is None:
+                p = float(t.get("probability_percent", 50)) / 100.0
+            else:
+                p = float(p)
+            p = max(0.0, min(1.0, p))
+            y = 1.0 if t.get("result") == "WIN" else 0.0
+            preds.append(p)
+            actuals.append(y)
+
+        p_arr = np.array(preds)
+        y_arr = np.array(actuals)
+
+        calibration_table = []
+        for b in range(10):
+            low = b * 0.10
+            high = (b + 1) * 0.10
+            if b == 9:
+                mask = (p_arr >= low) & (p_arr <= high)
+            else:
+                mask = (p_arr >= low) & (p_arr < high)
+
+            count = int(np.sum(mask))
+            if count > 0:
+                mean_p = float(np.mean(p_arr[mask]))
+                realized_wr = float(np.mean(y_arr[mask]))
+            else:
+                mean_p = float((low + high) / 2.0)
+                realized_wr = 0.0
+
+            calibration_table.append({
+                "bucket": f"{int(low * 100)}-{int(high * 100)}%",
+                "count": count,
+                "mean_predicted_prob": round(mean_p, 4),
+                "realized_win_rate": round(realized_wr, 4),
+                "diff": round(mean_p - realized_wr, 4),
+            })
+
+        from backend.btc.backtest import analyze_calibration_overconfidence
+        min_bucket = max(3, min_samples // 15)
+        drift_detected, reason = analyze_calibration_overconfidence(calibration_table, min_bucket_count=min_bucket)
+
+        if drift_detected:
+            logger.warning(f"[AutoExecutor] Live calibration drift detected: {reason}. Triggering ML model retraining.")
+            try:
+                from backend.btc.ml_engine import get_ml_engine
+                ml_eng = get_ml_engine()
+                threading.Thread(target=ml_eng.train, kwargs={"force": True}, daemon=True, name="MLDriftRetrainThread").start()
+            except Exception as e:
+                logger.error(f"[AutoExecutor] Failed to launch drift retraining thread: {e}")
+
+        return {
+            "status": "ok",
+            "sample_count": len(trailing),
+            "drift_detected": drift_detected,
+            "reason": reason,
+            "calibration_table": calibration_table,
+        }
+
     def check_settlements(self, trades: Optional[List[Dict[str, Any]]] = None):
         """
         Settle completed Kalshi trades from Kalshi's own YES/NO result.
@@ -343,19 +544,17 @@ class AutoExecutor:
         A candle close is not Kalshi's settlement authority, so it is only kept
         as a legacy fallback for non-Kalshi records that have a valid strike.
         """
+        now_ts = time.time()
+        if (now_ts - getattr(self, "_last_settlement_check_ts", 0.0)) < 3.0:
+            return
+        self._last_settlement_check_ts = now_ts
+
         with _history_lock:
             if trades is None:
-                if os.path.exists(HISTORY_FILE):
-                    try:
-                        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-                            trades = json.load(f)
-                    except Exception:
-                        trades = []
-                else:
-                    trades = []
+                trades = self.get_trades_history()
 
             modified = False
-            now_ts = time.time()
+            newly_settled_count = 0
             settle_candles_df = None
             official_results: Dict[str, Dict[str, Any]] = {}
 
@@ -408,6 +607,7 @@ class AutoExecutor:
                         t["pnl"] = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
                         t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
                         modified = True
+                        newly_settled_count += 1
 
                         if t.get("mode", self.mode).upper() == "PAPER":
                             try:
@@ -445,18 +645,28 @@ class AutoExecutor:
                         "settled_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                     })
                     modified = True
+                    newly_settled_count += 1
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
 
             if modified:
                 try:
                     _atomic_json_write(HISTORY_FILE, trades)
-                    # Trigger background retrain on singleton MLEngine
+                    self._settled_since_drift_check += newly_settled_count
+                    if self._settled_since_drift_check >= 50:
+                        self._settled_since_drift_check = 0
+                        try:
+                            self.check_live_calibration_drift()
+                        except Exception as cde:
+                            logger.warning(f"[AutoExecutor] Scheduled calibration drift check failed: {cde}")
+
+                    # Trigger background retrain asynchronously in a daemon thread so it never blocks API requests
                     try:
                         from backend.btc.ml_engine import get_ml_engine
-                        get_ml_engine().train()
+                        ml_eng = get_ml_engine()
+                        threading.Thread(target=ml_eng.train, daemon=True, name="MLRetrainThread").start()
                     except Exception as e:
-                        logger.warning(f"[AutoExecutor] Post-settlement ML retrain failed: {e}")
+                        logger.warning(f"[AutoExecutor] Post-settlement ML retrain launch failed: {e}")
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error saving trades in check_settlements: {e}")
 
@@ -465,306 +675,464 @@ class AutoExecutor:
         Core autonomous trigger:
         Evaluates at rollover (first 60 seconds of a new 15-minute contract interval).
         """
-        now = time.time()
-        if (now - self.last_check_time) < 4.0:
-            return None
-        self.last_check_time = now
-
-        countdown_info = get_candle_countdown(timeframe="15m")
-        sec_left = countdown_info.get("seconds_left", 900)
-        sec_elapsed = 900 - sec_left
-
-        # The standard rollover evaluation window is the first 60 seconds
-        is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
-        # The prediction mode window is 30-55 seconds elapsed to avoid missing the narrow 5s window
-        is_prediction_window = 30 <= sec_elapsed <= 55 or 845 <= sec_left <= 870
-
-        window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
-        if not window_valid and not (sec_left <= 10):
+        # FIX #2: Acquire the lock FIRST so that the last_check_time read/write is
+        # also serialized.  Previously both gates were outside the lock, creating a
+        # narrow window where two threads could both pass the 4-second check and both
+        # enter the expensive ML + network path.
+        if not self._rollover_lock.acquire(blocking=False):
+            logger.debug("[AutoExecutor] Rollover evaluation already in progress by another worker. Skipping concurrent execution.")
             return None
 
-        # Fetch active Kalshi KXBTC15M market
-        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
-        if not active_m:
-            logger.debug("[AutoExecutor] No active market")
-            return None
-
-        # Use market ticker for live orders if available; fallback to event_ticker
-        current_interval_id = active_m.get("ticker") or active_m.get("event_ticker", "")
-        if not current_interval_id or current_interval_id == self.last_traded_interval:
-            logger.debug(f"[AutoExecutor] Skipping because interval is last_traded_interval: {current_interval_id}")
-            return None
-
-        # Check if already traded in history
-        trades = self.get_trades_history()
-        if any(t.get("ticker") == current_interval_id for t in trades):
-            self.last_traded_interval = current_interval_id
-            logger.debug(f"[AutoExecutor] Already traded interval {current_interval_id} in trades history")
-            return None
-
-        # A prediction without the contract's official target must never create
-        # an order; a zero target previously made NO trades settle incorrectly.
         try:
-            strike = float(active_m.get("strike_price") or 0.0)
-        except (TypeError, ValueError):
-            strike = 0.0
-        if strike <= 0:
-            logger.error("[AutoExecutor] Active Kalshi market has no valid floor strike; skipping %s", current_interval_id)
-            return None
+            now = time.time()
+            if (now - self.last_check_time) < 4.0:
+                return None
+            self.last_check_time = now
 
-        # Fetch technical indicator data
-        df = fetch_candles(timeframe="15m", limit=1000)
-        df_ind = add_all_indicators(df)
+            countdown_info = get_candle_countdown(timeframe="15m")
+            sec_left = countdown_info.get("seconds_left", 900)
+            sec_elapsed = 900 - sec_left
 
-        # Inject historical market intervals directly into the ML Engine to train it instantly
-        # rather than waiting for it to slowly accumulate actual paper trades.
-        try:
-            from backend.btc.ml_engine import get_ml_engine
-            import os
-            data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-            ml_engine = get_ml_engine(data_dir)
-            if not ml_engine.is_trained:
-                ml_engine.self_train_on_historical_market(df_ind)
-        except Exception as e:
-            logger.error(f"[AutoExecutor] Failed to self-train ML Engine: {e}")
-
-        forecast = evaluate_next_15m_contract(df_ind, target_price=strike)
-
-        raw_score = float(forecast.get("probability_percent", 50.0))
-        edge_label = str(forecast.get("primary_edge", ""))
-        rec = forecast.get("recommendation", "")
-        grade = forecast.get("conviction_grade", "")
-        direction = normalize_prediction_direction(forecast.get("direction") or rec)
-
-        ignore_pass = bool(self.ai_settings.get("ignorePass", False))
-
-        # Handle PASS direction filtering or Force Trade override
-        if direction == "PASS":
-            if ignore_pass and raw_score > 0:
-                # Force trade based on highest probable direction from probability score or ML signal
-                direction = "ABOVE" if raw_score >= 50.0 else "BELOW"
-                logger.info(f"[AutoExecutor] 'Force Trade on PASS' enabled. Overriding PASS direction to {direction} (Score: {raw_score}%)")
+            trading_style = self.ai_settings.get("tradingStyle", "SNIPER")
+            if trading_style == "MACHINE_GUN":
+                window_valid = sec_left > 30
             else:
-                logger.debug("[AutoExecutor] Skipping because direction is PASS")
+                # SNIPER MODE: The standard rollover evaluation window is the first 60 seconds
+                is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
+                is_prediction_window = 30 <= sec_elapsed <= 55 or 845 <= sec_left <= 870
+                window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
+
+            if not window_valid:
                 return None
 
-        # Strict Filter 2: Conviction & Settings Thresholds
-        meets_conviction = False
-        
-        # ML settings overrides
-        min_conf = float(self.ai_settings.get("minConf", 0.0))
-        edge_multiplier = float(self.ai_settings.get("edgeWeightFactor", 1.0)) if self.ai_settings.get("edgeWeightOn") else 1.0
-        
-        actual_conf = raw_score
-        if "High Confluence" in edge_label:
-            actual_conf = min(99.0, raw_score * edge_multiplier)
+            # Fetch active Kalshi KXBTC15M market (require at least 45s before close)
+            active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"), min_seconds_left=45)
+            if not active_m:
+                logger.debug("[AutoExecutor] No active market")
+                return None
 
-        # Base threshold check against minConf
-        if min_conf > 0:
-            if actual_conf >= min_conf:
-                meets_conviction = True
-        else:
-            # Fallback to grade logic
-            if self.prediction_mode:
-                meets_conviction = True
-            else:
-                if self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
-                    meets_conviction = True
-                elif self.min_conviction == "GRADE A SETUP" and ("A+" in grade or "GRADE A " in grade or "ML" in grade):
-                    meets_conviction = True
-                elif self.min_conviction == "GRADE B SETUP" and ("A+" in grade or "GRADE A " in grade or "B SETUP" in grade or "ML" in grade):
-                    meets_conviction = True
+            # Use market ticker for live orders if available; fallback to event_ticker
+            current_interval_id = active_m.get("ticker") or active_m.get("event_ticker", "")
+            if not current_interval_id or current_interval_id == self.last_traded_interval:
+                logger.debug(f"[AutoExecutor] Skipping because interval is last_traded_interval: {current_interval_id}")
+                return None
 
-        if not meets_conviction:
-            logger.debug(f"[AutoExecutor] Skipping because conviction not met: {actual_conf} < {min_conf} (Grade: {grade})")
-            return None
+            # Check if already traded in history
+            trades = self.get_trades_history()
+            if any(t.get("ticker") == current_interval_id for t in trades):
+                self.last_traded_interval = current_interval_id
+                logger.debug(f"[AutoExecutor] Already traded interval {current_interval_id} in trades history")
+                return None
 
-        # If bot is disabled, do not execute
-        if not self.enabled:
-            logger.debug("[AutoExecutor] Skipping because bot is disabled")
-            return None
+            # Finding 4: Re-check last_traded_interval immediately before expensive ML & network calls
+            if current_interval_id == self.last_traded_interval:
+                return None
 
-        # Strict Filter 3: Enforce Max Daily Trades & Max Daily Risk
-        from zoneinfo import ZoneInfo
-        today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
-        today_trades = [
-            t for t in trades
-            if t.get("mode", self.mode).upper() == self.mode
-            and str(t.get("timestamp", "")).startswith(today_str)
-        ]
-        if len(today_trades) >= self.max_daily_trades:
-            logger.info(f"[AutoExecutor] Max daily trades reached ({len(today_trades)}/{self.max_daily_trades}). Skipping auto execution.")
-            return None
+            # Regime penalty: after a string of recent losses (esp. false-breakout or
+            # choppy-market losses), require higher confidence before trading again.
+            # See loss_analyzer.calculate_regime_penalties() for the thresholds.
+            regime = loss_analyzer.calculate_regime_penalties(trades)
+            conviction_multiplier = float(regime.get("conviction_multiplier", 1.0))
+            extra_conviction_cushion = float(regime.get("extra_min_rsi_cushion", 0.0))
+            if conviction_multiplier < 1.0 or regime.get("chop_warning"):
+                logger.info(f"[AutoExecutor] Regime penalty active: {regime}")
 
-        today_net_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades if t.get("status") in ["SETTLED", "CLOSED"])
-        # AUDIT FIX #1: Also account for open floating risk (collateral at risk from unsettled trades)
-        open_collateral = sum(
-            float(t.get("entry_price", 0.50)) * int(t.get("count", 1))
-            for t in today_trades
-            if t.get("status") in ["OPEN", "PENDING"]
-        )
-        effective_risk = today_net_pnl - open_collateral
-        if effective_risk <= -abs(self.max_daily_risk):
-            logger.info(f"[AutoExecutor] Max daily risk limit reached (Settled PnL: ${today_net_pnl:.2f}, Open Collateral: ${open_collateral:.2f}, Effective: ${effective_risk:.2f} <= -${self.max_daily_risk:.2f}). Skipping auto execution.")
-            return None
-
-        # Map signal to Kalshi contract side
-        # "ABOVE" -> buy YES (anticipating price >= strike)
-        # "BELOW" -> buy NO (anticipating price < strike)
-        side = "yes" if direction == "ABOVE" else "no"
-        market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
-
-        # Determine affordable contract count for live or paper
-        
-        # ML Settings Overrides: Use maxCap to size position
-        max_cap = float(self.ai_settings.get("maxCap", 0.0))
-        unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
-        
-        # AUDIT FIX #3: Hard ceiling on contracts to prevent black-swan order sizes
-        ABSOLUTE_MAX_CONTRACTS = 50
-
-        if max_cap > 0:
-            contracts_to_buy = int(max_cap // unit_price_est)
-            if contracts_to_buy < 1:
-                contracts_to_buy = 1
-        else:
-            contracts_to_buy = self.max_contracts
-        
-        contracts_to_buy = min(contracts_to_buy, ABSOLUTE_MAX_CONTRACTS)
-
-        # 2. Dry Run
-        dry_run = (self.mode == "PAPER")
-        if self.ai_settings.get("dryRun", False):
-            dry_run = True
-            
-        # 3. Execution Delay
-        exec_delay = int(self.ai_settings.get("execDelay", 0))
-        if exec_delay > 0:
-            logger.info(f"[AutoExecutor] Delaying execution by {exec_delay}s...")
-            time.sleep(exec_delay)
-            
-        if self.mode == "LIVE":
-
-            bal_res = kalshi_trader.get_balance()
-            if bal_res.get("success", False):
-                avail_bal = float(bal_res.get("balance_dollars", 0.0))
-                unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
-                if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
-                    affordable = int(avail_bal // unit_price)
-                    if affordable >= 1:
-                        contracts_to_buy = affordable
-
-        slippage_buffer = float(self.ai_settings.get("slippageBufferCents", 0.04))
-
-        # Execute Order (Paper or Live)
-        order_res = kalshi_trader.place_order(
-            ticker=current_interval_id,
-            side=side,
-            count=contracts_to_buy,
-            limit_price_dollars=market_price,
-            dry_run=dry_run,
-            slippage_buffer_cents=slippage_buffer
-        )
-
-        if order_res.get("success", False):
-            # H1 & H2: Record actual fill metrics and fix paper balance cost key
-            fill_price = float(order_res.get("filled_price", market_price))
-            fill_count = float(order_res.get("count", contracts_to_buy))
-            fill_cost = float(order_res.get("total_cost", round(fill_price * fill_count, 4)))
-
-            if self.mode == "PAPER":
-                try:
-                    from backend.btc.paper_balance import update_balance
-                    update_balance(-fill_cost)
-                except Exception as e:
-                    logger.error(f"Paper deduction error: {e}")
-            elif self.mode == "LIVE":
-                kalshi_trader.get_balance(force_refresh=True)
-
-            self.last_traded_interval = current_interval_id
-            # The prediction record is the single source carried from analyzer
-            # to order to accuracy.  It deliberately uses a different ID from
-            # Kalshi's order ID so retries cannot rewrite its identity.
-            prediction_id = str(uuid.uuid4())
-            prediction_generated_at = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
-            close_time_str = active_m.get("close_time") or ""
-            close_epoch = now + sec_left
-            if close_time_str:
-                try:
-                    close_epoch = datetime.fromisoformat(close_time_str.replace("Z", "+00:00")).timestamp()
-                except (TypeError, ValueError):
-                    pass
-
-            trade_record = {
-                "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
-                "client_order_id": order_res.get("client_order_id", ""),
-                "timestamp": prediction_generated_at,
-                "prediction_id": prediction_id,
-                "prediction_kind": "AUTO",
-                "prediction_direction": direction,
-                "prediction_generated_at": prediction_generated_at,
-                "accuracy_eligible": True,
-                "interval_close_time": close_time_str,
-                "close_epoch": close_epoch,
-                "ticker": current_interval_id,
-                "title": active_m.get("title", ""),
-                "market_snapshot": {
-                    "price": df_ind.iloc[-1]["close"],
-                    "target": strike,
-                    "confidence": forecast.get("probability_percent"),
-                    "conviction_grade": forecast.get("conviction_grade"),
-                    "primary_edge": forecast.get("primary_edge"),
-                    "raw_features": forecast.get("raw_features", {})
-                },
-                "strike": strike,
-                "direction": direction,
-                "recommendation": rec,
-                "conviction_grade": grade,
-                "conviction_badge": forecast.get("conviction_badge", ""),
-                "probability_percent": forecast.get("probability_percent", 50),
-                "side": side.upper(),
-                "requested_price": market_price,
-                "entry_price": fill_price,
-                "requested_count": contracts_to_buy,
-                "count": fill_count,
-                "cost": fill_cost,
-                "slippage_cents": round(abs(fill_price - market_price), 4),
-                "slippage_buffer_used": slippage_buffer,
-                "mode": self.mode,
-                "status": "OPEN",
-                "result": "PENDING",
-                "pnl": 0.0,
-                "catalysts": forecast.get("catalysts", [])
-            }
-
-            trades.append(trade_record)
-            self._save_trades_history(trades)
-
-            # Connect with scalp_engine for early profit exits if scalping is enabled
+            # A prediction without the contract's official target must never create
+            # an order; a zero target previously made NO trades settle incorrectly.
             try:
-                from backend.btc.scalp_engine import scalp_engine
-                if getattr(scalp_engine, "enabled", False):
-                    scalp_engine.register_position(trade_record)
-            except Exception as se_err:
-                logger.warning(f"[AutoExecutor] Could not register trade with ScalpEngine: {se_err}")
+                strike = float(active_m.get("strike_price") or 0.0)
+            except (TypeError, ValueError):
+                strike = 0.0
+            if strike <= 0:
+                logger.error("[AutoExecutor] Active Kalshi market has no valid floor strike; skipping %s", current_interval_id)
+                return None
 
-            return trade_record
-        else:
-            logger.error(f"[AutoExecutor] Order failed: {order_res.get('error')}")
+            # Fetch technical indicator data based on Trading Style
+            tf = "1m" if trading_style == "MACHINE_GUN" else "15m"
+            df = fetch_candles(timeframe=tf, limit=1000)
+            df_ind = add_all_indicators(df)
 
-        return None
+            # Inject historical market intervals directly into the ML Engine to train it instantly
+            try:
+                from backend.btc.ml_engine import get_ml_engine
+                import os
+                data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+                ml_engine = get_ml_engine(data_dir, trading_style)
+                if not ml_engine.is_trained:
+                    from backend.btc.data_fetcher import fetch_15m_candles_history, fetch_1m_candles_history
+                    
+                    if trading_style == "MACHINE_GUN":
+                        hist_df = fetch_1m_candles_history(days=15)
+                    else:
+                        hist_df = fetch_15m_candles_history(days=60)
+                        
+                    hist_df_ind = add_all_indicators(hist_df)
+                    ml_engine.self_train_on_historical_market(hist_df_ind)
+            except Exception as e:
+                logger.error(f"[AutoExecutor] Failed to self-train ML Engine: {e}")
+
+            # Detect advanced chart patterns (triangles, flags, head & shoulders)
+            patterns = []
+            if trading_style != "MACHINE_GUN":
+                try:
+                    patterns = detect_candlestick_patterns(df_ind)
+                except Exception as _pat_err:
+                    logger.debug(f"[AutoExecutor] Pattern detector error: {_pat_err}")
+
+            forecast = evaluate_next_15m_contract(
+                df_ind, target_price=strike, patterns=patterns, kalshi_m=active_m, trading_style=trading_style
+            )
+
+            raw_score = float(forecast.get("probability_percent", 50.0))
+            edge_label = str(forecast.get("primary_edge", ""))
+            rec = forecast.get("recommendation", "")
+            grade = forecast.get("conviction_grade", "")
+            badge = str(forecast.get("conviction_badge", ""))
+            direction = normalize_prediction_direction(forecast.get("direction") or rec)
+
+            pre_gate_dir = forecast.get("pre_gate_direction")
+            pre_gate_prob = float(forecast.get("pre_gate_prob", raw_score))
+            raw_ml_prob = float(forecast.get("raw_ml_prob", forecast.get("ml_prob", 0.5)))
+            ml_prob = float(forecast.get("ml_prob", 0.5))
+
+            one_shot_ai = bool(self.ai_settings.get("oneShotAiStartTrade", False))
+            ignore_pass = bool(self.ai_settings.get("ignorePass", False))
+            reverse_cvd = bool(self.ai_settings.get("reverseCvd", False))
+            is_reverse = False
+            is_forced_pass = False
+
+            if ("PIN RISK" in badge or "PIN RISK" in rec) and not one_shot_ai:
+                logger.info(f"[AutoExecutor] Strike Pin Risk active (price within $15 of strike target in low volatility). Sitting out to protect win rate.")
+                return None
+
+            if one_shot_ai or ignore_pass:
+                # 100% AI Prediction mode (until toggled off if ignore_pass, or 1-shot if one_shot_ai)
+                # Use raw unmolested ML probability directly from the model
+                ai_model_prob = raw_ml_prob
+                direction = "ABOVE" if ai_model_prob >= 0.50 else "BELOW"
+                raw_score = max(51.0, ai_model_prob * 100.0) if ai_model_prob >= 0.50 else max(51.0, (1.0 - ai_model_prob) * 100.0)
+                if pre_gate_prob and pre_gate_dir == direction and pre_gate_prob > raw_score:
+                    raw_score = pre_gate_prob
+                grade = "GRADE A+ (100% AI)"
+                badge = f"🎯 100% AI ({raw_score:.0f}%)"
+                rec = f"100% AI Prediction{' (Force Trade)' if ignore_pass else ' at Start'}: {'YES' if direction == 'ABOVE' else 'NO'}"
+                is_forced_pass = True
+                logger.info(
+                    f"[AutoExecutor] [{'100% AI MODE (UNTIL TOGGLED OFF)' if ignore_pass else '1-SHOT AI MODE'}] Trading 100% on AI Prediction: "
+                    f"{direction} ({raw_score:.1f}% Conf, Raw ML: {ai_model_prob*100:.1f}%). Technical and PASS filters bypassed."
+                )
+            # Handle PASS direction filtering or CVD Divergence
+            elif direction == "PASS":
+                # Determine best underlying direction from pre-gate analysis or ML model
+                if pre_gate_dir in ["ABOVE", "BELOW"]:
+                    best_underlying_dir = pre_gate_dir
+                    best_underlying_prob = pre_gate_prob
+                elif ml_prob != 0.5:
+                    best_underlying_dir = "ABOVE" if ml_prob >= 0.5 else "BELOW"
+                    best_underlying_prob = ml_prob * 100.0 if ml_prob >= 0.5 else (1.0 - ml_prob) * 100.0
+                else:
+                    best_underlying_dir = "ABOVE" if raw_score >= 50.0 else "BELOW"
+                    best_underlying_prob = raw_score
+
+                if reverse_cvd and "CVD DIVERGENCE" in badge:
+                    original_dir = best_underlying_dir
+                    direction = "BELOW" if original_dir == "ABOVE" else "ABOVE"
+                    is_reverse = True
+                    raw_score = best_underlying_prob
+                    logger.info(f"[AutoExecutor] 'Reverse on CVD Divergence' enabled. Reversing {original_dir} trade to {direction} (Score: {raw_score:.1f}%).")
+                else:
+                    logger.debug("[AutoExecutor] Skipping because direction is PASS")
+                    return None
+            elif reverse_cvd and "CVD DIVERGENCE" in badge and raw_score > 0:
+                original_dir = direction
+                direction = "BELOW" if original_dir == "ABOVE" else "ABOVE"
+                is_reverse = True
+                logger.info(f"[AutoExecutor] 'Reverse on CVD Divergence' enabled. Reversing active {original_dir} trade to {direction}.")
+
+            # Strict Filter 2: Conviction & Settings Thresholds
+            meets_conviction = False
+        
+            # ML settings overrides
+            min_conf = float(self.ai_settings.get("minConf", 0.0))
+            edge_multiplier = float(self.ai_settings.get("edgeWeightFactor", 1.0)) if self.ai_settings.get("edgeWeightOn") else 1.0
+        
+            actual_conf = raw_score
+            if "High Confluence" in edge_label:
+                actual_conf = min(99.0, raw_score * edge_multiplier)
+
+            # Dampen confidence after a rough recent stretch (see Step 2b above).
+            # A multiplier < 1.0 makes both the min_conf check and the ML-fallback
+            # gate below harder to satisfy, which is the intended effect.
+            actual_conf = actual_conf * conviction_multiplier
+
+            # Base threshold check against minConf
+            if one_shot_ai:
+                meets_conviction = True
+            elif is_forced_pass or is_reverse:
+                # User explicitly requested Force Trade on PASS or Reverse on CVD Divergence
+                meets_conviction = True
+                logger.info(f"[AutoExecutor] Conviction check bypassed for forced/reversed trade ({direction} @ {actual_conf:.1f}%).")
+            elif min_conf > 0:
+                if actual_conf >= min_conf:
+                    meets_conviction = True
+            else:
+                # Fallback to grade logic
+                if self.prediction_mode:
+                    meets_conviction = True
+                else:
+                    # A "GRADE C / ML MODEL" label is the fallback used when no real
+                    # chart/technical setup fired; only let it satisfy a higher
+                    # conviction bar when its own confidence is meaningfully away
+                    # from a coin-flip (50%), never on the label text alone.
+                    ml_fallback_hi = 65.0 + extra_conviction_cushion
+                    ml_fallback_lo = 35.0 - extra_conviction_cushion
+                    is_confident_ml_fallback = ("GRADE C" in grade and "ML MODEL" in grade) and (actual_conf >= ml_fallback_hi or actual_conf <= ml_fallback_lo)
+
+                    if trading_style == "MACHINE_GUN":
+                        # Dynamic Confidence Minimums for Machine Gun Mode
+                        min_conf = 60.0 if sec_elapsed <= 60 else 75.0
+                        actual_win_conf = max(actual_conf, 100.0 - actual_conf)
+                        meets_conviction = (actual_win_conf >= min_conf)
+                    else:
+                        if self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
+                            meets_conviction = True
+                        elif self.min_conviction == "GRADE A SETUP" and ("A+" in grade or "GRADE A " in grade or is_confident_ml_fallback):
+                            meets_conviction = True
+                        elif self.min_conviction == "GRADE B SETUP" and ("A+" in grade or "GRADE A " in grade or "B SETUP" in grade or is_confident_ml_fallback):
+                            meets_conviction = True
+
+            if not meets_conviction:
+                logger.debug(f"[AutoExecutor] Skipping because conviction not met: {actual_conf} < {min_conf} (Grade: {grade})")
+                return None
+
+            # If bot is disabled, do not execute
+            if not self.enabled:
+                logger.debug("[AutoExecutor] Skipping because bot is disabled")
+                return None
+
+            # Strict Filter 3: Enforce Max Daily Trades & Max Daily Risk (Finding 2)
+            risk_blocked_reason = self.check_risk_budget(trades)
+            if risk_blocked_reason:
+                logger.info(f"[AutoExecutor] {risk_blocked_reason}. Skipping auto execution.")
+                return None
+
+            # Map signal to Kalshi contract side
+            # "ABOVE" -> buy YES (anticipating price >= strike)
+            # "BELOW" -> buy NO (anticipating price < strike)
+            side = "yes" if direction == "ABOVE" else "no"
+            market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
+
+            # Determine affordable contract count for live or paper
+        
+            # ML Settings Overrides: Use maxCap to size position
+            max_cap = float(self.ai_settings.get("maxCap", 0.0))
+            unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
+        
+            # AUDIT FIX #3: Hard ceiling on contracts to prevent black-swan order sizes
+            ABSOLUTE_MAX_CONTRACTS = 50
+
+            if max_cap > 0:
+                contracts_to_buy = int(max_cap // unit_price_est)
+                if contracts_to_buy < 1:
+                    contracts_to_buy = 1
+            else:
+                contracts_to_buy = self.max_contracts
+        
+            contracts_to_buy = min(contracts_to_buy, ABSOLUTE_MAX_CONTRACTS)
+
+            # 2. Dry Run
+            dry_run = (self.mode == "PAPER")
+            if self.ai_settings.get("dryRun", False):
+                dry_run = True
+
+            # 3. Execution Delay — FIX #4: release the lock while sleeping so the
+            # background loop isn't stalled for the full delay duration.
+            exec_delay = int(self.ai_settings.get("execDelay", 0))
+            if exec_delay > 0:
+                logger.info(f"[AutoExecutor] Delaying execution by {exec_delay}s (lock released during wait)...")
+                self._rollover_lock.release()
+                try:
+                    time.sleep(exec_delay)
+                finally:
+                    if not self._rollover_lock.acquire(blocking=True, timeout=10):
+                        logger.error("[AutoExecutor] Could not re-acquire rollover lock after exec_delay sleep; aborting trade.")
+                        return None
+            
+
+            if self.mode == "LIVE":
+
+                bal_res = kalshi_trader.get_balance()
+                if bal_res.get("success", False):
+                    avail_bal = float(bal_res.get("balance_dollars", 0.0))
+                    unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
+                    if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
+                        affordable = int(avail_bal // unit_price)
+                        if affordable >= 1:
+                            contracts_to_buy = affordable
+
+            slippage_buffer = float(self.ai_settings.get("slippageBufferDollars", self.ai_settings.get("slippageBufferCents", 0.04)))
+
+            # Execute Order (Paper or Live)
+            order_res = kalshi_trader.place_order(
+                ticker=current_interval_id,
+                side=side,
+                count=contracts_to_buy,
+                limit_price_dollars=market_price,
+                dry_run=dry_run,
+                slippage_buffer_dollars=slippage_buffer
+            )
+
+            if order_res.get("success", False):
+                # Finding 9: Verify order response ticker matches current_interval_id
+                res_ticker = order_res.get("ticker") or (order_res.get("order") or {}).get("ticker")
+                if res_ticker and str(res_ticker).strip() != str(current_interval_id).strip():
+                    logger.error(
+                        f"[AutoExecutor] Ticker mismatch! Expected interval '{current_interval_id}', "
+                        f"order executed on '{res_ticker}'. Aborting trade record creation to prevent corrupted stats/ML training."
+                    )
+                    return None
+
+                # H1 & H2: Record actual fill metrics and fix paper balance cost key
+                fill_price = float(order_res.get("filled_price", market_price))
+                fill_count = float(order_res.get("count", contracts_to_buy))
+                fill_cost = float(order_res.get("total_cost", round(fill_price * fill_count, 4)))
+
+                if self.mode == "PAPER":
+                    try:
+                        from backend.btc.paper_balance import update_balance
+                        update_balance(-fill_cost)
+                    except Exception as e:
+                        logger.error(f"Paper deduction error: {e}")
+                elif self.mode == "LIVE":
+                    kalshi_trader.get_balance(force_refresh=True)
+
+                self.last_traded_interval = current_interval_id
+                # The prediction record is the single source carried from analyzer
+                # to order to accuracy.  It deliberately uses a different ID from
+                # Kalshi's order ID so retries cannot rewrite its identity.
+                prediction_id = str(uuid.uuid4())
+                prediction_generated_at = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                close_time_str = active_m.get("close_time") or ""
+                close_epoch = now + sec_left
+                if close_time_str:
+                    try:
+                        close_epoch = datetime.fromisoformat(close_time_str.replace("Z", "+00:00")).timestamp()
+                    except (TypeError, ValueError):
+                        pass
+
+                trade_record = {
+                    "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
+                    "client_order_id": order_res.get("client_order_id", ""),
+                    "timestamp": prediction_generated_at,
+                    "prediction_id": prediction_id,
+                    "prediction_kind": "AUTO",
+                    "trade_source": f"AUTO ({trading_style})" if not is_reverse else f"AUTO ({trading_style}) - REVERSE",
+                    "is_auto": True,
+                    "is_reverse": is_reverse,
+                    "is_forced_pass": is_forced_pass,
+                    "is_scalp": False,
+                    "trading_style": trading_style,
+                    "prediction_direction": direction,
+                    "prediction_generated_at": prediction_generated_at,
+                    "accuracy_eligible": True,
+                    "interval_close_time": close_time_str,
+                    "close_epoch": close_epoch,
+                    "ticker": current_interval_id,
+                    "title": active_m.get("title", ""),
+                    "market_snapshot": {
+                        "price": float(df_ind.iloc[-1]["close"]) if len(df_ind) > 0 else float(strike),
+                        "target": strike,
+                        "confidence": int(raw_score) if (one_shot_ai or is_forced_pass or is_reverse) else forecast.get("probability_percent"),
+                        "conviction_grade": forecast.get("conviction_grade"),
+                        "primary_edge": forecast.get("primary_edge"),
+                        "raw_features": forecast.get("raw_features", {})
+                    },
+                    "strike": strike,
+                    "direction": direction,
+                    "recommendation": rec,
+                    "conviction_grade": grade,
+                    "conviction_badge": badge if (one_shot_ai or ignore_pass) else forecast.get("conviction_badge", ""),
+                    "probability_percent": int(raw_score) if (one_shot_ai or is_forced_pass or is_reverse) else forecast.get("probability_percent", 50),
+                    "predicted_probability": round(float(raw_score) / 100.0, 4) if (one_shot_ai or is_forced_pass or is_reverse) else forecast.get("predicted_probability", round(float(forecast.get("probability_percent", 50)) / 100.0, 4)),
+                    "ml_prob": round(float(raw_ml_prob if (one_shot_ai or ignore_pass) else ml_prob), 4),
+                    "side": side.upper(),
+                    "requested_price": market_price,
+                    "entry_price": fill_price,
+                    "requested_count": contracts_to_buy,
+                    "count": fill_count,
+                    "cost": fill_cost,
+                    "slippage_cents": round(abs(fill_price - market_price), 4),
+                    "slippage_buffer_used": slippage_buffer,
+                    "mode": str(order_res.get("mode", self.mode)).upper(),
+                    "status": "OPEN",
+                    "result": "PENDING",
+                    "pnl": 0.0,
+                    "catalysts": [f"100% AI Prediction{' (Force Trade)' if ignore_pass else ' at Start'}: AI model predicted {raw_score:.1f}% {'UP' if direction == 'ABOVE' else 'DOWN'}"] + list(forecast.get("catalysts", [])) if (one_shot_ai or ignore_pass) else forecast.get("catalysts", [])
+                }
+
+                trades.append(trade_record)
+                self._save_trades_history(trades)
+
+                # Auto-reset oneShotAiStartTrade back to normal (OFF) after placing trade
+                # Note: ignorePass (Force Trade on PASS) remains active continuously on every trade until explicitly toggled off by user
+                if one_shot_ai and not ignore_pass:
+                    self.ai_settings["oneShotAiStartTrade"] = False
+                    self._save_config()
+                    logger.info("[AutoExecutor] [1-SHOT AI MODE] Trade executed! Auto-resetting 'oneShotAiStartTrade' back to normal (OFF).")
+
+                # Connect with scalp_engine for early profit exits if scalping is enabled
+                try:
+                    from backend.btc.scalp_engine import scalp_engine
+                    if getattr(scalp_engine, "enabled", False):
+                        scalp_engine.register_position(trade_record)
+                except Exception as se_err:
+                    logger.warning(f"[AutoExecutor] Could not register trade with ScalpEngine: {se_err}")
+
+            else:
+                if order_res.get("ambiguous"):
+                    logger.error(
+                        f"[AutoExecutor] CRITICAL: Rollover order outcome ambiguous after timeout! "
+                        f"Interval: '{current_interval_id}', Ticker: '{order_res.get('ticker', current_interval_id)}', "
+                        f"Client Order ID: '{order_res.get('client_order_id')}'. "
+                        f"Error: {order_res.get('error')}. MANUAL VERIFICATION REQUIRED ON KALSHI."
+                    )
+                else:
+                    logger.error(f"[AutoExecutor] Order failed: {order_res.get('error')}")
+
+            return None
+        finally:
+            self._rollover_lock.release()
 
     def execute_manual_trade(self, direction: str) -> Dict[str, Any]:
         """
         Enables user to click 1-click execution for the current interval directly from the UI.
         """
         dir_clean = str(direction or "").upper().strip()
+        one_shot_active = bool(self.ai_settings.get("oneShotAiStartTrade", False)) or dir_clean in ["AI_START", "AI", "AUTO"]
+
+        # Finding 2: Enforce shared daily risk budget on manual trades
+        risk_blocked_reason = self.check_risk_budget()
+        if risk_blocked_reason:
+            logger.info(f"[AutoExecutor] Manual trade blocked: {risk_blocked_reason}")
+            return {"success": False, "error": risk_blocked_reason}
+
+        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"), min_seconds_left=30)
+        if not active_m:
+            return {"success": False, "error": "No active KXBTC15M market found (>30s before expiration required)."}
+
+        if dir_clean in ["AI_START", "AI", "AUTO"]:
+            try:
+                df = fetch_candles(timeframe="15m", limit=100)
+                df_ind = add_all_indicators(df)
+                forecast = evaluate_next_15m_contract(df_ind, kalshi_m=active_m)
+                ml_prob = float(forecast.get("ml_prob", 0.5))
+                dir_clean = "ABOVE" if ml_prob >= 0.50 else "BELOW"
+            except Exception as _ai_err:
+                logger.error(f"[AutoExecutor] Error resolving AI start direction: {_ai_err}")
+                dir_clean = "ABOVE"
+
         if dir_clean not in ["ABOVE", "BELOW"]:
             return {"success": False, "error": f"Invalid trade direction: '{direction}'. Must be 'ABOVE' or 'BELOW'."}
-
-        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
-        if not active_m:
-            return {"success": False, "error": "No active KXBTC15M market found."}
 
         side = "yes" if dir_clean == "ABOVE" else "no"
         market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
@@ -789,13 +1157,7 @@ class AutoExecutor:
         dry_run = (self.mode == "PAPER")
         if self.ai_settings.get("dryRun", False):
             dry_run = True
-            
-        # 3. Execution Delay
-        exec_delay = int(self.ai_settings.get("execDelay", 0))
-        if exec_delay > 0:
-            logger.info(f"[AutoExecutor] Delaying execution by {exec_delay}s...")
-            time.sleep(exec_delay)
-            
+
         if self.mode == "LIVE":
 
             bal_res = kalshi_trader.get_balance()
@@ -807,7 +1169,7 @@ class AutoExecutor:
                     if affordable >= 1:
                         contracts_to_buy = affordable
 
-        slippage_buffer = float(self.ai_settings.get("slippageBufferCents", 0.04))
+        slippage_buffer = float(self.ai_settings.get("slippageBufferDollars", self.ai_settings.get("slippageBufferCents", 0.04)))
 
         order_res = kalshi_trader.place_order(
             ticker=active_m.get("ticker", ""),
@@ -815,7 +1177,7 @@ class AutoExecutor:
             count=contracts_to_buy,
             limit_price_dollars=market_price,
             dry_run=dry_run,
-            slippage_buffer_cents=slippage_buffer
+            slippage_buffer_dollars=slippage_buffer
         )
 
         if order_res.get("success", False):
@@ -858,6 +1220,11 @@ class AutoExecutor:
                 "conviction_grade": "MANUAL OVERRIDE",
                 "conviction_badge": "MANUAL TRADE",
                 "probability_percent": 65,
+                "trade_source": "MANUAL",
+                "is_auto": False,
+                "is_manual": True,
+                "is_scalp": False,
+                "is_reverse": False,
                 "side": side.upper(),
                 "requested_price": market_price,
                 "entry_price": fill_price,
@@ -866,7 +1233,7 @@ class AutoExecutor:
                 "cost": fill_cost,
                 "slippage_cents": round(abs(fill_price - market_price), 4),
                 "slippage_buffer_used": slippage_buffer,
-                "mode": self.mode,
+                "mode": str(order_res.get("mode", self.mode)).upper(),
                 "status": "OPEN",
                 "result": "PENDING",
                 "pnl": 0.0,
@@ -874,6 +1241,11 @@ class AutoExecutor:
             }
             trades.append(trade_record)
             self._save_trades_history(trades)
+
+            if one_shot_active and self.ai_settings.get("oneShotAiStartTrade"):
+                self.ai_settings["oneShotAiStartTrade"] = False
+                self._save_config()
+                logger.info("[AutoExecutor] [1-SHOT AI MODE] Manual trade placed! Auto-resetting 'oneShotAiStartTrade' back to normal (OFF).")
 
             # Connect with scalp_engine for early profit exits if scalping is enabled
             try:
@@ -885,6 +1257,13 @@ class AutoExecutor:
 
             return {"success": True, "trade": trade_record}
 
+        if order_res.get("ambiguous"):
+            logger.error(
+                f"[AutoExecutor] CRITICAL: Manual trade outcome ambiguous after timeout! "
+                f"Ticker: '{order_res.get('ticker', active_m.get('ticker', ''))}', "
+                f"Client Order ID: '{order_res.get('client_order_id')}'. "
+                f"Error: {order_res.get('error')}. MANUAL VERIFICATION REQUIRED ON KALSHI."
+            )
         return order_res
 
     def _exit_open_trade(self, trade: Dict[str, Any], reason: str, estimated_exit_price: Optional[float] = None) -> Dict[str, Any]:
@@ -905,14 +1284,22 @@ class AutoExecutor:
             return {"success": False, "error": "Trade is missing a valid ticker, side, or contract count."}
 
         mode = str(trade.get("mode", self.mode)).upper()
+        is_sim = str(trade.get("id", "")).startswith("sim_") or (mode == "PAPER")
         exit_res = kalshi_trader.close_position(
             ticker=ticker,
             purchased_side=side,
             count=count,
-            dry_run=(mode == "PAPER"),
+            dry_run=is_sim,
             estimated_exit_price=estimated_exit_price,
         )
         if not exit_res.get("success"):
+            if exit_res.get("ambiguous"):
+                logger.error(
+                    f"[AutoExecutor] CRITICAL: Position exit outcome ambiguous after timeout! "
+                    f"Trade ID: '{trade.get('id')}', Ticker: '{ticker}', "
+                    f"Client Order ID: '{exit_res.get('client_order_id')}'. "
+                    f"Error: {exit_res.get('error')}. MANUAL VERIFICATION REQUIRED ON KALSHI."
+                )
             return exit_res
 
         filled_count = min(count, float(exit_res.get("filled_count", 0) or 0))
@@ -979,6 +1366,16 @@ class AutoExecutor:
                     if not result.get("success"):
                         return result
                     self._save_trades_history(trades)
+                    try:
+                        from backend.btc.scalp_engine import scalp_engine
+                        with scalp_engine._trade_lock:
+                            if hasattr(scalp_engine, "_active_positions") and trade_id in scalp_engine._active_positions:
+                                del scalp_engine._active_positions[trade_id]
+                            if scalp_engine._active_trade and scalp_engine._active_trade.get("id") == trade_id:
+                                scalp_engine._active_trade.clear()
+                    except Exception as e:
+                        logger.warning(f"Swallowed exception: {e}")
+                        pass
                     return result
         return {"success": False, "error": f"Trade {trade_id} not found or not open"}
 
@@ -1012,7 +1409,8 @@ class AutoExecutor:
                             import math
                             prob = 1.0 / (1.0 + math.exp(-diff / 150.0))
                             est_exit = round(max(0.10, min(0.90, prob)), 4)
-                    except Exception:
+                    except Exception as e:
+                        logger.warning(f"Swallowed exception: {e}")
                         pass
 
                 result = self._exit_open_trade(trade, "MANUAL_CLOSE", estimated_exit_price=est_exit)
@@ -1041,6 +1439,302 @@ class AutoExecutor:
             "failures": failures,
             "message": f"{message} (realized P&L: ${realized_pnl:+.2f})",
         }
+
+    def check_active_trades_stop_and_reversal(self) -> None:
+        """
+        Evaluates all open positions for:
+        Option 1: Dynamic Early Stop-Loss (Bailout Guard)
+          - If spot BTC moves against the strike target by >= stopLossMoveDollars within stopLossMaxMinutes,
+            immediately exit early at executable market bid to rescue remaining contract capital.
+        Option 2: Position Reversal (Selective Flip)
+          - If stopped out and positionReversal is enabled, selectively enter the opposite contract
+            if time remaining >= reversalMinMinutesLeft, opposite ask <= reversalMaxPriceCents,
+            and confidence >= reversalMinConfidence.
+        """
+        dynamic_stop_enabled = bool(self.ai_settings.get("dynamicStopLoss", True))
+        position_reversal_enabled = bool(self.ai_settings.get("positionReversal", False))
+
+        if not dynamic_stop_enabled and not position_reversal_enabled:
+            return
+
+        trades = self.get_trades_history()
+        open_trades = [t for t in trades if t.get("status") == "OPEN"]
+        if not open_trades:
+            return
+
+        from backend.btc.data_fetcher import get_btc_ticker
+        try:
+            ticker_data = get_btc_ticker()
+            spot_price = float(ticker_data.get("price", 0.0) or 0.0)
+        except Exception as te:
+            logger.debug(f"[AutoExecutor] Could not fetch spot price for stop/reversal check: {te}")
+            return
+
+        if spot_price <= 0:
+            return
+
+        stop_loss_move = float(self.ai_settings.get("stopLossMoveDollars", 140.0))
+        atr_multiplier = float(self.ai_settings.get("atrStopMultiplier", 0.75))
+        try:
+            from backend.btc.indicators import compute_atr
+            recent_candles = fetch_candles(timeframe="15m", limit=30)
+            if recent_candles is not None and len(recent_candles) >= 14:
+                atr_series = compute_atr(recent_candles)
+                atr_val = float(atr_series.iloc[-1])
+                if atr_val > 0:
+                    stop_loss_move = max(stop_loss_move, atr_val * atr_multiplier)
+        except Exception:
+            pass
+        stop_loss_max_minutes = float(self.ai_settings.get("stopLossMaxMinutes", 8.0))
+        reversal_max_price = float(self.ai_settings.get("reversalMaxPriceCents", 65.0)) / 100.0
+        reversal_min_minutes = float(self.ai_settings.get("reversalMinMinutesLeft", 6.0))
+        reversal_min_conf = float(self.ai_settings.get("reversalMinConfidence", 75.0))
+
+        now = time.time()
+        for trade in open_trades:
+            trade_id = trade.get("id")
+            if not trade_id:
+                continue
+            side = str(trade.get("side", "")).upper()
+            strike = float(trade.get("strike", 0.0) or 0.0)
+            entry_price = float(trade.get("entry_price", 0.50))
+            btc_entry = float(trade.get("btc_price_at_entry") or trade.get("market_snapshot", {}).get("price") or spot_price)
+            close_epoch = float(trade.get("close_epoch", 0.0))
+
+            if close_epoch > 0:
+                time_remaining_sec = max(0.0, close_epoch - now)
+                time_elapsed_sec = max(0.0, 900.0 - time_remaining_sec)
+            else:
+                time_remaining_sec = 900.0
+                time_elapsed_sec = 0.0
+
+            minutes_elapsed = time_elapsed_sec / 60.0
+            minutes_remaining = time_remaining_sec / 60.0
+
+            if dynamic_stop_enabled:
+                # Early stop window check: first stop_loss_max_minutes and at least 90 seconds left
+                if minutes_elapsed <= stop_loss_max_minutes and minutes_remaining >= 1.5:
+                    is_adverse = False
+                    deficit = 0.0
+
+                    if strike > 0:
+                        if side == "YES" and spot_price < strike:
+                            deficit = strike - spot_price
+                            if deficit >= stop_loss_move:
+                                is_adverse = True
+                        elif side == "NO" and spot_price >= strike:
+                            deficit = spot_price - strike
+                            if deficit >= stop_loss_move:
+                                is_adverse = True
+                    else:
+                        if side == "YES" and spot_price < btc_entry:
+                            deficit = btc_entry - spot_price
+                            if deficit >= stop_loss_move:
+                                is_adverse = True
+                        elif side == "NO" and spot_price >= btc_entry:
+                            deficit = spot_price - btc_entry
+                            if deficit >= stop_loss_move:
+                                is_adverse = True
+
+                    if is_adverse:
+                        logger.info(
+                            f"[AutoExecutor] DYNAMIC STOP-LOSS TRIGGERED for {trade_id} ({side}): "
+                            f"Spot ${spot_price:,.2f} adverse deficit ${deficit:.2f} >= ${stop_loss_move:.2f} "
+                            f"at {minutes_elapsed:.1f}m elapsed ({minutes_remaining:.1f}m left)."
+                        )
+                        # Realistic salvage exit price for simulation / paper fallback
+                        est_exit = round(max(0.10, min(0.40, entry_price - 0.25)), 4)
+                        close_res = self.close_specific_trade(trade_id, reason="DYNAMIC_STOP_LOSS", estimated_exit_price=est_exit)
+                        if close_res.get("success"):
+                            logger.info(f"[AutoExecutor] Early stop executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
+                            if position_reversal_enabled and not trade.get("is_reversal"):
+                                self._attempt_position_reversal(
+                                    stopped_trade=trade,
+                                    spot_price=spot_price,
+                                    minutes_remaining=minutes_remaining,
+                                    reversal_max_price=reversal_max_price,
+                                    reversal_min_minutes=reversal_min_minutes,
+                                    reversal_min_conf=reversal_min_conf
+                                )
+
+    def _attempt_position_reversal(
+        self,
+        stopped_trade: Dict[str, Any],
+        spot_price: float,
+        minutes_remaining: float,
+        reversal_max_price: float,
+        reversal_min_minutes: float,
+        reversal_min_conf: float
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Executes a position reversal (flip) following an early stop-loss exit.
+        Enforces strict safety guardrails:
+        1. Time: minutes_remaining >= reversal_min_minutes.
+        2. Single reversal per interval (no recursive flips).
+        3. Price: opposite contract ask <= reversal_max_price (favorable risk/reward).
+        4. Confidence: reversal direction confidence >= reversal_min_conf.
+        """
+        stopped_side = str(stopped_trade.get("side", "")).upper()
+        opposite_side = "NO" if stopped_side == "YES" else "YES"
+        ticker = stopped_trade.get("ticker", "")
+
+        # Guardrail 1: Time remaining
+        if minutes_remaining < reversal_min_minutes:
+            logger.info(
+                f"[AutoExecutor] Reversal rejected: {minutes_remaining:.1f}m remaining "
+                f"< min required {reversal_min_minutes:.1f}m."
+            )
+            return None
+
+        # Guardrail 2: Max 1 reversal per interval
+        interval_trades = self.get_trades_history()
+        already_reversed = any(
+            t.get("ticker") == ticker and t.get("is_reversal")
+            for t in interval_trades
+        )
+        if already_reversed:
+            logger.info(f"[AutoExecutor] Reversal rejected: Interval {ticker} already completed a reversal trade.")
+            return None
+
+        # Guardrail 3: Market quote on opposite contract
+        opposite_ask = 0.50
+        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
+        if active_m and (active_m.get("ticker") == ticker or not ticker):
+            if opposite_side == "YES":
+                opposite_ask = float(active_m.get("yes_ask", 0.50) or 0.50)
+            else:
+                opposite_ask = float(active_m.get("no_ask", 0.50) or 0.50)
+
+        if opposite_ask > reversal_max_price:
+            logger.info(
+                f"[AutoExecutor] Reversal rejected: Opposite {opposite_side} ask ${opposite_ask:.2f} "
+                f"> max allowed ${reversal_max_price:.2f}."
+            )
+            return None
+
+        # Guardrail 4: Confidence & Directional Momentum
+        # The model must (a) recommend the opposite direction and (b) clear the confidence bar.
+        conf = None
+        model_direction = None
+        try:
+            from backend.btc.data_fetcher import fetch_candles
+            from backend.btc.indicators import add_all_indicators
+            from backend.btc.analyzer import evaluate_next_15m_contract
+            strike = float(stopped_trade.get("strike", 0.0) or (active_m.get("strike_price", 0.0) if active_m else 0.0))
+            df_c = fetch_candles("15m", limit=30)
+            if df_c is not None and not df_c.empty:
+                df_ind = add_all_indicators(df_c)
+                eval_res = evaluate_next_15m_contract(df_ind, target_price=strike, kalshi_m=active_m)
+                conf = float(eval_res.get("probability_percent", 0.0))
+                model_direction = normalize_prediction_direction(eval_res.get("recommendation", ""))
+            # else: conf stays None → rejected below
+        except Exception as eg4:
+            logger.warning(f"[AutoExecutor] Reversal Guardrail 4 evaluation failed: {eg4}")
+            # conf stays None → rejected below
+
+        if conf is None:
+            logger.info("[AutoExecutor] Reversal rejected: Could not evaluate momentum confidence (no candle data or error).")
+            return None
+
+        # normalize_prediction_direction maps YES→ABOVE and NO→BELOW; compute expected
+        # from opposite_side the same way and compare.
+        expected_direction = normalize_prediction_direction(opposite_side)
+        if model_direction != expected_direction:
+            logger.info(
+                f"[AutoExecutor] Reversal rejected: Model recommends {model_direction!r}, "
+                f"not the required opposite direction {expected_direction!r} (opposite of {stopped_side})."
+            )
+            return None
+
+        if conf < reversal_min_conf:
+            logger.info(
+                f"[AutoExecutor] Reversal rejected: Momentum confidence {conf:.1f}% "
+                f"< min required {reversal_min_conf:.1f}%."
+            )
+            return None
+
+        # All guardrails passed! Place reversal order
+        logger.info(
+            f"[AutoExecutor] Executing POSITION REVERSAL: Flipping {stopped_side} -> {opposite_side} "
+            f"on {ticker} @ ~${opposite_ask:.2f} ({minutes_remaining:.1f}m left, conf {conf:.1f}%)"
+        )
+
+        count = min(self.max_contracts, max(1, int(stopped_trade.get("count", 1))))
+        dry_run = (self.mode == "PAPER") or bool(self.ai_settings.get("dryRun", False)) or (str(stopped_trade.get("mode", "")).upper() == "PAPER")
+        trade_mode = "PAPER" if dry_run else "LIVE"
+        try:
+            order_res = kalshi_trader.place_order(
+                ticker=ticker,
+                side=opposite_side.lower(),
+                count=count,
+                limit_price_dollars=opposite_ask,
+                dry_run=dry_run
+            )
+            if order_res.get("success"):
+                fill_price = float(order_res.get("filled_price", opposite_ask))
+                fill_cost = round(fill_price * count, 4)
+                reversal_record = {
+                    "id": f"{'sim' if trade_mode == 'PAPER' else 'live'}_{uuid.uuid4().hex[:8]}",
+                    "client_order_id": order_res.get("client_order_id") or order_res.get("order_id", str(uuid.uuid4())),
+                    "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                    "interval_close_time": stopped_trade.get("interval_close_time"),
+                    "close_epoch": stopped_trade.get("close_epoch"),
+                    "ticker": ticker,
+                    "title": f"Reversal Flip to {opposite_side}",
+                    "market_snapshot": {
+                        "price": spot_price,
+                        "target": stopped_trade.get("strike", 0.0),
+                        "confidence": conf,
+                        "conviction_grade": "REVERSAL FLIP",
+                        "primary_edge": f"Dynamic Reversal ({stopped_side} -> {opposite_side})"
+                    },
+                    "strike": stopped_trade.get("strike", 0.0),
+                    "direction": opposite_side,
+                    "recommendation": f"REVERSAL FLIP ({opposite_side})",
+                    "conviction_grade": "REVERSAL FLIP",
+                    "conviction_badge": f"🔄 REVERSAL ({int(conf)}%)",
+                    "probability_percent": conf,
+                    "trade_source": "SCALP",
+                    "side": opposite_side,
+                    "entry_price": fill_price,
+                    "count": count,
+                    "cost": fill_cost,
+                    "mode": trade_mode,
+                    "status": "OPEN",
+                    "result": "PENDING",
+                    "pnl": 0.0,
+                    "catalysts": [f"Early bailout stop on {stopped_side}; momentum reversed to {opposite_side}"],
+                    "is_reversal": True,
+                    "reversal_of": stopped_trade.get("id"),
+                    "btc_price_at_entry": spot_price
+                }
+                with _history_lock:
+                    trades_hist = self.get_trades_history()
+                    trades_hist.append(reversal_record)
+                    self._save_trades_history(trades_hist)
+
+                if trade_mode == "PAPER":
+                    try:
+                        from backend.btc.paper_balance import update_balance
+                        update_balance(-fill_cost)
+                    except Exception as ep:
+                        logger.warning(f"Failed to deduct paper balance for reversal: {ep}")
+
+                logger.info(f"[AutoExecutor] Successfully opened REVERSAL position {reversal_record['id']} ({opposite_side})")
+                return reversal_record
+            else:
+                if order_res.get("ambiguous"):
+                    logger.error(
+                        f"[AutoExecutor] CRITICAL: Reversal order outcome ambiguous after timeout! "
+                        f"Ticker: '{order_res.get('ticker', ticker)}', Client Order ID: '{order_res.get('client_order_id')}'. "
+                        f"Error: {order_res.get('error')}. MANUAL VERIFICATION REQUIRED ON KALSHI."
+                    )
+                else:
+                    logger.error(f"[AutoExecutor] Reversal order placement failed: {order_res.get('error')}")
+        except Exception as e:
+            logger.error(f"[AutoExecutor] Exception executing reversal order: {e}", exc_info=True)
+
+        return None
 
 
 # Global singleton instance

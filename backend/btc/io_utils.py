@@ -1,9 +1,12 @@
 """Shared I/O utilities for atomic file writes across all BTC trading modules."""
 
+import logging
 import os
 import json
 import time
 import tempfile
+
+logger = logging.getLogger(__name__)
 
 
 def atomic_json_write(filepath: str, data, indent: int = 2):
@@ -23,6 +26,13 @@ def atomic_json_write(filepath: str, data, indent: int = 2):
             try:
                 os.replace(tmp_path, filepath)
             except Exception:
+                # FIX #12: Log at CRITICAL so the operator knows atomicity was lost.
+                # This fallback write is NOT crash-safe — a kill mid-write can corrupt the file.
+                logger.critical(
+                    "[io_utils] Double PermissionError on atomic replace for '%s'. "
+                    "Falling back to non-atomic direct write — file may be corrupted if process "
+                    "crashes during this write.", filepath
+                )
                 with open(filepath, "w", encoding="utf-8") as fallback_f:
                     json.dump(data, fallback_f, indent=indent)
                 if os.path.exists(tmp_path):
@@ -37,3 +47,4 @@ def atomic_json_write(filepath: str, data, indent: int = 2):
             except Exception:
                 pass
         raise
+

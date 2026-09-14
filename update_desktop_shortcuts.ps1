@@ -5,6 +5,7 @@ $targetBat = Join-Path $appDir "run_app.bat"
 $iconPath = Join-Path $appDir "static\assets\app_icon.ico"
 
 $shortcuts = @(
+    @{ Name = "Kalshi AI Trader.lnk"; Desc = "Kalshi AI Trader & BTC 15M Confluence Engine" },
     @{ Name = "Kalshi AiTrader.lnk"; Desc = "Kalshi AiTrader & BTC 15M Confluence Engine" },
     @{ Name = "BTC 15M Kalshi AI Trader.lnk"; Desc = "BTC 15M Kalshi AI Trader & Confluence Pattern Engine" },
     @{ Name = "Bitcoin 15M Pattern Analyzer.lnk"; Desc = "Bitcoin 15-Minute Pattern Analyzer & Direction Predictor" }

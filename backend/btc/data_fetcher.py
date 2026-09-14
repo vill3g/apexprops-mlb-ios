@@ -2,6 +2,9 @@
 Bitcoin Multi-Timeframe Data Fetcher
 Fetches live and historical OHLCV candles (1m, 5m, 15m, 1h, 4h, 1d) and ticker stats for BTC.
 Includes fallback logic across Coinbase, Kraken, Binance.US, and Yahoo Finance.
+
+NOTE (Basis Risk): TA indicators and ML inference consume spot BTC-USD feeds (primarily Coinbase/Kraken).
+Kalshi KXBTC15M contracts settle against the CF Benchmarks BRTI index. See README.md Safety Notice.
 """
 
 import time
@@ -29,6 +32,11 @@ try:
     from .kalshi_client import get_kalshi_15m_market
 except ImportError:
     from kalshi_client import get_kalshi_15m_market
+
+try:
+    from .trend_boxes import compute_last_5_targets, compute_streak_summary
+except ImportError:
+    from trend_boxes import compute_last_5_targets, compute_streak_summary
 
 
 # Granularity mappings
@@ -161,7 +169,7 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     time_col = "Datetime" if "Datetime" in hist.columns else "Date"
     
     # Vectorized conversion instead of iterrows
-    hist["time"] = hist[time_col].astype(int) // 10**9
+    hist["time"] = pd.to_datetime(hist[time_col]).astype("int64") // 10**9
     hist = hist.rename(columns={"Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"})
     df = hist[["time", "open", "high", "low", "close", "volume"]].sort_values("time").reset_index(drop=True)
     if timeframe == "4h":
@@ -203,6 +211,232 @@ def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
 # Backwards compatibility alias
 def fetch_15m_candles(limit: int = 300) -> pd.DataFrame:
     return fetch_candles(timeframe="15m", limit=limit)
+
+
+def fetch_1m_candles_history(days: int = 15) -> pd.DataFrame:
+    """
+    Paginated deep-history fetch of 1m BTCUSDT candles from Binance.US,
+    used only for offline backtesting (NOT the live trading path).
+    Binance klines are capped at 1000 rows per call, so we page backwards
+    using `endTime` until we've covered `days` worth of 1m bars.
+    Results are cached to backend/data/backtest_1m_candles_cache.json with a 12h TTL.
+    """
+    import json
+
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    cache_path = os.path.join(data_dir, "backtest_1m_candles_cache.json")
+
+    # 1. Check cache with 12-hour TTL
+    cache_ttl_seconds = 12 * 3600  # 12 hours
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cached_obj = json.load(f)
+            cached_days = cached_obj.get("days", 0)
+            cached_ts = cached_obj.get("timestamp", 0)
+            records = cached_obj.get("records", [])
+            if cached_days >= days and (time.time() - cached_ts) < cache_ttl_seconds and len(records) > 0:
+                logger.info(f"[DataFetcher] Loading {len(records)} backtest candles from cache (saved {int((time.time() - cached_ts)/60)}m ago).")
+                df_cached = pd.DataFrame(records)
+                df_cached["datetime"] = pd.to_datetime(df_cached["time"], unit="s", utc=True)
+                df_cached = df_cached.sort_values("time").drop_duplicates(subset=["time"]).reset_index(drop=True)
+                target_candles = days * 1440
+                return df_cached.tail(target_candles).reset_index(drop=True)
+        except Exception as e_cache:
+            logger.warning(f"[DataFetcher] Error reading backtest cache: {e_cache}")
+
+    # 2. Paginated backward fetch from Binance.US
+    target_count = max(100, int(days * 1440))
+    url = "https://api.binance.us/api/v3/klines"
+    all_records = []
+    end_time = None
+
+    logger.info(f"[DataFetcher] Initiating paginated fetch for {target_count} 1m candles ({days} days)...")
+
+    while len(all_records) < target_count:
+        params = {
+            "symbol": "BTCUSDT",
+            "interval": "1m",
+            "limit": 1000,
+        }
+        if end_time is not None:
+            params["endTime"] = int(end_time)
+
+        try:
+            resp = _HTTP_SESSION.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            raw = resp.json()
+        except Exception as err:
+            logger.warning(f"[DataFetcher] Binance.US pagination error: {err}")
+            break
+
+        if not isinstance(raw, list) or len(raw) == 0:
+            logger.info("[DataFetcher] Reached earliest available Binance.US candles.")
+            break
+
+        batch_records = []
+        for row in raw:
+            batch_records.append({
+                "time": int(row[0]) // 1000,
+                "open": float(row[1]),
+                "high": float(row[2]),
+                "low": float(row[3]),
+                "close": float(row[4]),
+                "volume": float(row[5])
+            })
+
+        # Earliest open_time in this batch
+        earliest_open_ms = int(raw[0][0])
+        all_records.extend(batch_records)
+
+        # Set next endTime to earliest open_time minus 1ms
+        end_time = earliest_open_ms - 1
+
+        # Gentle sleep to respect rate limits
+        time.sleep(0.3)
+
+        if len(raw) < 1000:
+            # End of historical data
+            break
+
+    if not all_records:
+        raise RuntimeError(f"Failed to fetch any 1m candles for {days} days backtest.")
+
+    df = pd.DataFrame(all_records)
+    df = df.drop_duplicates(subset=["time"]).sort_values("time").reset_index(drop=True)
+    df["datetime"] = pd.to_datetime(df["time"], unit="s", utc=True)
+
+    # 3. Cache result
+    try:
+        cache_data = {
+            "days": days,
+            "timestamp": time.time(),
+            "count": len(df),
+            "records": df[["time", "open", "high", "low", "close", "volume"]].to_dict(orient="records")
+        }
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(cache_data, f)
+        logger.info(f"[DataFetcher] Cached {len(df)} candles to {cache_path}")
+    except Exception as e_save:
+        logger.warning(f"[DataFetcher] Could not write cache file {cache_path}: {e_save}")
+
+    target_candles = days * 1440
+    return df.tail(target_candles).reset_index(drop=True)
+
+
+
+
+def fetch_15m_candles_history(days: int = 90) -> pd.DataFrame:
+    """
+    Paginated deep-history fetch of 15m BTCUSDT candles from Binance.US,
+    used only for offline backtesting (NOT the live trading path).
+    Binance klines are capped at 1000 rows per call, so we page backwards
+    using `endTime` until we've covered `days` worth of 15m bars.
+    Results are cached to backend/data/backtest_candles_cache.json with a 12h TTL.
+    """
+    import json
+
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    os.makedirs(data_dir, exist_ok=True)
+    cache_path = os.path.join(data_dir, "backtest_candles_cache.json")
+
+    # 1. Check cache with 12-hour TTL
+    cache_ttl_seconds = 12 * 3600  # 12 hours
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                cached_obj = json.load(f)
+            cached_days = cached_obj.get("days", 0)
+            cached_ts = cached_obj.get("timestamp", 0)
+            records = cached_obj.get("records", [])
+            if cached_days >= days and (time.time() - cached_ts) < cache_ttl_seconds and len(records) > 0:
+                logger.info(f"[DataFetcher] Loading {len(records)} backtest candles from cache (saved {int((time.time() - cached_ts)/60)}m ago).")
+                df_cached = pd.DataFrame(records)
+                df_cached["datetime"] = pd.to_datetime(df_cached["time"], unit="s", utc=True)
+                df_cached = df_cached.sort_values("time").drop_duplicates(subset=["time"]).reset_index(drop=True)
+                target_candles = days * 96
+                return df_cached.tail(target_candles).reset_index(drop=True)
+        except Exception as e_cache:
+            logger.warning(f"[DataFetcher] Error reading backtest cache: {e_cache}")
+
+    # 2. Paginated backward fetch from Binance.US
+    target_count = max(100, int(days * 96))
+    url = "https://api.binance.us/api/v3/klines"
+    all_records = []
+    end_time = None
+
+    logger.info(f"[DataFetcher] Initiating paginated fetch for {target_count} 15m candles ({days} days)...")
+
+    while len(all_records) < target_count:
+        params = {
+            "symbol": "BTCUSDT",
+            "interval": "15m",
+            "limit": 1000,
+        }
+        if end_time is not None:
+            params["endTime"] = int(end_time)
+
+        try:
+            resp = _HTTP_SESSION.get(url, params=params, timeout=10)
+            resp.raise_for_status()
+            raw = resp.json()
+        except Exception as err:
+            logger.warning(f"[DataFetcher] Binance.US pagination error: {err}")
+            break
+
+        if not isinstance(raw, list) or len(raw) == 0:
+            logger.info("[DataFetcher] Reached earliest available Binance.US candles.")
+            break
+
+        batch_records = []
+        for row in raw:
+            batch_records.append({
+                "time": int(row[0]) // 1000,
+                "open": float(row[1]),
+                "high": float(row[2]),
+                "low": float(row[3]),
+                "close": float(row[4]),
+                "volume": float(row[5])
+            })
+
+        # Earliest open_time in this batch
+        earliest_open_ms = int(raw[0][0])
+        all_records.extend(batch_records)
+
+        # Set next endTime to earliest open_time minus 1ms
+        end_time = earliest_open_ms - 1
+
+        # Gentle sleep to respect rate limits
+        time.sleep(0.3)
+
+        if len(raw) < 1000:
+            # End of historical data
+            break
+
+    if not all_records:
+        raise RuntimeError(f"Failed to fetch any 15m candles for {days} days backtest.")
+
+    df = pd.DataFrame(all_records)
+    df = df.drop_duplicates(subset=["time"]).sort_values("time").reset_index(drop=True)
+    df["datetime"] = pd.to_datetime(df["time"], unit="s", utc=True)
+
+    # 3. Cache result
+    try:
+        cache_data = {
+            "days": days,
+            "timestamp": time.time(),
+            "count": len(df),
+            "records": df[["time", "open", "high", "low", "close", "volume"]].to_dict(orient="records")
+        }
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(cache_data, f)
+        logger.info(f"[DataFetcher] Cached {len(df)} candles to {cache_path}")
+    except Exception as e_save:
+        logger.warning(f"[DataFetcher] Could not write cache file {cache_path}: {e_save}")
+
+    target_candles = days * 96
+    return df.tail(target_candles).reset_index(drop=True)
 
 
 def format_volume_series(df: pd.DataFrame) -> list[dict]:
@@ -329,9 +563,9 @@ def _save_ticker_cache(result: dict, now: float):
 
 def get_btc_ticker() -> dict:
     """
-    Get live 24h ticker info. Primary source: CF Benchmarks BRTI.
+    Get live 24h ticker info. Primary source: Coinbase.
     Cached for 0.75s to support high-frequency polling.
-    Falls back to Coinbase, Binance.US, and candle fallback if BRTI is unavailable.
+    Falls back to Binance.US, then to this app's own recent candle data, if Coinbase is unavailable.
     """
     now = time.time()
     with _ticker_lock:
@@ -521,34 +755,8 @@ def get_live_15m_target_data() -> dict:
             n = len(df)
             if n > 0:
                 curr_start_price = round(float(df.iloc[-1]["open"]), 2)
-                last_5 = []
-                higher_count = 0
-                lower_count = 0
-                for i in range(max(1, n - 6), n - 1):
-                    c = df.iloc[i]
-                    p = df.iloc[i - 1]
-                    c_close = float(c["close"])
-                    p_close = float(p["close"])
-                    diff = round(c_close - p_close, 2)
-                    diff_pct = round((diff / (p_close + 1e-10)) * 100, 2)
-                    is_higher = diff >= 0
-                    if is_higher:
-                        higher_count += 1
-                    else:
-                        lower_count += 1
-
-                    t_val = c.get("time")
-                    time_str = datetime.fromtimestamp(int(t_val), tz=ZoneInfo("America/New_York")).strftime("%I:%M %p").lstrip('0') if t_val else "--:--"
-
-                    last_5.append({
-                        "time": time_str,
-                        "price": round(c_close, 2),
-                        "delta": diff,
-                        "delta_pct": diff_pct,
-                        "direction": "HIGHER" if is_higher else "LOWER",
-                        "arrow": "▲" if is_higher else "▼",
-                        "color": "green" if is_higher else "red"
-                    })
+                last_5 = compute_last_5_targets(df)
+                streak_summary = compute_streak_summary(last_5)
 
                 with _target_lock:
                     _target_cache["active_target"] = curr_start_price
@@ -556,7 +764,7 @@ def get_live_15m_target_data() -> dict:
                     _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
                     _target_cache["timestamp"] = now
                     _target_cache["last_5_targets"] = last_5
-                    _target_cache["streak_summary"] = f"{higher_count} Higher / {lower_count} Lower"
+                    _target_cache["streak_summary"] = streak_summary
         except Exception as e:
             with _target_lock:
                 if not _target_cache["active_target"]:
@@ -573,7 +781,7 @@ def get_live_15m_target_data() -> dict:
         streak_summary = _target_cache["streak_summary"]
 
     # Override with Kalshi Official Strike
-    kalshi_m = get_kalshi_15m_market()
+    kalshi_m = get_kalshi_15m_market(force_refresh=needs_refresh)
     if kalshi_m:
         kalshi_m = dict(kalshi_m)
         kalshi_m["is_synthetic"] = (kalshi_m.get("status") == "synthetic") or (kalshi_m.get("source") == "Kalshi Synthetic")

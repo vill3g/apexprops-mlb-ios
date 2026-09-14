@@ -11,16 +11,25 @@ import subprocess
 import logging
 
 APP_DIR = os.environ.get("APP_DIR", os.path.dirname(os.path.abspath(__file__)))
-PYTHON_EXE = sys.executable
+venv_python = os.path.join(APP_DIR, ".venv", "Scripts", "python.exe")
+if os.path.exists(venv_python):
+    PYTHON_EXE = venv_python
+elif sys.executable.lower().endswith("pythonw.exe"):
+    cand = sys.executable[:-9] + "python.exe"
+    PYTHON_EXE = cand if os.path.exists(cand) else sys.executable
+else:
+    PYTHON_EXE = sys.executable
+
 LOG_FILE = os.path.join(APP_DIR, "server_watchdog.log")
+
+log_handlers = [logging.FileHandler(LOG_FILE, encoding="utf-8")]
+if sys.stdout is not None:
+    log_handlers.append(logging.StreamHandler(sys.stdout))
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding="utf-8"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=log_handlers
 )
 logger = logging.getLogger("Watchdog")
 
@@ -34,6 +43,10 @@ def run_server():
         "--app-dir", APP_DIR
     ]
     
+    flags = 0
+    if sys.platform == "win32":
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
     logger.info("Starting BTC 15M Server process: %s", " ".join(cmd))
     proc = subprocess.Popen(
         cmd,
@@ -41,15 +54,39 @@ def run_server():
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
-        bufsize=1
+        bufsize=1,
+        creationflags=flags
     )
     return proc
 
+def _acquire_watchdog_lock():
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("127.0.0.1", 28056))
+        s.listen(1)
+        return s
+    except OSError:
+        return None
+
 def main():
+    lock_socket = _acquire_watchdog_lock()
+    if lock_socket is None:
+        logger.info("[Watchdog] Another server_watchdog instance is already active. Exiting duplicate process cleanly.")
+        return
+
     logger.info("==================================================")
     logger.info("  BTC 15M WATCHDOG SUPERVISOR INITIATED")
     logger.info("  Auto-Reboot on Crash Enabled")
     logger.info("==================================================")
+
+    # Start Cloudflare Remote Tunnel in background
+    try:
+        from remote_tunnel import start_tunnel_in_background
+        start_tunnel_in_background()
+        logger.info("[Watchdog] Cloudflare Remote Access tunnel initiated.")
+    except Exception as e:
+        logger.warning("[Watchdog] Could not start remote tunnel: %s", e)
 
     restart_count = 0
 

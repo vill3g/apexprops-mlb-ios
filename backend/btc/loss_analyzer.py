@@ -23,14 +23,24 @@ class LossAnalyzer:
         snapshot = market_snapshot or trade.get("market_snapshot") or {}
         raw_features = snapshot.get("raw_features") or {}
         indicators = snapshot.get("indicators") or {}
-        
-        rsi = raw_features.get("rsi") or indicators.get("rsi") or 50.0
-        bb_upper = raw_features.get("bb_upper") or indicators.get("bb_upper") or 0.0
-        bb_lower = raw_features.get("bb_lower") or indicators.get("bb_lower") or 0.0
-        atr = raw_features.get("atr") or indicators.get("atr") or 0.0
-        cvd = raw_features.get("cvd_value") or indicators.get("cvd") or 0.0
-        delta = raw_features.get("delta_to_target") or 0.0
+
+        # FIX #9: Use explicit None checks instead of `or` so that legitimate zero values
+        # (e.g. RSI=0 on flat data, CVD=0.0 exactly neutral) are not silently replaced
+        # by the default.  Python treats 0/0.0/False as falsy, so `x or default` masks them.
+        def _first_not_none(*values, default):
+            for v in values:
+                if v is not None:
+                    return v
+            return default
+
+        rsi   = _first_not_none(raw_features.get("rsi"),       indicators.get("rsi"),       default=50.0)
+        bb_upper = _first_not_none(raw_features.get("bb_upper"), indicators.get("bb_upper"), default=0.0)
+        bb_lower = _first_not_none(raw_features.get("bb_lower"), indicators.get("bb_lower"), default=0.0)
+        atr   = _first_not_none(raw_features.get("atr"),       indicators.get("atr"),       default=0.0)
+        cvd   = _first_not_none(raw_features.get("cvd_value"), indicators.get("cvd"),       default=0.0)
+        delta = _first_not_none(raw_features.get("delta_to_target"),                        default=0.0)
         side = str(trade.get("side", "YES")).upper()
+
         
         category = "UNKNOWN"
         summary = "Unclassified market reversal"

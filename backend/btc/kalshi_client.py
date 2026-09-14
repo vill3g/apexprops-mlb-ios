@@ -5,6 +5,7 @@ Kalshi Crypto Event Contracts Client
 Pulls live 15-minute Bitcoin price targets and market-implied odds from Kalshi's CFTC-regulated KXBTC15M series.
 """
 import time
+import threading
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
@@ -18,6 +19,7 @@ _session.mount("http://", _adapter)
 
 _kalshi_cache = None
 _kalshi_cache_time = 0.0
+_kalshi_cache_lock = threading.Lock()  # FIX #8: protects module-level cache globals from concurrent writes
 CACHE_TTL_SEC = 8.0  # 8-second cache to maintain high responsiveness without rate limiting
 
 
@@ -36,8 +38,12 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
     """
     global _kalshi_cache, _kalshi_cache_time
     now = time.time()
-    if _kalshi_cache and (now - _kalshi_cache_time) < CACHE_TTL_SEC:
-        return _kalshi_cache
+    # FIX #8: Check cache under lock so concurrent threads don't all fire HTTP requests on expiry.
+    with _kalshi_cache_lock:
+        if _kalshi_cache and (now - _kalshi_cache_time) < CACHE_TTL_SEC:
+            return _kalshi_cache
+        # Optimistic stamp: claim this slot so other threads see it as "fresh" and wait
+        _kalshi_cache_time = now
 
     try:
         markets = []
@@ -71,7 +77,7 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
                 if ct_str:
                     try:
                         ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                        if ct > now_utc - datetime.timedelta(minutes=5):
+                        if ct > now_utc - datetime.timedelta(seconds=15):
                             valid_m.append((ct, m))
                     except Exception:
                         pass
@@ -164,10 +170,13 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
             "open_interest": float(active_m.get("open_interest_fp") or active_m.get("open_interest") or 0.0),
             "source": "Kalshi KXBTC15M"
         }
-        _kalshi_cache = result
-        _kalshi_cache_time = time.time()
+        with _kalshi_cache_lock:
+            _kalshi_cache = result
+            _kalshi_cache_time = time.time()
         return result
     except Exception as e:
         logger.error(f"[Kalshi Client] Error fetching KXBTC15M: {e}")
 
-    return _kalshi_cache or {}
+    with _kalshi_cache_lock:
+        return _kalshi_cache or {}
+

@@ -307,6 +307,84 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
                     "candle_index": n - 1
                 })
 
+    # 17. Piercing Line (Bullish Reversal)
+    if (not prev_is_green) and curr_is_green:
+        if curr["open"] <= prev["close"] and curr["close"] > ((prev["open"] + prev["close"]) / 2):
+            if curr["close"] < prev["open"]:
+                patterns.append({
+                    "name": "Piercing Line",
+                    "type": "BULLISH",
+                    "strength": 3,
+                    "description": "Strong rejection of lows, closing >50% into the previous red candle body.",
+                    "candle_index": n - 1
+                })
+
+    # 18. Dark Cloud Cover (Bearish Reversal)
+    if prev_is_green and (not curr_is_green):
+        if curr["open"] >= prev["close"] and curr["close"] < ((prev["open"] + prev["close"]) / 2):
+            if curr["close"] > prev["open"]:
+                patterns.append({
+                    "name": "Dark Cloud Cover",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": "Strong rejection of highs, closing >50% into the previous green candle body.",
+                    "candle_index": n - 1
+                })
+
+    # 19. Three Inside Up (Bullish) & Three Inside Down (Bearish)
+    if n >= 3:
+        if (not prev2_is_green) and (prev2["open"] > prev2["close"]):
+            if prev["open"] >= prev2["close"] and prev["close"] <= prev2["open"]:
+                if curr_is_green and curr["close"] > prev2["high"]:
+                    patterns.append({
+                        "name": "Three Inside Up",
+                        "type": "BULLISH",
+                        "strength": 3,
+                        "description": "Confirmed bullish harami breakout (Three Inside Up).",
+                        "candle_index": n - 1
+                    })
+        elif prev2_is_green and (prev2["close"] > prev2["open"]):
+            if prev["open"] <= prev2["close"] and prev["close"] >= prev2["open"]:
+                if (not curr_is_green) and curr["close"] < prev2["low"]:
+                    patterns.append({
+                        "name": "Three Inside Down",
+                        "type": "BEARISH",
+                        "strength": 3,
+                        "description": "Confirmed bearish harami breakdown (Three Inside Down).",
+                        "candle_index": n - 1
+                    })
+
+    # 20. Inside Bar Breakout (Mother Bar Expansion)
+    if n >= 3:
+        if prev["high"] < prev2["high"] and prev["low"] > prev2["low"]:
+            if curr["close"] > prev2["high"]:
+                patterns.append({
+                    "name": "Inside Bar Breakout (Bullish)",
+                    "type": "BULLISH",
+                    "strength": 3,
+                    "description": "Aggressive upside expansion following an inside bar consolidation.",
+                    "candle_index": n - 1
+                })
+            elif curr["close"] < prev2["low"]:
+                patterns.append({
+                    "name": "Inside Bar Breakout (Bearish)",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": "Aggressive downside expansion following an inside bar consolidation.",
+                    "candle_index": n - 1
+                })
+
+    # 21. Volume-Backed Upgrade (VPA)
+    if "volume" in df.columns:
+        avg_vol = df["volume"].tail(20).mean()
+        curr_vol = curr["volume"]
+        if curr_vol > avg_vol * 1.5:
+            for p in patterns:
+                if p.get("candle_index") == n - 1:
+                    p["strength"] = min(p.get("strength", 1) + 1, 4)
+                    p["name"] = p["name"] + " (High Volume)"
+                    p["description"] += " Backed by >150% average volume (Institutional footprint)."
+
     return patterns
 
 
@@ -558,6 +636,58 @@ def detect_fair_value_gaps(df: pd.DataFrame) -> list[dict]:
                     })
 
     return fvgs
+
+def detect_order_blocks(df: pd.DataFrame) -> list[dict]:
+    """
+    Detects Institutional Order Blocks (SMC).
+    Bullish OB: The last down candle before a strong upward impulse.
+    Bearish OB: The last up candle before a strong downward impulse.
+    """
+    obs = []
+    n = len(df)
+    if n < 5:
+        return obs
+
+    curr_price = float(df.iloc[-1]["close"])
+
+    # Scan last 20 candles
+    start_idx = max(2, n - 20)
+    for i in range(start_idx, n - 2):
+        c1 = df.iloc[i]
+        c1_is_green = c1["close"] >= c1["open"]
+        
+        # Look for Bullish OB (Red candle followed by massive green explosion)
+        if not c1_is_green:
+            c2, c3 = df.iloc[i+1], df.iloc[i+2]
+            if c2["close"] > c2["open"] and c3["close"] > c3["open"]:
+                move = (c3["close"] - c1["low"]) / c1["low"]
+                if move > 0.003: # Strong 0.3%+ 15m impulse
+                    # Optional: Check if we are testing the OB
+                    if curr_price >= c1["low"] * 0.998 and curr_price <= c1["high"] * 1.002:
+                        obs.append({
+                            "type": "BULLISH_OB",
+                            "top": round(c1["high"], 2),
+                            "bottom": round(c1["low"], 2),
+                            "candle_index": i,
+                            "description": f"Bullish Order Block (${c1['low']:.1f} - ${c1['high']:.1f}) acting as institutional support."
+                        })
+        
+        # Look for Bearish OB (Green candle followed by massive red drop)
+        if c1_is_green:
+            c2, c3 = df.iloc[i+1], df.iloc[i+2]
+            if c2["close"] < c2["open"] and c3["close"] < c3["open"]:
+                move = (c1["high"] - c3["close"]) / c3["close"]
+                if move > 0.003:
+                    if curr_price <= c1["high"] * 1.002 and curr_price >= c1["low"] * 0.998:
+                        obs.append({
+                            "type": "BEARISH_OB",
+                            "top": round(c1["high"], 2),
+                            "bottom": round(c1["low"], 2),
+                            "candle_index": i,
+                            "description": f"Bearish Order Block (${c1['low']:.1f} - ${c1['high']:.1f}) acting as institutional resistance."
+                        })
+                        
+    return obs
 
 
 def analyze_wick_absorption(df: pd.DataFrame) -> dict:

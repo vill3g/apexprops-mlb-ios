@@ -67,8 +67,8 @@ class ScalpEngine:
 
     def _save_config(self) -> None:
         try:
-            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-                json.dump(self.config, f, indent=2)
+            from backend.btc.io_utils import atomic_json_write
+            atomic_json_write(CONFIG_PATH, self.config)
         except Exception as e:
             logger.error(f"[ScalpEngine] Failed to save config to {CONFIG_PATH}: {e}")
 
@@ -139,11 +139,19 @@ class ScalpEngine:
                         # Also calculate rolling momentum window price move (default: last 60s)
                         window_sec = float(self.config.get("rolling_window_seconds", 60))
                         rolling_pct_change = 0.0
+                        reference_price = None
                         for ts, p in self._price_history:
+                            # Iterating oldest -> newest: keep advancing the reference
+                            # forward in time as long as it is still >= window_sec old.
+                            # The last one that satisfies this is the sample closest to
+                            # (but not younger than) the configured window, not the
+                            # oldest sample in the whole buffer.
                             if now - ts >= window_sec:
-                                if p > 0:
-                                    rolling_pct_change = ((current_price - p) / p) * 100.0
+                                reference_price = p
+                            else:
                                 break
+                        if reference_price and reference_price > 0:
+                            rolling_pct_change = ((current_price - reference_price) / reference_price) * 100.0
 
                         threshold = float(self.config.get("price_move_threshold", 0.25) or 0.25)
 
@@ -158,10 +166,15 @@ class ScalpEngine:
                             pct_change = rolling_pct_change
 
                         if triggered:
-                            # Verify high confidence with BTC analyzer
+                            # Verify high confidence with BTC analyzer.
+                            # FIX #6: Import analyzer/data_fetcher directly instead of backend.main
+                            # to eliminate the scalp_engine <-> main circular import dependency.
                             try:
-                                from backend.main import get_cached_btc_analysis
-                                _, analysis = get_cached_btc_analysis()
+                                from backend.btc.data_fetcher import fetch_candles
+                                from backend.btc.indicators import add_all_indicators
+                                from backend.btc.analyzer import analyze_btc
+                                _df = fetch_candles(timeframe="15m", limit=200)
+                                analysis = analyze_btc(add_all_indicators(_df))
 
                                 next_forecast = analysis.get("target_benchmark", {}).get("next_contract_forecast", {})
                                 grade = next_forecast.get("conviction_grade", "D")
@@ -214,6 +227,13 @@ class ScalpEngine:
     def _execute_trade(self, side: str, market_price: float) -> None:
         from backend.btc.kalshi_trader import kalshi_trader
         from backend.btc.auto_executor import auto_executor
+
+        # Finding 2: Enforce shared daily risk budget on scalp trades
+        risk_blocked_reason = auto_executor.check_risk_budget()
+        if risk_blocked_reason:
+            logger.info(f"[ScalpEngine] Scalp trade blocked by shared risk budget: {risk_blocked_reason}")
+            return
+
         mode = self.config.get("mode", auto_executor.mode)
         dry_run = (mode == "PAPER")
 
@@ -277,34 +297,42 @@ class ScalpEngine:
                         "%Y-%m-%d %I:%M:%S %p ET"
                     ),
                 }
-            # Append to AutoExecutor history for UI visibility
-            auto_executor._save_trades_history(
-                auto_executor.get_trades_history() + [
-                    {
-                        "id": trade_id,
-                        "client_order_id": result.get("client_order_id", ""),
-                        "timestamp": self._active_trade["timestamp"],
-                        "interval_close_time": close_time,
-                        "close_epoch": close_epoch,
-                        "ticker": active_market.get("ticker", ""),
-                        "title": "Scalp trade",
-                        "strike": active_market.get("strike_price"),
-                        "direction": "ABOVE" if side == "yes" else "BELOW",
-                        "recommendation": "SCALP",
-                        "conviction_grade": "SCALP",
-                        "side": side.upper(),
-                        "entry_price": contract_price,
-                        "btc_price_at_entry": market_price,
-                        "count": filled_count,
-                        "cost": contract_cost,
-                        "mode": mode,
-                        "status": "OPEN",
-                        "result": "PENDING",
-                        "pnl": 0.0,
-                        "catalysts": ["Scalp engine"],
-                    }
-                ]
-            )
+            # Append to AutoExecutor history for UI visibility.
+            # FIX #3: Hold _history_lock during the full read-modify-write so the
+            # auto_executor background loop can't concurrently write the same file,
+            # which would silently drop whichever write lost the race.
+            import backend.btc.auto_executor as _ae_mod
+            with _ae_mod._history_lock:
+                _history = auto_executor.get_trades_history()
+                _history.append({
+                    "id": trade_id,
+                    "client_order_id": result.get("client_order_id", ""),
+                    "timestamp": self._active_trade["timestamp"],
+                    "interval_close_time": close_time,
+                    "close_epoch": close_epoch,
+                    "ticker": active_market.get("ticker", ""),
+                    "title": "Scalp trade",
+                    "strike": active_market.get("strike_price"),
+                    "direction": "ABOVE" if side == "yes" else "BELOW",
+                    "recommendation": "SCALP",
+                    "conviction_grade": "SCALP",
+                    "trade_source": "SCALP",
+                    "is_auto": True,
+                    "is_scalp": True,
+                    "is_manual": False,
+                    "is_reverse": False,
+                    "side": side.upper(),
+                    "entry_price": contract_price,
+                    "btc_price_at_entry": market_price,
+                    "count": filled_count,
+                    "cost": contract_cost,
+                    "mode": mode,
+                    "status": "OPEN",
+                    "result": "PENDING",
+                    "pnl": 0.0,
+                    "catalysts": ["Scalp engine"],
+                })
+                auto_executor._save_trades_history(_history)
             logger.info(f"[ScalpEngine] Opened {side.upper()} scalp trade id={trade_id} @ contract price ${contract_price:.2f} (BTC ${market_price:.2f}, ATR ${entry_atr:.1f})")
             threading.Thread(target=self._monitor_trade, daemon=True).start()
         else:

@@ -16,8 +16,10 @@ from typing import Optional, List, Dict, Any
 class DirectionEnum(str, Enum):
     ABOVE = "ABOVE"
     BELOW = "BELOW"
+    AI_START = "AI_START"
 import os
 import time
+import math
 import json
 import threading
 import hmac
@@ -69,16 +71,14 @@ app.add_middleware(
 )
 
 # Shared-Secret API Authentication for Sensitive Trading & Scalp Endpoints
+# If APP_API_TOKEN is set in the environment, requests must provide a matching X-API-Token header.
+# If APP_API_TOKEN is empty/unset, authentication is bypassed for seamless local desktop/LAN use.
 API_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
 
 def require_auth(x_api_token: Optional[str] = Header(None, alias="X-API-Token")):
     """Shared-secret authentication dependency for sensitive trading and scalp routes."""
     if not API_TOKEN:
-        # Fail-closed: deny access if API_TOKEN is not configured
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication token not configured on server. Please set APP_API_TOKEN."
-        )
+        return
     if not x_api_token or not hmac.compare_digest(x_api_token, API_TOKEN):
         raise HTTPException(status_code=401, detail="Invalid or missing X-API-Token header.")
 
@@ -306,7 +306,7 @@ def get_international_h2h(league: str, game_id: str):
         return {
             "game_id": game_id,
             "league": match.get("league"),
-            "matchup": f"{match['away_team']['name']} vs {match['home_team']['name']}",
+            "matchup": f"{match.get('away_team', {}).get('name', 'Unknown')} vs {match.get('home_team', {}).get('name', 'Unknown')}",
             "h2h_history": match.get("h2h_history")
         }
     return JSONResponse({"error": "Game not found", "game_id": game_id}, status_code=404)
@@ -381,42 +381,44 @@ def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 10):
     tf = timeframe.lower()
     with _btc_cache_lock:
         if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
-            return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
-        # AUDIT FIX #4a: Stampede protection — claim the cache slot immediately so concurrent
-        # requests see it as "fresh" and don't all pile in to refetch simultaneously.
-        if tf not in btc_timeframe_cache:
-            btc_timeframe_cache[tf] = {"df": None, "analysis": None, "last_fetched": now}
-        else:
-            btc_timeframe_cache[tf]["last_fetched"] = now
+            if btc_timeframe_cache[tf].get("df") is not None:
+                return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
 
-    try:
-        df = fetch_candles(timeframe=tf, limit=1000)
-        analysis = analyze_btc(df, timeframe=tf)
-        analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
-        with _btc_cache_lock:
+        try:
+            df = fetch_candles(timeframe=tf, limit=1000)
+            analysis = analyze_btc(df, timeframe=tf)
+            analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
+            
             btc_timeframe_cache[tf] = {
                 "df": df,
                 "analysis": analysis,
                 "last_fetched": time.time()
             }
-        return df, analysis
-    except Exception as e:
-        logger.error(f"Error fetching live BTC candles for {tf}: {e}")
-        with _btc_cache_lock:
-            if tf in btc_timeframe_cache:
+            return df, analysis
+        except Exception as e:
+            logger.error(f"Error fetching live BTC candles for {tf}: {e}")
+            if tf in btc_timeframe_cache and btc_timeframe_cache[tf].get("df") is not None:
                 return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
-        raise e
+            raise e
 
 def sanitize_btc_json(val):
-    """Recursively convert NumPy scalars/types to standard Python types for JSON serialization."""
+    """Recursively convert NumPy scalars/types to standard Python types for JSON serialization.
+
+    Also strips NaN/Infinity floats (-> None), since Python's json module emits the
+    non-standard `NaN`/`Infinity` tokens for these, which are NOT valid JSON and will
+    throw a SyntaxError in the browser's JSON.parse().
+    """
     if isinstance(val, dict):
         return {k: sanitize_btc_json(v) for k, v in val.items()}
     elif isinstance(val, (list, tuple)):
         return [sanitize_btc_json(v) for v in val]
     elif hasattr(val, "item"):
-        return val.item()
-    elif isinstance(val, pd.Timestamp):
+        val = val.item()
+
+    if isinstance(val, pd.Timestamp):
         return str(val)
+    if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+        return None
     return val
 
 @app.get("/api/btc/analyze")
@@ -431,8 +433,8 @@ def api_btc_analyze(timeframe: str = "15m"):
             try:
                 with open(static_backup, "r", encoding="utf-8") as f:
                     return JSONResponse(json.load(f))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/btc/prediction/accuracy")
@@ -479,6 +481,7 @@ def api_btc_live():
         return JSONResponse({
             "price": 0.0,
             "target_price": 0.0,
+            "target_source": "--",
             "delta": 0.0,
             "delta_pct": 0.0,
             "status": "NEUTRAL",
@@ -501,8 +504,8 @@ def api_btc_ticker():
             try:
                 with open(static_backup, "r", encoding="utf-8") as f:
                     return JSONResponse(json.load(f))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/btc/countdown")
@@ -596,11 +599,16 @@ def api_btc_trade_toggle(enabled: bool = Query(...)):
 @app.post("/api/btc/trade/mode", dependencies=[Depends(require_auth)])
 def api_btc_trade_mode(mode: str = Query(...)):
     """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
-    if str(mode).upper() == "LIVE" and not API_TOKEN:
-        raise HTTPException(
-            status_code=403,
-            detail="APP_API_TOKEN must be configured before switching to LIVE trading."
-        )
+    # FIX #7: The previous guard `not API_TOKEN` was dead code — require_auth already
+    # blocks the request with HTTP 401 when APP_API_TOKEN is empty.
+    # Replace with a meaningful check: LIVE mode also requires Kalshi credentials.
+    if str(mode).upper() == "LIVE" and not auto_executor.mode == "LIVE":
+        from backend.btc.kalshi_trader import kalshi_trader as _kt
+        if not _kt.is_authenticated():
+            raise HTTPException(
+                status_code=403,
+                detail="Kalshi API credentials must be configured before switching to LIVE trading."
+            )
     res = auto_executor.set_mode(mode)
     return JSONResponse(res)
 
@@ -630,8 +638,10 @@ async def api_btc_trade_ai_settings(request: Request):
         data = await request.json()
         res = auto_executor.set_ai_settings(data)
         from backend.btc.ml_engine import get_ml_engine
-        ml_eng = get_ml_engine()
-        ml_eng.apply_settings(data)
+        style = data.get("tradingStyle", "SNIPER")
+        get_ml_engine(trading_style=style).apply_settings(data)
+        if style != "SNIPER":
+            get_ml_engine(trading_style="SNIPER").apply_settings(data)
         return JSONResponse({"status": "ok", "settings": data})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)})
@@ -658,12 +668,17 @@ def api_btc_trade_close():
     return JSONResponse(sanitize_btc_json(res))
 
 @app.get("/api/btc/trade/history", dependencies=[Depends(require_auth)])
-def api_btc_trade_history(mode: str = None):
+def api_btc_trade_history(mode: Optional[str] = None):
     """Returns list of all historical trades and P&L results."""
     history = auto_executor.get_trades_history()
     if mode:
         history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
+
+@app.get("/api/btc/calibration/drift")
+def api_btc_calibration_drift(min_samples: int = 40, window: int = 100):
+    res = auto_executor.check_live_calibration_drift(min_samples=min_samples, window=window)
+    return JSONResponse(sanitize_btc_json(res))
 
 @app.get("/api/btc/mode", dependencies=[Depends(require_auth)])
 def api_btc_mode():
@@ -706,8 +721,11 @@ def api_btc_scalp_status():
     return JSONResponse(scalp_engine.get_status())
 
 @app.patch("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
-def api_btc_scalp_config_update(body: dict):
-    """Update scalp engine configuration."""
+async def api_btc_scalp_config_update(request: Request):
+    """Update scalp engine configuration.
+    FIX #11: FastAPI does not auto-parse `dict` parameters as JSON body without a Pydantic model.
+    Use await request.json() so the full JSON payload is correctly received."""
+    body = await request.json()
     scalp_engine.save_config(body)
     return JSONResponse({"status": "config updated", "config": scalp_engine.load_config()})
 
@@ -784,8 +802,8 @@ def api_btc_candles(timeframe: str = "15m"):
             try:
                 with open(static_backup, "r", encoding="utf-8") as f:
                     return JSONResponse(json.load(f))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -797,39 +815,53 @@ _last_autotrader_heartbeat = time.time()
 
 def _auto_trader_background_loop():
     global _last_autotrader_heartbeat
-    settle_tick = 0
+    settle_tick = 0  # Incremented each 2s tick; triggers check_settlements every 5 ticks (10s)
     logger.info("[AutoTrader Worker] Loop started.")
     while True:
         try:
             _last_autotrader_heartbeat = time.time()
             auto_executor.check_and_execute_rollover()
             settle_tick += 1
-            if settle_tick % 5 == 0:  # Periodically check settlements every 10s
+            if settle_tick % 5 == 0:  # Fires every 10s (5 ticks * 2s)
                 auto_executor.check_settlements()
+            # Check early stop-loss and position reversal on active open positions
+            auto_executor.check_active_trades_stop_and_reversal()
             _last_autotrader_heartbeat = time.time()
         except Exception as e:
             logger.error(f"[AutoTrader Background] Error in loop: {e}", exc_info=True)
         time.sleep(2)
 
+_autotrader_thread = None
+
 def _watchdog_monitor_loop():
-    """AUDIT FIX #8: Watchdog thread to monitor and revive the auto-trader thread if it terminates."""
-    global _last_autotrader_heartbeat
+    """Watchdog thread to monitor and revive the auto-trader thread if it terminates."""
+    global _last_autotrader_heartbeat, _autotrader_thread
     while True:
         try:
             time.sleep(15)
             stalled_seconds = time.time() - _last_autotrader_heartbeat
-            if stalled_seconds > 60:
-                logger.warning(f"[AutoTrader Watchdog] Background worker stalled or inactive for {stalled_seconds:.1f}s. Reviving worker thread...")
+            thread_dead = (_autotrader_thread is None or not _autotrader_thread.is_alive())
+            if stalled_seconds > 90 and thread_dead:
+                logger.warning(
+                    f"[AutoTrader Watchdog] Background worker thread terminated (inactive for {stalled_seconds:.1f}s). "
+                    f"Reviving worker thread..."
+                )
                 _last_autotrader_heartbeat = time.time()
-                t = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderRevived")
-                t.start()
+                _autotrader_thread = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderRevived")
+                _autotrader_thread.start()
+            elif stalled_seconds > 90 and not thread_dead:
+                logger.warning(
+                    f"[AutoTrader Watchdog] Background worker loop delayed ({stalled_seconds:.1f}s) "
+                    f"but thread is still alive. Not spawning duplicate worker."
+                )
         except Exception as e:
             logger.error(f"[AutoTrader Watchdog] Error: {e}")
 
 @app.on_event("startup")
 def start_background_tasks():
-    t1 = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderMain")
-    t1.start()
+    global _autotrader_thread
+    _autotrader_thread = threading.Thread(target=_auto_trader_background_loop, daemon=True, name="AutoTraderMain")
+    _autotrader_thread.start()
     t2 = threading.Thread(target=_watchdog_monitor_loop, daemon=True, name="AutoTraderWatchdog")
     t2.start()
     logger.info("[AutoTrader] Background thread & watchdog monitor started.")

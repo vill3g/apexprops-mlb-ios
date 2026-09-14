@@ -15,36 +15,22 @@ import threading
 import secrets
 
 PORT = 8056
-BIND_HOST = "0.0.0.0" if "--lan" in sys.argv else "127.0.0.1"
+BIND_HOST = "0.0.0.0"
 HEALTH_URL = f"http://127.0.0.1:{PORT}/api/health"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Ensure local APP_API_TOKEN exists
-LOCAL_TOKEN_FILE = os.path.join(APP_DIR, ".local_token")
-def get_or_create_local_token() -> str:
-    token = os.environ.get("APP_API_TOKEN", "").strip()
-    if token:
-        return token
-    if os.path.exists(LOCAL_TOKEN_FILE):
+# Check if optional APP_API_TOKEN is defined
+ACTIVE_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
+if not ACTIVE_TOKEN:
+    token_file = os.path.join(APP_DIR, ".local_token")
+    if os.path.exists(token_file):
         try:
-            with open(LOCAL_TOKEN_FILE, "r", encoding="utf-8") as f:
-                token = f.read().strip()
-                if token:
-                    os.environ["APP_API_TOKEN"] = token
-                    return token
+            with open(token_file, "r", encoding="utf-8") as tf:
+                ACTIVE_TOKEN = tf.read().strip()
         except Exception:
             pass
-    token = secrets.token_hex(24)
-    try:
-        with open(LOCAL_TOKEN_FILE, "w", encoding="utf-8") as f:
-            f.write(token)
-    except Exception:
-        pass
-    os.environ["APP_API_TOKEN"] = token
-    return token
 
-ACTIVE_TOKEN = get_or_create_local_token()
-LOCAL_URL = f"http://localhost:{PORT}/?token={ACTIVE_TOKEN}"
+LOCAL_URL = f"http://localhost:{PORT}/?token={ACTIVE_TOKEN}" if ACTIVE_TOKEN else f"http://localhost:{PORT}/"
 
 def is_server_running() -> bool:
     try:
