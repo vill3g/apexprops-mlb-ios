@@ -1,0 +1,30 @@
+from backend.btc.auto_executor import auto_executor
+from backend.btc.kalshi_trader import kalshi_trader
+
+s = auto_executor.get_status()
+bal = kalshi_trader.get_balance()
+
+print("=== TRADER STATUS ===")
+print(f"Mode:           {s.get('mode')}")
+print(f"Enabled:        {s.get('enabled')}")
+print(f"Balance:        ")
+print(f"Style:          {auto_executor.ai_settings.get('tradingStyle')}")
+print(f"Min Conviction: {auto_executor.min_conviction}")
+print()
+print("=== TODAY ===")
+print(f"Trades Today:   {s.get('today_trade_count')}")
+print(f"Today PNL:      ")
+print(f"Open Trades:    {s.get('open_trades_count')}")
+print(f"Unrealized PNL: ")
+print()
+print("=== ALL TIME ===")
+print(f"Total Trades:   {s.get('total_trades')}")
+print(f"Wins:           {s.get('wins')}")
+print(f"Losses:         {s.get('losses')}")
+print(f"Win Rate:       {s.get('win_rate')}%")
+print(f"Total PNL:      ")
+print()
+print("=== RISK ===")
+print(f"Risk Paused:    {s.get('is_risk_paused')}")
+if s.get('pause_reason'):
+    print(f"Reason:         {s.get('pause_reason')}")

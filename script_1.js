@@ -1,2901 +1,4 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-black">
-<head>
-  <meta charset="UTF-8">
-  <!-- Strict Viewport to stop pinch-to-zoom on iOS / mobile -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BTC 15M // Pattern & Confluence Analyzer</title>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="BTC 15M">
-  <meta name="theme-color" content="#000000">
-  <link rel="manifest" href="/static/manifest.json">
-  <link rel="apple-touch-icon" href="/static/assets/logo_monogram.jpg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-  <script>
-    (function syncDeviceClasses() {
-      try {
-        var w = window.innerWidth, h = window.innerHeight;
-        var ua = navigator.userAgent || "";
-        var isLandscape = w > h;
-        var isIpad = /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-        var isIphone = !isIpad && /iPhone|iPod/.test(ua);
-        var isPhone = !isIpad && (isIphone || Math.min(w, h) < 640);
-        var isIphonePortrait = isPhone && !isLandscape;
-        var q = window.location.search || "";
-        var isIphone17 = isIphonePortrait && ((w >= 410 && w <= 460 && h >= 880 && h <= 1000) || /iPhone17|iPhone/.test(ua) || (q.indexOf("iphone") !== -1 && q.indexOf("ipad") === -1));
 
-        function applyClasses(el) {
-          if (!el) return;
-          if (isIphonePortrait) el.classList.add("is-iphone-portrait");
-          if (isIphone17) el.classList.add("is-iphone-17-promax");
-          if (isIpad) el.classList.add("device-ipad");
-        }
-
-        applyClasses(document.documentElement);
-        if (document.body) applyClasses(document.body);
-        else document.addEventListener("DOMContentLoaded", function() { applyClasses(document.body); });
-      } catch(e) {}
-    })();
-  </script>
-
-  <script>
-    // ===== NULL-SAFE DOM HELPERS =====
-    // Safely get element by ID; returns null without throwing if ID is missing from DOM.
-    function safeEl(id) { return document.getElementById(id); }
-    // Safely set a property (e.g. innerText) on an element; no-op if element is null.
-    function safeSet(id, prop, val) { var el = document.getElementById(id); if (el) el[prop] = val; }
-    // Safely set innerHTML; no-op if element is null.
-    function safeHtml(id, html) { var el = document.getElementById(id); if (el) el.innerHTML = html; }
-    // ===== END NULL-SAFE DOM HELPERS =====
-
-    if (window.TradingView) {
-      window.TradingView.getWidgetTitleAttribute = function() { return ""; };
-    }
-  </script>
-  <style>
-    :root {
-      --sat: env(safe-area-inset-top, 54px);
-      --sab: env(safe-area-inset-bottom, 24px);
-      --sal: env(safe-area-inset-left, 0px);
-      --sar: env(safe-area-inset-right, 0px);
-    }
-    /* ABSOLUTE UNIVERSAL ZERO-BLUR ENFORCEMENT:
-       Completely eliminate all backdrop-filter blur across every DOM element */
-    *, *::before, *::after {
-      -webkit-backdrop-filter: none !important;
-      backdrop-filter: none !important;
-    }
-    /* Stop pinch-to-zoom & horizontal page scroll */
-    html, body {
-      touch-action: pan-y;
-      -webkit-text-size-adjust: 100%;
-      user-select: none;
-      -webkit-user-select: none;
-      overflow-x: hidden !important;
-      max-width: 100vw;
-      width: 100%;
-      position: relative;
-    }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    /* Fixed background lock when modal is open */
-    body.modal-open {
-      overflow: hidden !important;
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #475569; }
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(51, 65, 85, 0.65);
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-    }
-    body.is-iphone-17-promax .glass-panel,
-    body.is-iphone-portrait .glass-panel,
-    body[data-device="iphone-portrait"] .glass-panel,
-    body.device-ipad .glass-panel,
-    body.is-ipad-mini-7 .glass-panel,
-    body[data-device="tablet"] .glass-panel,
-    html.device-ipad .glass-panel,
-    header.sleek-glass-header,
-    header.sleek-glass-header *,
-    #btcChartCard {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-    }
-    /* Sticky Bottom Bar */
-    #bottomSlipBar {
-      position: sticky;
-      bottom: 1rem;
-      z-index: 40;
-    }
-        /* Drawing Tools Styling */
-    .btc-draw-btn {
-      padding: 3px 8px;
-      font-size: 10px;
-      font-weight: 700;
-      border-radius: 6px;
-      background: #1e293b;
-      color: #94a3b8;
-      border: 1px solid #334155;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s ease;
-      touch-action: manipulation;
-    }
-    .btc-draw-btn:hover {
-      color: #ffffff;
-      border-color: #64748b;
-    }
-    .btc-draw-btn.active {
-      background: #f59e0b;
-      color: #020617;
-      border-color: #f59e0b;
-      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
-    }
-    .btc-color-dot {
-      transition: transform 0.15s ease;
-    }
-    .btc-color-dot.active {
-      outline: 2px solid #ffffff;
-      outline-offset: 1px;
-      transform: scale(1.15);
-    }
-
-    /* ========================================================================= */
-    /* ADAPTIVE MULTI-DEVICE RESPONSIVE ENGINE (IPHONE / IPAD / DESKTOP)          */
-    /* ========================================================================= */
-    :root {
-      --app-height: 100dvh;
-    }
-
-    /* Common safe-area & viewport reset */
-    html, body {
-      height: 100%;
-      height: var(--app-height, 100dvh);
-      max-height: var(--app-height, 100dvh);
-      overflow: hidden !important;
-      margin: 0;
-      padding: 0;
-    }
-
-    .app-main-wrapper {
-      height: 100%;
-      height: var(--app-height, 100dvh);
-      max-height: var(--app-height, 100dvh);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden !important;
-      padding-top: max(0.2rem, env(safe-area-inset-top, 0px)) !important;
-      padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px)) !important;
-      padding-left: max(0.25rem, env(safe-area-inset-left, 0px)) !important;
-      padding-right: max(0.25rem, env(safe-area-inset-right, 0px)) !important;
-    }
-
-    /* ------------------------------------------------------------------------- */
-    /* 1. IPHONE / SMARTPHONE (PORTRAIT) - VERTICAL SPLIT 50/50                   */
-    /* ------------------------------------------------------------------------- */
-    @media screen and (max-width: 680px) and (orientation: portrait),
-           screen and (max-width: 680px) {
-      .app-main-wrapper {
-        padding: 0.2rem 0.3rem !important;
-        gap: 1px !important;
-      }
-      
-      header {
-        padding: 0.25rem 0.4rem !important;
-        height: auto !important;
-        min-height: 52px !important;
-        flex-shrink: 0 !important;
-        margin-bottom: 1px !important;
-      }
-
-      #mainAppLogo {
-        height: 28px !important;
-        width: 28px !important;
-        border-radius: 8px !important;
-      }
-
-      #view_btc_analyzer {
-        flex: 1 !important;
-        height: calc(100% - 53px) !important;
-        max-height: calc(100% - 53px) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0 !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        overflow: hidden !important;
-      }
-
-      .btc-main-grid {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        height: 100% !important;
-        gap: 0.25rem !important;
-        margin-top: 0 !important;
-        overflow: hidden !important;
-      }
-
-      /* Top Half: TradingView Chart (~46% height) */
-      .btc-chart-card {
-        height: 46% !important;
-        min-height: 230px !important;
-        max-height: 48% !important;
-        flex-shrink: 0 !important;
-        padding: 0.25rem 0.35rem !important;
-        border-radius: 12px !important;
-      }
-
-      #btc-chart-container {
-        min-height: 0 !important;
-        height: calc(100% - 28px) !important;
-      }
-
-      /* Bottom Half: Confluence & Analysis 2-Column Micro-Grid (~54% height) */
-      .btc-right-panel {
-        flex: 1 !important;
-        height: 54% !important;
-        max-height: 54% !important;
-        padding: 0.25rem !important;
-        border-radius: 12px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.25rem !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-
-      /* Item positioning in bottom 2-column grid */
-      .btc-card-confluence { grid-column: span 1 !important; }
-      .btc-card-prediction { grid-column: span 1 !important; }
-      .btc-card-trend      { grid-column: span 2 !important; padding: 0.25rem 0.35rem !important; }
-      .btc-card-price      { grid-column: span 1 !important; }
-      .btc-card-target     { grid-column: span 1 !important; }
-      .btc-card-countdown  { grid-column: span 1 !important; }
-      .btc-card-structure  { grid-column: span 1 !important; }
-
-      .btc-card-confluence .meter-wrapper {
-        max-height: 38px !important;
-      }
-      .btc-card-confluence .meter-score-display {
-        font-size: 13px !important;
-      }
-      .btc-card-prediction #btcPredFactorsList {
-        max-height: 28px !important;
-      }
-    }
-
-    /* ------------------------------------------------------------------------- */
-    /* 2. IPHONE / SMARTPHONE (LANDSCAPE) - SIDE-BY-SIDE 75/25                    */
-    /* ------------------------------------------------------------------------- */
-    @media screen and (max-height: 500px) and (orientation: landscape) {
-      .app-main-wrapper {
-        padding: 0.15rem 0.35rem !important;
-        gap: 1px !important;
-      }
-      header {
-        height: auto !important;
-        min-height: 46px !important;
-        padding: 0.15rem 0.5rem !important;
-        margin-bottom: 1px !important;
-      }
-      #mainAppLogo {
-        height: 22px !important;
-        width: 22px !important;
-      }
-      #view_btc_analyzer {
-        height: calc(100% - 47px) !important;
-        max-height: calc(100% - 47px) !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        overflow: hidden !important;
-      }
-      .btc-main-grid {
-        display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-        height: 100% !important;
-        gap: 0.25rem !important;
-        margin-top: 0 !important;
-      }
-      .btc-chart-card {
-        grid-column: span 3 !important;
-        height: 100% !important;
-        min-height: 0 !important;
-        padding: 0.25rem !important;
-      }
-      .btc-right-panel {
-        grid-column: span 1 !important;
-        height: 100% !important;
-        max-height: 100% !important;
-        overflow-y: auto !important;
-        padding: 0.25rem !important;
-      }
-    }
-
-    /* ------------------------------------------------------------------------- */
-    /* 3. IPAD MINI 7 & TABLETS (LANDSCAPE) - SIDE-BY-SIDE 80/20                  */
-    /* ------------------------------------------------------------------------- */
-    @media screen and (min-width: 740px) and (max-height: 850px) and (orientation: landscape) {
-      .app-main-wrapper {
-        padding: 0.35rem 0.5rem !important;
-        gap: 1px !important;
-      }
-      header {
-        margin-bottom: 1px !important;
-      }
-      #view_btc_analyzer {
-        height: calc(100% - 57px) !important;
-        max-height: calc(100% - 57px) !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        overflow: hidden !important;
-      }
-      .btc-main-grid {
-        height: 100% !important;
-        max-height: 100% !important;
-        margin-top: 0 !important;
-      }
-      .btc-chart-card {
-        height: 100% !important;
-        min-height: 0 !important;
-      }
-      .btc-right-panel {
-        height: 100% !important;
-        max-height: 100% !important;
-        overflow-y: auto !important;
-      }
-      /* iPad Landscape: Remove balance & open P/L next to Kalshi AI console,
-         and position ML prediction bubble cleanly in the corner of console container */
-      #kalshiTradingDeck #kalshiDeckTelemetry {
-        display: none !important;
-      }
-      #kalshiTradingDeck #kalshiMLStatusBubble {
-        margin-left: auto !important;
-        font-size: 8.5px !important;
-        padding: 2.5px 16px !important;
-        min-width: 76px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-      }
-      #kalshiTradingDeck #kalshiTradeSummaryBar {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        flex-wrap: nowrap !important;
-        padding: 2px 6px !important;
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
-        min-height: 24px !important;
-        max-height: 28px !important;
-        height: 26px !important;
-        font-size: 8.5px !important;
-        gap: 4px !important;
-        overflow: hidden !important;
-      }
-      #kalshiTradingDeck #kalshiTradeSummaryBar > div {
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        font-size: 8.5px !important;
-        display: flex !important;
-        align-items: center !important;
-      }
-      #kalshiTradingDeck #btnOpenTradeList {
-        padding: 2px 6px !important;
-        font-size: 8.5px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        line-height: 1 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 3px !important;
-      }
-      /* iPad Landscape: Stop Trade Accuracy & Trend Box panel from scrolling,
-         fit everything cleanly in available space without clipping */
-      #btcChartHeaderToolbar {
-        overflow: hidden !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 4px !important;
-      }
-      #btcChartHeaderToolbar #btcAccuracyCard {
-        flex-shrink: 0 !important;
-        padding: 2px 6px !important;
-      }
-      #btcChartHeaderToolbar #btcAccuracyRecentDots {
-        display: none !important;
-      }
-      #btcChartHeaderToolbar #btcTrendBoxGrid {
-        flex: 1 1 auto !important;
-        min-width: 0 !important;
-        overflow: hidden !important;
-        display: flex !important;
-        gap: 3px !important;
-        justify-content: flex-end !important;
-      }
-      #btcChartHeaderToolbar #btcTrendBoxGrid .trend-card {
-        flex: 0 1 auto !important;
-        min-width: 0 !important;
-        padding: 1px 4px !important;
-        height: 25px !important;
-      }
-      #btcChartHeaderToolbar #btcTrendBoxGrid .trend-card span {
-        font-size: 8.5px !important;
-      }
-      #btcChartHeaderToolbar #btcTrendBoxGrid .trend-card div:last-child {
-        font-size: 6.5px !important;
-      }
-      #btcChartHeaderToolbar #btcMlModelAccuracyCard {
-        flex-shrink: 0 !important;
-        padding: 1px 5px !important;
-      }
-
-      /* ---- iPad Landscape Nav polish ---- */
-      header.sleek-glass-header {
-        min-height: 60px !important;
-        padding: 5px 10px !important;
-      }
-      /* Larger, glowing balance amount */
-      .sleek-glass-header #topNavKalshiBalance {
-        font-size: 20px !important;
-        letter-spacing: -0.03em !important;
-        text-shadow: 0 0 18px rgba(16, 185, 129, 0.28) !important;
-      }
-      /* Cards inside nav: breathe more */
-      .sleek-glass-header .sleek-glass-card {
-        padding: 5px 9px !important;
-        border-radius: 13px !important;
-      }
-      /* P/L card: match glass card gradient */
-      #topBarLivePnlContainer {
-        background: linear-gradient(180deg, #101f38, #0c1525) !important;
-        border: 1px solid rgba(148, 163, 184, 0.14) !important;
-        padding-right: 10px !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
-        margin-right: 2px !important;
-      }
-      /* Refresh button amber glow */
-      #btnTopBarRefresh {
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.3), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
-      }
-    }
-
-    /* iPad Mini, iPad & Tablets Landscape layout: Remove redundant balance/open P/L from console header */
-    @media screen and (min-width: 700px) and (orientation: landscape) {
-      #kalshiTradingDeck #kalshiDeckTelemetry {
-        display: none !important;
-      }
-      #kalshiTradingDeck #kalshiMLStatusBubble {
-        margin-left: auto !important;
-        font-size: 8.5px !important;
-        padding: 2.5px 16px !important;
-        min-width: 76px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-      }
-      #kalshiTradingDeck #kalshiTradeSummaryBar {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        flex-wrap: nowrap !important;
-        padding: 2px 6px !important;
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
-        min-height: 24px !important;
-        max-height: 28px !important;
-        height: 26px !important;
-        font-size: 8.5px !important;
-        gap: 4px !important;
-        overflow: hidden !important;
-      }
-      #kalshiTradingDeck #kalshiTradeSummaryBar > div {
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        font-size: 8.5px !important;
-        display: flex !important;
-        align-items: center !important;
-      }
-      #kalshiTradingDeck #btnOpenTradeList {
-        padding: 2px 6px !important;
-        font-size: 8.5px !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        line-height: 1 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 3px !important;
-      }
-      #btcChartHeaderToolbar {
-        overflow: hidden !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-      }
-      #btcChartHeaderToolbar #btcAccuracyRecentDots {
-        display: none !important;
-      }
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #kalshiTradingDeck #kalshiDeckTelemetry,
-    body.device-ipad[data-orientation="landscape"] #kalshiTradingDeck #kalshiDeckTelemetry,
-    html[data-orientation="landscape"] #kalshiTradingDeck #kalshiDeckTelemetry,
-    body.is-landscape.device-ipad #kalshiTradingDeck #kalshiDeckTelemetry,
-    body.is-landscape.is-ipad-mini-7 #kalshiTradingDeck #kalshiDeckTelemetry {
-      display: none !important;
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #kalshiTradingDeck #kalshiMLStatusBubble,
-    body.device-ipad[data-orientation="landscape"] #kalshiTradingDeck #kalshiMLStatusBubble,
-    html[data-orientation="landscape"] #kalshiTradingDeck #kalshiMLStatusBubble,
-    body.is-landscape.device-ipad #kalshiTradingDeck #kalshiMLStatusBubble,
-    body.is-landscape.is-ipad-mini-7 #kalshiTradingDeck #kalshiMLStatusBubble {
-      margin-left: auto !important;
-      font-size: 8.5px !important;
-      padding: 2.5px 16px !important;
-      min-width: 76px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      text-align: center !important;
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar,
-    body.device-ipad[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar,
-    html[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar,
-    body.is-landscape.device-ipad #kalshiTradingDeck #kalshiTradeSummaryBar,
-    body.is-landscape.is-ipad-mini-7 #kalshiTradingDeck #kalshiTradeSummaryBar {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      flex-wrap: nowrap !important;
-      padding: 2px 6px !important;
-      margin-top: 2px !important;
-      margin-bottom: 2px !important;
-      min-height: 24px !important;
-      max-height: 28px !important;
-      height: 26px !important;
-      font-size: 8.5px !important;
-      gap: 4px !important;
-      overflow: hidden !important;
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar > div,
-    body.device-ipad[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar > div,
-    html[data-orientation="landscape"] #kalshiTradingDeck #kalshiTradeSummaryBar > div,
-    body.is-landscape.device-ipad #kalshiTradingDeck #kalshiTradeSummaryBar > div,
-    body.is-landscape.is-ipad-mini-7 #kalshiTradingDeck #kalshiTradeSummaryBar > div {
-      white-space: nowrap !important;
-      flex-shrink: 0 !important;
-      font-size: 8.5px !important;
-      display: flex !important;
-      align-items: center !important;
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #kalshiTradingDeck #btnOpenTradeList,
-    body.device-ipad[data-orientation="landscape"] #kalshiTradingDeck #btnOpenTradeList,
-    html[data-orientation="landscape"] #kalshiTradingDeck #btnOpenTradeList,
-    body.is-landscape.device-ipad #kalshiTradingDeck #btnOpenTradeList,
-    body.is-landscape.is-ipad-mini-7 #kalshiTradingDeck #btnOpenTradeList {
-      padding: 2px 6px !important;
-      font-size: 8.5px !important;
-      white-space: nowrap !important;
-      flex-shrink: 0 !important;
-      line-height: 1 !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 3px !important;
-    }
-    body.is-ipad-mini-7[data-orientation="landscape"] #btcChartHeaderToolbar #btcAccuracyRecentDots,
-    body.device-ipad[data-orientation="landscape"] #btcChartHeaderToolbar #btcAccuracyRecentDots,
-    html[data-orientation="landscape"] #btcChartHeaderToolbar #btcAccuracyRecentDots,
-    body.is-landscape.device-ipad #btcChartHeaderToolbar #btcAccuracyRecentDots,
-    body.is-landscape.is-ipad-mini-7 #btcChartHeaderToolbar #btcAccuracyRecentDots {
-      display: none !important;
-    }
-
-    /* ------------------------------------------------------------------------- */
-    /* 4. IPAD & TABLETS (PORTRAIT) - TOP 52% CHART / BOTTOM 48% 2-COL GRID      */
-    /* ------------------------------------------------------------------------- */
-    @media screen and (min-width: 700px) and (min-height: 850px) and (orientation: portrait) {
-      .app-main-wrapper {
-        padding: 0.4rem 0.6rem !important;
-        gap: 1px !important;
-      }
-      header {
-        margin-bottom: 1px !important;
-      }
-      #view_btc_analyzer {
-        height: calc(100% - 57px) !important;
-        max-height: calc(100% - 57px) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        overflow: hidden !important;
-      }
-      .btc-main-grid {
-        display: flex !important;
-        flex-direction: column !important;
-        height: 100% !important;
-        gap: 0.35rem !important;
-        margin-top: 0 !important;
-      }
-      .btc-chart-card {
-        height: 52% !important;
-        min-height: 380px !important;
-        max-height: 55% !important;
-      }
-      .btc-right-panel {
-        flex: 1 !important;
-        height: 48% !important;
-        max-height: 48% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.35rem !important;
-        overflow-y: auto !important;
-      }
-      .btc-card-confluence { grid-column: span 1 !important; }
-      .btc-card-prediction { grid-column: span 1 !important; }
-      .btc-card-trend      { grid-column: span 2 !important; }
-      .btc-card-price      { grid-column: span 1 !important; }
-      .btc-card-target     { grid-column: span 1 !important; }
-      .btc-card-countdown  { grid-column: span 1 !important; }
-      .btc-card-structure  { grid-column: span 1 !important; }
-    }
-
-    /* =========================================================================
-       IPAD ZERO-GAP & ZERO-BLUR TOP NAVIGATION
-       Top nav bar starts directly below iOS date & time status bar with 0 gaps.
-       Absolute ban on backdrop-filter blur and transparency.
-       ========================================================================= */
-    body.device-ipad .app-main-wrapper,
-    body.is-ipad-mini-7 .app-main-wrapper,
-    body[data-device="tablet"] .app-main-wrapper,
-    html.device-ipad .app-main-wrapper {
-      padding-top: env(safe-area-inset-top, 0px) !important;
-      margin-top: 0 !important;
-    }
-
-    body.device-ipad .sleek-glass-header,
-    body.is-ipad-mini-7 .sleek-glass-header,
-    body[data-device="tablet"] .sleek-glass-header,
-    body.device-ipad header,
-    body.is-ipad-mini-7 header,
-    body[data-device="tablet"] header,
-    header.sleek-glass-header {
-      top: env(safe-area-inset-top, 0px) !important;
-      margin-top: 0 !important;
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      background: linear-gradient(180deg, #0c1428 0%, #020617 100%) !important;
-      background-color: unset !important;
-      opacity: 1 !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.85), inset 0 -1px 0 rgba(0, 0, 0, 0.5) !important;
-      border-top-left-radius: 0 !important;
-      border-top-right-radius: 0 !important;
-      border-top: none !important;
-    }
-
-    body.device-ipad .sleek-glass-header::before,
-    body.is-ipad-mini-7 .sleek-glass-header::before,
-    body[data-device="tablet"] .sleek-glass-header::before,
-    html.device-ipad .sleek-glass-header::before {
-      display: none !important;
-    }
-
-    body.device-ipad,
-    body.device-ipad *,
-    body.is-ipad-mini-7,
-    body.is-ipad-mini-7 *,
-    body[data-device="tablet"],
-    body[data-device="tablet"] *,
-    html.device-ipad,
-    html.device-ipad *,
-    body.is-iphone-17-promax,
-    body.is-iphone-17-promax *,
-    html.is-iphone-17-promax,
-    html.is-iphone-17-promax *,
-    body.is-iphone-portrait,
-    body.is-iphone-portrait *,
-    html.is-iphone-portrait,
-    html.is-iphone-portrait *,
-    body[data-device="iphone-portrait"],
-    body[data-device="iphone-portrait"] *,
-    html[data-device="iphone-portrait"],
-    html[data-device="iphone-portrait"] * {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-    }
-
-    
-    /* Lock Horizontal Scroll on Right Panel */
-    .btc-right-panel {
-      overflow-x: hidden !important;
-      max-width: 100% !important;
-      width: 100% !important;
-      touch-action: pan-y !important;
-      overscroll-behavior-x: none !important;
-    }
-    .btc-right-panel * {
-      max-width: 100% !important;
-      box-sizing: border-box !important;
-    }
-    
-    /* BTC 15M Analyzer Styling */
-    .btc-tf-btn {
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 800;
-      border-radius: 8px;
-      background: #1e293b;
-      color: #94a3b8;
-      border: 1px solid #334155;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btc-tf-btn:hover {
-      color: #fff;
-      border-color: #f59e0b;
-    }
-    .btc-tf-btn.active {
-      background: #f59e0b;
-      color: #020617;
-      border-color: #f59e0b;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
-    }
-    .signal-banner {
-      display: inline-block;
-      padding: 6px 18px;
-      border-radius: 9999px;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      margin-bottom: 12px;
-    }
-    .signal-up { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
-    .signal-down { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
-    .signal-neutral { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid #f59e0b; }
-    .meter-wrapper {
-      position: relative;
-      width: 220px;
-      height: 115px;
-      margin: 0 auto 8px auto;
-    }
-    .meter-svg { width: 100%; height: 100%; overflow: visible; }
-    .meter-score-display {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 26px;
-      font-weight: 900;
-      font-family: monospace;
-    }
-    .meter-score-display.positive { color: #10b981; }
-    .meter-score-display.negative { color: #ef4444; }
-    .meter-score-display.neutral { color: #f59e0b; }
-    .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-    .setup-box {
-      background: #0f172a;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-    }
-    .setup-box.highlight-entry { border-color: #38bdf8; }
-    .setup-box.highlight-sl { border-color: #ef4444; background: rgba(239, 68, 68, 0.12); }
-    .setup-box.highlight-tp { border-color: #10b981; background: rgba(16, 185, 129, 0.12); }
-    .rr-bar {
-      height: 6px;
-      background: #334155;
-      border-radius: 3px;
-      margin-top: 10px;
-      overflow: hidden;
-      display: flex;
-    }
-    .rr-risk { width: 30%; background: #ef4444; }
-    .rr-reward { width: 70%; background: #10b981; }
-    .factors-container {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 220px;
-      overflow-y: auto;
-    }
-    .factor-item {
-      font-size: 11px;
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      line-height: 1.35;
-    }
-    .factor-item.bull { background: rgba(16, 185, 129, 0.12); border-left: 3px solid #10b981; color: #a7f3d0; }
-    .factor-item.bear { background: rgba(239, 68, 68, 0.12); border-left: 3px solid #ef4444; color: #fecaca; }
-    .matrix-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 8px;
-    }
-    .matrix-item {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .matrix-item .m-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; }
-    .matrix-item .m-val { font-size: 14px; font-weight: 800; font-family: monospace; margin-top: 2px; }
-    .matrix-item .m-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-    .hero-price-card {
-      background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
-      border: 1px solid rgba(51, 65, 85, 0.6);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(16, 185, 129, 0.08);
-    }
-    .price-flash-up {
-      animation: flashGreen 0.4s ease-out;
-    }
-    .price-flash-down {
-      animation: flashRed 0.4s ease-out;
-    }
-    @keyframes flashGreen {
-      0% { color: #34d399; text-shadow: 0 0 15px rgba(52, 211, 153, 0.8); }
-      100% { color: #ffffff; text-shadow: none; }
-    }
-    @keyframes flashRed {
-      0% { color: #f87171; text-shadow: 0 0 15px rgba(248, 113, 113, 0.8); }
-      100% { color: #ffffff; text-shadow: none; }
-    }
-    .trend-box-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 6px;
-      width: 100%;
-    }
-    @media (max-width: 640px) {
-      .trend-box-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 4px;
-      }
-    }
-    .trend-card {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 2px 6px !important;
-      height: 28px !important;
-      max-height: 28px !important;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      box-sizing: border-box;
-      line-height: 1.1;
-      transition: all 0.15s ease;
-    }
-    .trend-card:hover {
-      filter: brightness(1.15);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-    .trend-card.trend-up {
-      border-color: rgba(16, 185, 129, 0.4);
-      background: linear-gradient(to bottom, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.9));
-    }
-    .trend-card.trend-down {
-      border-color: rgba(239, 68, 68, 0.4);
-      background: linear-gradient(to bottom, rgba(239, 68, 68, 0.08), rgba(15, 23, 42, 0.9));
-    }
-
-    /* Ultra-sleek Glassmorphic Floating Top Bar & Glass Telemetry Cards */
-    .sleek-glass-header {
-      background: linear-gradient(180deg, #0c1428 0%, #020617 100%) !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      border: 1px solid rgba(6, 182, 212, 0.18) !important;
-      border-bottom-color: rgba(255, 255, 255, 0.05) !important;
-      border-radius: 18px !important;
-      box-shadow:
-        0 14px 40px -6px rgba(0, 0, 0, 0.9),
-        inset 0 1px 0 rgba(255, 255, 255, 0.09),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.5) !important;
-      margin: 0 auto 1px auto !important;
-      width: calc(100% - 8px) !important;
-      min-height: 60px !important;
-      position: relative !important;
-      overflow: visible !important;
-    }
-    .sleek-glass-header::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 35%, rgba(6, 182, 212, 0.22) 60%, transparent 100%);
-      border-radius: 18px 18px 0 0;
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    /* Bring Chart & AI Console up to 1px below nav bar across all views */
-    .app-main-wrapper {
-      gap: 1px !important;
-    }
-    .app-main-wrapper > * + * {
-      margin-top: 1px !important;
-    }
-    #view_btc_analyzer {
-      margin-top: 0 !important;
-      padding-top: 0 !important;
-      flex: 1 !important;
-      min-height: 0 !important;
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    #view_btc_analyzer > * + * {
-      margin-top: 0 !important;
-    }
-    .btc-main-grid {
-      margin-top: 0 !important;
-      flex: 1 !important;
-      min-height: 0 !important;
-    }
-
-    .sleek-glass-card {
-      background: linear-gradient(180deg, #101f38 0%, #0c1525 100%) !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-      border-radius: 12px !important;
-      transition: all 0.2s ease !important;
-    }
-    .sleek-glass-card:hover {
-      border-color: rgba(255, 255, 255, 0.22) !important;
-      box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-      transform: translateY(-1px);
-    }
-    .sleek-glass-card-target {
-      border: 1px solid rgba(16, 185, 129, 0.45) !important;
-      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
-    }
-    .sleek-glass-card-countdown {
-      border: 1px solid rgba(6, 182, 212, 0.45) !important;
-      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
-    }
-    .sleek-glass-card-likely {
-      border: 1px solid rgba(99, 102, 241, 0.35) !important;
-      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
-    }
-    .sleek-glass-card-likely:hover {
-      border-color: rgba(99, 102, 241, 0.65) !important;
-      box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.6) !important;
-    }
-
-    /* =========================================================================
-       IPAD & TABLETS (PORTRAIT): PERFECT SINGLE-ROW TOP NAVIGATION HEADER
-       Matches the landscape design, fitted into 1 row with no wrap and no scroll
-       ========================================================================= */
-    body.device-ipad:not(.is-landscape) .sleek-glass-header,
-    body.is-ipad-mini-7:not(.is-landscape) .sleek-glass-header,
-    body[data-device="tablet"]:not(.is-landscape) .sleek-glass-header {
-      display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      gap: 3px !important;
-      padding: 3px 6px !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-height: 50px !important;
-      box-sizing: border-box !important;
-      overflow: hidden !important;
-      margin-top: 0 !important;
-      top: env(safe-area-inset-top, 0px) !important;
-    }
-
-    @media screen and (min-width: 640px) and (max-width: 1024px) and (orientation: portrait) {
-      .sleek-glass-header {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 3px !important;
-        padding: 3px 6px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-height: 50px !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-        margin-top: 0 !important;
-        top: 0 !important;
-      }
-
-      /* Left: Monogram Logo & Balance & Live Dot */
-      .sleek-glass-header > div:first-child {
-        display: flex !important;
-        align-items: center !important;
-        gap: 5px !important;
-        flex-shrink: 0 !important;
-      }
-      .sleek-glass-header #mainAppLogo {
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px !important;
-        border-radius: 8px !important;
-      }
-      .sleek-glass-header #liveClock {
-        font-size: 8px !important;
-      }
-      .sleek-glass-header #topNavKalshiBalance {
-        font-size: 15px !important;
-        line-height: 1 !important;
-        letter-spacing: -0.02em !important;
-      }
-      .sleek-glass-header #topNavKalshiBalanceLabel {
-        font-size: 7px !important;
-        padding: 1px 4px !important;
-      }
-      .sleek-glass-header #topNavKalshiRealizedPnlRow {
-        font-size: 7.5px !important;
-        line-height: 1 !important;
-      }
-      .sleek-glass-header #topNavKalshiRealizedPnl {
-        font-size: 8px !important;
-        line-height: 1 !important;
-      }
-
-      /* Center Container: Single Row, No Wrap */
-      .sleek-glass-header > div:nth-child(2) {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        align-items: stretch !important;
-        justify-content: center !important;
-        gap: 3px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        overflow: hidden !important;
-      }
-
-      /* All 5 Telemetry Cards in Center */
-      .sleek-glass-header .sleek-glass-card {
-        padding: 2px 4px !important;
-        border-radius: 8px !important;
-        box-sizing: border-box !important;
-      }
-
-      /* 2. Likely To Close */
-      .sleek-glass-header #topBarLikelyCard {
-        flex: 1 1 auto !important;
-        min-width: 76px !important;
-        max-width: 104px !important;
-      }
-      .sleek-glass-header #topBarLikelyCard .font-mono.font-black {
-        font-size: 7.5px !important;
-      }
-      .sleek-glass-header #btcPredProbText {
-        font-size: 7.5px !important;
-        padding: 1px 3px !important;
-      }
-      .sleek-glass-header #btcPredOutcomeText {
-        font-size: 11px !important;
-      }
-      .sleek-glass-header #btcPredLockIcon {
-        font-size: 8px !important;
-      }
-      .sleek-glass-header #btcPredConfidenceTag {
-        font-size: 6.5px !important;
-        padding: 1px 3px !important;
-      }
-      .sleek-glass-header #btcPredMadeTime {
-        font-size: 6.5px !important;
-      }
-
-      /* 3. Live BTC */
-      .sleek-glass-header #topBarPriceCard {
-        flex: 1 1 auto !important;
-        min-width: 72px !important;
-        max-width: 98px !important;
-      }
-      .sleek-glass-header #topBarPriceCard .font-mono.font-black {
-        font-size: 7.5px !important;
-      }
-      .sleek-glass-header #topBarLivePrice {
-        font-size: 11px !important;
-      }
-
-      /* 4. 15M Target */
-      .sleek-glass-header #topBarTargetCard {
-        flex: 1 1 auto !important;
-        min-width: 76px !important;
-        max-width: 104px !important;
-      }
-      .sleek-glass-header #topBarTargetCard .font-mono.font-black {
-        font-size: 7.5px !important;
-      }
-      .sleek-glass-header #topBarTargetDelta {
-        font-size: 7px !important;
-        padding: 1px 3px !important;
-      }
-      .sleek-glass-header #topBarTargetPrice {
-        font-size: 11px !important;
-      }
-
-      /* 5. 15M Close / Countdown */
-      .sleek-glass-header #topBarCountdownCard {
-        flex: 1 1 auto !important;
-        min-width: 72px !important;
-        max-width: 98px !important;
-      }
-      .sleek-glass-header #topBarCountdownCard .font-mono.font-black {
-        font-size: 7.5px !important;
-      }
-      .sleek-glass-header #btcCountdown {
-        font-size: 11px !important;
-      }
-      .sleek-glass-header #btcCountdownBar {
-        height: 3px !important;
-      }
-      .sleek-glass-header #topBarCountdownCard div.max-w-\[56px\] {
-        max-width: 32px !important;
-      }
-
-      /* Right: Open P/L & Action Controls */
-      .sleek-glass-header > div:last-child {
-        display: flex !important;
-        align-items: center !important;
-        gap: 3px !important;
-        flex-shrink: 0 !important;
-      }
-      .sleek-glass-header #topBarLivePnlContainer {
-        padding: 2px 4px !important;
-        min-width: 50px !important;
-      }
-      .sleek-glass-header #topBarLivePnlContainer span:first-child {
-        font-size: 6.5px !important;
-      }
-      .sleek-glass-header #topBarLivePnlText {
-        font-size: 11px !important;
-      }
-      .sleek-glass-header #btnTopBarAudio,
-      .sleek-glass-header #btnTopBarRefresh {
-        width: 24px !important;
-        height: 24px !important;
-        min-width: 24px !important;
-        border-radius: 6px !important;
-      }
-      .sleek-glass-header #btnTopBarAudio span,
-      .sleek-glass-header #btnTopBarRefresh span {
-        font-size: 10px !important;
-      }
-    }
-  
-    
-    /* =========================================================================
-       IPHONE 17 PRO MAX & NATIVE IOS PORTRAIT LAYOUT (MATCHING KALSHI SCREENSHOT)
-       ========================================================================= */
-    
-    /* Dedicated iPhone 17 Pro Max & iPhone Portrait Rules */
-    html.is-iphone-17-promax,
-    html.is-iphone-portrait,
-    html[data-device="iphone-portrait"],
-    body.is-iphone-17-promax,
-    body.is-iphone-portrait,
-    body[data-device="iphone-portrait"] {
-      background-color: #000000 !important;
-      color: #ffffff !important;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      overflow: hidden !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      height: 100dvh !important;
-      max-height: 100dvh !important;
-      overscroll-behavior: none !important;
-      -webkit-overflow-scrolling: auto !important;
-      touch-action: none !important;
-      -webkit-font-smoothing: antialiased !important;
-    }
-
-    body.is-iphone-17-promax,
-    body.is-iphone-portrait,
-    body[data-device="iphone-portrait"] {
-      display: flex !important;
-      flex-direction: column !important;
-      box-sizing: border-box !important;
-    }
-
-    body.is-iphone-17-promax .app-main-wrapper,
-    body.is-iphone-portrait .app-main-wrapper,
-    body[data-device="iphone-portrait"] .app-main-wrapper {
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      height: 100% !important;
-      max-height: 100% !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      padding-bottom: max(env(safe-area-inset-bottom, 12px), 8px) !important;
-      box-sizing: border-box !important;
-    }
-
-    /* Hide desktop/tablet top navigation header on iPhone portrait */
-    body.is-iphone-17-promax .sleek-glass-header,
-    body.is-iphone-portrait .sleek-glass-header,
-    body[data-device="iphone-portrait"] .sleek-glass-header {
-      display: none !important;
-    }
-
-    /* Native iPhone 17 Hero Display (Hidden on desktop, active on iPhone portrait) */
-    #iphone17Hero {
-      display: none;
-    }
-
-    body.is-iphone-17-promax .app-main-wrapper > * + *,
-    body.is-iphone-portrait .app-main-wrapper > * + * {
-      margin-top: 0 !important;
-    }
-
-    body.is-iphone-17-promax #view_btc_analyzer,
-    body.is-iphone-portrait #view_btc_analyzer,
-    body[data-device="iphone-portrait"] #view_btc_analyzer {
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      height: 100% !important;
-      max-height: 100% !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      gap: 0 !important;
-    }
-
-    body.is-iphone-17-promax #iphone17Hero,
-    body.is-iphone-portrait #iphone17Hero,
-    body[data-device="iphone-portrait"] #iphone17Hero,
-    html.is-iphone-17-promax #iphone17Hero,
-    html.is-iphone-portrait #iphone17Hero {
-      display: flex !important;
-      flex-direction: column !important;
-      flex-shrink: 0 !important;
-      width: 100% !important;
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-      padding: 2px 14px 2px 14px !important;
-      box-sizing: border-box !important;
-      background: #000000 !important;
-    }
-
-    .iphone17-top-row {
-      margin-top: 0 !important;
-      padding-top: 0 !important;
-    }
-
-    .iphone17-top-row {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      width: 100% !important;
-      margin-bottom: 2px !important;
-    }
-
-    .iphone17-interval-text {
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      color: rgba(255, 255, 255, 0.75) !important;
-      letter-spacing: -0.2px !important;
-      font-family: -apple-system, "SF Pro Text", sans-serif !important;
-    }
-
-    .iphone17-countdown-pill {
-      background: rgba(16, 185, 129, 0.14);
-      border: 1px solid rgba(16, 185, 129, 0.65);
-      color: #10b981;
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
-      padding: 2.5px 9px !important;
-      border-radius: 8px !important;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
-      letter-spacing: 0.5px !important;
-      transition: color 1s ease, border-color 1s ease, background-color 1s ease, box-shadow 1s ease !important;
-    }
-
-    .iphone17-title-row {
-      margin-top: 4px !important;
-    }
-
-    .iphone17-title {
-      font-size: 30px !important;
-      font-weight: 800 !important;
-      color: #ffffff !important;
-      letter-spacing: -0.6px !important;
-      line-height: 1.1 !important;
-      margin: 0 !important;
-    }
-
-    .iphone17-price-row {
-      margin-top: 2px !important;
-      margin-bottom: 0 !important;
-      padding-bottom: 0 !important;
-    }
-
-    .iphone17-live-price {
-      font-size: 44px !important;
-      font-weight: 800 !important;
-      letter-spacing: -1.2px !important;
-      line-height: 1.05 !important;
-      font-family: -apple-system, "SF Pro Display", sans-serif !important;
-      color: #ff6b35 !important; /* Default vibrant orange matching Kalshi */
-      transition: color 0.2s ease !important;
-    }
-
-    .iphone17-target-row {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      width: 100% !important;
-      font-size: 13.5px !important;
-      margin-top: 2px !important;
-    }
-
-    .iphone17-target-label {
-      color: rgba(255, 255, 255, 0.6) !important;
-      font-weight: 500 !important;
-    }
-
-    .iphone17-target-val {
-      color: #ffffff !important;
-      font-weight: 800 !important;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
-    }
-
-    .iphone17-source-text {
-      color: rgba(255, 255, 255, 0.5) !important;
-      font-size: 13px !important;
-      font-weight: 600 !important;
-    }
-
-    /* Full-width Dotted Line across screen (hidden on iPhone portrait so chart starts 1px below conviction panel) */
-    .iphone17-dotted-line {
-      display: none !important;
-      width: 100% !important;
-      border-top: 1.5px dotted rgba(255, 255, 255, 0.45) !important;
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-    body.is-iphone-17-promax .iphone17-dotted-line,
-    body.is-iphone-portrait .iphone17-dotted-line,
-    body[data-device="iphone-portrait"] .iphone17-dotted-line {
-      display: none !important;
-    }
-
-    /* Single column layout for iPhone portrait: Chart panel starts 1px below conviction panel */
-    body.is-iphone-17-promax #view_btc_analyzer > *,
-    body.is-iphone-portrait #view_btc_analyzer > *,
-    body[data-device="iphone-portrait"] #view_btc_analyzer > * {
-      margin-top: 0 !important;
-      margin-bottom: 0 !important;
-    }
-
-    body.is-iphone-17-promax .btc-main-grid,
-    body.is-iphone-portrait .btc-main-grid,
-    body[data-device="iphone-portrait"] .btc-main-grid {
-      display: flex !important;
-      flex-direction: column !important;
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      height: 100% !important;
-      max-height: 100% !important;
-      gap: 2px !important;
-      width: 100% !important;
-      padding: 0 4px !important;
-      margin-top: 1px !important;
-      overflow: hidden !important;
-    }
-
-    /* Chart Card styling (adaptive height so AI Trader deck below stays in place) */
-    body.is-iphone-17-promax #btcChartCard,
-    body.is-iphone-portrait #btcChartCard,
-    body[data-device="iphone-portrait"] #btcChartCard,
-    html.is-iphone-17-promax #btcChartCard,
-    html.is-iphone-portrait #btcChartCard {
-      width: 100% !important;
-      background: #000000 !important;
-      border: none !important;
-      border-radius: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      margin-top: 0 !important;
-      padding-top: 0 !important;
-      flex: 0 0 240px !important;
-      height: 240px !important;
-      min-height: 180px !important;
-      max-height: 260px !important;
-      flex-shrink: 0 !important;
-      box-shadow: none !important;
-    }
-
-    /* Hide desktop chart header bar in iPhone view */
-    body.is-iphone-17-promax #btcChartCard > div:first-child,
-    body.is-iphone-portrait #btcChartCard > div:first-child,
-    body[data-device="iphone-portrait"] #btcChartCard > div:first-child,
-    html.is-iphone-17-promax #btcChartCard > div:first-child,
-    html.is-iphone-portrait #btcChartCard > div:first-child {
-      display: none !important;
-    }
-
-    body.is-iphone-17-promax #btc-chart-container,
-    body.is-iphone-portrait #btc-chart-container,
-    body[data-device="iphone-portrait"] #btc-chart-container,
-    html.is-iphone-17-promax #btc-chart-container,
-    html.is-iphone-portrait #btc-chart-container {
-      height: 100% !important;
-      min-height: 0 !important;
-      max-height: 100% !important;
-      border-radius: 0 !important;
-    }
-
-    /* Toolbar below chart */
-    #iphone17ChartToolbar {
-      display: none;
-    }
-
-    body.is-iphone-17-promax #iphone17ChartToolbar,
-    body.is-iphone-portrait #iphone17ChartToolbar,
-    body[data-device="iphone-portrait"] #iphone17ChartToolbar {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      width: 100% !important;
-      padding: 4px 12px 10px 12px !important;
-      box-sizing: border-box !important;
-      background: transparent !important;
-      position: absolute !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      z-index: 50 !important;
-      pointer-events: none !important;
-    }
-    
-    #iphone17ChartToolbar > * {
-      pointer-events: auto !important;
-    }
-
-    .iphone17-vol-pill {
-      background: rgba(255, 255, 255, 0.08) !important;
-      border: 1px solid rgba(255, 255, 255, 0.18) !important;
-      border-radius: 8px !important;
-      padding: 3px 10px !important;
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
-      color: #ffffff !important;
-    }
-
-    .iphone17-tf-btn {
-      font-size: 13px !important;
-      font-weight: 700 !important;
-      padding: 4px 12px !important;
-      border-radius: 9999px !important;
-      color: rgba(255, 255, 255, 0.65) !important;
-      background: transparent !important;
-      border: none !important;
-      cursor: pointer !important;
-      transition: all 0.15s ease !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 4px !important;
-    }
-
-    .iphone17-tf-btn.active {
-      background: #ff5722 !important;
-      color: #000000 !important;
-      font-weight: 800 !important;
-      box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4) !important;
-    }
-
-    .iphone17-tf-btn .tf-dot {
-      font-size: 8px !important;
-    }
-
-    /* Kalshi AI Console placed directly at the bottom */
-    body.is-iphone-17-promax .btc-right-panel,
-    body.is-iphone-portrait .btc-right-panel,
-    body[data-device="iphone-portrait"] .btc-right-panel {
-      width: 100% !important;
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      height: 100% !important;
-      max-height: 100% !important;
-      order: 3 !important;
-      border-radius: 16px !important;
-      background: #0b1120 !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      border: 1px solid rgba(255, 255, 255, 0.12) !important;
-      padding: 6px 8px !important;
-      margin: 0 !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow-y: auto !important;
-      overscroll-behavior: contain !important;
-      overscroll-behavior-y: contain !important;
-      -webkit-overflow-scrolling: touch !important;
-      touch-action: pan-y !important;
-    }
-    body.is-iphone-17-promax #kalshiTradingDeck,
-    body.is-iphone-portrait #kalshiTradingDeck,
-    body[data-device="iphone-portrait"] #kalshiTradingDeck {
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      height: 100% !important;
-      display: flex !important;
-      flex-direction: column !important;
-      padding: 0 !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      overflow: hidden !important;
-    }
-
-    body.is-iphone-17-promax #aiTraderTabContent:not(.hidden),
-    body.is-iphone-portrait #aiTraderTabContent:not(.hidden),
-    body[data-device="iphone-portrait"] #aiTraderTabContent:not(.hidden),
-    body.is-iphone-17-promax #aiSettingsTabContent:not(.hidden),
-    body.is-iphone-portrait #aiSettingsTabContent:not(.hidden),
-    body[data-device="iphone-portrait"] #aiSettingsTabContent:not(.hidden) {
-      flex: 1 1 0% !important;
-      min-height: 0 !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow-y: auto !important;
-      overscroll-behavior: contain !important;
-      overscroll-behavior-y: contain !important;
-      gap: 3px !important;
-      padding-bottom: 2px !important;
-    }
-
-    /* Native iOS smooth touch & haptic behavior */
-    button, input, select {
-      -webkit-tap-highlight-color: transparent !important;
-      touch-action: manipulation !important;
-    }
-
-
-    /* Fallback media query for any mobile screen in portrait under 480px width */
-    @media screen and (max-width: 480px) and (orientation: portrait) {
-      html, body {
-        position: fixed !important;
-        width: 100% !important;
-        height: 100% !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        overflow: hidden !important;
-        overscroll-behavior: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      body {
-        display: flex !important;
-        flex-direction: column !important;
-      }
-      .app-main-wrapper {
-        flex: 1 1 0% !important;
-        min-height: 0 !important;
-        height: 100% !important;
-        max-height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        padding-bottom: max(env(safe-area-inset-bottom, 12px), 8px) !important;
-      }
-      .sleek-glass-header {
-        display: none !important;
-      }
-      #iphone17NavBar {
-        display: flex !important;
-        position: relative !important;
-        top: 0 !important;
-        flex-shrink: 0 !important;
-        padding-top: env(safe-area-inset-top, 54px) !important;
-        padding-bottom: 3px !important;
-        margin-bottom: 0 !important;
-        background: #000000 !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-      }
-      #iphone17Hero {
-        display: flex !important;
-        flex-shrink: 0 !important;
-        padding: 2px 14px 2px 14px !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-      }
-      .iphone17-price-row {
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-      }
-      .iphone17-dotted-line {
-        display: none !important;
-      }
-      #iphone17ChartToolbar {
-        display: flex !important;
-      }
-      #view_btc_analyzer {
-        flex: 1 1 0% !important;
-        min-height: 0 !important;
-        height: 100% !important;
-        max-height: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        overflow: hidden !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-      #view_btc_analyzer > * {
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-      }
-      .btc-main-grid {
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 1 0% !important;
-        min-height: 0 !important;
-        height: 100% !important;
-        max-height: 100% !important;
-        gap: 2px !important;
-        margin-top: 1px !important;
-        padding: 0 4px !important;
-        overflow: hidden !important;
-      }
-      #btcChartCard {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-        flex: 0 0 240px !important;
-        height: 240px !important;
-        min-height: 180px !important;
-        max-height: 260px !important;
-        flex-shrink: 0 !important;
-      }
-      #btc-chart-container {
-        height: 100% !important;
-        min-height: 0 !important;
-        max-height: 100% !important;
-      }
-      #btcChartCard > div:first-child {
-        display: none !important;
-      }
-      .btc-right-panel {
-        width: 100% !important;
-        flex: 1 1 0% !important;
-        min-height: 0 !important;
-        height: 100% !important;
-        max-height: 100% !important;
-        order: 3 !important;
-        overflow-y: auto !important;
-        overscroll-behavior: contain !important;
-        overscroll-behavior-y: contain !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-    }
-
-
-    
-    /* iPhone 17 Price Delta Panel (Matching Volume Pill next to it) */
-    .iphone17-delta-panel {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 4px !important;
-      background: #1e293b !important;
-      border: 1px solid rgba(255, 255, 255, 0.15) !important;
-      color: #10b981 !important;
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
-      padding: 4px 10px !important;
-      border-radius: 8px !important;
-      letter-spacing: 0.5px !important;
-      transition: all 0.2s ease !important;
-    }
-    .iphone17-delta-panel.delta-up {
-      color: #10b981 !important;
-      border-color: rgba(16, 185, 129, 0.5) !important;
-      background: rgba(16, 185, 129, 0.12) !important;
-    }
-    .iphone17-delta-panel.delta-down {
-      color: #ff6b35 !important;
-      border-color: rgba(255, 107, 53, 0.5) !important;
-      background: rgba(255, 107, 53, 0.12) !important;
-    }
-
-    /* Absolute ban on blur over nav bar and top of screen */
-    #iphone17NavBar,
-    #iphone17NavBar *,
-    .iphone17-nav-bar,
-    .iphone17-nav-bar *,
-    .sleek-glass-header,
-    .sleek-glass-header *,
-    #iphone17Hero,
-    #iphone17Hero *,
-    .iphone17-pred-card,
-    .iphone17-countdown-pill,
-    body.is-iphone-17-promax header,
-    body.is-iphone-portrait header,
-    body.device-ipad header,
-    body.is-ipad-mini-7 header,
-    body[data-device="tablet"] header,
-    body.device-ipad .sleek-glass-header,
-    body.is-ipad-mini-7 .sleek-glass-header,
-    body[data-device="tablet"] .sleek-glass-header,
-    body.device-ipad .glass-panel,
-    body.is-ipad-mini-7 .glass-panel,
-    body[data-device="tablet"] .glass-panel,
-    html.device-ipad .glass-panel,
-    body.is-iphone-17-promax .glass-panel,
-    body.is-iphone-portrait .glass-panel {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-    }
-
-    html.is-iphone-portrait .sleek-glass-header,
-    body.is-iphone-portrait .sleek-glass-header,
-    body.is-iphone-17-promax .sleek-glass-header {
-      display: none !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-
-    /* iPhone 17 Prediction Card */
-    .iphone17-pred-card {
-      background: #0a0f1d !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      border: 1px solid rgba(6, 182, 212, 0.35) !important;
-      transition: all 0.2s ease !important;
-    }
-    .iphone17-pred-card.pred-up {
-      border-color: rgba(16, 185, 129, 0.5) !important;
-      box-shadow: 0 4px 14px -2px rgba(16, 185, 129, 0.2) !important;
-    }
-    .iphone17-pred-card.pred-down {
-      border-color: rgba(239, 68, 68, 0.5) !important;
-      box-shadow: 0 4px 14px -2px rgba(239, 68, 68, 0.2) !important;
-    }
-
-
-    /* iPhone 17 Pro Max Top Navigation Bar:
-       Strictly hidden by default; ONLY enabled on genuine iPhone portrait */
-    #iphone17NavBar {
-      display: none !important;
-    }
-    body.is-iphone-17-promax #iphone17NavBar,
-    body.is-iphone-portrait #iphone17NavBar,
-    body[data-device="iphone-portrait"] #iphone17NavBar,
-    html.is-iphone-17-promax #iphone17NavBar,
-    html.is-iphone-portrait #iphone17NavBar {
-      display: flex !important;
-      position: relative !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      z-index: 100 !important;
-      width: 100% !important;
-      flex-shrink: 0 !important;
-      margin: 0 !important;
-      margin-bottom: 0 !important;
-      background: #000000 !important;
-      background-color: #000000 !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      box-shadow: none !important;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-      padding-top: env(safe-area-inset-top, 54px) !important;
-      padding-bottom: 3px !important;
-      padding-left: 14px !important;
-      padding-right: 14px !important;
-      box-sizing: border-box !important;
-    }
-
-    /* iPhone 17 Pro Max / iPhone 17 Detected Layout:
-       Nav bar starts flush right below the native iOS status bar. */
-    body.is-iphone-17-promax #iphone17NavBar,
-    html.is-iphone-17-promax #iphone17NavBar,
-    body[data-device="iphone-portrait"].is-iphone-17-promax #iphone17NavBar {
-      padding-top: env(safe-area-inset-top, 54px) !important;
-      box-shadow: none !important;
-    }
-
-    /* Solid 100% opaque black shield over iOS status bar to eliminate all native WebKit status bar blur */
-    #iosStatusBarShield {
-      display: block !important;
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
-      height: env(safe-area-inset-top, 0px) !important;
-      background: #000000 !important;
-      background-color: #000000 !important;
-      z-index: 2147483647 !important;
-      pointer-events: none !important;
-      border: none !important;
-      box-shadow: none !important;
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      filter: none !important;
-      transform: translateZ(0) !important;
-      -webkit-transform: translateZ(0) !important;
-      will-change: transform !important;
-    }
-    body.is-iphone-17-promax #iosStatusBarShield,
-    body.is-iphone-portrait #iosStatusBarShield,
-    body[data-device="iphone-portrait"] #iosStatusBarShield,
-    html.is-iphone-17-promax #iosStatusBarShield,
-    html.is-iphone-portrait #iosStatusBarShield,
-    html[data-device="iphone-portrait"] #iosStatusBarShield {
-      display: block !important;
-      height: env(safe-area-inset-top, 54px) !important;
-    }
-    body.device-ipad #iosStatusBarShield,
-    body.is-ipad-mini-7 #iosStatusBarShield,
-    body[data-device="tablet"] #iosStatusBarShield,
-    html.device-ipad #iosStatusBarShield {
-      display: block !important;
-      height: env(safe-area-inset-top, 24px) !important;
-    }
-
-    /* HARD OVERRIDE: Never show iPhone nav bar on iPad, tablet, desktop, or screens >= 640px */
-    body.device-ipad #iphone17NavBar,
-    body.is-ipad-mini-7 #iphone17NavBar,
-    body[data-device="tablet"] #iphone17NavBar,
-    body[data-device="desktop"] #iphone17NavBar,
-    html.device-ipad #iphone17NavBar,
-    html.is-ipad-mini-7 #iphone17NavBar {
-      display: none !important;
-    }
-
-    @media screen and (min-width: 640px) {
-      #iphone17NavBar {
-        display: none !important;
-      }
-      .sleek-glass-header {
-        display: flex !important;
-      }
-    }
-
-    /* iOS Safari Auto-Zoom Prevention:
-       iOS auto-zooms and distorts fixed-height layouts when inputs have font-size < 16px.
-       Ensuring 16px input font on mobile devices completely prevents viewport jumping on tap. */
-    @media screen and (max-width: 768px) {
-      input[type="number"],
-      input[type="text"],
-      select {
-        font-size: 16px !important;
-      }
-    }
-
-
-    .signal-fade-in { animation: fadeIn 0.3s ease-in forwards; }
-    .signal-fade-out { animation: fadeOut 0.3s ease-out forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-3px); } }
-</style>
-
-</head>
-<body class="bg-black text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
-
-  <!-- Solid Opaque Black Status Bar Shield: Masks iOS status bar to eliminate WebKit blur -->
-  <div id="iosStatusBarShield" aria-hidden="true"></div>
-
-  <!-- ================================================================= -->
-  <!-- IPHONE 17 PRO MAX NATIVE TOP NAVIGATION BAR                      -->
-  <!-- ================================================================= -->
-  <header id="iphone17NavBar" class="iphone17-nav-bar hidden items-center justify-between w-full px-3.5 py-1.5 z-50 bg-black" style="display: none;">
-    <!-- Left: Logo & App Monogram -->
-    <div class="flex items-center gap-2">
-      <button type="button" onclick="showBtcLogoMessage()" class="shrink-0 focus:outline-none" aria-label="App info">
-        <img src="/static/assets/logo_monogram.jpg" onerror="this.src='assets/logo_monogram.jpg'" alt="Logo" class="w-7 h-7 rounded-lg object-cover border border-amber-400/40 shadow-sm shadow-amber-500/20 active:scale-95 cursor-pointer">
-      </button>
-      <div class="flex flex-col leading-none">
-        <div class="flex items-center gap-1.5">
-          <span class="text-xs font-black tracking-tight text-white">BTC <span class="text-amber-400">15M</span></span>
-          <span class="flex h-1.5 w-1.5 relative">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-          </span>
-        </div>
-        <span class="text-[7.5px] font-mono font-bold text-slate-400 mt-0.5">Pattern Analyzer</span>
-      </div>
-    </div>
-    <!-- Center: AI Model Accuracy Pane -->
-    <div onclick="openMlPredictionDetailsModal()" class="flex flex-col justify-center items-center px-2 py-0.5 rounded-lg bg-slate-900/80 border border-cyan-500/30 font-mono shadow-sm shadow-cyan-500/10 cursor-pointer hover:border-cyan-400 transition-colors mx-auto shrink-0">
-      <span class="text-[7px] font-black text-cyan-400 uppercase tracking-wider leading-none">AI ACCURACY</span>
-      <span id="iphone17NavAccuracyPct" class="text-[10px] font-black text-cyan-300 font-mono leading-none mt-0.5">--%</span>
-    </div>
-
-    <!-- Right: Audio & Manual Refresh Controls -->
-    <div class="flex items-center gap-1.5">
-      <button id="btnIphoneAudio" type="button" onclick="toggleBtcAudio()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-white/10 active:scale-95 transition-all text-xs cursor-pointer" title="Sound Alert Toggle">
-        <span id="iphoneAudioIcon">🔊</span>
-      </button>
-      <button id="btnIphoneRefresh" type="button" onclick="triggerManualRefresh()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs active:scale-95 shadow-sm shadow-amber-500/20 border border-amber-300/40 cursor-pointer" title="Manual Refresh">
-        <span id="iphoneRefreshIcon" class="text-xs font-black">⟳</span>
-      </button>
-    </div>
-  </header>
-
-  
-
-  <!-- Main Container -->
-  <div class="app-main-wrapper max-w-7xl mx-auto p-2 sm:p-3 space-y-0 w-full max-w-full overflow-x-hidden">
-    
-    <!-- Top Navigation / Header -->
-    <header class="sticky top-0 z-40 sleek-glass-header px-2 sm:px-3 py-1 sm:py-1.5 flex flex-nowrap items-center justify-between gap-1 sm:gap-2 w-full max-w-full overflow-hidden">
-      
-      <!-- Brand & BTC 15M Logo -->
-      <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        <button type="button" onclick="showBtcLogoMessage()" class="shrink-0 focus:outline-none focus:ring-2 focus:ring-amber-400/80 rounded-full" aria-label="Show BTC 15M Analyzer message" style="background:none;border:none;padding:0;cursor:pointer;">
-          <svg id="mainAppLogo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" class="h-9 w-9 sm:h-10 sm:w-10 cursor-pointer active:scale-95 transition-all" style="animation: btcSpin 2.2s linear infinite, btcGlow 2.2s ease-in-out infinite; filter: drop-shadow(0 0 8px #f7931a88);">
-            <defs>
-              <radialGradient id="hdrCoinGrad" cx="38%" cy="33%" r="68%">
-                <stop offset="0%" stop-color="#ffe57a"/>
-                <stop offset="40%" stop-color="#f7931a"/>
-                <stop offset="100%" stop-color="#b85200"/>
-              </radialGradient>
-              <radialGradient id="hdrFaceGrad" cx="40%" cy="35%" r="62%">
-                <stop offset="0%" stop-color="#ffd966"/>
-                <stop offset="55%" stop-color="#e8820a"/>
-                <stop offset="100%" stop-color="#a34800"/>
-              </radialGradient>
-            </defs>
-            <circle cx="100" cy="100" r="96" fill="url(#hdrCoinGrad)" stroke="#9c5000" stroke-width="1.5"/>
-            <circle cx="100" cy="100" r="85" fill="none" stroke="#d07000" stroke-width="3" opacity="0.5"/>
-            <circle cx="100" cy="100" r="82" fill="url(#hdrFaceGrad)"/>
-            <ellipse cx="76" cy="67" rx="24" ry="14" fill="white" opacity="0.16" transform="rotate(-25 76 67)"/>
-            <text x="100" y="100" text-anchor="middle" dominant-baseline="central" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="88" fill="#7a3500" opacity="0.9">₿</text>
-            <text x="98" y="98" text-anchor="middle" dominant-baseline="central" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="88" fill="#ffd060" opacity="0.12">₿</text>
-          </svg>
-        </button>
-        <style>
-          @keyframes btcSpin {
-            0%   { transform: scaleX(1); }
-            25%  { transform: scaleX(0.06); }
-            50%  { transform: scaleX(1); }
-            75%  { transform: scaleX(0.06); }
-            100% { transform: scaleX(1); }
-          }
-          @keyframes btcGlow {
-            0%, 100% { filter: drop-shadow(0 0 6px #f7931a66); }
-            50%       { filter: drop-shadow(0 0 18px #f7931acc); }
-          }
-          #mainAppLogo { transform-origin: center center; }
-        </style>
-        <div class="flex flex-col justify-center items-start gap-0.5 leading-tight">
-          <!-- TOP ROW: Pulsing green LIVE dot on the left corner of container, followed by text, clock, and balance type pill -->
-          <div class="flex items-center gap-1.5 flex-nowrap">
-            <span class="relative flex h-2 w-2 shrink-0">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-wider leading-none">LIVE</span>
-            <span class="text-[9px] text-slate-500 leading-none">•</span>
-            <span id="liveClock" class="text-[9px] sm:text-[10px] font-mono text-slate-400 leading-none">--:--:--</span>
-            <span id="topNavKalshiBalanceLabel" class="text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400/90 inline-flex items-center shadow-sm shadow-emerald-500/10 whitespace-nowrap leading-none ml-1">Paper Balance</span>
-          </div>
-          <!-- MIDDLE ROW: Account Balance below pill -->
-          <div class="flex items-center">
-            <span id="topNavKalshiBalance" class="text-xl sm:text-2xl lg:text-3xl font-black font-mono tracking-tight text-emerald-400 whitespace-nowrap leading-none">$---.--</span>
-          </div>
-          <!-- BOTTOM ROW: Realized P/L directly under account balance -->
-          <div id="topNavKalshiRealizedPnlRow" class="flex items-center gap-1 font-mono text-[8px] sm:text-[9.5px] leading-none whitespace-nowrap pt-0.5" title="Total Realized P/L">
-            <span class="text-slate-400 font-bold uppercase tracking-wider text-[7px] sm:text-[8px]">Realized P/L:</span>
-            <span id="topNavKalshiRealizedPnl" class="font-bold text-slate-300 font-mono">+$0.00</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- CENTER: Info Panes (Sleek Frosted Glassmorphism Cards) -->
-      <div class="flex-1 flex items-stretch justify-center gap-1 sm:gap-1.5 mx-auto flex-nowrap py-0.5 min-w-0 overflow-hidden">
-        
-
-        <!-- 0. LIKELY TO CLOSE -->
-        <div id="topBarLikelyCard" class="sleek-glass-card sleek-glass-card-likely btc-panel-card btc-card-prediction flex flex-col justify-center flex-1 min-w-[100px] max-w-[160px] px-2 py-1.5 cursor-pointer">
-          <div id="btcPredBanner" class="flex flex-col items-start leading-none transition-all w-full">
-            <div class="flex items-center gap-1.5 w-full justify-between">
-              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-slate-400 tracking-[0.05em]">LIKELY</span>
-              <span id="btcPredProbText" class="text-[8px] sm:text-[9px] font-mono font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.5 rounded-md shadow-sm shadow-cyan-950/40">--%</span>
-            </div>
-            <div class="flex items-center gap-1 mt-1 w-full">
-              <span id="btcPredOutcomeText" class="text-xs sm:text-sm lg:text-base font-black font-mono text-white leading-none whitespace-nowrap">--</span>
-              <span id="btcPredLockIcon" class="hidden text-[9px] sm:text-[10px] opacity-80" title="Prediction Locked">🔒</span>
-              <span id="btcPredConfidenceTag" class="text-[7px] sm:text-[8px] px-1.5 py-0.5 rounded font-bold uppercase text-slate-400 bg-slate-950/80 border border-slate-800 font-mono self-end mb-0.5 ml-auto">--</span>
-            </div>
-            <span id="btcPredMadeTime" class="mt-0.5 text-[7px] sm:text-[8px] font-mono text-slate-500 whitespace-nowrap">Made --:--</span>
-          </div>
-          <!-- Hidden preservation elements for JS backward compatibility -->
-          <div class="hidden">
-            <span id="btcKalshiOddsContainer"><span id="btcKalshiYesProb"></span><span id="btcKalshiNoProb"></span></span>
-            <div id="btcPredProbBarUnder"></div>
-            <div id="btcPredProbBarAbove"></div>
-            <span id="btcPredTargetZone"></span>
-            <ul id="btcPredFactorsList"></ul>
-            <!-- Previous Days data preserved here for JS + popup -->
-            <div id="btcPreviousDaysAccuracy"><span></span><span id="btcPreviousDaysAccuracyValue">--%</span></div>
-          </div>
-        </div>
-
-        <!-- 1. Live Bitcoin Price with real-time updates -->
-        <div id="topBarPriceCard" class="sleek-glass-card flex flex-col justify-center flex-1 min-w-[100px] max-w-[160px] px-2 py-1.5">
-          <div class="flex items-center gap-1.5">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-slate-400 tracking-[0.05em]">LIVE BTC</span>
-          </div>
-          <span id="topBarLivePrice" class="text-xs sm:text-sm lg:text-base font-black font-mono text-white tracking-tight transition-colors mt-1 whitespace-nowrap leading-none">$--,---.--</span>
-        </div>
-
-        <!-- 2. 15M Price Target from Kalshi 15M contracts (KXBTC15) -->
-        <div id="topBarTargetCard" class="sleek-glass-card sleek-glass-card-target flex flex-col justify-center flex-1 min-w-[100px] max-w-[160px] px-2 py-1.5">
-          <div class="flex items-center justify-between gap-1.5 w-full">
-            <div class="flex items-center gap-1">
-              <span class="text-[10px] sm:text-xs">🎯</span>
-              <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-emerald-400 tracking-[0.05em]">15M TARGET</span>
-              <span id="topBarTargetSimBadge" class="hidden text-[6px] sm:text-[7px] font-mono font-black px-1 py-0.2 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider animate-pulse" title="Simulated fallback market data (Kalshi unavailable)">SIMULATED</span>
-            </div>
-            <span id="topBarTargetDelta" class="text-[8px] sm:text-[9px] font-mono font-bold text-slate-300 bg-slate-950/80 border border-slate-800 px-1.5 py-0.5 rounded-md">(--)</span>
-          </div>
-          <span id="topBarTargetPrice" class="text-xs sm:text-sm lg:text-base font-black font-mono text-emerald-400 mt-1 whitespace-nowrap leading-none">$--,---.--</span>
-        </div>
-
-        <!-- 3. 15M Close Time / Countdown -->
-        <div id="topBarCountdownCard" class="sleek-glass-card sleek-glass-card-countdown flex flex-col justify-center flex-1 min-w-[100px] max-w-[160px] px-2 py-1.5">
-          <div class="flex items-center justify-between gap-1.5 w-full">
-            <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-cyan-400 tracking-[0.05em]">15M CLOSE</span>
-            <span class="text-[7px] sm:text-[8px] font-mono font-bold text-cyan-400/80 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.5 rounded uppercase">LEFT</span>
-          </div>
-          <div class="flex items-center justify-between gap-2 mt-1 w-full">
-            <span id="btcCountdown" class="text-xs sm:text-sm lg:text-base font-black font-mono text-cyan-300 leading-none whitespace-nowrap">--:--</span>
-            <div class="flex-1 max-w-[56px] h-1.5 bg-slate-950/80 rounded-full overflow-hidden border border-slate-800">
-              <div id="btcCountdownBar" class="h-full bg-cyan-400 transition-all duration-1000 shadow-sm shadow-cyan-400/50" style="width: 50%;"></div>
-            </div>
-          </div>
-        </div>
-      
-        <!-- 4. Live Signals Streamer -->
-        <div id="topBarSignalsCard" class="sleek-glass-card hidden sm:flex flex-row items-center flex-1 min-w-[200px] max-w-[400px] px-2 py-1 ml-1 overflow-hidden self-stretch gap-2">
-          <div class="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.9)] shrink-0"></div>
-          <div class="w-full flex-1 h-full overflow-hidden relative" style="mask-image: linear-gradient(to bottom, black 70%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 70%, transparent 100%);">
-            <div id="topBarSignalsContainer" class="absolute w-full flex flex-col transition-transform duration-700 ease-in-out text-[10px] sm:text-[11px] lg:text-[12px] font-mono text-slate-200 leading-snug">
-              <!-- JS fills this -->
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Controls & P/L -->
-      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 justify-end self-stretch py-0.5">
-        <!-- Hidden Structure preservation elements for JS background calculations -->
-        <div class="hidden">
-          <span id="btcStructTrendBadge"></span>
-          <span id="btcStructSummary"></span>
-          <span id="btcStructRes"></span>
-          <span id="btcStructSup"></span>
-          <span id="btcStructVwap"></span>
-          <span id="btcStructVwapStatus"></span>
-          <span id="btcStructBos"></span>
-        </div>
-
-        <!-- Live Open Trades P/L Display - Extended vertically to fill height -->
-        <div id="topBarLivePnlContainer" class="sleek-glass-card flex flex-col items-end justify-center px-2.5 py-1 sm:px-3 sm:py-1.5 self-stretch shrink min-w-[70px] leading-tight">
-          <span class="text-[7px] sm:text-[8px] font-mono font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Open P/L</span>
-          <span id="topBarLivePnlText" class="text-xs sm:text-sm lg:text-base font-black font-mono whitespace-nowrap text-slate-300">$0.00</span>
-        </div>
-
-        <!-- Vertically Stacked Equal-Sized Control Buttons -->
-        <div class="flex flex-col justify-center gap-1 shrink-0">
-          <!-- Sound Toggle Button (TOP) -->
-          <button id="btnTopBarAudio" type="button" onclick="toggleBtcAudio()" 
-                  class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-slate-900/70 hover:bg-slate-800 text-slate-300 border border-white/[0.08] hover:border-white/[0.2] transition-all cursor-pointer text-xs sm:text-sm shadow-md shadow-black/40" title="Sound Alert Toggle">
-            <span id="btcAudioIcon">🔊</span>
-          </button>
-
-          <!-- Dedicated Manual Refresh Button (UNDER SPEAKER, SAME SIZE) -->
-          <button id="btnTopBarRefresh" type="button" onclick="triggerManualRefresh()" 
-                  class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-xs font-black transition-all bg-gradient-to-r from-amber-500/90 to-amber-400/90 hover:from-amber-400 hover:to-amber-300 active:scale-95 text-slate-950 shadow-md shadow-amber-500/20 cursor-pointer border border-amber-300/50" title="Manual Refresh">
-            <span id="topBarRefreshIcon" class="text-xs font-black leading-none">⟳</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- BTC 15M logo message -->
-    <div id="btcLogoMessageModal" class="hidden fixed inset-0 z-[100] items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-labelledby="btcLogoMessageTitle" onclick="if (event.target === this) closeBtcLogoMessage()">
-      <div class="w-full max-w-xs rounded-2xl border border-amber-400/40 bg-slate-900 p-5 text-center shadow-2xl shadow-black/60">
-        <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/40 bg-amber-400/10 text-xl">⚡</div>
-        <h2 id="btcLogoMessageTitle" class="text-base font-black text-white">BTC 15M Analyzer</h2>
-        <p class="mt-2 text-sm leading-relaxed text-slate-300">Live market data, predictions, and trade tools are active.</p>
-        <p class="mt-3 text-[10px] font-mono font-semibold uppercase tracking-wide text-slate-500">Designed by Orville Graham · OOG LLC · Est. 2021</p>
-        <button type="button" onclick="closeBtcLogoMessage()" class="mt-4 rounded-lg bg-amber-400 px-4 py-2 text-xs font-black text-slate-950 transition hover:bg-amber-300 active:scale-95">Got it</button>
-      </div>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- VIEW 3: BITCOIN 15M PATTERN & CONFLUENCE ANALYZER             -->
-    <!-- ============================================================= -->
-    <div id="view_btc_analyzer" class="space-y-0">
-
-      <!-- ================================================================= -->
-      <!-- IPHONE 17 PRO MAX NATIVE HERO (MATCHING KALSHI SCREENSHOT)        -->
-      <!-- ================================================================= -->
-
-      <div id="iphone17Hero" class="hidden">
-        <!-- Top Row: Interval Time & Price Target (Left), Countdown Pill (Right) -->
-        <div class="iphone17-top-row flex items-center justify-between w-full">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span id="iphone17IntervalTime" class="iphone17-interval-text">1:15–1:30 PM EDT</span>
-            <span class="text-xs text-slate-500 font-bold">•</span>
-            <div class="flex items-center gap-1">
-              <span class="iphone17-target-label text-xs font-semibold text-slate-400">Target</span>
-              <span id="iphone17TargetPrice" class="iphone17-target-val text-xs sm:text-sm font-black font-mono text-white">$77,342.17</span>
-            </div>
-          </div>
-          <div id="iphone17CountdownPill" class="iphone17-countdown-pill shrink-0">
-            <span id="iphone17CountdownText">05:37</span>
-          </div>
-        </div>
-
-        <!-- Middle Row: Live Price (Left) & Prediction Panel with Conviction % (Right) -->
-        <div class="iphone17-price-row flex items-end justify-between w-full mt-2 mb-0">
-          <!-- Live BTC Price -->
-          <div class="flex flex-col">
-            <span id="iphone17LivePrice" class="iphone17-live-price">$77,286.12</span>
-            <span id="iphone17SourceLabel" class="iphone17-source-text text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5">Source: Kalshi Official Strike</span>
-          </div>
-
-          <!-- Prediction Panel with Conviction Percentage -->
-          <div id="iphone17PredictionCard" class="iphone17-pred-card flex flex-col items-end justify-center px-2.5 py-1.5 rounded-xl border border-cyan-500/30 bg-slate-900/80 shadow-lg shadow-black/40 min-w-[124px]">
-            <div class="flex items-center gap-1.5">
-              <span class="text-[8px] font-black uppercase text-slate-400 tracking-wider">PRED</span>
-              <span id="iphone17PredOutcome" class="text-xs sm:text-sm font-black uppercase font-mono text-emerald-400">▲ ABOVE</span>
-            </div>
-            <div class="flex items-center gap-1 mt-0.5">
-              <span class="text-[8px] uppercase font-bold text-slate-400">Conviction</span>
-              <span id="iphone17PredConvictionPct" class="text-xs font-black font-mono text-cyan-300">82%</span>
-            </div>
-            <span id="iphone17PredGrade" class="text-[7.5px] font-black font-mono uppercase px-1.5 py-0.2 rounded mt-0.5 bg-slate-950 border border-slate-800 text-slate-300">GRADE A+</span>
-          </div>
-        </div>
-
-        <!-- Dotted Reference Line -->
-        <div class="iphone17-dotted-line hidden"></div>
-      </div>
-
-      
-      <!-- Main Row: 66% Chart (Left, Full Height) + Integrated Right Pane (33%) -->
-      <div class="btc-main-grid grid grid-cols-1 lg:grid-cols-3 gap-2 items-stretch w-full">
-        
-        <!-- LEFT: Official TradingView Real-Time Chart (Takes 66% width on landscape) -->
-        <div id="btcChartCard" class="btc-chart-card lg:col-span-2 glass-panel rounded-2xl p-2 sm:p-2.5 flex flex-col justify-between border border-slate-800" style="min-height: 520px; height: 100%;">
-          
-          <!-- Chart Header: Accuracy, Trend Grid & AI Model Accuracy -->
-          <div id="btcChartHeaderToolbar" class="flex items-center justify-between gap-1 sm:gap-1.5 pt-1 pb-1 mb-1 border-b border-slate-800/80 w-full overflow-hidden relative z-10 min-w-0">
-            <!-- Left: 15M Prediction Accuracy Tracker -->
-            <div id="btcAccuracyCard" class="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-950/80 border border-emerald-500/30 font-mono shadow-sm shadow-emerald-500/10 shrink-0">
-              <div class="flex items-center gap-0.5">
-                <span class="text-[10px]">🎯</span>
-                <span class="text-[8px] font-black text-emerald-400 uppercase tracking-wider hidden sm:inline">ACCURACY:</span>
-              </div>
-              <span id="btcAccuracyRatio" class="text-[7px] sm:text-[8px] font-black text-white px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
-                0/0
-              </span>
-              <span id="btcAccuracyPct" class="text-[8px] sm:text-[9px] font-black text-slate-400">
-                --%
-              </span>
-              <div class="h-1 w-8 sm:w-10 bg-slate-800 rounded-full overflow-hidden hidden md:flex">
-                <div id="btcAccuracyBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-500" style="width: 0%;"></div>
-              </div>
-              <div id="btcAccuracyRecentDots" class="hidden xl:flex items-center gap-0.5 text-[8px]">
-                <span class="text-[7px] text-slate-500 italic">Tracking...</span>
-              </div>
-              <span id="btcAccuracyStreakBadge" onclick="resetBtcAccuracyCounter()" class="text-[6px] sm:text-[7px] px-1 py-0.2 rounded font-bold uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/20" title="Click to reset tracker">
-                RST
-              </span>
-            </div>
-
-            <!-- Middle / Right: 15M Trend Box Grid -->
-            <div id="btcTrendBoxGrid" class="flex-1 min-w-0 flex items-center gap-0.5 sm:gap-1 justify-end overflow-hidden">
-              <!-- Injected via JavaScript with arrow, close price and close time -->
-            </div>
-
-            <!-- Right: AI Model Prediction Accuracy Pane -->
-            <div id="btcMlModelAccuracyCard" onclick="openMlPredictionDetailsModal()" class="flex flex-col justify-center items-center px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-950/80 border border-cyan-500/30 font-mono shadow-sm shadow-cyan-500/10 shrink-0 cursor-pointer hover:border-cyan-400 transition-colors">
-              <span class="text-[7px] sm:text-[7.5px] font-black text-cyan-400 uppercase tracking-wider leading-none">AI ACCURACY</span>
-              <span id="btcMlModelAccuracyPct" class="text-[9.5px] sm:text-[11px] font-black text-cyan-300 font-mono leading-none mt-0.5">--%</span>
-            </div>
-          </div>
-
-          <!-- Slot 3: Official TradingView Real-Time Chart Container (Full Native Drawing Tools on Left) -->
-          <div id="btc-chart-container" class="tradingview-widget-container flex-1 w-full rounded-xl overflow-hidden relative" style="min-height: 460px; height: 100%;">
-            <div id="tradingview_btc_chart" style="height: 100%; width: 100%;"></div>
-
-            <!-- iPhone 17 Pro Max Chart Toolbar (Volume, Delta, Timeframe Selectors) -->
-            <div id="iphone17ChartToolbar">
-              <!-- Left: Volume next to price delta panel (Real-Time Zero Delay) -->
-              <div class="flex items-center gap-2 drop-shadow-md">
-                <div id="iphone17VolumePill" class="iphone17-vol-pill bg-slate-900/90 border-slate-700/50">
-                  <span id="iphone17VolumeText">--</span>
-                </div>
-                <div id="iphone17DeltaBadge" class="iphone17-delta-panel delta-up bg-slate-900/90 border-slate-700/50">
-                  <span id="iphone17DeltaArrow">▲</span>
-                  <span id="iphone17DeltaVal">--</span>
-                </div>
-              </div>
-
-              <!-- Right: Timeframe Pills (1m default active, 15m, 1h) -->
-              <div class="flex items-center gap-1 drop-shadow-md bg-slate-900/90 rounded-full px-1 py-0.5 border border-slate-700/50">
-                <button type="button" onclick="setIphoneTimeframe('1m')" id="btnIphoneTf1m" class="iphone17-tf-btn active">
-                  <span class="tf-dot">●</span>1m
-                </button>
-                <button type="button" onclick="setIphoneTimeframe('15m')" id="btnIphoneTf15m" class="iphone17-tf-btn">
-                  15m
-                </button>
-                <button type="button" onclick="setIphoneTimeframe('1h')" id="btnIphoneTf1h" class="iphone17-tf-btn">
-                  1h
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SIDE PANEL: 100% Dedicated to Kalshi AI Trader (Buttons & Console with +25% Text Size) -->
-        <div class="btc-right-panel lg:col-span-1 glass-panel rounded-2xl p-2.5 sm:p-3 border border-slate-800 flex flex-col overflow-y-auto no-scrollbar" style="height: 100%;">
-          
-          <!-- ================================================================= -->
-          <!-- KALSHI AUTONOMOUS 15M TRADING CONSOLE (STREAMLINED - 40% TRADES)  -->
-          <!-- ================================================================= -->
-          <div id="kalshiTradingDeck" class="btc-panel-card p-2 sm:p-2.5 rounded-xl bg-slate-900/90 border border-cyan-500/40 shadow-lg shadow-cyan-950/20 flex flex-col justify-between flex-1 h-full min-h-0 space-y-1.5 font-mono">
-            
-            <!-- 1. Header with Status & ML Prediction Bubble -->
-            <div class="flex items-center justify-between border-b border-slate-800/80 pb-1 shrink-0 w-full gap-1.5">
-              <!-- Left: AI Console Text -->
-              <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                <span class="relative flex h-2 sm:h-2.5 w-2 sm:w-2.5 shrink-0">
-                  <span id="kalshiBeaconPing" class="hidden animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span id="kalshiBeaconDot" class="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-slate-600 opacity-40"></span>
-                </span>
-                <span id="kalshiAiTraderText" class="text-[10px] sm:text-sm font-black tracking-wider text-cyan-400 font-sans uppercase whitespace-nowrap">Kalshi AI Trader</span>
-              </div>
-
-              <!-- Right: Open P/L, Balance & Corner ML Status Bubble -->
-              <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
-                <!-- Open P/L & Balance Telemetry (hidden in iPad landscape & desktop) -->
-                <div id="kalshiDeckTelemetry" class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <!-- Open P/L Telemetry -->
-                  <div id="iphone17NavPnlContainer" class="flex items-center gap-0.5 sm:gap-1 font-mono">
-                    <span class="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden min-[375px]:inline">OPEN P/L</span>
-                    <span class="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider min-[375px]:hidden">P/L</span>
-                    <span id="iphone17NavPnlText" class="text-[10px] sm:text-xs font-black text-slate-200">$0.00</span>
-                  </div>
-                  <div class="h-2.5 sm:h-3 w-px bg-slate-700/50"></div>
-                  <!-- Balance -->
-                  <div class="flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs font-mono">
-                    <span class="text-slate-400 hidden sm:inline">Bal:</span>
-                    <span id="kalshiLiveBalance" class="text-emerald-400 font-bold">$7.82</span>
-                  </div>
-                  <div class="h-2.5 sm:h-3 w-px bg-slate-700/50"></div>
-                </div>
-
-                <!-- ML Prediction Status Bubble: Positioned cleanly in the corner of console container -->
-                <span id="kalshiMLStatusBubble" onclick="event.stopPropagation(); openMlPredictionDetailsModal()" class="min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7.5px] sm:text-[8.5px] font-bold uppercase rounded-full bg-slate-800 text-slate-300 border border-slate-700 animate-pulse whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform shrink-0">Monitoring</span>
-              </div>
-            </div>
-
-            <!-- 2. Side-by-Side Tab Buttons -->
-            <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-950/90 border border-slate-800 shrink-0">
-              <button id="tabBtnTrader" onclick="switchAiTraderTab('trader')" class="flex items-center justify-center gap-1.5 py-1 rounded-lg text-xs font-sans font-black uppercase tracking-wider transition-all bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-950/40 cursor-pointer">
-                <span>⚡</span>
-                <span>Trader</span>
-              </button>
-              <button id="tabBtnSettings" onclick="switchAiTraderTab('settings')" class="flex items-center justify-center gap-1.5 py-1 rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer">
-                <span>⚙️</span>
-                <span>Settings</span>
-                <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
-              </button>
-            </div>
-
-            <!-- ========================================================================= -->
-            <!-- TAB 1: TRADER PANE                                                        -->
-            <!-- ========================================================================= -->
-            <div id="aiTraderTabContent" class="space-y-1.5 flex flex-col flex-1 min-h-0">
-              
-              <!-- Controls: Auto Toggle & Mode Selector -->
-              <div class="grid grid-cols-2 gap-1.5 shrink-0">
-                <!-- Auto Execution Toggle -->
-                <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Auto:</span>
-                  <button id="btnToggleAutoTrade" onclick="toggleKalshiAutoTrade()" class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700">
-                    OFF
-                  </button>
-                </div>
-
-                <!-- Mode Toggle: PAPER vs LIVE -->
-                <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Mode:</span>
-                  <button id="btnToggleTradingMode" onclick="toggleKalshiTradingMode()" class="px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900">
-                    📝 PAPER
-                  </button>
-                </div>
-              </div>
-
-              <!-- Sizing Controls -->
-              <div class="space-y-1 shrink-0">
-                <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
-                    <div class="flex items-center">
-                      <span class="text-cyan-400 font-bold text-[10px] mr-0.5">$</span>
-                      <input id="kalshiSizeInput" type="number" min="0.50" step="0.50" value="0.65" onchange="updateKalshiSize(this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1.5 py-0.5 focus:border-cyan-500 focus:outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">-</button>
-                    <input id="kalshiContractsInput" type="number" min="1" max="9999" value="1" onchange="updateKalshiContracts(this.value)" class="w-16 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 px-1 focus:border-cyan-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                    <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">+</button>
-                    <span class="text-[10px] text-slate-400 font-mono">ct</span>
-                  </div>
-                </div>
-
-                <!-- Payout Multiplier Tool -->
-                <div id="kalshiPayoutCalculator" class="flex items-center justify-between px-2 py-0.5 rounded bg-slate-950/90 border border-cyan-500/20 text-[9px] sm:text-[10px] text-slate-300 font-mono">
-                  <span>Risk: <strong id="kalshiCalcRisk" class="text-white">$0.65</strong></span>
-                  <span class="text-slate-600">→</span>
-                  <span>Max: <strong id="kalshiCalcPayout" class="text-emerald-400 font-bold">$1.00 (+54%)</strong></span>
-                </div>
-              </div>
-
-              <!-- Active Target & 1-Click Execution -->
-              <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/80 space-y-1 shrink-0">
-                <div class="flex items-center justify-between text-[9px] sm:text-[10px]">
-                  <div class="flex items-center gap-1.5 truncate max-w-[160px]">
-                    <span class="text-slate-400 truncate font-bold" id="kalshiActiveTicker">KXBTC15M-ACTIVE</span>
-                    <span id="kalshiSimulatedBadge" class="hidden text-[7px] sm:text-[8px] font-mono font-black px-1.5 py-0.2 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider animate-pulse" title="Simulated fallback market data (Kalshi unavailable)">SIMULATED</span>
-                  </div>
-                  <span id="kalshiConvictionPill" class="px-1.5 py-0.2 rounded font-bold uppercase text-[8px] bg-slate-800 text-cyan-400">Min: A+, A & B+</span>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5 pt-0.5">
-                  <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-1 py-1.5 rounded-lg bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-emerald-950/60 cursor-pointer leading-tight">
-                    <div class="flex items-center gap-1 text-xs sm:text-sm"><span>▲</span> Bid Up</div>
-                    <span id="btnProbAbove" class="text-[10px] sm:text-xs font-mono text-emerald-300 opacity-90 font-bold mt-0.5">--%</span>
-                  </button>
-                  <button onclick="triggerManualKalshiTrade('BELOW')" class="px-1 py-1.5 rounded-lg bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-red-950/60 cursor-pointer leading-tight">
-                    <div class="flex items-center gap-1 text-xs sm:text-sm"><span>▼</span> Bid Down</div>
-                    <span id="btnProbBelow" class="text-[10px] sm:text-xs font-mono text-red-300 opacity-90 font-bold mt-0.5">--%</span>
-                  </button>
-                </div>
-                <!-- 1-Click Close Trade Button -->
-                <button type="button" id="btnCloseTrade" onclick="triggerCloseTrade()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 active:scale-95 transition-all text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm shadow-amber-950/30 cursor-pointer">
-                  <span>×</span> Close Active Trade
-                </button>
-              </div>
-
-              <!-- Win Rate, Trade List Link & P&L Tracker (Slimmer, Single-Line Compact Bar) -->
-              <div id="kalshiTradeSummaryBar" class="flex items-center justify-between gap-1.5 px-2 py-0.5 sm:py-1 text-[8.5px] sm:text-[9.5px] border border-slate-800/80 text-slate-400 shrink-0 font-mono bg-slate-950/70 rounded-md mt-0.5 shadow-sm leading-none">
-                <div class="whitespace-nowrap flex items-center gap-1 shrink-0">
-                  <span>Trades:</span>
-                  <span id="kalshiTradesCount" class="font-bold text-white">0W - 0L</span>
-                  <span class="text-slate-400 font-bold">(<span id="kalshiWinRate" class="text-emerald-400">0%</span>)</span>
-                </div>
-                
-                <!-- Clickable Trade List link to new page -->
-                <a href="/trades" id="btnOpenTradeList" class="px-2 py-0.5 rounded font-sans font-bold text-[8.5px] sm:text-[9.5px] bg-slate-800/90 hover:bg-cyan-950 text-slate-200 hover:text-cyan-300 border border-slate-600/90 hover:border-cyan-400 shadow-sm transition-all active:scale-95 flex items-center gap-1 cursor-pointer whitespace-nowrap leading-none shrink-0" title="Open last 10 trades list with full prediction details">
-                  <span class="text-[9.5px]">📋</span>
-                  <span>Trade List</span>
-                </a>
-
-                <div class="whitespace-nowrap flex items-center gap-1 shrink-0">
-                  <span>P&L:</span>
-                  <span id="kalshiTotalPnl" class="font-bold text-white">$0.00</span>
-                </div>
-              </div>
-
-              <!-- Recent Trades List Container directly on page - expands to bottom of panel -->
-              <div class="flex-1 min-h-[100px] overflow-y-auto no-scrollbar rounded-lg bg-slate-950/70 border border-slate-800/80 p-1 mt-1 flex flex-col">
-                <div id="kalshiTradesListContainer" class="space-y-1 flex-1"></div>
-              </div>
-              <span id="tradeLogPaperBalance" class="hidden"></span>
-
-            </div>
-
-            <!-- ========================================================================= -->
-            <!-- TAB 2: SETTINGS PANE (GENERAL & SCALPER SUB-PAGES)                         -->
-            <!-- ========================================================================= -->
-            <div id="aiSettingsTabContent" class="space-y-2 flex flex-col flex-1 min-h-0 overflow-y-auto pr-0.5 hidden">
-              
-              <!-- Sub-Page Switcher (General Settings vs Scalper Settings) -->
-              <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-slate-950 border border-slate-800 shrink-0 text-[9px] font-sans font-bold uppercase tracking-wider">
-                <button id="btnSettingsSubGeneral" onclick="switchSettingsSubPage('general')" class="py-1 rounded bg-slate-800 text-cyan-300 shadow-sm transition-all cursor-pointer">
-                  ⚙️ General
-                </button>
-                <button id="btnSettingsSubScalp" onclick="switchSettingsSubPage('scalp')" class="py-1 rounded text-slate-400 hover:text-slate-200 transition-all cursor-pointer flex items-center justify-center gap-1">
-                  <span>⚡</span> Scalper
-                  <span id="scalpSubBadge" class="h-1.5 w-1.5 rounded-full bg-slate-600"></span>
-                </button>
-              </div>
-
-              <!-- ===================================================================== -->
-              <!-- SUB-PAGE 1: GENERAL BOT SETTINGS                                      -->
-              <!-- ===================================================================== -->
-              <div id="generalSettingsSubPage" class="space-y-2 flex flex-col">
-                <!-- Section A: Model & Training Controls -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🧠</span> Model & Training Controls
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-amber-950/40 border border-amber-500/50 shadow-sm shadow-amber-500/10">
-                      <span class="text-amber-400 font-bold flex items-center gap-1 cursor-help" title="Trading Architecture: Sniper (15m rollover window) vs Machine Gun (1m continuous tick evaluation)">⚡ Trading Style</span>
-                      <select id="settingTradingStyle" title="Choose the AI evaluation architecture" class="bg-slate-950 border border-amber-500/60 rounded px-1.5 py-0.5 text-amber-300 font-bold focus:outline-none cursor-pointer">
-                        <option value="SNIPER" selected>🎯 Sniper (15m)</option>
-                        <option value="MACHINE_GUN">⚡ Machine Gun (1m)</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Select which ML model to use for predictions (Logistic Regression, Random Forest, XGBoost)">Model Choice</span>
-                      <select id="settingModelChoice" title="Select which ML model to use for predictions (Logistic Regression, Random Forest, XGBoost)" class="bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 focus:outline-none cursor-pointer">
-                        <option value="LogisticRegression" title="Fast, reliable linear model (good baseline for probability)" selected>Logistic Reg.</option>
-                        <option value="RandomForest" title="Robust ensemble method that handles non-linear market patterns well">Random Forest</option>
-                        <option value="XGBoost" title="Advanced gradient boosting (highest accuracy on complex financial data)">XGBoost</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Number of most recent trades to use for training (30 - 4000)">Training Window</span>
-                      <div class="flex items-center gap-1">
-                        <input type="range" id="settingTrainWindow" title="Number of most recent trades to use for training (30 - 4000)" min="30" max="4000" step="50" value="4000" class="w-16 cursor-pointer" oninput="document.getElementById('trainWinVal').innerText=this.value" />
-                        <span id="trainWinVal" class="text-cyan-400 font-mono w-8 text-right">4000</span>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Regularization strength C (higher = less regularization)">Regularization (C)</span>
-                      <input type="number" id="settingRegC" title="Regularization strength C (higher = less regularization)" value="0.5" step="0.1" class="w-12 bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded px-1 text-cyan-300 font-mono focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Choose class weighting for the model (balanced or none)">Class Weighting</span>
-                      <select id="settingClassWeight" title="Choose class weighting for the model (balanced or none)" class="bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 focus:outline-none cursor-pointer">
-                        <option value="balanced" selected>Balanced</option>
-                        <option value="none">None</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-amber-950/30 border border-amber-500/40 shadow-sm shadow-amber-500/10" title="Override PASS state and execute 100% on AI Prediction on every trade until toggled off (bypasses PASS and technical filters)">
-                      <div class="flex flex-col">
-                        <span class="text-amber-300 font-bold cursor-help flex items-center gap-1">⚡ Force Trade on PASS</span>
-                        <span class="text-[7.5px] text-amber-400 font-mono">100% AI Prediction (Until Toggled Off)</span>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingIgnorePass" onchange="onToggleForceTradePass(this.checked)" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
-                      </label>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-teal-950/30 border border-teal-500/40 shadow-sm shadow-teal-500/10" title="Override PASS state and force trade using ONLY the Technical Chart Setup direction (ignores ML direction)">
-                      <div class="flex flex-col">
-                        <span class="text-teal-300 font-bold cursor-help flex items-center gap-1">? Force Trade on PASS</span>
-                        <span class="text-[7.5px] text-teal-400 font-mono">Technical Chart Setups Only</span>
-                      </div>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingIgnorePassTechnicalOnly" onchange="onToggleForceTradePassTechnicalOnly(this.checked)" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-teal-500"></div>
-                      </label>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="Align trade direction with CVD instead of PASSING on divergence">
-                      <span class="text-indigo-400 cursor-help flex items-center gap-1">🔄 Reverse on CVD Divergence</span>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingReverseCvd" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-500"></div>
-                      </label>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-purple-950/40 border border-purple-500/50 shadow-sm shadow-purple-500/10" title="Execute next trade based 100% on the AI Model Prediction at Interval Start (pure ML direction), bypassing technical/PASS filters. Automatically returns to normal after execution.">
-                      <span class="text-purple-300 font-bold flex items-center gap-1 cursor-help">
-                        <span>🎯</span> 100% AI Prediction (1-Shot)
-                      </span>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingOneShotAiStartTrade" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section: CVD / Order Flow Gate Settings -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs mb-1">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>📊</span> CVD / Order Flow Gate
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="CVD value below this triggers bear-side divergence block on YES trades (default: -2)">
-                      <span class="text-slate-300 cursor-help">Bear Block Limit (CVD &lt;)</span>
-                      <input type="number" id="settingCvdBearLimit" value="-2" step="1" class="w-16 bg-slate-950 border border-slate-700 rounded px-1 text-red-400 font-mono text-right focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="CVD value above this triggers bull-side divergence block on NO trades (default: 2)">
-                      <span class="text-slate-300 cursor-help">Bull Block Limit (CVD &gt;)</span>
-                      <input type="number" id="settingCvdBullLimit" value="2" step="1" class="w-16 bg-slate-950 border border-slate-700 rounded px-1 text-green-400 font-mono text-right focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="A+ setups with confidence above this % bypass the CVD block entirely (default: 75)">
-                      <span class="text-slate-300 cursor-help">A+ Override Threshold (%)</span>
-                      <input type="number" id="settingCvdOverrideConf" value="75" min="50" max="99" step="1" class="w-16 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section B: Risk & Position Management -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🛡️</span> Risk Management
-                    </span>
-                    <button id="btnToggleRisk" onclick="toggleRiskManagement()" class="text-xs text-slate-400 hover:text-cyan-400 focus:outline-none transition-colors px-2 py-0.5 rounded border border-slate-700 bg-slate-900 hover:bg-slate-800">
-                      Hide
-                    </button>
-                  </div>
-                  <div id="riskManagementWrapper" class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Maximum dollar amount to allocate per trade">Max $ Capital / Trade</span>
-                      <div class="flex items-center gap-1">
-                        <span class="text-slate-500">$</span>
-                        <input type="number" id="settingMaxCap" title="Maximum dollar amount to allocate per trade" value="5" min="1" max="1000" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Max Daily Risk (USD)">Max Daily Risk ($)</span>
-                      <input type="number" id="settingMaxDailyRisk" title="Max Daily Risk (USD)" value="25" step="5" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-red-400 font-mono text-right focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Max Daily Trades">Max Daily Trades</span>
-                      <input type="number" id="settingMaxDailyTrades" title="Max Daily Trades" value="10" min="1" max="500" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-amber-400 font-mono text-right focus:outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section B2: Reversal & Early Stop-Loss Protection -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🔄</span> Reversal & Early Stop-Loss
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <!-- Option 1: Dynamic Stop-Loss -->
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800" title="Automatically exit open position early if spot BTC moves against the strike target before expiration to prevent 0¢ total loss.">
-                      <span class="text-cyan-300 font-bold cursor-help flex items-center gap-1">🛑 Early Stop-Loss (Bailout)</span>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingDynamicStopLoss" checked class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
-                      </label>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Max adverse BTC spot move against strike ($) before triggering early bailout exit">Stop-Loss Move ($)</span>
-                      <div class="flex items-center gap-1">
-                        <span class="text-slate-500">$</span>
-                        <input type="number" id="settingStopLossMoveDollars" title="Adverse BTC move against target in dollars to trigger stop loss" value="45" min="15" max="200" step="5" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Only trigger early stop-loss during the first N minutes of the 15-minute interval">Max Stop Window (min)</span>
-                      <div class="flex items-center gap-1">
-                        <input type="number" id="settingStopLossMaxMinutes" title="Window in minutes from interval start where early stop loss is allowed" value="8" min="3" max="12" step="1" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                        <span class="text-slate-500">m</span>
-                      </div>
-                    </div>
-
-                    <!-- Option 2: Position Reversal -->
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800 mt-1.5" title="Flip position to opposite direction when stopped out, subject to time, price, and confidence guardrails.">
-                      <span class="text-amber-300 font-bold cursor-help flex items-center gap-1">🔀 Position Reversal (Flip)</span>
-                      <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="settingPositionReversal" class="sr-only peer">
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
-                      </label>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Max price in cents to pay for the reversal contract (e.g. 65¢) to protect risk/reward">Reversal Max Price (¢)</span>
-                      <div class="flex items-center gap-1">
-                        <input type="number" id="settingReversalMaxPriceCents" title="Max contract ask price in cents allowed for reversal flip" value="65" min="50" max="85" step="1" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-amber-300 font-mono text-right focus:outline-none" />
-                        <span class="text-slate-500">¢</span>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Minimum minutes remaining before 15m expiry to allow a reversal flip">Min Time Remaining (min)</span>
-                      <div class="flex items-center gap-1">
-                        <input type="number" id="settingReversalMinMinutesLeft" title="Minimum minutes before expiration to allow flip" value="6" min="4" max="10" step="1" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-amber-300 font-mono text-right focus:outline-none" />
-                        <span class="text-slate-500">m</span>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Minimum AI/momentum confidence percentage required to execute reversal flip">Reversal Min Conf (%)</span>
-                      <div class="flex items-center gap-1">
-                        <input type="number" id="settingReversalMinConfidence" title="Minimum confidence percentage required for reversal" value="75" min="60" max="90" step="5" class="w-12 bg-slate-950 border border-slate-700 rounded px-1 text-amber-300 font-mono text-right focus:outline-none" />
-                        <span class="text-slate-500">%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section C: Prediction Confidence Filters -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🎯</span> Confidence Filters
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Minimum confidence percentage required for a trade (50‑95%)">Min Confidence %</span>
-                      <div class="flex items-center gap-1">
-                        <input type="range" id="settingMinConf" title="Minimum confidence percentage required for a trade (50‑95%)" min="50" max="95" value="65" class="w-16 cursor-pointer" oninput="document.getElementById('minConfVal').innerText=this.value+'%'" />
-                        <span id="minConfVal" class="text-cyan-400 font-mono w-8 text-right">65%</span>
-                      </div>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Select which grade setups to trade">Minimum Trade Grade</span>
-                      <select id="settingMinConviction" title="Select which grade setups to trade" class="bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 focus:outline-none cursor-pointer">
-                        <option value="A+">A+ Only</option>
-                        <option value="A">A+ and A</option>
-                        <option value="B" selected>A+, A, and B+</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Enable edge-weighting in confidence calculation">Edge-Weight Multiplier</span>
-                      <div class="flex items-center gap-1">
-                        <input type="checkbox" id="settingEdgeWeightOn" title="Enable edge-weighting in confidence calculation" checked class="rounded bg-slate-950 border-slate-700 text-cyan-500 cursor-pointer" />
-                        <input type="number" id="settingEdgeWeightFactor" value="1.2" step="0.1" class="w-10 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section C2: Execution & Timing -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>⚡</span> Execution & Timing
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Choose order type: market for immediate execution, limit for price‑limited order">Order Type</span>
-                      <select id="settingOrderType" title="Choose order type: market for immediate execution, limit for price‑limited order" class="bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 focus:outline-none cursor-pointer">
-                        <option value="market" selected>Market</option>
-                        <option value="limit">Limit</option>
-                      </select>
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Delay in seconds before sending an order (0‑5)">Execution Delay (sec)</span>
-                      <input type="number" id="settingExecDelay" title="Delay in seconds before sending an order (0‑5)" value="1" min="0" max="5" class="w-10 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Interval in seconds between polling market data">Polling Interval (sec)</span>
-                      <input type="number" id="settingPollInterval" value="5" min="1" max="15" class="w-10 bg-slate-950 border border-slate-700 rounded px-1 text-cyan-300 font-mono text-right focus:outline-none" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Use 1-min locked prediction windows">Prediction Mode</span>
-                      <input type="checkbox" id="settingPredictionMode" title="Use 1-min locked prediction windows" checked onchange="togglePredictionMode(this.checked)" class="rounded bg-slate-950 border-slate-700 text-cyan-500 cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section C3: Logging & Debugging -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0 mb-2">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🐛</span> Logging & Debugging
-                    </span>
-                  </div>
-                  <div class="space-y-1 text-[9px] sm:text-[10px]">
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Enable detailed logging in the backend console">Verbose Logging</span>
-                      <input type="checkbox" id="settingVerboseLog" checked class="rounded bg-slate-950 border-slate-700 text-cyan-500 cursor-pointer" />
-                    </div>
-                    <div class="flex items-center justify-between px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                      <span class="text-slate-300 cursor-help" title="Run without placing real trades on Kalshi">Simulation Mode (Dry Run)</span>
-                      <input type="checkbox" id="settingDryRun" checked class="rounded bg-slate-950 border-slate-700 text-yellow-500 cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Section D: Kalshi Gateway Connection & Actions -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">💰 Paper Balance:</span>
-                    <span id="kalshiSettingsPaperBalance" class="text-white font-bold font-mono">$500.00</span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-1.5 pt-1">
-                    
-                    <button onclick="resetKalshiSettingsDefaults()" class="col-span-2 w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
-                      <span>↺</span> Reset
-                    </button>
-                    <button onclick="resetPaperBalanceUI()" class="w-full py-1.5 px-2 col-span-2 rounded-lg bg-red-900/50 hover:bg-red-800 border border-red-500/40 text-red-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
-                      <span>⚠️</span> Reset Paper Balance
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ===================================================================== -->
-              <!-- SUB-PAGE 2: DEDICATED SCALPER ENGINE SETTINGS                         -->
-              <!-- ===================================================================== -->
-              <div id="scalperSettingsSubPage" class="space-y-2 flex flex-col hidden">
-                <!-- Scalp Master Status & Toggle -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>⚡</span> Scalp Engine
-                    </span>
-                    <span id="scalpStatusBadge" class="text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">INACTIVE</span>
-                  </div>
-                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                    <span class="text-slate-300">Rapid Scalping Mode:</span>
-                    <button id="btnToggleScalpEngine" onclick="toggleScalpEngine()" class="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700 cursor-pointer">
-                      OFF
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Scalp Triggers & Thresholds -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>📈</span> Entry & Targets
-                    </span>
-                    <span class="text-[9px] text-cyan-400 font-mono">Micro Moves</span>
-                  </div>
-
-                  <!-- Price Move Threshold -->
-                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                    <span class="text-slate-300">Min Move Trigger:</span>
-                    <div class="flex items-center gap-1">
-                      <input id="scalpPriceMoveThreshold" type="number" step="0.1" min="0.1" max="5.0" value="0.5" class="w-14 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-cyan-300 font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
-                      <span class="text-slate-400">%</span>
-                    </div>
-                  </div>
-
-                  <!-- Take-Profit Target (ATR) -->
-                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                    <span class="text-slate-300 cursor-help" title="Dynamic take-profit target in ATR volatility units">Take-Profit Target (ATR):</span>
-                    <div class="flex items-center gap-1">
-                      <input id="scalpTakeProfitATR" type="number" step="0.1" min="0.5" max="10.0" value="2.0" class="w-14 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-emerald-400 font-mono font-bold py-0.5 focus:border-emerald-500 focus:outline-none" />
-                      <span class="text-slate-400">ATR</span>
-                    </div>
-                  </div>
-
-                  <!-- Profit & Loss Target -->
-                  <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
-                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
-                      <span class="text-slate-400 text-[8px]">Profit Target</span>
-                      <div class="flex items-center justify-between">
-                        <input id="scalpProfitTarget" type="number" step="0.05" min="0.05" max="1.0" value="0.25" class="w-12 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-emerald-400 font-mono font-bold py-0.5 focus:border-emerald-500 focus:outline-none" />
-                        <span id="scalpProfitTargetLabel" class="text-[8px] text-emerald-400 font-bold">+25%</span>
-                      </div>
-                    </div>
-                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col gap-1">
-                      <span class="text-slate-400 text-[8px]">Stop Loss Target</span>
-                      <div class="flex items-center justify-between">
-                        <input id="scalpLossTarget" type="number" step="0.05" min="0.05" max="1.0" value="0.25" class="w-12 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-red-400 font-mono font-bold py-0.5 focus:border-red-500 focus:outline-none" />
-                        <span id="scalpLossTargetLabel" class="text-[8px] text-red-400 font-bold">-25%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Minimum Conviction Dropdown -->
-                  <div class="flex items-center justify-between text-[9px] sm:text-[10px] px-1.5 py-1 rounded-lg bg-slate-900 border border-slate-800">
-                    <span class="text-slate-300">Min Conviction:</span>
-                    <select id="scalpMinConviction" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[9px] text-cyan-300 font-mono focus:outline-none cursor-pointer">
-                      <option value="A+" selected>A+ Only (Strict)</option>
-                      <option value="A">A+ & A</option>
-                      <option value="B+">A+, A & B+</option>
-                      <option value="B">A+, A, B+ & B</option>
-                      <option value="C">All (Include C)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Sizing & Interval Limits -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 shrink-0">
-                  <div class="flex items-center justify-between text-[10px] sm:text-xs">
-                    <span class="text-slate-300 font-sans font-bold flex items-center gap-1">
-                      <span>🛡️</span> Scalp Limits
-                    </span>
-                    <span class="text-[9px] text-emerald-400 font-mono">Per-15M Interval</span>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-1.5 text-[9px] sm:text-[10px]">
-                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
-                      <span class="text-slate-400 text-[8px]">Contracts:</span>
-                      <input id="scalpMaxContracts" type="number" min="1" max="9999" value="1" class="w-14 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                    </div>
-                    <div class="p-1.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
-                      <span class="text-slate-400 text-[8px]">Max Trades:</span>
-                      <input id="scalpMaxTradesPerInterval" type="number" min="1" max="5" value="1" class="w-10 text-center bg-slate-950 border border-slate-700 rounded text-[9px] text-white font-mono font-bold py-0.5 focus:border-cyan-500 focus:outline-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="p-2 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1 shrink-0">
-                  <div class="grid grid-cols-2 gap-1.5">
-                    
-                    <button onclick="resetScalpSettingsDefaults()" class="col-span-2 w-full py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 active:scale-95 transition-all text-[10px] font-sans font-bold uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer">
-                      <span>↺</span> Defaults
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-    <script>
     // Risk Management UI Toggle
     let riskEnabled = localStorage.getItem("riskEnabled") !== "false";
     function toggleRiskManagement() {
@@ -2984,8 +87,12 @@
         }
       } catch (e) {}
 
-      // 2. Countdown Pill is updated directly by updateBtcCountdownClock() every second — no copy needed here.
-
+      // 2. Countdown Pill (e.g. 05:37)
+      const cdPillText = document.getElementById("iphone17CountdownText");
+      const mainCd = document.getElementById("btcCountdown");
+      if (cdPillText && mainCd && mainCd.innerText && mainCd.innerText !== "--:--") {
+        cdPillText.innerText = mainCd.innerText;
+      }
 
       // 3. Live Price
       const curPrice = Number(liveData?.price || lastBtcPrice || 0);
@@ -3064,25 +171,22 @@
         predGradeEl.innerText = gradeBadge;
       }
 
-      // 6. Volume Pill (Real-Time Synchronous Update)
+      // 6. Volume Pill
       const volEl = document.getElementById("iphone17VolumeText");
-      const volVal = liveData?.volume_24h || liveData?.kalshi?.volume_24h || window.cachedBtcVolume || window.lastKalshiVolume;
-      if (volEl && volVal) {
-        window.cachedBtcVolume = volVal;
-        volEl.innerText = Math.round(Number(volVal)).toLocaleString();
+      if (volEl && liveData?.volume_24h) {
+        volEl.innerText = Math.round(liveData.volume_24h).toLocaleString();
       }
 
-      // 7. Price Delta Panel (Real-Time Synchronous Update)
+      // 7. Delta Badge
       const deltaValEl = document.getElementById("iphone17DeltaVal");
       const deltaArrowEl = document.getElementById("iphone17DeltaArrow");
-      const deltaPanel = document.getElementById("iphone17DeltaBadge");
+      const deltaBadge = document.getElementById("iphone17DeltaBadge");
       if (deltaValEl && curPrice > 0 && targetPrice > 0) {
         const diff = curPrice - targetPrice;
-        const sign = diff >= 0 ? "+" : "";
-        deltaValEl.innerText = `${sign}${diff.toFixed(1)}`;
+        deltaValEl.innerText = `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}`;
         if (deltaArrowEl) deltaArrowEl.innerText = diff >= 0 ? "▲" : "▼";
-        if (deltaPanel) {
-          deltaPanel.className = `iphone17-delta-panel ${diff >= 0 ? "delta-up" : "delta-down"}`;
+        if (deltaBadge) {
+          deltaBadge.className = `flex items-center gap-0.5 text-xs font-bold ${diff >= 0 ? "text-emerald-400" : "text-[#ff6b35]"}`;
         }
       }
     }
@@ -3091,26 +195,26 @@
       const w = window.innerWidth;
       const h = window.innerHeight;
       const ua = navigator.userAgent || "";
-      const isLandscape = w > h;
-      const isIpad = /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || (!/iPhone|iPod/.test(ua) && Math.min(w, h) >= 640 && Math.max(w, h) <= 1366);
-      const isIpadMini7 = isIpad && ((w === 744 && h === 1133) || (w === 1133 && h === 744) || (window.devicePixelRatio === 2 && Math.min(w, h) === 744));
       const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      const isIphone = !isIpad && /iPhone|iPod/.test(ua);
-      const isPhone = !isIpad && (isIphone || Math.min(w, h) < 640);
-      const isTablet = isIpad || (!isPhone && Math.min(w, h) >= 640 && Math.max(w, h) <= 1366);
+      const isIpad = /iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1 && Math.min(w, h) >= 700);
+      const isIpadMini7 = isIpad && window.devicePixelRatio === 2 && navigator.maxTouchPoints > 0 && ((w === 744 && h === 1133) || (w === 1133 && h === 744));
+      const isIphone = isIOS && !isIpad;
+      const isLandscape = w > h;
+      const isPhone = isIphone || (!isIpad && Math.min(w, h) < 680);
+      const isTablet = isIpad || (!isPhone && Math.min(w, h) >= 680 && Math.max(w, h) <= 1366);
 
       // Robust iPhone 17 Pro Max / iPhone Portrait Detection
       const queryParam = window.location.search || "";
-      const isManualIphone = (queryParam.includes("device=iphone") || queryParam.includes("iphone") || queryParam.includes("ios")) && !queryParam.includes("ipad");
-      const isIphone17ProMax = !isIpad && !isTablet && (isManualIphone || (
+      const isManualIphone = queryParam.includes("device=iphone") || queryParam.includes("iphone") || queryParam.includes("ios");
+      const isIphone17ProMax = isManualIphone || (
         (isIphone || isPhone) && !isLandscape && (
           (w >= 410 && w <= 460 && h >= 880 && h <= 1000) ||
           (window.screen && Math.min(window.screen.width, window.screen.height) >= 420 && Math.max(window.screen.width, window.screen.height) >= 900) ||
           /iPhone17|iPhone/.test(ua) ||
           (window.devicePixelRatio >= 3 && w <= 460)
         )
-      ));
-      const isIphonePortrait = !isIpad && !isTablet && (isManualIphone || ((isIphone || isPhone) && !isLandscape));
+      );
+      const isIphonePortrait = isManualIphone || ((isIphone || isPhone) && !isLandscape);
 
       const root = document.documentElement;
       const body = document.body;
@@ -3119,93 +223,19 @@
       root.style.setProperty("--app-height", `${window.innerHeight}px`);
 
       // Set explicit attributes and classes for deterministic CSS rules
-      const deviceAttr = isIphonePortrait ? "iphone-portrait" : (isPhone ? "phone" : (isTablet ? "tablet" : "desktop"));
-      root.setAttribute("data-device", deviceAttr);
-      body.setAttribute("data-device", deviceAttr);
+      root.setAttribute("data-device", isPhone ? "phone" : (isTablet ? "tablet" : "desktop"));
       root.setAttribute("data-orientation", isLandscape ? "landscape" : "portrait");
-      body.setAttribute("data-orientation", isLandscape ? "landscape" : "portrait");
-      body.classList.toggle("is-landscape", isLandscape);
-      root.classList.toggle("is-landscape", isLandscape);
-      body.classList.toggle("is-portrait", !isLandscape);
-      root.classList.toggle("is-portrait", !isLandscape);
 
+      body.classList.toggle("device-phone", isPhone);
+      body.classList.toggle("device-tablet", isTablet);
+      body.classList.toggle("device-desktop", !isPhone && !isTablet);
+      body.classList.toggle("device-iphone", isIphone);
       body.classList.toggle("device-ipad", isIpad);
       body.classList.toggle("is-ipad-mini-7", isIpadMini7);
       body.classList.toggle("is-iphone-17-promax", isIphone17ProMax);
-      body.classList.toggle("is-iphone-portrait", isIphonePortrait);
-      root.classList.toggle("is-iphone-17-promax", isIphone17ProMax);
-      root.classList.toggle("is-iphone-portrait", isIphonePortrait);
-    }
-
-    // Escapes text before it is interpolated into innerHTML, to guard against
-    // DOM-based XSS from any backend/third-party feed text (pattern descriptions,
-    // confluence factor text, etc.) that isn't itself pre-sanitized.
-    function escapeHtml(str) {
-      const div = document.createElement("div");
-      div.textContent = String(str ?? "");
-      return div.innerHTML;
-    }
-
-    // =========================================================================
-    // API Authentication Token Handshake (C1/C5)
-    // =========================================================================
-    function getAppApiToken() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get("token") || urlParams.get("api_token");
-      if (urlToken) {
-        localStorage.setItem("app_api_token", urlToken);
-        const cleanUrl = window.location.pathname + window.location.hash;
-        window.history.replaceState({}, document.title, cleanUrl);
-        return urlToken;
-      }
-      return localStorage.getItem("app_api_token") || "";
-    }
-
-    function setAppApiToken(token) {
-      if (token) {
-        localStorage.setItem("app_api_token", token.trim());
-      } else {
-        localStorage.removeItem("app_api_token");
-      }
-    }
-
-    let _authPromptActive = false;
-    let _authPromptDismissed = false;
-
-    function getAuthHeaders(customHeaders = {}) {
-      const headers = { ...customHeaders };
-      const token = getAppApiToken();
-      if (token) {
-        headers["X-API-Token"] = token;
-      }
-      return headers;
-    }
-
-    async function authFetch(url, options = {}) {
-      const opts = { ...options };
-      opts.headers = getAuthHeaders(opts.headers || {});
-      const res = await fetch(url, opts);
-      if (res.status === 401) {
-        // Never trigger blocking browser prompt() on background polling GET requests.
-        // Only trigger prompt if user is performing an explicit mutation action (POST/PATCH/DELETE)
-        const isUserAction = opts.method && opts.method.toUpperCase() !== "GET";
-        if (isUserAction && !_authPromptActive && !_authPromptDismissed) {
-          _authPromptActive = true;
-          try {
-            const entered = prompt("Enter Server API Token (APP_API_TOKEN) to authorize this action:");
-            if (entered && entered.trim()) {
-              setAppApiToken(entered.trim());
-              opts.headers = getAuthHeaders(opts.headers || {});
-              return await fetch(url, opts);
-            } else if (entered === null) {
-              _authPromptDismissed = true;
-            }
-          } finally {
-            _authPromptActive = false;
-          }
-        }
-      }
-      return res;
+      body.classList.toggle("is-iphone-portrait", (isIphone || isPhone) && !isLandscape);
+      body.classList.toggle("orientation-landscape", isLandscape);
+      body.classList.toggle("orientation-portrait", !isLandscape);
     }
 
     // Run on load and listen to viewport adjustments
@@ -3227,44 +257,6 @@
       setTimeout(detectAndAdaptDevice, 100);
     });
     detectAndAdaptDevice();
-
-    // Strict iPhone scroll lock: keep entire layout firmly anchored in place without window upward movement
-    function isIphoneLayoutActive() {
-      return document.body && (
-        document.body.classList.contains("is-iphone-portrait") || 
-        document.body.classList.contains("is-iphone-17-promax") || 
-        (window.innerWidth <= 680 && window.innerWidth < window.innerHeight)
-      );
-    }
-
-    window.addEventListener("scroll", () => {
-      if (isIphoneLayoutActive() && (window.scrollY !== 0 || window.scrollX !== 0)) {
-        window.scrollTo(0, 0);
-      }
-    }, { passive: false });
-
-    window.addEventListener("touchmove", (e) => {
-      if (!isIphoneLayoutActive()) return;
-      let el = e.target;
-      let canScroll = false;
-      while (el && el !== document.body && el !== document.documentElement) {
-        if (el.scrollHeight > el.clientHeight && (window.getComputedStyle(el).overflowY === "auto" || window.getComputedStyle(el).overflowY === "scroll")) {
-          canScroll = true;
-          break;
-        }
-        el = el.parentElement;
-      }
-      if (!canScroll && e.cancelable) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    window.addEventListener("focusout", () => {
-      if (isIphoneLayoutActive()) {
-        window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-      }
-    });
 
     // Dedicated Top Bar Manual Refresh
     async function triggerManualRefresh() {
@@ -3342,18 +334,6 @@
         img.src = 'https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/generic/headshot/67/current.png';
       }
     }
-
-    // Global capture-phase listener for player headshot image error fallback (avoids inline onerror)
-    document.addEventListener('error', function (e) {
-      if (e.target && e.target.tagName === 'IMG' && e.target.classList.contains('player-headshot-img')) {
-        handlePlayerHeadshotError(
-          e.target,
-          e.target.dataset.name || '',
-          e.target.dataset.id || '',
-          e.target.dataset.teamLogo || ''
-        );
-      }
-    }, true);
 
     // iOS Modal Scroll Locking (Prevents background bleed/scroll on selection)
     function lockBodyScroll() {
@@ -3453,14 +433,12 @@
       if (clockEl) clockEl.innerText = `${datePart} • ${timePart} ET`;
     }
 
-    let _live1sTimer = null;
     function startLive1sRefresh() {
-      if (_live1sTimer) clearInterval(_live1sTimer);
       updateLiveClock();
       updateBtcCountdownClock();
       fetchKalshiDirect();
       fetchBtcKlinesDirect();
-      _live1sTimer = setInterval(async () => {
+      setInterval(async () => {
         updateLiveClock();
         updateBtcCountdownClock();
 
@@ -3516,22 +494,6 @@
       const container = document.getElementById("top5Grid");
       if (!picks || picks.length === 0) return;
 
-      if (!container._hasDelegatedListeners) {
-        container._hasDelegatedListeners = true;
-        container.addEventListener("click", e => {
-          const slipBtn = e.target.closest("[data-toggle-slip]");
-          if (slipBtn) {
-            e.stopPropagation();
-            toggleSlip(slipBtn.dataset.toggleSlip);
-            return;
-          }
-          const playerCard = e.target.closest("[data-player-id]");
-          if (playerCard) {
-            openModal(playerCard.dataset.playerId);
-          }
-        });
-      }
-
       container.innerHTML = picks.map((p, idx) => `
         <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/10 group relative">
           <div class="space-y-2.5">
@@ -3546,51 +508,51 @@
                 }
               </div>
               <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                +${escapeHtml(p.dk_edge || p.edge || 0)}% EV
+                +${p.dk_edge || p.edge}% EV
               </span>
             </div>
 
-            <div class="flex items-center gap-2 cursor-pointer" data-player-id="${escapeHtml(p.id)}">
-              <img src="${escapeHtml(p.headshot || '')}" class="player-headshot-img w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" data-name="${escapeHtml(p.name || '')}" data-id="${escapeHtml(p.id || '')}" data-team-logo="${escapeHtml(p.team_logo || '')}">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="openModal('${p.id}')">
+              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div class="overflow-hidden">
-                <div class="font-black text-xs text-white group-hover:text-emerald-400 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-300 truncate font-medium">${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} • #${escapeHtml(p.order)} (${escapeHtml(p.pos || 'DH')})</div>
-                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">vs SP:</span> <strong class="text-white">${escapeHtml(p.pitcher_name || p.pitcher || '')}</strong> <span class="text-emerald-400 font-mono">(${p.pitcher_era ? escapeHtml(p.pitcher_era) + ' ERA' : ''})</span></div>
-                <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${escapeHtml(p.game_date || 'Today')} • ${escapeHtml(p.game_time || '7:05 PM ET')}</div>
+                <div class="font-black text-xs text-white group-hover:text-emerald-400 truncate">${p.name}</div>
+                <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • #${p.order} (${p.pos || 'DH'})</div>
+                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">vs SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
+                <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
               </div>
             </div>
 
             <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
               <span class="font-bold text-white whitespace-nowrap">+1 H+R+RBI</span>
-              <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">${escapeHtml(p.proj_total)} Proj</span>
+              <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">${p.proj_total} Proj</span>
             </div>
 
             <!-- The Odds API Live Odds Badge -->
-            <a href="${escapeHtml(p.dk_deep_link || p.dk_link || 'dksb://sb/addbet')}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
+            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">⚡</span>
                 <span class="font-bold text-emerald-400">Odds:</span>
-                <span class="font-mono font-extrabold text-white">${escapeHtml(p.dk_odds || p.book_odds || '')}</span>
+                <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${escapeHtml(p.dk_implied_prob || 65)}%</strong> ↗</span>
+              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 65}%</strong> ↗</span>
             </a>
 
             <div class="space-y-1">
               <div class="flex items-center justify-between text-[10px]">
                 <span class="text-slate-400">Model Win Probability</span>
-                <span class="font-black text-emerald-400">${escapeHtml(p.win_prob)}%</span>
+                <span class="font-black text-emerald-400">${p.win_prob}%</span>
               </div>
               <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${Number(p.win_prob || 0)}%"></div>
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${p.win_prob}%"></div>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-slate-800/80">
-            <button type="button" data-player-id="${escapeHtml(p.id)}" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
+            <button type="button" onclick="openModal('${p.id}')" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
               Statistics
             </button>
-            <button type="button" data-toggle-slip="${escapeHtml(p.id)}" class="bg-emerald-500/10 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 font-bold py-1 px-1 rounded-lg border border-emerald-500/20 text-[10px] transition active:scale-95">
+            <button type="button" onclick="event.stopPropagation(); toggleSlip('${p.id}')" class="bg-emerald-500/10 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 font-bold py-1 px-1 rounded-lg border border-emerald-500/20 text-[10px] transition active:scale-95">
               + Slip
             </button>
           </div>
@@ -3602,60 +564,44 @@
       const tbody = document.getElementById("screenerTableBody");
       if (!data || data.length === 0) return;
 
-      if (!tbody._hasDelegatedListeners) {
-        tbody._hasDelegatedListeners = true;
-        tbody.addEventListener("click", e => {
-          const slipBtn = e.target.closest("[data-toggle-slip]");
-          if (slipBtn) {
-            e.stopPropagation();
-            toggleSlip(slipBtn.dataset.toggleSlip);
-            return;
-          }
-          const row = e.target.closest("[data-player-id]");
-          if (row) {
-            openModal(row.dataset.playerId);
-          }
-        });
-      }
-
       tbody.innerHTML = data.map(p => `
-        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" data-player-id="${escapeHtml(p.id)}">
+        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openModal('${p.id}')">
           <td class="py-2.5 px-3">
             <div class="flex items-center gap-2">
-              <img src="${escapeHtml(p.headshot || '')}" class="player-headshot-img w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" data-name="${escapeHtml(p.name || '')}" data-id="${escapeHtml(p.id || '')}" data-team-logo="${escapeHtml(p.team_logo || '')}">
+              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div>
                 <div class="flex items-center gap-1.5">
-                  <span class="font-bold text-white">${escapeHtml(p.name)}</span>
+                  <span class="font-bold text-white">${p.name}</span>
                   ${p.is_confirmed_lineup ? 
                     '<span class="text-[8px] font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">✓ Confirmed</span>' : 
                     '<span class="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap">Projected</span>'
                   }
                 </div>
-                <div class="text-[10px] text-slate-400">${escapeHtml(p.team)} • #${escapeHtml(p.order)} (${escapeHtml(p.pos || 'DH')})</div>
+                <div class="text-[10px] text-slate-400">${p.team} • #${p.order} (${p.pos || 'DH'})</div>
               </div>
             </div>
           </td>
           <td class="py-2.5 px-3">
-            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)}</div>
-            <div class="text-[10px] text-slate-300 truncate max-w-[140px]"><span class="text-slate-500">SP:</span> <strong class="text-white">${escapeHtml(p.pitcher_name || p.pitcher || '')}</strong> <span class="text-emerald-400 font-mono text-[9px]">(${p.pitcher_era ? escapeHtml(p.pitcher_era) + ' ERA' : ''})</span></div>
-            <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${escapeHtml(p.game_date || 'Today')} • ${escapeHtml(p.game_time || '7:05 PM ET')}</div>
+            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${p.opponent}</div>
+            <div class="text-[10px] text-slate-300 truncate max-w-[140px]"><span class="text-slate-500">SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono text-[9px]">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
+            <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
           </td>
           <td class="py-2.5 px-3">
             <span class="inline-flex font-bold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">+1 H+R+RBI</span>
           </td>
-          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${escapeHtml(p.proj_total)}</td>
-          <td class="py-2.5 px-3 text-center font-bold text-white">${escapeHtml(p.win_prob)}%</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${p.proj_total}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-white">${p.win_prob}%</td>
           <td class="py-2.5 px-3 text-center">
             <span class="inline-flex items-center gap-1 font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[11px]">
-              ⚡ ${escapeHtml(p.book_odds || p.dk_odds || '')}
+              ⚡ ${p.book_odds || p.dk_odds}
             </span>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${escapeHtml(p.dk_implied_prob || 65)}% imp)</div>
+            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${p.dk_implied_prob || 65}% imp)</div>
           </td>
           <td class="py-2.5 px-3 text-center">
-            <span class="font-black text-emerald-400 font-mono text-xs">+${escapeHtml(p.dk_edge || p.edge || 0)}% EV</span>
+            <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
           </td>
-          <td class="py-2.5 px-3 text-right">
-            <button type="button" data-toggle-slip="${escapeHtml(p.id)}" class="text-[11px] text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+          <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
+            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
               + Slip
             </button>
           </td>
@@ -3700,22 +646,6 @@
       const container = document.getElementById("top5PitcherGrid");
       if (!picks || picks.length === 0) return;
 
-      if (!container._hasDelegatedListeners) {
-        container._hasDelegatedListeners = true;
-        container.addEventListener("click", e => {
-          const slipBtn = e.target.closest("[data-toggle-slip]");
-          if (slipBtn) {
-            e.stopPropagation();
-            toggleSlip(slipBtn.dataset.toggleSlip);
-            return;
-          }
-          const card = e.target.closest("[data-pitcher-id]");
-          if (card) {
-            openPitcherModal(card.dataset.pitcherId);
-          }
-        });
-      }
-
       container.innerHTML = picks.map((p, idx) => `
         <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-orange-500/50 transition-all hover:shadow-lg hover:shadow-orange-500/10 group relative">
           <div class="space-y-2.5">
@@ -3729,51 +659,51 @@
                 </span>
               </div>
               <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
-                +${escapeHtml(p.dk_edge || p.edge || 0)}% EV
+                +${p.dk_edge || p.edge}% EV
               </span>
             </div>
 
-            <div class="flex items-center gap-2 cursor-pointer" data-pitcher-id="${escapeHtml(p.id)}">
-              <img src="${escapeHtml(p.headshot || '')}" class="player-headshot-img w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" data-name="${escapeHtml(p.name || '')}" data-id="${escapeHtml(p.id || '')}" data-team-logo="${escapeHtml(p.team_logo || '')}">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="openPitcherModal('${p.id}')">
+              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div class="overflow-hidden">
-                <div class="font-black text-xs text-white group-hover:text-orange-400 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-300 truncate font-medium">${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} • ${escapeHtml(p.era)} ERA</div>
-                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">Metrics:</span> <span class="text-orange-400 font-bold font-mono">${p.k9 ? escapeHtml(p.k9) + ' K/9' : ''}</span> • CSW: <span class="text-emerald-400 font-mono">${escapeHtml(p.csw || '30.0%')}</span></div>
-                <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${escapeHtml(p.game_date || 'Today')} • ${escapeHtml(p.game_time || '7:05 PM ET')}</div>
+                <div class="font-black text-xs text-white group-hover:text-orange-400 truncate">${p.name}</div>
+                <div class="text-[10px] text-slate-300 truncate font-medium">${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • ${p.era} ERA</div>
+                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">Metrics:</span> <span class="text-orange-400 font-bold font-mono">${p.k9 ? p.k9 + ' K/9' : ''}</span> • CSW: <span class="text-emerald-400 font-mono">${p.csw || '30.0%'}</span></div>
+                <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
               </div>
             </div>
 
             <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
-              <span class="font-bold text-orange-400">${escapeHtml(p.pick_type)} ${escapeHtml(p.k_line)} Ks</span>
-              <span class="font-mono font-bold text-white">${escapeHtml(p.proj_k)} Proj</span>
+              <span class="font-bold text-orange-400">${p.pick_type} ${p.k_line} Ks</span>
+              <span class="font-mono font-bold text-white">${p.proj_k} Proj</span>
             </div>
 
             <!-- The Odds API Live Odds Badge -->
-            <a href="${escapeHtml(p.dk_deep_link || p.dk_link || 'dksb://sb/addbet')}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
+            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
               <div class="flex items-center gap-1">
                 <span class="text-[11px]">⚡</span>
                 <span class="font-bold text-emerald-400">Odds:</span>
-                <span class="font-mono font-extrabold text-white">${escapeHtml(p.dk_odds || p.book_odds || '')}</span>
+                <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
               </div>
-              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${escapeHtml(p.dk_implied_prob || 60)}%</strong> ↗</span>
+              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 60}%</strong> ↗</span>
             </a>
 
             <div class="space-y-1">
               <div class="flex items-center justify-between text-[10px]">
                 <span class="text-slate-400">Model Win Probability</span>
-                <span class="font-black text-emerald-400">${escapeHtml(p.win_prob)}%</span>
+                <span class="font-black text-emerald-400">${p.win_prob}%</span>
               </div>
               <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full rounded-full" style="width: ${Number(p.win_prob || 0)}%"></div>
+                <div class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full rounded-full" style="width: ${p.win_prob}%"></div>
               </div>
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-slate-800/80">
-            <button type="button" data-pitcher-id="${escapeHtml(p.id)}" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
+            <button type="button" onclick="openPitcherModal('${p.id}')" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
               Statistics
             </button>
-            <button type="button" data-toggle-slip="${escapeHtml(p.id)}" class="bg-orange-500/10 hover:bg-orange-500 hover:text-slate-950 text-orange-400 font-bold py-1 px-1 rounded-lg border border-orange-500/20 text-[10px] transition active:scale-95">
+            <button type="button" onclick="event.stopPropagation(); toggleSlip('${p.id}')" class="bg-orange-500/10 hover:bg-orange-500 hover:text-slate-950 text-orange-400 font-bold py-1 px-1 rounded-lg border border-orange-500/20 text-[10px] transition active:scale-95">
               + Slip
             </button>
           </div>
@@ -3785,54 +715,38 @@
       const tbody = document.getElementById("pitcherScreenerTableBody");
       if (!data || data.length === 0) return;
 
-      if (!tbody._hasDelegatedListeners) {
-        tbody._hasDelegatedListeners = true;
-        tbody.addEventListener("click", e => {
-          const slipBtn = e.target.closest("[data-toggle-slip]");
-          if (slipBtn) {
-            e.stopPropagation();
-            toggleSlip(slipBtn.dataset.toggleSlip);
-            return;
-          }
-          const row = e.target.closest("[data-pitcher-id]");
-          if (row) {
-            openPitcherModal(row.dataset.pitcherId);
-          }
-        });
-      }
-
       tbody.innerHTML = data.map(p => `
-        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" data-pitcher-id="${escapeHtml(p.id)}">
+        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openPitcherModal('${p.id}')">
           <td class="py-2.5 px-3">
             <div class="flex items-center gap-2">
-              <img src="${escapeHtml(p.headshot || '')}" class="player-headshot-img w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" data-name="${escapeHtml(p.name || '')}" data-id="${escapeHtml(p.id || '')}" data-team-logo="${escapeHtml(p.team_logo || '')}">
+              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${p.name}', '${p.id}', '${p.team_logo}')">
               <div>
-                <div class="font-bold text-white">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-400">${escapeHtml(p.team)} • ${escapeHtml(p.era)} ERA</div>
+                <div class="font-bold text-white">${p.name}</div>
+                <div class="text-[10px] text-slate-400">${p.team} • ${p.era} ERA</div>
               </div>
             </div>
           </td>
           <td class="py-2.5 px-3">
-            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)}</div>
-            <div class="text-[10px] text-slate-400">${escapeHtml(p.venue || 'Stadium')}</div>
-            <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${escapeHtml(p.game_date || 'Today')} • ${escapeHtml(p.game_time || '7:05 PM ET')}</div>
+            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${p.opponent}</div>
+            <div class="text-[10px] text-slate-400">${p.venue || 'Stadium'}</div>
+            <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
           </td>
           <td class="py-2.5 px-3">
-            <span class="inline-flex font-bold px-2 py-0.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">${escapeHtml(p.pick_type)} ${escapeHtml(p.k_line)} Ks</span>
+            <span class="inline-flex font-bold px-2 py-0.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">${p.pick_type} ${p.k_line} Ks</span>
           </td>
-          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${escapeHtml(p.proj_k)}</td>
-          <td class="py-2.5 px-3 text-center font-bold text-white">${escapeHtml(p.win_prob)}%</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${p.proj_k}</td>
+          <td class="py-2.5 px-3 text-center font-bold text-white">${p.win_prob}%</td>
           <td class="py-2.5 px-3 text-center">
             <span class="inline-flex items-center gap-1 font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[11px]">
-              ⚡ ${escapeHtml(p.book_odds || p.dk_odds || '')}
+              ⚡ ${p.book_odds || p.dk_odds}
             </span>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${escapeHtml(p.dk_implied_prob || 60)}% imp)</div>
+            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${p.dk_implied_prob || 60}% imp)</div>
           </td>
           <td class="py-2.5 px-3 text-center">
-            <span class="font-black text-emerald-400 font-mono text-xs">+${escapeHtml(p.dk_edge || p.edge || 0)}% EV</span>
+            <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
           </td>
-          <td class="py-2.5 px-3 text-right">
-            <button type="button" data-toggle-slip="${escapeHtml(p.id)}" class="text-[11px] text-orange-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+          <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
+            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-orange-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
               + Slip
             </button>
           </td>
@@ -4158,13 +1072,13 @@
           const hit = gl.hit_prop !== undefined ? gl.hit_prop : (Number(gl.so) >= (p.k_line || 6.5));
           return `
             <tr class="hover:bg-slate-800/40 text-[11px] transition-colors">
-              <td class="py-2 px-2.5 text-slate-300 font-sans font-medium whitespace-nowrap">${escapeHtml(gl.date)}</td>
-              <td class="py-2 px-2 text-white font-sans font-bold whitespace-nowrap">${escapeHtml(gl.opp)}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${escapeHtml(gl.ip)}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${escapeHtml(gl.h)}</td>
-              <td class="py-2 px-2 text-center text-slate-400">${escapeHtml(gl.hr)}</td>
-              <td class="py-2 px-2 text-center font-bold text-orange-400 bg-orange-500/10 rounded">${escapeHtml(gl.so)}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${escapeHtml(gl.era)}</td>
+              <td class="py-2 px-2.5 text-slate-300 font-sans font-medium whitespace-nowrap">${gl.date}</td>
+              <td class="py-2 px-2 text-white font-sans font-bold whitespace-nowrap">${gl.opp}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${gl.ip}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${gl.h}</td>
+              <td class="py-2 px-2 text-center text-slate-400">${gl.hr}</td>
+              <td class="py-2 px-2 text-center font-bold text-orange-400 bg-orange-500/10 rounded">${gl.so}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${gl.era}</td>
               <td class="py-2 px-2 text-center">
                 <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${hit ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
                   ${hit ? 'HIT' : 'MISS'}
@@ -4195,13 +1109,13 @@
           const hit = gl.hit_prop !== undefined ? gl.hit_prop : (hrrbiVal >= 1);
           return `
             <tr class="hover:bg-slate-800/40 text-[11px] transition-colors">
-              <td class="py-2 px-2.5 text-slate-300 font-sans font-medium whitespace-nowrap">${escapeHtml(gl.date)}</td>
-              <td class="py-2 px-2 text-white font-sans font-bold whitespace-nowrap">${escapeHtml(gl.opp)}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${escapeHtml(gl.ab)}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${escapeHtml(gl.r)}</td>
-              <td class="py-2 px-2 text-center font-bold text-emerald-400 bg-emerald-500/10 rounded">${escapeHtml(gl.h)}</td>
-              <td class="py-2 px-2 text-center text-red-400">${escapeHtml(gl.so)}</td>
-              <td class="py-2 px-2 text-center font-black text-white font-mono">${escapeHtml(hrrbiVal)}</td>
+              <td class="py-2 px-2.5 text-slate-300 font-sans font-medium whitespace-nowrap">${gl.date}</td>
+              <td class="py-2 px-2 text-white font-sans font-bold whitespace-nowrap">${gl.opp}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${gl.ab}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${gl.r}</td>
+              <td class="py-2 px-2 text-center font-bold text-emerald-400 bg-emerald-500/10 rounded">${gl.h}</td>
+              <td class="py-2 px-2 text-center text-red-400">${gl.so}</td>
+              <td class="py-2 px-2 text-center font-black text-white font-mono">${hrrbiVal}</td>
               <td class="py-2 px-2 text-center">
                 <span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold ${hit ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500'}">
                   ${hit ? 'HIT' : 'MISS'}
@@ -4292,7 +1206,7 @@
         "Favorable pitch sequencing and strike zone discipline",
         "High implied win equity based on 5,000 Monte Carlo simulations"
       ];
-      safeHtml('modalCatalysts', catalysts.map(c => `<li>• ${escapeHtml(c)}</li>`).join(''));
+      safeHtml('modalCatalysts', catalysts.map(c => `<li>• ${c}</li>`).join(''));
       if (document.getElementById('modalDkBtn')) {
         document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
@@ -4307,10 +1221,8 @@
       lockBodyScroll();
 
       const mHs = document.getElementById('modalHeadshot');
-      if (mHs) {
-        mHs.onerror = () => handlePlayerHeadshotError(mHs, p.name, p.id, p.team_logo);
-        mHs.src = p.headshot;
-      }
+      mHs.onerror = () => handlePlayerHeadshotError(mHs, p.name, p.id, p.team_logo);
+      mHs.src = p.headshot;
       safeSet('modalPlayerName', 'innerText', p.name);
       const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
       safeSet('modalSub', 'innerText', `${p.team} ${p.is_home ? 'vs' : '@'} ${p.opponent} • Probable Starter (${p.era || '3.50'} ERA) • 📅 ${dtStr}`);
@@ -4344,7 +1256,7 @@
       safeSet('modalWeatherWind', 'innerText', "Pitcher-Friendly");
       safeSet('modalWeatherRunImpact', 'innerText', "-8% Contact");
 
-      safeHtml('modalCatalysts', (p.catalysts || []).map(c => `<li>• ${escapeHtml(c)}</li>`).join(''));
+      safeHtml('modalCatalysts', (p.catalysts || []).map(c => `<li>• ${c}</li>`).join(''));
       if (document.getElementById('modalDkBtn')) {
         document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
@@ -4388,7 +1300,6 @@
     let btcTp1Line = null;
     let currentBtcSetup = null;
     let lastBtcPrice = 0;
-    window.lastBtcPrice = 0;
 
     let btcCurrentTimeframe = "15m";
     try {
@@ -4950,11 +1861,8 @@
       const badge = document.getElementById("btcActiveTfBadge");
       if (badge) badge.innerText = tf.toUpperCase();
 
-      // Countdown is driven by _live1sTimer in startLive1sRefresh() which calls
-      // updateBtcCountdownClock() every 1s. No secondary interval needed.
-      if (btcCountdownInterval) {
-        clearInterval(btcCountdownInterval);
-        btcCountdownInterval = null;
+      if (!btcCountdownInterval) {
+        btcCountdownInterval = setInterval(updateBtcCountdown, 1000);
       }
     }
 
@@ -4986,7 +1894,7 @@
       try { localStorage.setItem("btcChartConfig", JSON.stringify({ timeframe: tf })); } catch(e){}
       initTradingViewChart(tf);
       triggerBtcAnalysis();
-      updateBtcCountdownClock();
+      updateBtcCountdown();
     }
 
     function playBtcAlertSound(isBullish) {
@@ -5233,7 +2141,7 @@
           allFactors.forEach(f => {
             const item = document.createElement("div");
             item.className = `factor-item ${f.type}`;
-            item.innerHTML = `<span>${f.type === "bull" ? "▲" : "▼"}</span> <span>${escapeHtml(f.text)}</span>`;
+            item.innerHTML = `<span>${f.type === "bull" ? "▲" : "▼"}</span> <span>${f.text}</span>`;
             factorsList.appendChild(item);
           });
         }
@@ -5251,7 +2159,7 @@
             const isBull = p.type === "BULLISH";
             item.style.background = isBull ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
             item.style.border = `1px solid ${isBull ? "#10b981" : "#ef4444"}`;
-            item.innerHTML = `<strong class="${isBull ? 'text-emerald-400' : 'text-red-400'}">${escapeHtml(p.name)}</strong> (${escapeHtml(p.type)}): ${escapeHtml(p.description)}`;
+            item.innerHTML = `<strong class="${isBull ? 'text-emerald-400' : 'text-red-400'}">${p.name}</strong> (${p.type}): ${p.description}`;
             patList.appendChild(item);
           });
         }
@@ -5296,10 +2204,7 @@
       const price = Number(d.price || d.current_price || lastBtcPrice || 0);
 
       const prevPrice = lastBtcPrice;
-      if (price > 0) {
-        lastBtcPrice = price;
-        window.lastBtcPrice = price;
-      }
+      if (price > 0) lastBtcPrice = price;
 
       if (prEl && price > 0) {
         prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -5370,7 +2275,7 @@
       // 15M Target Benchmark Display
       const targetEl = document.getElementById("btcTargetPriceHero");
       const topTargetCard = document.getElementById("topBarTargetCard");
-      const activeKalshiPrice = Number(d.target_price) || (window.cachedKalshiData && (window.cachedKalshiData.target_price || window.cachedKalshiData.strike)) || Number(window.cachedBtcTargetPrice || 0);
+      const activeKalshiPrice = (window.cachedKalshiData && (window.cachedKalshiData.target_price || window.cachedKalshiData.strike)) || Number(d.target_price);
       if (activeKalshiPrice > 0) {
         window.cachedBtcTargetPrice = activeKalshiPrice;
         if (targetEl) {
@@ -5393,7 +2298,7 @@
       }
       const sourceEl = document.getElementById("btcTargetSourceLabel");
       if (sourceEl) {
-        sourceEl.innerText = d.target_source || "Kalshi Official Strike";
+        sourceEl.innerText = "Kalshi Official Strike";
       }
 
       // Target Delta Badge
@@ -5421,15 +2326,9 @@
     function renderBtcTrendBox(last5, streak) {
       const cacheKey = JSON.stringify(last5) + streak;
       if (window._lastTrendBoxKey === cacheKey) return;
-
-      const grid = document.getElementById("btcTrendBoxGrid");
-      // If user is currently hovering over the trend boxes, defer re-rendering until mouseout
-      if (grid && (grid.matches(":hover") || grid.contains(document.querySelector(":hover")))) {
-        window._pendingTrendBoxUpdate = { last5, streak };
-        return;
-      }
       window._lastTrendBoxKey = cacheKey;
 
+      const grid = document.getElementById("btcTrendBoxGrid");
       const streakBadge = document.getElementById("btcTrendStreakBadge");
       if (streakBadge && streak) {
         streakBadge.innerText = streak;
@@ -5437,31 +2336,28 @@
       if (!grid || !Array.isArray(last5) || last5.length === 0) return;
 
       // 15M Target Trend: Direction Arrow + Close Price + Close Time
-      grid.innerHTML = last5.map((t, index) => {
+      grid.innerHTML = last5.map(t => {
         const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
         const cardClass = isUp ? "trend-card trend-up bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "trend-card trend-down bg-red-500/15 border border-red-500/30 text-red-400";
         const formattedPrice = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` : "--";
         const timeStr = t.time || "--:--";
         
         const predVal = t.ml_prediction || t.predicted || t.prediction || (isUp ? "UP" : "DOWN");
-        const predTimeStr = t.pred_time ? `🕒 Prediction Time: ${t.pred_time}\n` : '';
+        const predTimeStr = t.pred_time ? `⏱️ Prediction Time: ${t.pred_time}\n` : '';
         const targetStartStr = t.target_price ? `$${Number(t.target_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
         const targetCloseStr = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
         const deltaVal = t.delta !== undefined ? `${t.delta >= 0 ? '+' : ''}$${Number(t.delta).toFixed(2)} (${t.delta_pct >= 0 ? '+' : ''}${t.delta_pct}%)` : "--";
         const resultVal = isUp ? "HIGHER (ABOVE TARGET)" : "LOWER (BELOW TARGET)";
-        const tooltipStr = `📜 15M Contract Close: ${timeStr}\n${predTimeStr}🎯 Target (Last Contract Close): ${targetStartStr}\n💰 Settlement Close Price: ${targetCloseStr}\n📊 Price Delta: ${deltaVal}\n🤖 AI Model Prediction: ${predVal}\n✅ Actual Settlement Result: ${resultVal}`;
 
-        // Hide older boxes on mobile to prevent squishing
-        const isOld = index < (last5.length - 5);
-        const visibilityClass = isOld ? "hidden lg:flex" : "flex";
+        const tooltipStr = `🕒 15M Contract Close: ${timeStr}\n${predTimeStr}🎯 Target Start Price: ${targetStartStr}\n🏁 Actual Close Price: ${targetCloseStr}\n📊 Price Delta: ${deltaVal}\n🤖 AI Model Prediction: ${predVal}\n✅ Actual Settlement Result: ${resultVal}`;
 
         return `
-          <div data-tooltip="${tooltipStr.replace(/"/g, '&quot;')}" class="${cardClass} py-0.5 px-1 sm:px-1.5 text-center ${visibilityClass} flex-col items-center justify-center rounded-lg shadow-sm font-mono shrink min-w-0 cursor-help hover:brightness-110 transition-all leading-tight">
+          <div title="${tooltipStr}" class="${cardClass} py-0.5 px-1 sm:px-1.5 text-center flex flex-col items-center justify-center rounded-lg shadow-sm font-mono shrink-0 cursor-help hover:brightness-110 transition-all leading-tight">
             <div class="flex items-center gap-0.5 leading-none">
-              <span class="text-[9px] sm:text-[10px] font-black leading-none">${isUp ? '▲' : '▼'}</span>
-              <span class="text-[8px] sm:text-[9px] font-black text-white leading-none whitespace-nowrap">${formattedPrice}</span>
+              <span class="text-[10px] font-black leading-none">${isUp ? '▲' : '▼'}</span>
+              <span class="text-[8.5px] sm:text-[9.5px] font-black text-white leading-none">${formattedPrice}</span>
             </div>
-            <div class="text-[6.5px] sm:text-[7px] font-semibold text-slate-400 leading-none mt-0.5 whitespace-nowrap">${timeStr}</div>
+            <div class="text-[7px] sm:text-[7.5px] font-semibold text-slate-400 leading-none mt-0.5">${timeStr}</div>
           </div>
         `;
       }).join("");
@@ -5479,17 +2375,15 @@
       const pctEl = document.getElementById("btcAccuracyPct");
       const barEl = document.getElementById("btcAccuracyBar");
       const mlPctEl = document.getElementById("btcMlModelAccuracyPct");
-      const iphoneMlPctEl = document.getElementById("iphone17NavAccuracyPct");
       const dotsEl = document.getElementById("btcAccuracyRecentDots");
 
       const total = acc.total_evaluated !== undefined ? Number(acc.total_evaluated) : (acc.total || 0);
-      const correct = acc.correct_picks !== undefined ? Number(acc.correct_picks) : (acc.correct || 0);
+      const correct = acc.correct !== undefined ? Number(acc.correct) : 0;
       
       if (total === 0 || acc.accuracy_percent === null || acc.accuracy_percent === undefined) {
         if (ratioEl) ratioEl.innerText = "0/0";
         if (pctEl) pctEl.innerText = "--%";
         if (mlPctEl) mlPctEl.innerText = "--%";
-        if (iphoneMlPctEl) iphoneMlPctEl.innerText = "--%";
         if (barEl) barEl.style.width = "0%";
         if (dotsEl) {
           dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
@@ -5501,7 +2395,6 @@
       if (ratioEl) ratioEl.innerText = `${correct}/${total}`;
       if (pctEl) pctEl.innerText = `${pct}%`;
       if (mlPctEl) mlPctEl.innerText = `${pct}%`;
-      if (iphoneMlPctEl) iphoneMlPctEl.innerText = `${pct}%`;
       if (barEl) barEl.style.width = `${pct}%`;
 
       if (dotsEl) {
@@ -5803,7 +2696,7 @@
         factorsList.innerHTML = (forecast.catalysts || []).map(f => `
           <li class="flex items-start gap-1">
             <span class="text-amber-400 shrink-0">▸</span>
-            <span>${escapeHtml(f)}</span>
+            <span>${f}</span>
           </li>
         `).join("") || '<li class="text-slate-500">Evaluating next 15M contract...</li>';
       }
@@ -5836,7 +2729,7 @@
       let hasValidPrediction = window.cachedNextContractForecast && window.cachedNextContractForecast.direction && window.cachedNextContractForecast.direction !== "";
       
       // DO NOT overwrite the "30S SCAN" animation during the first 30 seconds of the contract.
-      if (elapsed < 30) {
+      if (elapsed < 30 || !hasValidPrediction) {
         return;
       }
 
@@ -5919,10 +2812,6 @@
 
       // Render Kalshi Market Odds vs Model Prediction
       const kData = tb.kalshi || window.cachedKalshiData;
-      const isSynth = !!(kData && (kData.is_synthetic || kData.status === "synthetic" || kData.source === "Kalshi Synthetic"));
-      if (typeof updateKalshiSyntheticBadges === 'function') {
-        updateKalshiSyntheticBadges(isSynth);
-      }
       const kYesEl = getDomEl("btcKalshiYesProb");
       const kNoEl = getDomEl("btcKalshiNoProb");
       const btnProbAbove = getDomEl("btnProbAbove");
@@ -5957,13 +2846,9 @@
         factorsList.innerHTML = (tb.decision_factors || []).map(f => `
           <li class="flex items-start gap-1.5">
             <span class="text-amber-400 shrink-0">▸</span>
-            <span>${escapeHtml(f)}</span>
+            <span>${f}</span>
           </li>
         `).join("") || '<li class="text-slate-500">Evaluating 15M progression...</li>';
-      }
-
-      if (typeof updateKalshiMLStatusBubble === "function") {
-        updateKalshiMLStatusBubble();
       }
     }
 
@@ -6006,37 +2891,19 @@
     let isFetchingKlinesDirect = false;
     let isFetchingKalshiDirect = false;
 
-    // Synthetic market indicator badge manager (surfaces simulated vs live Kalshi data)
-    function updateKalshiSyntheticBadges(isSynthetic) {
-      const b1 = document.getElementById("kalshiSimulatedBadge");
-      const b2 = document.getElementById("topBarTargetSimBadge");
-      if (b1) {
-        if (isSynthetic) b1.classList.remove("hidden");
-        else b1.classList.add("hidden");
-      }
-      if (b2) {
-        if (isSynthetic) b2.classList.remove("hidden");
-        else b2.classList.add("hidden");
-      }
-    }
-
     // Direct Kalshi 15M Market Fetcher (with local fallback)
     // Direct Kalshi 15M Market Odds Fetcher (Probabilities ONLY - never overrides target price)
     async function fetchKalshiDirect() {
       if (isFetchingKalshiDirect) return;
       isFetchingKalshiDirect = true;
       try {
-        // 1. Try backend endpoint first (normalizes payload and tags is_synthetic flag)
+        // 1. Try backend endpoint first
         try {
-          const apiBase = getKalshiApiBase();
-          const res = await fetch(`${apiBase}/api/btc/kalshi`);
+          const res = await fetch('/api/btc/kalshi');
           if (res.ok) {
             const data = await res.json();
             if (data) {
               window.cachedKalshiData = data;
-              const isSynth = !!(data.is_synthetic || data.status === "synthetic" || data.source === "Kalshi Synthetic");
-              updateKalshiSyntheticBadges(isSynth);
-
               const kYes = getDomEl("btcKalshiYesProb");
               const kNo = getDomEl("btcKalshiNoProb");
               if (kYes && data.yes_prob !== undefined) kYes.innerText = `${data.yes_prob}% Yes`;
@@ -6052,53 +2919,49 @@
           }
         } catch (e) {}
 
-        // 2. Direct public Kalshi API fallback (for standalone/mobile when local backend is unreachable).
-        // Kalshi documented Trade API v2 host: https://external-api.kalshi.com.
-        // Standardized on external-api.kalshi.com to match backend; api.elections.kalshi.com was a legacy elections-specific domain.
-        let kRes = await fetch('https://external-api.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
+        // 2. Try direct public Kalshi API (first with open status, then general)
+        let kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M&status=open');
         let kJson = kRes.ok ? await kRes.json() : null;
         if (!kJson || !kJson.markets || kJson.markets.length === 0) {
-          kRes = await fetch('https://external-api.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M');
+          kRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?series_ticker=KXBTC15M');
           kJson = kRes.ok ? await kRes.json() : null;
         }
         if (kJson && kJson.markets && kJson.markets.length > 0) {
-          updateKalshiSyntheticBadges(false);
           const markets = kJson.markets;
           const m = markets[0];
-          const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
-          const yesP = Math.round(yesBid * 100);
-          const noP = 100 - yesP;
-          const kObj = {
-            strike: parseFloat(m.floor_strike || 0),
-            yes_prob: yesP,
-            no_prob: noP,
-            ticker: m.ticker,
-            source: "Kalshi KXBTC15M",
-            is_synthetic: false
-          };
-          window.cachedKalshiData = kObj;
-          if (kObj.strike > 0) {
-            window.cachedBtcTargetPrice = kObj.strike;
-            const targetHero = getDomEl("btcTargetPriceHero");
-            if (targetHero) {
-              targetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const yesBid = parseFloat(m.yes_bid_dollars || m.last_price_dollars || 0.5);
+            const yesP = Math.round(yesBid * 100);
+            const noP = 100 - yesP;
+            const kObj = {
+              strike: parseFloat(m.floor_strike || 0),
+              yes_prob: yesP,
+              no_prob: noP,
+              ticker: m.ticker,
+              source: "Kalshi KXBTC15M"
+            };
+            window.cachedKalshiData = kObj;
+            if (kObj.strike > 0) {
+              window.cachedBtcTargetPrice = kObj.strike;
+              const targetHero = getDomEl("btcTargetPriceHero");
+              if (targetHero) {
+                targetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
+              const topTargetHero = getDomEl("topBarTargetPrice");
+              if (topTargetHero) {
+                topTargetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              }
             }
-            const topTargetHero = getDomEl("topBarTargetPrice");
-            if (topTargetHero) {
-              topTargetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
+
+            const kYes = getDomEl("btcKalshiYesProb");
+            const kNo = getDomEl("btcKalshiNoProb");
+            if (kYes) kYes.innerText = `${yesP}% Yes`;
+            if (kNo) kNo.innerText = `${noP}% No`;
+
+            const btnProbAbove = getDomEl("btnProbAbove");
+            const btnProbBelow = getDomEl("btnProbBelow");
+            if (btnProbAbove) btnProbAbove.innerText = `${yesP}%`;
+            if (btnProbBelow) btnProbBelow.innerText = `${noP}%`;
           }
-
-          const kYes = getDomEl("btcKalshiYesProb");
-          const kNo = getDomEl("btcKalshiNoProb");
-          if (kYes) kYes.innerText = `${yesP}% Yes`;
-          if (kNo) kNo.innerText = `${noP}% No`;
-
-          const btnProbAbove = getDomEl("btnProbAbove");
-          const btnProbBelow = getDomEl("btnProbBelow");
-          if (btnProbAbove) btnProbAbove.innerText = `${yesP}%`;
-          if (btnProbBelow) btnProbBelow.innerText = `${noP}%`;
-        }
       } catch (err) {
         console.warn("Direct Kalshi fetch fallback:", err);
       } finally {
@@ -6375,11 +3238,6 @@
         barEl.style.width = `${Math.min(100, Math.max(0, pct)).toFixed(1)}%`;
       }
 
-      // Synchronize Kalshi ML prediction status bubble on every tick
-      if (typeof updateKalshiMLStatusBubble === "function") {
-        updateKalshiMLStatusBubble();
-      }
-
       // Exact 30-seconds post-rollover refresh logic
       if (secondsLeft === 870) {
         const currentBucket = Math.floor(Date.now() / (15 * 60 * 1000));
@@ -6578,7 +3436,6 @@
             return {
               time: cTimeStr,
               price: closeP,
-              target_price: priorClose,
               direction: isUp ? "HIGHER" : "LOWER",
               arrow: isUp ? "▲" : "▼",
               delta: delta,
@@ -6610,87 +3467,6 @@
       }
     }
 
-    // Kalshi ML Prediction Status Bubble Manager
-    // Keeps the header status pill in sync with the current 15M contract phase:
-    // - Counts down "SCANNING (30s)..." during the first 30 seconds
-    // - Transitions immediately to "UP", "DOWN", or "PASS" once elapsed >= 30
-    function updateKalshiMLStatusBubble() {
-      const bubble = document.getElementById("kalshiMLStatusBubble");
-      if (!bubble) return;
-
-      const nowSec = Math.floor(Date.now() / 1000);
-      const intervalId = Math.floor(nowSec / 900) * 900;
-      const elapsed = nowSec % 900;
-
-      // 1. First 30 seconds of the 15-minute contract: active scanning countdown
-      if (elapsed < 30) {
-        const remaining = Math.max(0, 30 - elapsed);
-        bubble.innerText = `SCANNING (${remaining}s)`;
-        bubble.className = "min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7px] sm:text-[8px] font-bold uppercase rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform";
-        return;
-      }
-
-      // 2. Elapsed >= 30: Contract prediction is active & locked
-      let dir = null;
-      if (window.lockedContractForecast && window.lockedContractForecast.intervalId === intervalId && window.lockedContractForecast.direction) {
-        dir = window.lockedContractForecast.direction;
-      } else if (window.cachedNextContractForecast && window.cachedNextContractForecast.direction) {
-        dir = window.cachedNextContractForecast.direction;
-      } else if (window.cachedBtcPredictedOutcome) {
-        if (window.cachedBtcPredictedOutcome.includes("ABOVE") || window.cachedBtcPredictedOutcome.includes("UP")) {
-          dir = "ABOVE";
-        } else if (window.cachedBtcPredictedOutcome.includes("BELOW") || window.cachedBtcPredictedOutcome.includes("DOWN")) {
-          dir = "BELOW";
-        } else if (window.cachedBtcPredictedOutcome.includes("PASS") || window.cachedBtcPredictedOutcome.includes("CHOP") || window.cachedBtcPredictedOutcome.includes("NO EDGE")) {
-          dir = "PASS";
-        }
-      }
-
-      // If still not determined, fallback to current price vs target price
-      const currentPrice = window.lastBtcPrice || 0;
-      if (!dir && currentPrice && window.cachedBtcTargetPrice) {
-        dir = currentPrice >= window.cachedBtcTargetPrice ? "ABOVE" : "BELOW";
-      }
-
-      // Normalize direction
-      if (dir === "YES" || dir === "UP") dir = "ABOVE";
-      if (dir === "NO" || dir === "DOWN") dir = "BELOW";
-
-      // Ensure lockedContractForecast is populated for this interval so all components match
-      if (dir && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
-        const isPass = (dir === "PASS");
-        const prob = (window.cachedNextContractForecast && window.cachedNextContractForecast.probability_percent) ? window.cachedNextContractForecast.probability_percent : 54;
-        window.lockedContractForecast = {
-          intervalId: intervalId,
-          lockedAt: nowSec,
-          direction: dir,
-          outcome: isPass ? "NO CLEAR EDGE DETECTED" : (dir === "ABOVE" ? "LIKELY TO CLOSE ABOVE TARGET" : "LIKELY TO CLOSE BELOW TARGET"),
-          outcomeText: isPass ? "⚪ PASS" : (dir === "ABOVE" ? "▲ UP" : "▼ DOWN"),
-          probability_percent: prob,
-          confidence_badge: (window.cachedNextContractForecast && window.cachedNextContractForecast.conviction_badge) || (isPass ? "⚪ NO EDGE" : "MODERATE EDGE"),
-          conviction_grade: (window.cachedNextContractForecast && window.cachedNextContractForecast.conviction_grade) || (isPass ? "CHOPPY MARKET" : "GRADE A SETUP"),
-          primary_edge: (window.cachedNextContractForecast && window.cachedNextContractForecast.primary_edge) || (isPass ? "Awaiting clearer setup" : "Pattern support"),
-          decision_factors: (window.cachedNextContractForecast && window.cachedNextContractForecast.catalysts) || []
-        };
-      }
-
-      const currentDir = window.lockedContractForecast ? window.lockedContractForecast.direction : dir;
-
-      if (currentDir === "ABOVE" || currentDir === "UP" || currentDir === "YES") {
-        bubble.innerText = "UP";
-        bubble.className = "min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7px] sm:text-[8px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform";
-      } else if (currentDir === "BELOW" || currentDir === "DOWN" || currentDir === "NO") {
-        bubble.innerText = "DOWN";
-        bubble.className = "min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7px] sm:text-[8px] font-bold uppercase rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/50 whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform";
-      } else if (currentDir === "PASS") {
-        bubble.innerText = "PASS";
-        bubble.className = "min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7px] sm:text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-600 whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform";
-      } else {
-        bubble.innerText = "MONITORING";
-        bubble.className = "min-w-[76px] sm:min-w-[80px] px-3.5 sm:px-4 py-0.5 text-center inline-flex items-center justify-center text-[7px] sm:text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap cursor-help cursor-pointer hover:scale-105 transition-transform";
-      }
-    }
-
     // Client-side 15M Contract Prediction Evaluator
     // Locks prediction at 1 minute after contract start based on historical price, volume, and chart patterns,
     // and sticks with that prediction until the end of the contract.
@@ -6708,7 +3484,7 @@
       let fc = window.cachedNextContractForecast;
       let hasValidPrediction = fc && fc.direction && (fc.direction === "ABOVE" || fc.direction === "BELOW" || fc.direction === "YES" || fc.direction === "NO" || fc.direction === "PASS");
 
-      if (elapsed < 30 && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
+      if ((elapsed < 30 || !hasValidPrediction) && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
         const outcomeText = document.getElementById("btcPredOutcomeText");
         const probText = document.getElementById("btcPredProbText");
         const confTag = document.getElementById("btcPredConfidenceTag");
@@ -6725,29 +3501,12 @@
           banner.style.background = "rgba(245, 158, 11, 0.10)";
           banner.style.borderColor = "#f59e0b";
         }
-        updateKalshiMLStatusBubble();
-        return;
-      }
-
-      // If elapsed >= 30 and we don't have a valid prediction in fc, derive fallback
-      if (!hasValidPrediction) {
-        let fallbackDir = "PASS";
-        if (window.cachedBtcPredictedOutcome) {
-          if (window.cachedBtcPredictedOutcome.includes("ABOVE") || window.cachedBtcPredictedOutcome.includes("UP")) fallbackDir = "ABOVE";
-          else if (window.cachedBtcPredictedOutcome.includes("BELOW") || window.cachedBtcPredictedOutcome.includes("DOWN")) fallbackDir = "BELOW";
-          else if (window.cachedBtcPredictedOutcome.includes("PASS") || window.cachedBtcPredictedOutcome.includes("NO EDGE")) fallbackDir = "PASS";
-        } else if (price && target) {
-          fallbackDir = price >= target ? "ABOVE" : "BELOW";
+        const bubble = document.getElementById("kalshiMLStatusBubble");
+        if (bubble) {
+          bubble.innerText = `SCANNING (${Math.max(0, 30 - elapsed)}s)`;
+          bubble.className = "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse whitespace-nowrap cursor-help";
         }
-        fc = {
-          direction: fallbackDir,
-          probability_percent: 54,
-          conviction_badge: fallbackDir === "PASS" ? "⚪ NO EDGE" : "MODERATE EDGE",
-          conviction_grade: fallbackDir === "PASS" ? "CHOPPY MARKET" : "GRADE A SETUP",
-          primary_edge: "Price momentum and target confluence",
-          catalysts: ["Real-time price cushion tracking"]
-        };
-        window.cachedNextContractForecast = fc;
+        return;
       }
 
       // 2. Lock in ML prediction
@@ -6797,7 +3556,17 @@
 
       renderBtcPredictor(tb);
 
-      updateKalshiMLStatusBubble();
+      const bubble = document.getElementById("kalshiMLStatusBubble");
+      if (bubble) {
+        if (locked.direction === "pass" || locked.direction === "PASS") {
+          bubble.innerText = "PASS";
+          bubble.className = "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-600 whitespace-nowrap cursor-help";
+        } else {
+          bubble.innerText = locked.direction === "ABOVE" ? "UP" : "DOWN";
+          bubble.className = locked.direction === "ABOVE" ? "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 whitespace-nowrap cursor-help" : "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/50 whitespace-nowrap cursor-help";
+        }
+      }
+
 
       // Speedometer needle tracks locked conviction direction
       const meterScore = isLockedAbove ? Math.round((locked.probability_percent - 50) * 2) : -Math.round((locked.probability_percent - 50) * 2);
@@ -6825,7 +3594,6 @@
         }
       }
       lastBtcPrice = price;
-      window.lastBtcPrice = price;
 
       // Update 24h stats if available on mobile
       if (stats) {
@@ -6911,27 +3679,12 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2500);
         const apiBase = getKalshiApiBase();
-        let res;
-        try {
-          res = await fetch(`${apiBase}/api/btc/live`, { signal: controller.signal });
-        } finally {
-          clearTimeout(timeoutId);
-        }
-        if (res && res.ok) {
+        const res = await fetch(`${apiBase}/api/btc/live`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
           const liveData = await res.json();
-          if (typeof liveData.seconds_left === 'number' && liveData.seconds_left > 0) {
-            // Only sync the epoch if we don't have one yet, or if it has expired,
-            // or if the server value differs from our local tracking by more than 3 seconds.
-            // This prevents the countdown from being reset on every 1s poll.
-            const newEpoch = Date.now() + (liveData.seconds_left * 1000);
-            const currentSecondsLeft = window._btcServerNextCloseEpoch
-              ? Math.floor((window._btcServerNextCloseEpoch - Date.now()) / 1000)
-              : -1;
-            if (!window._btcServerNextCloseEpoch ||
-                window._btcServerNextCloseEpoch <= Date.now() ||
-                Math.abs(currentSecondsLeft - liveData.seconds_left) > 3) {
-              window._btcServerNextCloseEpoch = newEpoch;
-            }
+          if (typeof liveData.seconds_left === 'number' && liveData.seconds_left >= 0) {
+            window._btcServerNextCloseEpoch = Date.now() + (liveData.seconds_left * 1000);
           }
           renderBtcHeroHud(liveData);
           if (liveData.last_5_targets && liveData.last_5_targets.length > 0) {
@@ -6940,18 +3693,8 @@
           if (liveData.target_price) {
             window.cachedBtcTargetPrice = liveData.target_price;
           }
-          if (liveData.volume_24h) {
-            window.cachedBtcVolume = liveData.volume_24h;
-          }
-          if (liveData.kalshi && liveData.kalshi.volume_24h) {
-            window.lastKalshiVolume = liveData.kalshi.volume_24h;
-          }
           if (liveData.kalshi) {
             window.cachedKalshiData = liveData.kalshi;
-            const isSynth = !!(liveData.kalshi.is_synthetic || liveData.kalshi.status === "synthetic" || liveData.kalshi.source === "Kalshi Synthetic");
-            if (typeof updateKalshiSyntheticBadges === 'function') {
-              updateKalshiSyntheticBadges(isSynth);
-            }
             const kYes = getDomEl("btcKalshiYesProb");
             const kNo = getDomEl("btcKalshiNoProb");
             const btnProbAbove = getDomEl("btnProbAbove");
@@ -7315,31 +4058,11 @@
     let kalshiTradingMode = "PAPER";
     let kalshiCurrentContracts = 1;
 
-    let _serverUrlPromptActive = false;
-
     function getKalshiApiBase() {
       if (typeof window !== 'undefined' && window.location && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
         return '';
       }
-      const saved = typeof localStorage !== 'undefined' && localStorage.getItem("kalshi_server_url");
-      if (saved) return saved;
-
-      // No server configured yet (e.g. first launch inside a packaged/Capacitor shell).
-      // Ask once instead of silently pointing at a developer's personal LAN IP.
-      if (!_serverUrlPromptActive) {
-        _serverUrlPromptActive = true;
-        try {
-          const entered = prompt("Enter your backend server URL (e.g. http://192.168.1.50:8056):");
-          if (entered && entered.trim()) {
-            const cleaned = entered.trim().replace(/\/+$/, "");
-            localStorage.setItem("kalshi_server_url", cleaned);
-            return cleaned;
-          }
-        } finally {
-          _serverUrlPromptActive = false;
-        }
-      }
-      return '';
+      return (typeof localStorage !== 'undefined' && localStorage.getItem("kalshi_server_url")) || 'http://192.168.1.222:8056';
     }
 
     let kalshiCurrentPriceEst = 0.65;
@@ -7379,7 +4102,7 @@
     async function saveKalshiContractsCount(count) {
       try {
         const apiBase = getKalshiApiBase();
-        await authFetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
+        await fetch(`${apiBase}/api/btc/trade/contracts?count=${count}`, { method: "POST" });
       } catch (err) {
         console.warn("Failed to persist contracts count:", err);
       }
@@ -7407,7 +4130,7 @@
           localStorage.setItem("kalshiAiSettings", JSON.stringify(aiSet));
           
           const apiBase = getKalshiApiBase();
-          await authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
+          await fetch(`${apiBase}/api/btc/trade/ai_settings`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(aiSet)
@@ -7448,107 +4171,36 @@
       if (payoutEl) payoutEl.innerText = `$${maxPayout.toFixed(2)} (+${Math.round(roi)}%)`;
     }
 
-    function updateKalshiBeacon(enabled, isRiskPaused = false) {
-      const beaconPing = document.getElementById("kalshiBeaconPing");
-      const beaconDot = document.getElementById("kalshiBeaconDot");
-      if (!beaconDot || !beaconPing) return;
-      if (enabled && !isRiskPaused) {
-        beaconDot.className = "relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-emerald-500 shadow-sm shadow-emerald-500/50";
-        beaconPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
-      } else if (enabled && isRiskPaused) {
-        beaconDot.className = "relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-amber-500 shadow-sm shadow-amber-500/50";
-        beaconPing.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
-      } else {
-        beaconDot.className = "relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-slate-600 opacity-40";
-        beaconPing.className = "hidden";
-      }
-    }
-
     let _isPollingKalshiStatus = false;
     async function pollKalshiTradingStatus() {
       if (_isPollingKalshiStatus) return;
       _isPollingKalshiStatus = true;
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
         const apiBase = getKalshiApiBase();
-        let res;
-        try {
-          res = await authFetch(`${apiBase}/api/btc/trade/status`, { signal: controller.signal });
-        } finally {
-          clearTimeout(timeoutId);
-        }
-        if (!res || !res.ok) {
-          updateKalshiBeacon(false);
-          return;
-        }
+        const res = await fetch(`${apiBase}/api/btc/trade/status`);
+        if (!res.ok) return;
         const data = await res.json();
-        if (!data) {
-          updateKalshiBeacon(false);
-          return;
-        }
-
-        // Synchronize JS state variables with authoritative server state
-        kalshiAutoTradeEnabled = !!data.enabled;
-        if (data.mode) {
-          kalshiTradingMode = String(data.mode).toUpperCase();
-        }
-
-        if (data.ai_settings && document.getElementById("settingIgnorePass")) {
-          const isIgnorePass = !!data.ai_settings.ignorePass;
-          const el = document.getElementById("settingIgnorePass");
-          if (el && document.activeElement !== el && el.checked !== isIgnorePass) {
-            el.checked = isIgnorePass;
-          }
-        }
-
-        if (data.ai_settings && document.getElementById("settingOneShotAiStartTrade")) {
-          const isOneShot = !!data.ai_settings.oneShotAiStartTrade;
-          const el = document.getElementById("settingOneShotAiStartTrade");
-          if (el.checked !== isOneShot) {
-            el.checked = isOneShot;
-            if (!isOneShot && window._wasOneShotActive) {
-              showAppToast("1-Shot Trade Complete", "100% AI Prediction trade executed. Settings returned to normal.", "info");
-            }
-            window._wasOneShotActive = isOneShot;
-          }
-        }
+        if (!data) return;
 
         if (data.prediction_accuracy && data.prediction_accuracy.source === "server_auto_predictions") {
           window.serverPredictionAccuracy = data.prediction_accuracy;
           // Update the ML Model pane
           const mlPctEl = document.getElementById("btcMlModelAccuracyPct");
-          const iphoneMlPctEl = document.getElementById("iphone17NavAccuracyPct");
-          const accVal = data.prediction_accuracy.accuracy_percent;
-          const pctStr = (accVal !== null && accVal !== undefined) ? `${accVal}%` : "--%";
-          
-          if (mlPctEl) mlPctEl.innerText = pctStr;
-          if (iphoneMlPctEl) iphoneMlPctEl.innerText = pctStr;
+          if (mlPctEl) {
+             const accVal = data.prediction_accuracy.accuracy_percent;
+             mlPctEl.innerText = (accVal !== null && accVal !== undefined) ? `${accVal}%` : "--%";
+          }
         }
 
         // Update Balance
         const balEl = document.getElementById("kalshiLiveBalance");
         const settingsBalEl = document.getElementById("kalshiSettingsPaperBalance");
         const tradeLogBalEl = document.getElementById("tradeLogPaperBalance");
-        const topNavBalEl = document.getElementById("topNavKalshiBalance");
-        const topNavBalLabelEl = document.getElementById("topNavKalshiBalanceLabel");
-        
         if (data.balance_dollars !== undefined) {
           const formatted = `$${parseFloat(data.balance_dollars).toFixed(2)}`;
           if (balEl) balEl.innerText = formatted;
           if (settingsBalEl) settingsBalEl.innerText = formatted;
           if (tradeLogBalEl) tradeLogBalEl.innerText = formatted;
-          if (topNavBalEl) topNavBalEl.innerText = formatted;
-          
-          if (topNavBalLabelEl) {
-             if (data.trade_mode === 'LIVE') {
-                topNavBalLabelEl.innerText = 'Live Balance';
-                topNavBalLabelEl.className = 'text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400/90 inline-flex items-center shadow-sm shadow-amber-500/10 whitespace-nowrap leading-none';
-             } else {
-                topNavBalLabelEl.innerText = 'Paper Balance';
-                topNavBalLabelEl.className = 'text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400/90 inline-flex items-center shadow-sm shadow-emerald-500/10 whitespace-nowrap leading-none';
-             }
-          }
         }
 
         // Update Contracts Count
@@ -7563,26 +4215,15 @@
 
         // Update Auto-Trade Toggle
         const btnToggle = document.getElementById("btnToggleAutoTrade");
-        if (btnToggle && !_isTogglingAutoTrade) {
+        if (btnToggle) {
           if (data.enabled) {
-            if (data.is_risk_paused) {
-              btnToggle.innerText = "PAUSED";
-              btnToggle.title = data.pause_reason || "Risk limit reached";
-              btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-amber-600 text-white shadow shadow-amber-600/50 animate-pulse";
-            } else {
-              btnToggle.innerText = "ON";
-              btnToggle.title = "Autonomous trading active";
-              btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
-            }
+            btnToggle.innerText = "ON";
+            btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
           } else {
             btnToggle.innerText = "OFF";
-            btnToggle.title = "Autonomous trading paused";
             btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
           }
         }
-
-        // Update Console Beacon to reflect Auto-Trader state directly from backend
-        updateKalshiBeacon(!!data.enabled, !!data.is_risk_paused);
 
         // Update Prediction Mode Checkbox
         if (data.prediction_mode !== undefined) {
@@ -7653,25 +4294,10 @@
         if (wrEl) wrEl.innerText = `${data.win_rate_pct || 0}%`;
 
         const pnlEl = document.getElementById("kalshiTotalPnl");
-        const topNavRealizedEl = document.getElementById("topNavKalshiRealizedPnl");
-        if (data.total_pnl_dollars !== undefined) {
+        if (pnlEl) {
           const pnl = parseFloat(data.total_pnl_dollars || 0);
-          const sign = pnl >= 0 ? "+" : "-";
-          const formattedPnl = `${sign}$${Math.abs(pnl).toFixed(2)}`;
-          const pnlColorClass = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-slate-300");
-          if (pnlEl) {
-            pnlEl.innerText = `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`;
-            pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
-          }
-          if (topNavRealizedEl) {
-            topNavRealizedEl.innerText = formattedPnl;
-            topNavRealizedEl.className = pnlColorClass;
-            if (data.today_realized_pnl !== undefined) {
-              const todayPnl = parseFloat(data.today_realized_pnl || 0);
-              const todaySign = todayPnl >= 0 ? "+" : "-";
-              topNavRealizedEl.title = `Total Realized P/L: ${formattedPnl} | Today: ${todaySign}$${Math.abs(todayPnl).toFixed(2)}`;
-            }
-          }
+          pnlEl.innerText = `${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`;
+          pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
         }
 
         // Live P/L of Open Trades — prefer server-calculated open_pnl_dollars
@@ -7730,60 +4356,9 @@
         renderKalshiTradesList(data.recent_trades || [], data.active_market);
       } catch (err) {
         console.warn("Error polling Kalshi trade status:", err);
-        updateKalshiBeacon(false);
       } finally {
         _isPollingKalshiStatus = false;
       }
-    }
-
-    function getTradeIdentifierPills(t) {
-      const pills = [];
-      const mode = String(t.mode || "PAPER").toUpperCase();
-      const src = String(t.trade_source || "").toUpperCase();
-      const rec = String(t.recommendation || "").toUpperCase();
-      const grade = String(t.conviction_grade || "").toUpperCase();
-      const badge = String(t.conviction_badge || "").toUpperCase();
-      const exitReason = String(t.exit_reason || "").toUpperCase();
-      const catalysts = Array.isArray(t.catalysts) ? t.catalysts.map(c => String(c).toUpperCase()) : [];
-
-      // 1. Paper vs Live Mode Pill
-      if (mode === "LIVE") {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-black bg-rose-500/20 text-rose-300 border border-rose-500/50 uppercase shadow-sm shadow-rose-950/40" title="Live Capital Order">LIVE</span>`);
-      } else {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-slate-800 text-slate-300 border border-slate-700 uppercase" title="Simulated Paper Order">PAPER</span>`);
-      }
-
-      // 2. Execution Origin Pill (AUTO vs MANUAL)
-      const isManual = t.is_manual === true || src.includes("MANUAL") || rec.includes("MANUAL") || grade.includes("MANUAL");
-      if (isManual) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-amber-500/15 text-amber-300 border border-amber-500/35 uppercase" title="Manually Executed by Trader">👤 MANUAL</span>`);
-      } else {
-        const isMg = src.includes("MACHINE_GUN") || (t.trading_style && String(t.trading_style).toUpperCase().includes("MACHINE_GUN"));
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 uppercase" title="Autonomous AI Execution">${isMg ? "🤖 AUTO (MG)" : "🤖 AUTO"}</span>`);
-      }
-
-      // 3. Scalp Pill
-      const isScalp = t.is_scalp === true || src.includes("SCALP") || rec.includes("SCALP") || grade.includes("SCALP") || catalysts.some(c => c.includes("SCALP")) || exitReason.includes("SCALP");
-      if (isScalp) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/40 uppercase" title="Rapid Scalp Trade">⚡ SCALP</span>`);
-      }
-
-      // 4. Reverse Pill
-      const isReverse = t.is_reverse === true || src.includes("REVERSE") || rec.includes("REVERSE") || badge.includes("REVERSE") || catalysts.some(c => c.includes("REVERSE"));
-      if (isReverse) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/40 uppercase" title="CVD Divergence Reversal Setup">🔄 REVERSE</span>`);
-      }
-
-      // 5. Exit Reason Pill (when closed early before expiry)
-      if (exitReason.includes("SCALP_TP") || exitReason.includes("TAKE_PROFIT")) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase" title="Take-Profit Target Reached">🎯 TP EXIT</span>`);
-      } else if (exitReason.includes("SCALP_SL") || exitReason.includes("STOP_LOSS")) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 uppercase" title="Stop-Loss Triggered">🛑 SL EXIT</span>`);
-      } else if (exitReason.includes("MANUAL")) {
-        pills.push(`<span class="text-[7px] sm:text-[8px] px-1.5 py-0.2 rounded font-sans font-bold bg-amber-500/15 text-amber-300 border border-amber-500/35 uppercase" title="Trader Manually Closed Position">🚪 MANUAL EXIT</span>`);
-      }
-
-      return pills.join(" ");
     }
 
     function renderKalshiTradesList(trades, activeMarket) {
@@ -7792,18 +4367,7 @@
 
       const filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
 
-      const tradesKey = JSON.stringify(filteredTrades.slice(0, 20).map(t => [
-        t.id,
-        t.status,
-        t.result,
-        t.pnl,
-        t.exit_reason,
-        t.trade_source,
-        t.is_reverse,
-        t.is_scalp,
-        t.live_pnl !== undefined ? Math.round(parseFloat(t.live_pnl) * 100) / 100 : null,
-        t.current_bid !== undefined ? Math.round(parseFloat(t.current_bid) * 100) / 100 : null
-      ]));
+      const tradesKey = JSON.stringify(filteredTrades.slice(0, 5).map(t => [t.id, t.status, t.result, t.pnl, t.live_pnl]));
       if (window._lastKalshiTradesKey === tradesKey) return;
       window._lastKalshiTradesKey = tradesKey;
 
@@ -7812,7 +4376,7 @@
         return;
       }
 
-      container.innerHTML = filteredTrades.slice(0, 20).map(t => {
+      container.innerHTML = filteredTrades.slice(0, 5).map(t => {
         const resStr = String(t.result || "").toUpperCase();
         const statStr = String(t.status || "").toUpperCase();
         const isWin = resStr.includes("WIN");
@@ -7874,7 +4438,6 @@
         };
         const openedAt = formatTradeDateTime(t.timestamp);
         const settledAt = isClosed ? formatTradeDateTime(t.settled_at) : "";
-        const pillsHtml = getTradeIdentifierPills(t);
 
         return `
           <div class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1">
@@ -7883,7 +4446,7 @@
                 <span class="font-bold uppercase">${t.side}</span>
                 <span class="text-slate-400">(${t.count || 1}ct @ $${parseFloat(t.entry_price || 0).toFixed(2)})</span>
                 <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
-                ${pillsHtml}
+                <span class="text-[7px] sm:text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 font-sans">${t.mode}</span>
               </div>
               <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` · Settled: ${settledAt}` : ""}</span>
             </div>
@@ -7981,7 +4544,7 @@
     async function togglePredictionMode(enabled) {
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${enabled}`, { method: "POST" });
+        const res = await fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${enabled}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         showAppToast("Prediction Mode", enabled ? "1-Min locked predictions active" : "Prediction mode disabled", enabled ? "success" : "info");
         pollKalshiTradingStatus();
@@ -7991,13 +4554,8 @@
       }
     }
 
-    let _isTogglingAutoTrade = false;
     async function toggleKalshiAutoTrade() {
-      if (_isTogglingAutoTrade) return;
-      const btnToggle = document.getElementById("btnToggleAutoTrade");
-      const prevState = kalshiAutoTradeEnabled;
-      const nextState = !prevState;
-
+      const nextState = !kalshiAutoTradeEnabled;
       if (nextState && kalshiTradingMode === "LIVE") {
         const confirmed = await showAppModal({
           title: "Enable Auto-Trader",
@@ -8011,84 +4569,41 @@
         if (!confirmed) return;
       }
 
-      _isTogglingAutoTrade = true;
+      // Instant optimistic UI response
+      const btnToggle = document.getElementById("btnToggleAutoTrade");
       if (btnToggle) {
-        btnToggle.disabled = true;
-        btnToggle.innerText = "...";
-        btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-700 text-slate-300 opacity-75 cursor-wait";
+        btnToggle.innerText = nextState ? "ON" : "OFF";
+        btnToggle.className = nextState 
+          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50" 
+          : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
       }
+      kalshiAutoTradeEnabled = nextState;
 
       try {
         const apiBase = getKalshiApiBase();
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        let res;
-        try {
-          res = await authFetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, {
-            method: "POST",
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timeoutId);
-        }
+        const res = await fetch(`${apiBase}/api/btc/trade/toggle?enabled=${nextState}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const resData = await res.json();
-        
-        // Confirm authoritative state from server
-        kalshiAutoTradeEnabled = resData.enabled !== undefined ? !!resData.enabled : nextState;
-
-        if (btnToggle) {
-          if (kalshiAutoTradeEnabled) {
-            btnToggle.innerText = "ON";
-            btnToggle.title = "Autonomous trading active";
-            btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50";
-          } else {
-            btnToggle.innerText = "OFF";
-            btnToggle.title = "Autonomous trading paused";
-            btnToggle.className = "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
-          }
-        }
-
-        // Immediately synchronize pulsing light beacon with new auto-trade state
-        updateKalshiBeacon(kalshiAutoTradeEnabled, !!resData.is_risk_paused);
-
-        showAppToast("Auto-Trader", kalshiAutoTradeEnabled ? "Autonomous execution active" : "Auto-trader paused", kalshiAutoTradeEnabled ? "success" : "info");
+        showAppToast("Auto-Trader", nextState ? "Autonomous execution active" : "Auto-trader paused", nextState ? "success" : "info");
         pollKalshiTradingStatus();
       } catch (e) {
         console.error("Error toggling auto trade:", e);
-        // Rollback state and DOM to confirmed previous state
-        kalshiAutoTradeEnabled = prevState;
-        updateKalshiBeacon(prevState);
-        if (btnToggle) {
-          btnToggle.innerText = prevState ? "ON" : "OFF";
-          btnToggle.className = prevState
-            ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-emerald-600 text-white shadow shadow-emerald-600/50"
-            : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-slate-800 text-slate-400 hover:bg-slate-700";
-        }
         showAppModal({
-          title: "Toggle Failed",
-          badge: "COMMUNICATION ERROR",
+          title: "Backend Unreachable",
+          badge: "CONNECTION NOTICE",
           icon: "⚠️",
           iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
-          body: `Cannot reach backend server at ${getKalshiApiBase() || window.location.origin}.<br><br>Auto-Trader state has not changed.`,
+          body: `Cannot reach backend server at ${getKalshiApiBase() || window.location.origin}.<br><br>Please ensure run_app.bat is running!`,
           confirmText: "Understood",
           confirmColor: "amber",
           showCancel: false
         });
+        kalshiAutoTradeEnabled = !nextState;
         pollKalshiTradingStatus();
-      } finally {
-        _isTogglingAutoTrade = false;
-        if (btnToggle) btnToggle.disabled = false;
       }
     }
 
-    let _isTogglingTradingMode = false;
     async function toggleKalshiTradingMode() {
-      if (_isTogglingTradingMode) return;
-      const btnMode = document.getElementById("btnToggleTradingMode");
-      const prevMode = kalshiTradingMode;
-      const nextMode = prevMode === "PAPER" ? "LIVE" : "PAPER";
-
+      const nextMode = kalshiTradingMode === "PAPER" ? "LIVE" : "PAPER";
       if (nextMode === "LIVE") {
         const confirmed = await showAppModal({
           title: "Switch to Live Trading",
@@ -8102,52 +4617,26 @@
         if (!confirmed) return;
       }
 
-      _isTogglingTradingMode = true;
+      // Instant optimistic UI response
+      const btnMode = document.getElementById("btnToggleTradingMode");
       if (btnMode) {
-        btnMode.disabled = true;
-        btnMode.innerText = "...";
+        btnMode.innerText = nextMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
+        btnMode.className = nextMode === "LIVE" 
+          ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
+          : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
       }
+      kalshiTradingMode = nextMode;
 
       try {
         const apiBase = getKalshiApiBase();
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        let res;
-        try {
-          res = await authFetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, {
-            method: "POST",
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timeoutId);
-        }
+        const res = await fetch(`${apiBase}/api/btc/trade/mode?mode=${nextMode}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const resData = await res.json();
-        kalshiTradingMode = (resData.mode || nextMode).toUpperCase();
-
-        if (btnMode) {
-          btnMode.innerText = kalshiTradingMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
-          btnMode.className = kalshiTradingMode === "LIVE" 
-            ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
-            : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
-        }
-
-        showAppToast("Trading Mode", `Switched to ${kalshiTradingMode} mode`, kalshiTradingMode === "LIVE" ? "warning" : "info");
+        showAppToast("Trading Mode", `Switched to ${nextMode} mode`, nextMode === "LIVE" ? "warning" : "info");
         pollKalshiTradingStatus();
       } catch (e) {
         console.error("Error toggling trading mode:", e);
-        kalshiTradingMode = prevMode;
-        if (btnMode) {
-          btnMode.innerText = prevMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
-          btnMode.className = prevMode === "LIVE" 
-            ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
-            : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
-        }
-        showAppToast("Mode Switch Failed", String(e.message || e), "error");
+        kalshiTradingMode = (nextMode === "LIVE" ? "PAPER" : "LIVE");
         pollKalshiTradingStatus();
-      } finally {
-        _isTogglingTradingMode = false;
-        if (btnMode) btnMode.disabled = false;
       }
     }
 
@@ -8168,7 +4657,7 @@
       }
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
+        const res = await fetch(`${apiBase}/api/btc/trade/manual?direction=${direction}`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
           showAppToast(
@@ -8209,7 +4698,7 @@
       }
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
+        const res = await fetch(`${apiBase}/api/btc/trade/close`, { method: "POST" });
         const data = await res.json();
         if (data.success) {
           showAppToast("Position Closed", data.message || "Active trade closed successfully", "success");
@@ -8224,36 +4713,18 @@
 
     // =========================================================================
     
-      // Auto-save event listeners with instant real-time sync
-      function attachSettingsAutoSaveListeners() {
+      // Auto-save event listeners
+      document.addEventListener("DOMContentLoaded", () => {
         const kalshiInputs = document.querySelectorAll('#generalSettingsSubPage input, #generalSettingsSubPage select');
         kalshiInputs.forEach(el => {
-          if (!el.dataset.autoSaveBound) {
-            el.dataset.autoSaveBound = "true";
-            el.addEventListener('change', () => saveKalshiSettings(false));
-            if (el.type === 'range' || el.type === 'number') {
-              el.addEventListener('input', () => saveKalshiSettings(false));
-            }
-          }
+          el.addEventListener('change', () => saveKalshiSettings(false));
         });
 
         const scalpInputs = document.querySelectorAll('#scalperSettingsSubPage input, #scalperSettingsSubPage select');
         scalpInputs.forEach(el => {
-          if (!el.dataset.autoSaveBound) {
-            el.dataset.autoSaveBound = "true";
-            el.addEventListener('change', () => saveScalpSettings(false));
-            if (el.type === 'range' || el.type === 'number') {
-              el.addEventListener('input', () => saveScalpSettings(false));
-            }
-          }
+          el.addEventListener('change', () => saveScalpSettings(false));
         });
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", attachSettingsAutoSaveListeners);
-      } else {
-        attachSettingsAutoSaveListeners();
-      }
+      });
 
       // KALSHI AI TRADER: TAB SWITCHING & SETTINGS ENGINE
     // =========================================================================
@@ -8287,7 +4758,6 @@
         if (tabBtnTrader) {
           tabBtnTrader.className = "flex items-center justify-center gap-1.5 py-1 rounded-lg text-xs font-sans font-bold uppercase tracking-wider transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 cursor-pointer";
         }
-        attachSettingsAutoSaveListeners();
       }
     }
 
@@ -8332,42 +4802,13 @@
 
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${await res.text().catch(()=>'')}`);
-        }
+        await fetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(thresholdParam)}`, { method: "POST" });
         if (showToast) {
             showAppToast("Filter Updated", `Conviction set to ${labelText}`, "info");
         }
       } catch (e) {
         console.error("Failed to update conviction threshold:", e);
-        showAppToast("Filter Error", String(e), "error");
       }
-    }
-
-    
-    function onToggleForceTradePassTechnicalOnly(checked) {
-      if (checked) {
-        showAppToast("Technical Force Trade Active", "Force Trade on PASS is ON (Technical Only). Trades will force based strictly on chart patterns.", "warning");
-        if (document.getElementById("settingIgnorePass")?.checked) {
-           document.getElementById("settingIgnorePass").checked = false;
-        }
-      } else {
-        showAppToast("Normal Filters Restored", "Technical Force Trade toggled OFF.", "info");
-      }
-      saveKalshiSettings(false);
-    }
-
-    function onToggleForceTradePass(checked) {
-      if (checked) {
-        showAppToast("100% AI Prediction Active", "Force Trade on PASS is ON: Trading 100% on AI Prediction until toggled off.", "warning");
-        if (document.getElementById("settingIgnorePassTechnicalOnly")?.checked) {
-           document.getElementById("settingIgnorePassTechnicalOnly").checked = false;
-        }
-      } else {
-        showAppToast("Normal Filters Restored", "Force Trade on PASS toggled OFF. Standard conviction & PASS filters active.", "info");
-      }
-      saveKalshiSettings(false);
     }
 
     async function saveKalshiSettings(showToast = true) {
@@ -8394,29 +4835,21 @@
         
         localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
         
-        // Push backend toggles & risk limits with verified responses
+        // Push backend toggles & risk limits
         const apiBase = getKalshiApiBase();
-        const minConviction = document.getElementById("settingMinConviction")?.value || "B";
-        
-        const [resPred, resRisk, resThresh] = await Promise.all([
-          authFetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }),
-          authFetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }),
-          authFetch(`${apiBase}/api/btc/trade/threshold?threshold=${encodeURIComponent(minConviction)}`, { method: "POST" })
+        await Promise.all([
+          fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{}),
+          fetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }).catch(()=>{})
         ]);
-
-        if (!resPred.ok) throw new Error(`Prediction mode update failed (HTTP ${resPred.status})`);
-        if (!resRisk.ok) throw new Error(`Risk limits update failed (HTTP ${resRisk.status})`);
-        if (!resThresh.ok) throw new Error(`Threshold update failed (HTTP ${resThresh.status})`);
+        
         
         const aiSettings = {
-            tradingStyle: document.getElementById("settingTradingStyle")?.value || "SNIPER",
             modelChoice: document.getElementById("settingModelChoice")?.value || "LogisticRegression",
             trainWindow: parseInt(document.getElementById("settingTrainWindow")?.value) || 100,
             regC: parseFloat(document.getElementById("settingRegC")?.value) || 0.5,
             classWeight: document.getElementById("settingClassWeight")?.value || "balanced",
             maxCap: parseFloat(document.getElementById("settingMaxCap")?.value) || 5,
             minConf: parseFloat(document.getElementById("settingMinConf")?.value) || 65,
-            minConviction: document.getElementById("settingMinConviction")?.value || "B",
             edgeWeightOn: document.getElementById("settingEdgeWeightOn")?.checked || false,
             edgeWeightFactor: parseFloat(document.getElementById("settingEdgeWeightFactor")?.value) || 1.2,
             orderType: document.getElementById("settingOrderType")?.value || "market",
@@ -8424,28 +4857,14 @@
             pollInterval: parseInt(document.getElementById("settingPollInterval")?.value) || 5,
             verboseLog: document.getElementById("settingVerboseLog")?.checked || false,
             dryRun: document.getElementById("settingDryRun")?.checked || false,
-            ignorePass: document.getElementById("settingIgnorePass")?.checked || false,
-            ignorePassTechnicalOnly: document.getElementById("settingIgnorePassTechnicalOnly")?.checked || false,
-            reverseCvd: document.getElementById("settingReverseCvd")?.checked || false,
-            cvdBearLimit: document.getElementById("settingCvdBearLimit") ? parseFloat(document.getElementById("settingCvdBearLimit").value) : -2,
-            cvdBullLimit: document.getElementById("settingCvdBullLimit") ? parseFloat(document.getElementById("settingCvdBullLimit").value) : 2,
-            cvdOverrideConf: parseFloat(document.getElementById("settingCvdOverrideConf")?.value) || 75,
-            dynamicStopLoss: document.getElementById("settingDynamicStopLoss") ? document.getElementById("settingDynamicStopLoss").checked : true,
-            stopLossMoveDollars: parseFloat(document.getElementById("settingStopLossMoveDollars")?.value) || 45,
-            stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinutes")?.value) || 8,
-            positionReversal: document.getElementById("settingPositionReversal") ? document.getElementById("settingPositionReversal").checked : false,
-            reversalMaxPriceCents: parseFloat(document.getElementById("settingReversalMaxPriceCents")?.value) || 65,
-            reversalMinMinutesLeft: parseFloat(document.getElementById("settingReversalMinMinutesLeft")?.value) || 6,
-            reversalMinConfidence: parseFloat(document.getElementById("settingReversalMinConfidence")?.value) || 75,
-            oneShotAiStartTrade: document.getElementById("settingOneShotAiStartTrade") ? document.getElementById("settingOneShotAiStartTrade").checked : false
+            ignorePass: document.getElementById("settingIgnorePass")?.checked || false
         };
         
-        const resAi = await authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
+        await fetch(`${apiBase}/api/btc/trade/ai_settings`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(aiSettings)
-        });
-        if (!resAi.ok) throw new Error(`AI settings update failed (HTTP ${resAi.status})`);
+        }).catch(()=>{});
         
         localStorage.setItem("kalshiAiSettings", JSON.stringify(aiSettings));
 
@@ -8471,7 +4890,7 @@
               : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
           }
           const apiBase = getKalshiApiBase();
-          authFetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
+          fetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
         }
         
         if (settings.convictionFilter) {
@@ -8520,7 +4939,6 @@
             const aiSaved = localStorage.getItem("kalshiAiSettings");
             if (aiSaved) {
                 const aiSet = JSON.parse(aiSaved);
-                if (document.getElementById("settingTradingStyle")) document.getElementById("settingTradingStyle").value = aiSet.tradingStyle || "SNIPER";
                 if (document.getElementById("settingModelChoice")) document.getElementById("settingModelChoice").value = aiSet.modelChoice || "LogisticRegression";
                 if (document.getElementById("settingTrainWindow")) {
                     document.getElementById("settingTrainWindow").value = aiSet.trainWindow || 100;
@@ -8541,9 +4959,6 @@
                     document.getElementById("settingMinConf").value = aiSet.minConf || 65;
                     if (document.getElementById("minConfVal")) document.getElementById("minConfVal").innerText = (aiSet.minConf || 65) + "%";
                 }
-                if (document.getElementById("settingMinConviction") && aiSet.minConviction) {
-                    document.getElementById("settingMinConviction").value = aiSet.minConviction;
-                }
                 if (document.getElementById("settingEdgeWeightOn")) document.getElementById("settingEdgeWeightOn").checked = !!aiSet.edgeWeightOn;
                 if (document.getElementById("settingEdgeWeightFactor")) document.getElementById("settingEdgeWeightFactor").value = aiSet.edgeWeightFactor || 1.2;
                 if (document.getElementById("settingOrderType")) document.getElementById("settingOrderType").value = aiSet.orderType || "market";
@@ -8552,22 +4967,10 @@
                 if (document.getElementById("settingVerboseLog")) document.getElementById("settingVerboseLog").checked = !!aiSet.verboseLog;
                 if (document.getElementById("settingDryRun")) document.getElementById("settingDryRun").checked = !!aiSet.dryRun;
                 if (document.getElementById("settingIgnorePass")) document.getElementById("settingIgnorePass").checked = !!aiSet.ignorePass;
-                if (document.getElementById("settingReverseCvd")) document.getElementById("settingReverseCvd").checked = !!aiSet.reverseCvd;
-                if (document.getElementById("settingCvdBearLimit")) document.getElementById("settingCvdBearLimit").value = aiSet.cvdBearLimit !== undefined ? aiSet.cvdBearLimit : -2;
-                if (document.getElementById("settingCvdBullLimit")) document.getElementById("settingCvdBullLimit").value = aiSet.cvdBullLimit !== undefined ? aiSet.cvdBullLimit : 2;
-                if (document.getElementById("settingCvdOverrideConf")) document.getElementById("settingCvdOverrideConf").value = aiSet.cvdOverrideConf || 75;
-                if (document.getElementById("settingDynamicStopLoss")) document.getElementById("settingDynamicStopLoss").checked = aiSet.dynamicStopLoss !== undefined ? !!aiSet.dynamicStopLoss : true;
-                if (document.getElementById("settingStopLossMoveDollars")) document.getElementById("settingStopLossMoveDollars").value = aiSet.stopLossMoveDollars || 45;
-                if (document.getElementById("settingStopLossMaxMinutes")) document.getElementById("settingStopLossMaxMinutes").value = aiSet.stopLossMaxMinutes || 8;
-                if (document.getElementById("settingPositionReversal")) document.getElementById("settingPositionReversal").checked = !!aiSet.positionReversal;
-                if (document.getElementById("settingReversalMaxPriceCents")) document.getElementById("settingReversalMaxPriceCents").value = aiSet.reversalMaxPriceCents || 65;
-                if (document.getElementById("settingReversalMinMinutesLeft")) document.getElementById("settingReversalMinMinutesLeft").value = aiSet.reversalMinMinutesLeft || 6;
-                if (document.getElementById("settingReversalMinConfidence")) document.getElementById("settingReversalMinConfidence").value = aiSet.reversalMinConfidence || 75;
-                if (document.getElementById("settingOneShotAiStartTrade")) document.getElementById("settingOneShotAiStartTrade").checked = !!aiSet.oneShotAiStartTrade;
                 
                 // Push to backend on load to ensure consistency
                 const apiBase = getKalshiApiBase();
-                authFetch(`${apiBase}/api/btc/trade/ai_settings`, {
+                fetch(`${apiBase}/api/btc/trade/ai_settings`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(aiSet)
@@ -8592,30 +4995,6 @@
       if (tgCb) tgCb.checked = true;
       const autoTpCb = document.getElementById("settingAutoTakeProfit");
       if (autoTpCb) autoTpCb.checked = true;
-      const stopLossCb = document.getElementById("settingDynamicStopLoss");
-      if (stopLossCb) stopLossCb.checked = true;
-      const stopLossMoveEl = document.getElementById("settingStopLossMoveDollars");
-      if (stopLossMoveEl) stopLossMoveEl.value = 45;
-      const stopLossWinEl = document.getElementById("settingStopLossMaxMinutes");
-      if (stopLossWinEl) stopLossWinEl.value = 8;
-      const revCb = document.getElementById("settingPositionReversal");
-      if (revCb) revCb.checked = false;
-      const revPriceEl = document.getElementById("settingReversalMaxPriceCents");
-      if (revPriceEl) revPriceEl.value = 65;
-      const revTimeEl = document.getElementById("settingReversalMinMinutesLeft");
-      if (revTimeEl) revTimeEl.value = 6;
-      const revConfEl = document.getElementById("settingReversalMinConfidence");
-      if (revConfEl) revConfEl.value = 75;
-      const cvdBearEl = document.getElementById("settingCvdBearLimit");
-      if (cvdBearEl) cvdBearEl.value = -2;
-      const cvdBullEl = document.getElementById("settingCvdBullLimit");
-      if (cvdBullEl) cvdBullEl.value = 2;
-      const cvdConfEl = document.getElementById("settingCvdOverrideConf");
-      if (cvdConfEl) cvdConfEl.value = 75;
-      const revCvdCb = document.getElementById("settingReverseCvd");
-      if (revCvdCb) revCvdCb.checked = false;
-      const oneShotEl = document.getElementById("settingOneShotAiStartTrade");
-      if (oneShotEl) oneShotEl.checked = false;
       setConvictionFilter("BPLUS", false);
       saveKalshiSettings();
       showAppToast("Settings Reset", "Default parameters and risk limits restored", "info");
@@ -8636,7 +5015,7 @@
       
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
+        const res = await fetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
         if (res.ok) {
           const data = await res.json();
           const balEl = document.getElementById("kalshiSettingsPaperBalance");
@@ -8696,7 +5075,7 @@
     async function loadScalpConfigUI() {
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/scalp/config`);
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`);
         if (!res.ok) return;
         const cfg = await res.json();
         if (!cfg) return;
@@ -8760,7 +5139,7 @@
       try {
         const apiBase = getKalshiApiBase();
         const endpoint = nextState ? "/api/btc/scalp/start" : "/api/btc/scalp/stop";
-        const res = await authFetch(`${apiBase}${endpoint}`, { method: "POST" });
+        const res = await fetch(`${apiBase}${endpoint}`, { method: "POST" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         scalpEngineActive = nextState;
         showAppToast("Scalp Engine", nextState ? "Autonomous scalper active" : "Scalper paused", nextState ? "success" : "info");
@@ -8791,7 +5170,7 @@
         };
 
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/scalp/config`, {
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patchBody)
@@ -8819,7 +5198,7 @@
 
       try {
         const apiBase = getKalshiApiBase();
-        const res = await authFetch(`${apiBase}/api/btc/scalp/config`, {
+        const res = await fetch(`${apiBase}/api/btc/scalp/config`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(defaultCfg)
@@ -8832,60 +5211,7 @@
       }
     }
 
-    
-    // --- Live Signals Scroller ---
-    let signalIndex = 0;
-    let signalInterval = null;
-    let currentSignalLines = [];
-    
-    function startSignalCycler() {
-      if (signalInterval) clearInterval(signalInterval);
-      
-      const container = document.getElementById("topBarSignalsContainer");
-      if (!container) return;
-      
-      signalInterval = setInterval(() => {
-        let factors = [];
-        if (window.lockedContractForecast && window.lockedContractForecast.decision_factors) {
-           factors = window.lockedContractForecast.decision_factors;
-        } else if (window.cachedNextContractForecast && window.cachedNextContractForecast.catalysts) {
-           factors = window.cachedNextContractForecast.catalysts;
-        }
-        
-        if (!factors || factors.length === 0) {
-           factors = ["Awaiting next prediction interval...", "Monitoring real-time orderbook flow..."];
-        }
-        
-        const nextText = factors[signalIndex % factors.length];
-        signalIndex++;
-        
-        const line = document.createElement("div");
-        line.className = "whitespace-nowrap overflow-hidden text-ellipsis";
-        line.innerHTML = "<span class=\"text-cyan-500 mr-1\">></span>" + nextText;
-        container.appendChild(line);
-        currentSignalLines.push(line);
-        
-        if (currentSignalLines.length > 4) {
-            const rowHeight = line.offsetHeight || 12;
-            const scrollAmount = (currentSignalLines.length - 4) * rowHeight;
-            container.style.transform = "translateY(-" + scrollAmount + "px)";
-            
-            setTimeout(() => {
-                while(currentSignalLines.length > 4) {
-                    const oldLine = currentSignalLines.shift();
-                    oldLine.remove();
-                }
-                container.style.transition = "none";
-                container.style.transform = "translateY(0)";
-                void container.offsetHeight;
-                container.style.transition = "transform 700ms ease-in-out";
-            }, 700);
-        }
-      }, 2500);
-    }
-    
     function initAccuracyTooltip() {
-      setTimeout(startSignalCycler, 2000);
       const banner = document.getElementById("topBarLikelyCard") || document.getElementById("btcPredBanner");
       const tooltip = document.getElementById("accuracyTooltip");
       if (!banner || !tooltip) return;
@@ -9025,13 +5351,6 @@
           tooltip.style.opacity = "0";
           tooltip.classList.add("hidden");
         }
-        // Flush any deferred trend box updates if mouse left the trend box grid
-        const grid = document.getElementById("btcTrendBoxGrid");
-        if (grid && window._pendingTrendBoxUpdate && !grid.matches(":hover")) {
-          const pending = window._pendingTrendBoxUpdate;
-          window._pendingTrendBoxUpdate = null;
-          renderBtcTrendBox(pending.last5, pending.streak);
-        }
       });
 
       function positionTooltip(e, target) {
@@ -9082,10 +5401,6 @@
             const data = JSON.parse(event.data);
             if (data.type === "ticker" && data.product_id === "BTC-USD") {
               const p = parseFloat(data.price);
-              const vol = data.volume_24h ? parseFloat(data.volume_24h) : null;
-              if (vol && !isNaN(vol)) {
-                window.cachedBtcVolume = vol;
-              }
               if (!isNaN(p)) {
                 _pendingWsPrice = p;
                 if (!_wsRafScheduled) {
@@ -9094,11 +5409,7 @@
                     _wsRafScheduled = false;
                     if (_pendingWsPrice !== null) {
                       const curP = _pendingWsPrice;
-                      renderBtcHeroHud({ 
-                        price: curP, 
-                        volume_24h: window.cachedBtcVolume || window.lastKalshiVolume,
-                        target_price: window.cachedBtcTargetPrice 
-                      });
+                      renderBtcHeroHud({ price: curP });
                       if (typeof btcCandleSeries !== "undefined" && btcCandleSeries && window.lastCandle) {
                          window.lastCandle.close = curP;
                          if (curP > window.lastCandle.high) window.lastCandle.high = curP;
@@ -9150,7 +5461,6 @@
         const modal = document.getElementById("mlPredictionDetailsModal");
         const content = document.getElementById("mlModalContent");
         const bubble = document.getElementById("kalshiMLStatusBubble");
-        const aiAccCard = document.getElementById("btcMlModelAccuracyCard");
         if (!modal || !content) return;
 
         // Toggle if already open
@@ -9162,31 +5472,11 @@
         const locked = window.lockedContractForecast || window.cachedNextContractForecast || {};
         const accuracy = window.serverPredictionAccuracy || {};
         
-        const nowSec = Math.floor(Date.now() / 1000);
-        const elapsed = nowSec % 900;
-
-        let dir = locked.direction;
-        if (!dir && window.cachedBtcPredictedOutcome) {
-          if (window.cachedBtcPredictedOutcome.includes("ABOVE") || window.cachedBtcPredictedOutcome.includes("UP")) dir = "ABOVE";
-          else if (window.cachedBtcPredictedOutcome.includes("BELOW") || window.cachedBtcPredictedOutcome.includes("DOWN")) dir = "BELOW";
-          else if (window.cachedBtcPredictedOutcome.includes("PASS") || window.cachedBtcPredictedOutcome.includes("CHOP") || window.cachedBtcPredictedOutcome.includes("NO EDGE")) dir = "PASS";
-        }
-        const currentPrice = window.lastBtcPrice || 0;
-        if (!dir && currentPrice && window.cachedBtcTargetPrice) {
-          dir = currentPrice >= window.cachedBtcTargetPrice ? "ABOVE" : "BELOW";
-        }
-
-        if (elapsed < 30 && (!window.lockedContractForecast || !locked.direction)) {
-          dir = `SCANNING (${Math.max(0, 30 - elapsed)}s)`;
-        } else if (!dir) {
-          dir = "MONITORING";
-        }
-
+        const dir = locked.direction || "SCANNING";
         const isUp = dir === "ABOVE" || dir === "UP" || dir === "YES";
         const isDown = dir === "BELOW" || dir === "DOWN" || dir === "NO";
-        const isPass = dir === "PASS";
 
-        const dirColor = isUp ? "text-emerald-400" : isDown ? "text-rose-400" : isPass ? "text-slate-400" : "text-amber-400";
+        const dirColor = isUp ? "text-emerald-400" : isDown ? "text-rose-400" : "text-amber-400";
         const conf = locked.probability_percent ? `${Number(locked.probability_percent).toFixed(1)}%` : "--%";
         const estSettle = locked.target_settlement_zone || "--";
         const modelChoice = document.getElementById("settingModelChoice")?.value || "XGBoost";
@@ -9202,39 +5492,7 @@
         const accPct = (accuracy.accuracy_percent !== undefined && accuracy.accuracy_percent !== null) ? `${accuracy.accuracy_percent}%` : "--%";
         const accTotal = accuracy.total_evaluated || 0;
 
-        // --- Build Previous Days section ---
-        const prevDaysValueEl = document.getElementById("btcPreviousDaysAccuracyValue");
-        const prevDaysText = prevDaysValueEl ? prevDaysValueEl.innerText.trim() : null;
-        let prevDaysHtml = "";
-        if (prevDaysText && prevDaysText !== "No prior days" && prevDaysText !== "--%") {
-          // Parse the "Mon 73% · Tue 80% · Wed 66%" format into pills
-          const entries = prevDaysText.split("·").map(s => s.trim()).filter(Boolean);
-          const pills = entries.map(entry => {
-            const match = entry.match(/^(\S+)\s+(\d+)%$/);
-            if (!match) return `<span class="px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-mono font-bold">${entry}</span>`;
-            const [, day, pct] = match;
-            const p = parseInt(pct, 10);
-            const cls = p >= 70 ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                      : p >= 50 ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
-                                : "bg-rose-500/15 border-rose-500/40 text-rose-300";
-            return `<span class="px-2 py-0.5 rounded-md border ${cls} text-[10px] font-mono font-bold">${day} <span class="font-black">${pct}%</span></span>`;
-          }).join("");
-          prevDaysHtml = `
-          <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Previous Days Accuracy</div>
-            <div class="flex flex-wrap gap-1.5">${pills}</div>
-          </div>`;
-        } else {
-          prevDaysHtml = `
-          <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-            <div class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Previous Days Accuracy</div>
-            <span class="text-[10px] text-slate-500 italic">No completed trading days recorded yet</span>
-          </div>`;
-        }
-
         content.innerHTML = `
-          ${prevDaysHtml}
-
           <div class="grid grid-cols-2 gap-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
             <div>
               <div class="text-[9px] text-slate-400 uppercase tracking-wider">Prediction Direction</div>
@@ -9269,218 +5527,115 @@
           </div>
         `;
 
-        // Position: prefer AI accuracy card, fall back to ML status bubble
-        const anchor = aiAccCard || bubble;
-        if (anchor) {
-            modal.style.top = "0px";
-            modal.style.left = "0px";
-            modal.classList.remove("hidden");
-            const modalRect = modal.getBoundingClientRect();
-            
-            const rect = anchor.getBoundingClientRect();
+        if (bubble) {
+            const rect = bubble.getBoundingClientRect();
             let top = rect.bottom + 6;
             let left = rect.left - 10;
-            const dropdownWidth = modalRect.width || 320;
-            const dropdownHeight = modalRect.height;
-            
-            // Horizontal bounds check
+            const dropdownWidth = 320;
             if (left + dropdownWidth > window.innerWidth - 10) {
                 left = window.innerWidth - dropdownWidth - 10;
             }
-            if (left < 10) left = 10;
-            
-            // Vertical bounds check
-            if (top + dropdownHeight > window.innerHeight - 15) {
-                top = rect.top - dropdownHeight - 6;
-                if (top < 15) {
-                    top = window.innerHeight - dropdownHeight - 15;
-                }
-            }
-            
             modal.style.top = `${top}px`;
-            modal.style.left = `${left}px`;
-        } else {
-            modal.classList.remove("hidden");
+            modal.style.left = `${Math.max(10, left)}px`;
         }
+
+        modal.classList.remove("hidden");
+    }
+
+    function closeMlPredictionDetailsModal() {
+      const modal = document.getElementById("mlPredictionDetailsModal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function initMlTooltip() {
+      let hideTimeout = null;
+      let isPinned = false;
+      const tooltip = document.getElementById("accuracyTooltip");
+      if (!tooltip) return;
+      
+      function showTooltip(bubble, pinned) {
+        const locked = window.lockedContractForecast;
+        const rect = bubble.getBoundingClientRect();
+        
+        let html = `<div class="font-black text-cyan-400 mb-1 border-b border-cyan-500/30 pb-1 flex justify-between items-center">
+          <span>AI Decision Engine</span>
+          ${pinned ? '<span class="text-[8px] text-slate-500 font-normal">pinned (click outside to close)</span>' : ''}
+        </div>`;
+        if (!locked) {
+            html += `<div class="text-slate-300 text-[10px] animate-pulse">Scanning live market conditions...</div>`;
+        } else {
+            html += `<div class="text-[10px] text-slate-300 space-y-1">`;
+            html += `<div class="flex justify-between"><span class="text-slate-400">Decision:</span> <span class="font-bold ${locked.direction === 'ABOVE' ? 'text-emerald-400' : locked.direction === 'BELOW' ? 'text-rose-400' : 'text-slate-300'}">${locked.direction}</span></div>`;
+            html += `<div class="flex justify-between"><span class="text-slate-400">Confidence:</span> <span class="font-bold text-amber-400">${locked.probability_percent ? locked.probability_percent.toFixed(1) : '--'}%</span></div>`;
+            html += `<div class="mt-2 text-cyan-400 border-b border-cyan-500/20 pb-0.5">Key Factors:</div>`;
+            html += `<ul class="list-disc pl-3 text-[9px] text-slate-300 space-y-0.5 mt-1 max-h-[40vh] overflow-y-auto">`;
+            (locked.decision_factors || []).forEach(f => {
+                html += `<li>${f}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+        
+        tooltip.innerHTML = html;
+        tooltip.classList.remove("hidden");
+        tooltip.style.opacity = "1";
+        tooltip.style.top = `${rect.bottom + 10}px`;
+        
+        let leftPos = rect.left - 50;
+        if (leftPos + 320 > window.innerWidth) leftPos = window.innerWidth - 330;
+        tooltip.style.left = `${Math.max(10, leftPos)}px`;
+      }
+
+      document.addEventListener("click", (e) => {
+        const bubble = e.target.closest("#kalshiMLStatusBubble");
+        if (bubble) {
+           if (isPinned && !tooltip.classList.contains("hidden")) {
+               isPinned = false;
+               tooltip.style.opacity = "0";
+               setTimeout(() => tooltip.classList.add("hidden"), 150);
+           } else {
+               if (hideTimeout) clearTimeout(hideTimeout);
+               isPinned = true;
+               showTooltip(bubble, true);
+           }
+           e.stopPropagation();
+        } else if (isPinned && !e.target.closest("#accuracyTooltip")) {
+           isPinned = false;
+           tooltip.style.opacity = "0";
+           setTimeout(() => tooltip.classList.add("hidden"), 150);
+        }
+      });
+
+      document.addEventListener("mouseover", (e) => {
+        if (isPinned) return;
+        const bubble = e.target.closest("#kalshiMLStatusBubble");
+        if (!bubble) return;
+        
+        if (hideTimeout) clearTimeout(hideTimeout);
+        showTooltip(bubble, false);
+      });
+      
+      document.addEventListener("mouseout", (e) => {
+        if (isPinned) return;
+        const bubble = e.target.closest("#kalshiMLStatusBubble");
+        if (!bubble) return;
+        
+        hideTimeout = setTimeout(() => {
+          tooltip.style.opacity = "0";
+          setTimeout(() => tooltip.classList.add("hidden"), 150);
+        }, 100);
+      });
     }
 
     pollKalshiTradingStatus();
-    setInterval(pollKalshiTradingStatus, 1500);
+    setInterval(pollKalshiTradingStatus, 3000);
     initAccuracyTooltip();
+    initMlTooltip();
     loadScalpConfigUI();
     initBtcWebsocket();
     initGlobalSleekTooltips();
 
-    // Kick off BTC Analyzer
+    // Kick off BTC Analyzer and 1-second live data refresh loop
     switchMode('btc_analyzer');
+    startLive1sRefresh();
 
-  </script>
-
-  <!-- Accuracy Hover Tooltip Panel -->
-  <div id="accuracyTooltip" class="fixed hidden pointer-events-auto z-[99999] bg-slate-950/95 border border-cyan-500/50 rounded-2xl p-3.5 shadow-2xl text-xs font-mono text-white max-w-xs transition-opacity duration-150 animate-in fade-in duration-150"></div>
-
-  <!-- Custom In-App Modal Dialog (Zero "localhost says" native popups) -->
   
-      <!-- ML Prediction Details Floating Dropdown -->
-      <div id="mlPredictionDetailsModal" class="hidden fixed z-[99999] bg-slate-950/95 border border-cyan-500/50 rounded-2xl p-3.5 shadow-2xl font-mono text-slate-200 w-80 max-w-[90vw] max-h-[85vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-        <button onclick="closeMlPredictionDetailsModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-xs font-bold cursor-pointer">✕</button>
-
-        <div class="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-          <div class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></div>
-          <h3 class="text-xs font-black text-cyan-400 uppercase tracking-wider">AI Accuracy & Prediction Details</h3>
-        </div>
-
-        <div id="mlModalContent" class="space-y-2 text-xs text-slate-200">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-
-    <div id="appModalOverlay" class="hidden fixed inset-0 bg-slate-950/90 z-[9999] flex items-center justify-center p-4">
-    <div id="appModalCard" class="w-full max-w-xs sm:max-w-sm bg-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-2xl text-left">
-      <div class="flex items-center gap-2.5 mb-2.5">
-        <div id="appModalIconWrapper" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 bg-cyan-500/20 text-cyan-400 border border-cyan-500/40">
-          <span id="appModalIcon">⚡</span>
-        </div>
-        <div class="min-w-0">
-          <div id="appModalTitle" class="text-xs sm:text-sm font-black text-white uppercase tracking-wider truncate">Confirm Order</div>
-          <div id="appModalBadge" class="text-[8px] sm:text-[9px] font-mono uppercase text-cyan-400">KALSHI AI TRADER</div>
-        </div>
-      </div>
-      <div id="appModalBody" class="text-xs text-slate-300 font-mono mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
-      </div>
-      <div id="appModalBtnGroup" class="flex gap-2">
-        <button id="appModalCancelBtn" class="flex-1 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold hover:bg-slate-700 active:scale-95 transition">Cancel</button>
-        <button id="appModalConfirmBtn" class="flex-1 py-2 rounded-xl text-slate-950 text-xs font-black active:scale-95 transition shadow-lg bg-cyan-400 hover:bg-cyan-300">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Custom Toast Notification Container (Top Centered) -->
-  <div id="appToastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-sm pointer-events-auto z-[10000] flex flex-col gap-2"></div>
-
-  <!-- Deep Dive Modal for MLB Batter/Pitcher Props -->
-  <div id="deepDiveModal" class="hidden fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
-      <button onclick="closeModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-base font-bold cursor-pointer p-1">✕</button>
-
-      <!-- Player Header -->
-      <div class="flex items-center gap-3 pr-6">
-        <img id="modalHeadshot" src="" alt="Player" class="w-12 h-12 rounded-full object-cover border border-slate-700 bg-slate-950 shrink-0" />
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
-            <h2 id="modalPlayerName" class="text-sm sm:text-base font-black text-white truncate">Player Name</h2>
-            <span id="modalWinProb" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">--%</span>
-          </div>
-          <div id="modalSub" class="text-[11px] text-slate-400 truncate mt-0.5">Matchup Info</div>
-        </div>
-      </div>
-
-      <!-- Projection & Odds Grid -->
-      <div class="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-center font-mono">
-        <div>
-          <div id="modalMetricLabel" class="text-[9px] uppercase text-slate-400 font-sans font-bold">Projected Score</div>
-          <div id="modalProjScore" class="text-xs sm:text-sm font-black text-amber-400 mt-0.5">--</div>
-        </div>
-        <div>
-          <div class="text-[9px] uppercase text-slate-400 font-sans font-bold">DK Line</div>
-          <div id="modalDkLine" class="text-xs sm:text-sm font-black text-cyan-400 mt-0.5">--</div>
-        </div>
-        <div>
-          <div class="text-[9px] uppercase text-slate-400 font-sans font-bold">Odds / Edge</div>
-          <div class="flex items-center justify-center gap-1 mt-0.5">
-            <span id="modalDkOdds" class="text-xs sm:text-sm font-bold text-white">--</span>
-            <span id="modalDkEdge" class="text-[10px] text-emerald-400 font-bold">--</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Matchup Stats Box -->
-      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-        <div class="flex items-center justify-between text-xs">
-          <span id="modalStatsTitle" class="font-bold text-slate-300">Matchup Statistics</span>
-          <span id="modalBvpVerdict" class="text-[10px] font-bold text-emerald-400 font-mono">MATCHUP EDGE</span>
-        </div>
-        <div class="grid grid-cols-4 gap-1 text-center font-mono text-xs">
-          <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
-            <div id="modalStat1Label" class="text-[8px] text-slate-400 uppercase font-sans">Stat 1</div>
-            <div id="modalBvpAbH" class="font-bold text-white mt-0.5">--</div>
-          </div>
-          <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
-            <div id="modalStat2Label" class="text-[8px] text-slate-400 uppercase font-sans">Stat 2</div>
-            <div id="modalBvpHrRbi" class="font-bold text-white mt-0.5">--</div>
-          </div>
-          <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
-            <div id="modalStat3Label" class="text-[8px] text-slate-400 uppercase font-sans">Stat 3</div>
-            <div id="modalBvpAvg" class="font-bold text-white mt-0.5">--</div>
-          </div>
-          <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
-            <div id="modalStat4Label" class="text-[8px] text-slate-400 uppercase font-sans">Stat 4</div>
-            <div id="modalBvpOps" class="font-bold text-white mt-0.5">--</div>
-          </div>
-        </div>
-        <div id="modalBvpNote" class="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800/80">--</div>
-      </div>
-
-      <!-- Game Log Table -->
-      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
-        <div class="flex items-center justify-between text-xs">
-          <span id="modalGameLogTitle" class="font-bold text-slate-300">Recent Game Log</span>
-          <span id="modalGameLogBadge" class="text-[9px] font-mono"></span>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs font-mono">
-            <thead id="modalGameLogHead"></thead>
-            <tbody id="modalGameLogBody" class="divide-y divide-slate-800/60"></tbody>
-          </table>
-        </div>
-        <div id="modalGameLogSourceNote" class="text-[9px] text-slate-500 flex items-center justify-between pt-1"></div>
-      </div>
-
-      <!-- Weather & Catalysts -->
-      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs">
-        <div class="flex items-center justify-between">
-          <span id="modalWeatherVenue" class="text-slate-300 font-bold">Venue Weather</span>
-          <span id="modalWeatherStatus" class="text-[10px] font-mono text-emerald-400 font-bold">FAVORABLE</span>
-        </div>
-        <div class="flex items-center gap-3 text-slate-400 text-[11px] font-mono">
-          <span id="modalWeatherTemp">--°F</span>
-          <span id="modalWeatherWind">--</span>
-          <span id="modalWeatherRunImpact" class="text-emerald-400">--</span>
-        </div>
-        <ul id="modalCatalysts" class="space-y-1 text-slate-300 text-[11px] pt-1 border-t border-slate-800/80"></ul>
-      </div>
-
-      <!-- Footer Buttons -->
-      <div class="flex gap-2 pt-1">
-        <button onclick="addCurrentModalToSlip()" class="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition-all cursor-pointer">
-          + Add to Slip
-        </button>
-        <a id="modalDkBtn" href="dksb://sb/addbet" target="_blank" class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white text-xs font-black text-center shadow-lg transition-all cursor-pointer">
-          Bet on DraftKings ↗
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Instant Client Auto-Reload on Server Code Update -->
-  <script>
-    (function() {
-      let currentMtime = null;
-      setInterval(async () => {
-        try {
-          const res = await fetch('/api/ui_version?t=' + Date.now(), { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (currentMtime === null) {
-              currentMtime = data.mtime;
-            } else if (data.mtime && data.mtime !== currentMtime) {
-              console.log('[AutoReload] New UI version detected, reloading page...');
-              window.location.reload();
-            }
-          }
-        } catch (e) {}
-      }, 1500);
-    })();
-  </script>
-</body>
-</html>

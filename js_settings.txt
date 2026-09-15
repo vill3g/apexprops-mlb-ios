@@ -1,0 +1,151 @@
+async function saveKalshiSettings() {
+      try {
+        const triggerWindow = document.getElementById("settingTriggerWindow")?.value || "standard";
+        const predMode = document.getElementById("settingPredictionMode")?.checked || false;
+        const trendGuard = document.getElementById("settingTrendGuard")?.checked || false;
+        const autoTp = document.getElementById("settingAutoTakeProfit")?.checked || false;
+        const maxDailyRisk = parseFloat(document.getElementById("settingMaxDailyRisk")?.value) || 25.0;
+        const maxDailyTrades = parseInt(document.getElementById("settingMaxDailyTrades")?.value) || 10;
+        
+        const settings = {
+          tradingMode: kalshiTradingMode,
+          convictionFilter: typeof kalshiConvictionFilter !== 'undefined' ? kalshiConvictionFilter : 'APLUS',
+          contractsCount: kalshiCurrentContracts,
+          audioEnabled: btcAudioEnabled,
+          triggerWindow,
+          predMode,
+          trendGuard,
+          autoTp,
+          maxDailyRisk,
+          maxDailyTrades
+        };
+        
+        localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
+        
+        // Push backend toggles & risk limits
+        const apiBase = getKalshiApiBase();
+        await Promise.all([
+          fetch(`${apiBase}/api/btc/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }).catch(()=>{}),
+          fetch(`${apiBase}/api/btc/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }).catch(()=>{})
+        ]);
+        
+        showAppToast("Settings Saved", "Trade parameters and daily limits applied successfully", "success");
+      } catch(e) {
+        showAppToast("Save Error", String(e), "error");
+      }
+    }
+
+    async function loadKalshiSettingsFromStorage() {
+      try {
+        const saved = localStorage.getItem("kalshiGeneralSettings");
+        if (!saved) return;
+        const settings = JSON.parse(saved);
+        
+        if (settings.tradingMode && settings.tradingMode !== kalshiTradingMode) {
+          kalshiTradingMode = settings.tradingMode;
+          const btnMode = document.getElementById("btnToggleTradingMode");
+          if (btnMode) {
+            btnMode.innerText = kalshiTradingMode === "LIVE" ? "🔴 LIVE" : "📝 PAPER";
+            btnMode.className = kalshiTradingMode === "LIVE" 
+              ? "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-red-950 border border-red-500/80 text-red-400 hover:bg-red-900" 
+              : "px-2 py-0.5 rounded text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all bg-cyan-950 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900";
+          }
+          const apiBase = getKalshiApiBase();
+          fetch(`${apiBase}/api/btc/trade/mode?mode=${kalshiTradingMode}`, { method: "POST" }).catch(e => console.error(e));
+        }
+        
+        if (settings.convictionFilter) {
+          setConvictionFilter(settings.convictionFilter, false);
+        }
+        
+        if (settings.contractsCount) {
+          kalshiCurrentContracts = settings.contractsCount;
+          const input = document.getElementById("kalshiContractSizeInput");
+          if (input) input.value = (kalshiCurrentContracts * kalshiCurrentPriceEst).toFixed(2);
+        }
+        
+        if (typeof settings.audioEnabled === 'boolean') {
+          if (settings.audioEnabled !== btcAudioEnabled) toggleBtcAudio();
+        }
+        
+        const winSelect = document.getElementById("settingTriggerWindow");
+        if (winSelect && settings.triggerWindow) winSelect.value = settings.triggerWindow;
+        
+        const predCb = document.getElementById("settingPredictionMode");
+        if (predCb && typeof settings.predMode === 'boolean') {
+           predCb.checked = settings.predMode;
+        }
+        
+        const tgCb = document.getElementById("settingTrendGuard");
+        if (tgCb && typeof settings.trendGuard === 'boolean') tgCb.checked = settings.trendGuard;
+        
+        const autoTpCb = document.getElementById("settingAutoTakeProfit");
+        if (autoTpCb && typeof settings.autoTp === 'boolean') autoTpCb.checked = settings.autoTp;
+
+        if (settings.maxDailyRisk !== undefined) {
+          const riskInput = document.getElementById("settingMaxDailyRisk");
+          if (riskInput) riskInput.value = parseFloat(settings.maxDailyRisk).toFixed(2);
+        }
+
+        if (settings.maxDailyTrades !== undefined) {
+          const tradesInput = document.getElementById("settingMaxDailyTrades");
+          if (tradesInput) tradesInput.value = parseInt(settings.maxDailyTrades);
+        }
+        
+      } catch(e) {
+        console.warn("Failed to load general settings from storage:", e);
+      }
+    }
+
+    function resetKalshiSettingsDefaults() {
+      const riskEl = document.getElementById("settingMaxDailyRisk");
+      if (riskEl) riskEl.value = "25.00";
+      const tradesEl = document.getElementById("settingMaxDailyTrades");
+      if (tradesEl) tradesEl.value = "10";
+      const winSelect = document.getElementById("settingTriggerWindow");
+      if (winSelect) winSelect.value = "standard";
+      const predCb = document.getElementById("settingPredictionMode");
+      if (predCb) predCb.checked = false;
+      const tgCb = document.getElementById("settingTrendGuard");
+      if (tgCb) tgCb.checked = true;
+      const autoTpCb = document.getElementById("settingAutoTakeProfit");
+      if (autoTpCb) autoTpCb.checked = true;
+      setConvictionFilter("A", false);
+      saveKalshiSettings();
+      showAppToast("Settings Reset", "Default parameters and risk limits restored", "info");
+    }
+    
+    async function resetPaperBalanceUI() {
+      const confirmed = await showAppModal({
+        title: "Reset Paper Balance",
+        badge: "PAPER TRADING",
+        icon: "⚠️",
+        iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
+        body: `Are you sure you want to reset your paper trading balance back to $500.00?`,
+        confirmText: "Reset Balance",
+        confirmColor: "red"
+      });
+      
+      if (!confirmed) return;
+      
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await fetch(`${apiBase}/api/btc/paper/balance/reset`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          const balEl = document.getElementById("kalshiSettingsPaperBalance");
+          if (balEl) balEl.innerText = `$${parseFloat(data.balance).toFixed(2)}`;
+          showAppToast("Balance Reset", "Paper balance has been reset to $500.00", "success");
+          pollKalshiTradingStatus();
+        }
+      } catch (e) {
+        showAppToast("Error", "Failed to reset paper balance", "error");
+      }
+    }
+
+    // =========================================================================
+    // SCALPER SETTINGS SUB-PAGE CONTROLLER
+    // =========================================================================
+    let scalpEngineActive = false;
+
+    

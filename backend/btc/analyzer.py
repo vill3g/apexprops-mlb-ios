@@ -1392,16 +1392,22 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         blended_prob = (prob * effective_heuristic_weight) + (ml_prob_for_pred_dir * effective_ml_weight)
 
         if ml_prob_for_pred_dir < 50.0 and disagreement >= THRESHOLDS["model_conflict_threshold"]:
-            # ML actively disagrees with the heuristic direction by a wide margin.
-            # Don't silently flip direction — flag it and cap confidence instead
-            # of trusting either side blindly.
-            catalysts.append(
-                f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model "
-                f"disagrees ({ml_prob_for_pred_dir:.1f}% for this side) — confidence capped"
-            )
-            blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])
-            if "GRADE A+" in grade:
-                grade = "GRADE A SETUP"  # downgrade one tier on model conflict
+            if ("YES" in pred or "ABOVE" in pred):
+                catalysts.append(
+                    f"📈 Chart Override: Chart setup heavily favors {pred} ({prob}%), overriding ML model hesitation."
+                )
+                # Keep probability heavily weighted towards the chart conviction
+                blended_prob = max(prob, blended_prob)
+            else:
+                # ML actively disagrees with the heuristic direction by a wide margin.
+                # Don't silently flip direction - flag it and cap confidence instead.
+                catalysts.append(
+                    f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model "
+                    f"disagrees ({ml_prob_for_pred_dir:.1f}% for this side) - confidence capped"
+                )
+                blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])
+                if "GRADE A+" in grade:
+                    grade = "GRADE A SETUP"  # downgrade one tier on model conflict
         else:
             catalysts.append(
                 f"🧠 ML Confirmation: Model agrees with {pred} ({ml_prob_for_pred_dir:.1f}%), "

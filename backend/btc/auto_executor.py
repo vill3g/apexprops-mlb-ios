@@ -284,8 +284,34 @@ class AutoExecutor:
                     reconciled_any = False
                     for t in list(open_trades):
                         ticker = t.get("ticker")
-                        if kalshi_pos_map.get(ticker, 0.0) <= 0.0 or str(t.get("id", "")).startswith("sim_"):
-                            logger.info(f"[AutoExecutor] Auto-reconciled flat Kalshi position for trade {t.get('id')} ({ticker}).")
+
+                        # Skip expired markets — settlement loop handles those
+                        close_epoch = float(t.get("close_epoch") or float("inf"))
+                        now_ts = time.time()
+                        if now_ts > close_epoch:
+                            continue
+
+                        # Grace period: Kalshi's read-replica can lag up to 30s after order placement.
+                        # Parse the trade timestamp directly to measure true age.
+                        trade_age_seconds = 999.0  # default: old enough to reconcile
+                        ts_str = t.get("timestamp", "")
+                        if ts_str:
+                            try:
+                                trade_dt = datetime.strptime(ts_str, "%Y-%m-%d %I:%M:%S %p ET").replace(tzinfo=ZoneInfo("America/New_York"))
+                                trade_age_seconds = now_ts - trade_dt.timestamp()
+                            except Exception:
+                                trade_age_seconds = 999.0
+
+                        # Do NOT reconcile trades younger than 60 seconds — give Kalshi API time to catch up
+                        if trade_age_seconds < 60.0:
+                            logger.debug(f"[AutoExecutor] Skipping reconcile for {t.get('id')} — trade is only {trade_age_seconds:.0f}s old (grace period active).")
+                            continue
+
+                        # Kalshi NO positions are reported as NEGATIVE position_fp — use abs() to detect flat correctly
+                        val = kalshi_pos_map.get(ticker, 0.0)
+                        is_sim = str(t.get("id", "")).startswith("sim_")
+                        if abs(val) <= 0.001 and not is_sim:
+                            logger.info(f"[AutoExecutor] Auto-reconciled flat Kalshi position for trade {t.get('id')} ({ticker}). Age={trade_age_seconds:.0f}s, position_fp={val}")
                             t["status"] = "CLOSED"
                             t["result"] = "CLOSED_FLAT"
                             t["exit_reason"] = "KALSHI_POSITION_RECONCILED"
