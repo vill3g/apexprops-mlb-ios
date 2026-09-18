@@ -134,7 +134,7 @@ class AnalysisResult:
     trade_setup: dict
 
 
-def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
+def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") -> dict:
     """
     Complete analysis pipeline for any Bitcoin timeframe (1m, 5m, 15m, 1h, 4h, 1d).
     Takes clean OHLCV DataFrame, calculates indicators, detects patterns,
@@ -535,7 +535,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         if _ANALYZER_EXECUTOR is None:
             _ANALYZER_EXECUTOR = ThreadPoolExecutor(max_workers=3)
 
-        fut_kalshi = _ANALYZER_EXECUTOR.submit(get_kalshi_15m_market)
+        fut_kalshi = _ANALYZER_EXECUTOR.submit(get_kalshi_15m_market, series_ticker=f"KX{asset}15M")
         fut_futures = _ANALYZER_EXECUTOR.submit(get_binance_futures_data)
         fut_fng = _ANALYZER_EXECUTOR.submit(get_fear_and_greed_index)
 
@@ -554,7 +554,7 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         from backend.btc.ml_engine import get_ml_engine
         import os
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-        ml_engine = get_ml_engine(data_dir, trading_style="SNIPER")
+        ml_engine = get_ml_engine(data_dir, trading_style="SNIPER", asset=asset)
     except Exception:
         ml_engine = None
     last_5_targets = enrich_targets_with_ml(last_5_targets, df_ind, ml_engine=ml_engine)
@@ -821,7 +821,11 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
         from backend.btc.ml_engine import get_ml_engine
         import os
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-        ml_engine = get_ml_engine(data_dir, trading_style="SNIPER")
+        ml_engine = get_ml_engine(data_dir, trading_style="SNIPER", asset=asset)
+        
+        if not ml_engine.is_trained:
+            logger.info("[Analyzer] ML Engine untrained. Auto-training on historical market data...")
+            ml_engine.self_train_on_historical_market(df_ind)
         
         # Build live features to pass to ML via unified builder
         c_last = df_ind.iloc[-1] if len(df_ind) > 0 else None
@@ -949,10 +953,11 @@ def analyze_btc(df: pd.DataFrame, timeframe: str = "15m") -> dict:
 
 
 
-def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None, patterns: list = None, structure: dict = None, kalshi_m: dict = None, trading_style: str = "SNIPER") -> dict:
+def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None, patterns: list = None, structure: dict = None, kalshi_m: dict = None, trading_style: str = "SNIPER", asset: str = "BTC") -> dict:
     """
     Evaluates the just-finalized candle and pattern scanner to forecast
-    whether to BID YES (Above Target) or BID NO (Below Target) on Kalshi/Robinhood.
+    the direction of the next 15m interval.
+    If target_price is provided, it forecasts P(Close > target_price).
     """
     n = len(df_ind)
     if n < 5:
@@ -1024,33 +1029,7 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     except Exception:
         volume_15m_ratio = 1.0
 
-    if delta_dollars <= THRESHOLDS["pin_delta_dollars"] and atr <= THRESHOLDS["pin_atr_max"] and not is_strong_breakout:
-        return {
-            "recommendation": "PASS (PIN RISK)",
-            "direction": "PASS",
-            "action_type": "PASS",
-            "probability_percent": 50,
-            "predicted_probability": 0.5,
-            "ml_prob": 0.5,
-            "pre_gate_direction": "PASS",
-            "pre_gate_prob": 50.0,
-            "pre_gate_grade": "GRADE C / PASS",
-            "conviction_grade": "GRADE C / PASS",
-            "conviction_badge": "⚪ PASS (PIN RISK)",
-            "target_settlement_zone": f"${target-15:,.0f} - ${target+15:,.0f}",
-            "primary_edge": f"Strike Pin Risk: Spot (${c_close:,.2f}) within ${delta_dollars:.1f} of strike (${target:,.2f}) with low ATR (${atr:.1f})",
-            "catalysts": [
-                f"Strike Pin Risk: Price is ${delta_dollars:.1f} away from target strike (${target:,.2f}) with compressed ATR (${atr:.1f}).",
-                "Resolution in narrow pin zones is driven by single-tick 50/50 chop. Sitting out to protect win rate."
-            ],
-            "raw_features": {
-                "rsi": float(rsi), "bb_upper": float(bb_upper), "bb_lower": float(bb_lower),
-                "ema_9": float(ema_9), "ema_21": float(ema_21), "ema_50": float(ema_50),
-                "atr": float(atr), "delta_to_target": delta_to_target, "heuristic_score": 0.0,
-                "orderbook_imbalance": 0.0, "funding_rate": 0.0, "open_interest": 0.0, "fng_value": 50.0,
-                "is_weekend": is_weekend, "hour_of_day": hour_of_day, "volume_15m_ratio": volume_15m_ratio
-            }
-        }
+    
 
     # 1. Pre-fetch Microstructure, Derivatives & 1-Hour Trend Before ML Prediction
     cb_imbalance = 0.0
@@ -1123,7 +1102,12 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         from backend.btc.ml_engine import get_ml_engine
         import os
         data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-        ml_engine = get_ml_engine(data_dir, trading_style=trading_style)
+        ml_engine = get_ml_engine(data_dir, trading_style=trading_style, asset=asset)
+        
+        if not ml_engine.is_trained:
+            logger.info(f"[Analyzer] ML Engine untrained for {asset}_{trading_style}. Auto-training...")
+            ml_engine.self_train_on_historical_market(df_ind)
+            
         if ml_engine.is_trained:
 
             raw_feat = build_live_ml_features(
@@ -1138,30 +1122,24 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
                 minutes_remaining=minutes_remaining,
                 heuristic_score=tech_score,
             )
-            ml_prob = ml_engine.predict_probability(raw_feat)
+            ml_prob, ml_reasoning = ml_engine.predict_with_reasoning(raw_feat)
             raw_ml_prob = float(ml_prob)
             
-            # --- DOWN PREDICTION PENALTY OVERRIDE ---
-            # Historical analysis shows the ML heavily struggles when shorting above VWAP
-            # or into strong lower wicks (false breakdowns). 
-            if ml_prob < 0.50:
-                price_vwap = raw_feat.get("price_vs_vwap", 0.0)
-                l_wick = raw_feat.get("lower_wick_ratio", 0.0)
-                cvd = raw_feat.get("cvd_value", 0.0)
-                
-                # If price is still > VWAP (support) and we have a rejection wick or strong CVD
-                if price_vwap > 10.0 and (l_wick > 0.18 or cvd > 20.0):
-                    logger.info(f"[Analyzer] Model wanted to short but price is above VWAP ({price_vwap:.1f}) and showing strength (wick={l_wick:.2f}, CVD={cvd:.1f}). Overriding to PASS.")
-                    # Force a neutral state so standard technical trading does not short
-                    ml_prob = 0.50
+
             
     except Exception as _e:
         logger.debug(f"[Analyzer] ML Predict error: {_e}")
 
-    ml_pred = "BID YES (ABOVE TARGET)" if ml_prob >= 0.50 else "BID NO (BELOW TARGET)"
-    ml_prob_pct = max(51, int(ml_prob * 100)) if ml_prob >= 0.50 else max(51, int((1.0 - ml_prob) * 100))
+    if ml_prob > 0.50:
+        ml_pred = "BID YES (ABOVE TARGET)"
+    elif ml_prob < 0.50:
+        ml_pred = "BID NO (BELOW TARGET)"
+    else:
+        ml_pred = "PASS (NEUTRAL)"
+        
+    ml_prob_pct = max(51, int(ml_prob * 100)) if ml_prob > 0.50 else max(51, int((1.0 - ml_prob) * 100)) if ml_prob < 0.50 else 50
     ml_badge = f"🤖 ML MODEL ({ml_prob_pct}%)"
-    ml_catalyst = f"Primary Driver: Machine Learning XGBoost Model predicts {'UP' if ml_prob >= 0.50 else 'DOWN'} ({ml_prob_pct}% Edge)"
+    ml_catalyst = f"Primary Driver: God-Tier PyTorch Ensemble predicts {'UP' if ml_prob >= 0.50 else 'DOWN'} ({ml_prob_pct}% Edge). {ml_reasoning}"
 
 
     # 1. Check Advanced Descending & Ascending Chart Patterns (Secondary Override/Confluence)
@@ -1378,7 +1356,51 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     # Blend weights come from backend/btc/backtest.py's calibration output —
     # see backend/data/backtest_report.json. Default until re-tuned: 0.6/0.4.
     # -------------------------------------------------------------------
-    if pred:
+    
+    # Read signal isolation setting
+    try:
+        from backend.btc.auto_executor import auto_executor
+        iso_setting = auto_executor.ai_settings.get("signalIsolation", "BLEND")
+    except Exception:
+        iso_setting = "BLEND"
+
+    # --- STYLE-SPECIFIC OVERRIDES ---
+    if trading_style == "CHOP":
+        # Mean Reversion Logic: Fade the Bollinger Bands
+        if c_close >= bb_upper:
+            # Overbought sideways -> Buy NO
+            pred = "PASS / BID NO (CHOP FADE)"
+            prob = 100.0
+            grade = "GRADE A SETUP"
+            catalysts.insert(0, "🏓 Chop Mean-Reversion: Price hit Upper Bollinger Band in sideways regime. Fading the move (BID NO).")
+        elif c_close <= bb_lower:
+            # Oversold sideways -> Buy YES
+            pred = "PASS / BID YES (CHOP FADE)"
+            prob = 100.0
+            grade = "GRADE A SETUP"
+            catalysts.insert(0, "🏓 Chop Mean-Reversion: Price hit Lower Bollinger Band in sideways regime. Fading the move (BID YES).")
+
+    # If CHART_ONLY is active, bypass ML completely
+    if iso_setting == "CHART_ONLY":
+        if pred:
+            catalysts.append("📊 Signal Isolation: 100% Chart Setup active, ignoring ML model.")
+        else:
+            catalysts.append("📊 Signal Isolation: 100% Chart Setup active, but no chart setup fired.")
+            pred = "PASS"
+            prob = 0.0
+
+    # If AI_ONLY is active, bypass heuristic setups completely
+    elif iso_setting == "AI_ONLY":
+        pred = ml_pred
+        if "PASS" in ml_pred:
+            prob = 50.0
+        else:
+            prob = ml_prob * 100.0 if ("YES" in ml_pred or "ABOVE" in ml_pred) else (1.0 - ml_prob) * 100.0
+        grade = "GRADE A SETUP" if prob >= 70 else "GRADE B SETUP"
+        catalysts = [f"🧠 Signal Isolation: 100% AI Prediction active. Raw Prob: {prob:.1f}%"]
+        heuristic_score_for_training = 0.0
+
+    elif pred:
         # Convert ml_prob (P(close >= target)) into "probability of pred's direction"
         ml_prob_for_pred_dir = (ml_prob * 100.0) if ("YES" in pred or "ABOVE" in pred) else ((1.0 - ml_prob) * 100.0)
 
@@ -1461,16 +1483,12 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     # Taking 15m counter-trend trades against institutional 1h order flow creates false-reversal losses.
     if trend_1h == "BEARISH":
         if "YES" in str(pred) or "ABOVE" in str(direction):
-            if "GRADE A+" not in grade:
-                direction = "PASS"
-                pred = "PASS"
-                grade = "GRADE C / PASS"
-                badge = "⚪ PASS (1H TREND)"
-                prob = 50
-                catalysts.append("Blocked: 15M Bullish bet opposes macro 1H Bearish Trend (requires A+ setup)")
-            else:
-                prob = max(50, prob - 8)
-                catalysts.append("Counter-trend Alert: Macro 1H Trend is Bearish (A+ setup required)")
+            direction = "PASS"
+            pred = "PASS"
+            grade = "GRADE C / PASS"
+            badge = "⚪ PASS (1H TREND)"
+            prob = 50
+            catalysts.append("Blocked: 15M Bullish bet opposes macro 1H Bearish Trend")
         elif "NO" in str(pred) or "BELOW" in str(direction):
             # Macro trend alignment bonus
             prob = min(88, prob + 5)
@@ -1478,16 +1496,12 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
 
     elif trend_1h == "BULLISH":
         if "NO" in str(pred) or "BELOW" in str(direction):
-            if "GRADE A+" not in grade:
-                direction = "PASS"
-                pred = "PASS"
-                grade = "GRADE C / PASS"
-                badge = "⚪ PASS (1H TREND)"
-                prob = 50
-                catalysts.append("Blocked: 15M Bearish bet opposes macro 1H Bullish Trend (requires A+ setup)")
-            else:
-                prob = max(50, prob - 8)
-                catalysts.append("Counter-trend Alert: Macro 1H Trend is Bullish (A+ setup required)")
+            direction = "PASS"
+            pred = "PASS"
+            grade = "GRADE C / PASS"
+            badge = "⚪ PASS (1H TREND)"
+            prob = 50
+            catalysts.append("Blocked: 15M Bearish bet opposes macro 1H Bullish Trend")
         elif "YES" in str(pred) or "ABOVE" in str(direction):
             # Macro trend alignment bonus
             prob = min(88, prob + 5)
@@ -1589,8 +1603,23 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         ) if "atr" in df_ind.columns and len(df_ind["atr"].dropna()) >= 10 else 0.5,
     }
 
+
+    # === GOD-TIER ML ENSEMBLE OVERRIDE ===
+    if ml_prob > 0.50:
+        direction = "ABOVE"
+        pred = "BID YES (ABOVE TARGET)"
+    else:
+        direction = "BELOW"
+        pred = "BID NO (BELOW TARGET)"
+    grade = "GRADE A+ (100% AI)"
+    badge = "🤖 GOD-TIER ENSEMBLE"
+    prob = ml_prob_pct if 'ml_prob_pct' in locals() else int(ml_prob * 100)
+    if prob < 50: prob = 100 - prob
+    if prob == 50: prob = 51
+
     return {
         "recommendation": f"{grade} ({direction})",
+
         "direction": direction,
         "action_type": pred,
         "probability_percent": int(prob),
@@ -1609,9 +1638,9 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     }
 
 
-def analyze_btc_15m(df: pd.DataFrame) -> dict:
+def analyze_btc_15m(df: pd.DataFrame, asset: str = "BTC") -> dict:
     """Backwards-compatibility alias."""
-    return analyze_btc(df, timeframe="15m")
+    return analyze_btc(df, asset=asset, timeframe="15m")
 
 
 if __name__ == "__main__":

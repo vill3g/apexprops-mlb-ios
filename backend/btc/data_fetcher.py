@@ -199,6 +199,27 @@ def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
             df = fetcher()
             min_required = min(limit, 10)
             if df is not None and len(df) >= min_required:
+                import os
+                import pandas as pd
+                if timeframe.lower() == "15m":
+                    hist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "historical_candles_btc_15m.csv")
+                    if os.path.exists(hist_path):
+                        try:
+                            df_hist = pd.read_csv(hist_path)
+                            # Combine and drop duplicates based on 'time'
+                            df_combined = pd.concat([df_hist, df], ignore_index=True)
+                            df_combined.drop_duplicates(subset=["time"], keep="last", inplace=True)
+                            df_combined.sort_values("time", inplace=True)
+                            
+                            # Trim to 20,000 candles to keep memory sane
+                            if len(df_combined) > 20000:
+                                df_combined = df_combined.tail(20000)
+                                
+                            df_combined.reset_index(drop=True, inplace=True)
+                            df = df_combined
+                        except Exception as hist_err:
+                            pass # Just fall back to standard df if history file fails
+                            
                 df["datetime"] = pd.to_datetime(df["time"], unit="s", utc=True)
                 return df
         except Exception as e:
@@ -462,12 +483,7 @@ _ticker_cache = {
 }
 _ticker_lock = threading.Lock()
 
-_target_cache = {
-    "timestamp": 0.0,
-    "active_target": None,
-    "last_5_targets": [],
-    "streak_summary": ""
-}
+_target_cache = {}
 _target_lock = threading.Lock()
 
 # Cache for Binance Futures Data
@@ -609,8 +625,8 @@ def get_btc_ticker() -> dict:
             }
             _save_ticker_cache(result, now)
             return result
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Data source fallback: {e}")
 
     # Fallback to Binance.US
     try:
@@ -629,8 +645,8 @@ def get_btc_ticker() -> dict:
             }
             _save_ticker_cache(result, now)
             return result
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Data source fallback: {e}")
 
     # Fallback to candles
     with _ticker_lock:
@@ -702,33 +718,43 @@ def get_candle_countdown(timeframe: str = "15m") -> dict:
     }
 
 
-_live_target_result_cache = {
-    "timestamp": 0.0,
-    "data": None
-}
+_live_target_result_cache = {}
 _live_target_lock = threading.Lock()
 
 
-def get_live_15m_target_data() -> dict:
+def get_live_15m_target_data(asset: str = "BTC") -> dict:
     """
-    High-frequency 1-second resolver for BTC live price, active 15M target,
+    High-frequency 1-second resolver for live price, active 15M target,
     live delta spread, and last 5 targets trend box.
     Cached for 0.8s to provide sub-millisecond responses on 1s client polling.
     """
     now = time.time()
+    
+    with _target_lock:
+        if asset not in _target_cache:
+            _target_cache[asset] = {
+                "timestamp": 0.0,
+                "active_target": None,
+                "last_5_targets": [],
+                "streak_summary": ""
+            }
+
     with _live_target_lock:
-        if _live_target_result_cache["data"] and (now - _live_target_result_cache["timestamp"] < 0.8):
+        if asset not in _live_target_result_cache:
+            _live_target_result_cache[asset] = {"timestamp": 0.0, "data": None}
+            
+        if _live_target_result_cache[asset]["data"] and (now - _live_target_result_cache[asset]["timestamp"] < 0.8):
             # Update countdown on the fly
-            cached = dict(_live_target_result_cache["data"])
+            cached = dict(_live_target_result_cache[asset]["data"])
             cd = get_candle_countdown("15m")
             cached["seconds_left"] = cd["seconds_left"]
             cached["formatted_countdown"] = cd["formatted"]
             return cached
-        # AUDIT FIX #4b: Stampede protection — claim the cache slot immediately
-        # so concurrent 1s polls don't all pile in to refetch simultaneously.
-        _live_target_result_cache["timestamp"] = now
+        # AUDIT FIX #4b: Stampede protection
+        _live_target_result_cache[asset]["timestamp"] = now
 
-    ticker = get_btc_ticker()
+    from backend.engine.multi_asset_fetcher import get_asset_ticker
+    ticker = get_asset_ticker(asset)
     curr_price = float(ticker["price"])
     countdown = get_candle_countdown("15m")
 
@@ -742,16 +768,17 @@ def get_live_15m_target_data() -> dict:
     with _target_lock:
         # Check if target benchmark needs refresh:
         needs_refresh = (
-            _target_cache.get("interval_id") != interval_id or
-            _target_cache["active_target"] is None or
-            (now - _target_cache["timestamp"] >= 300.0)
+            _target_cache[asset].get("interval_id") != interval_id or
+            _target_cache[asset]["active_target"] is None or
+            (now - _target_cache[asset]["timestamp"] >= 300.0)
         )
         if needs_refresh:
-            _target_cache["timestamp"] = now + 10.0  # Prevent stampede while fetching
+            _target_cache[asset]["timestamp"] = now + 10.0  # Prevent stampede while fetching
 
     if needs_refresh:
         try:
-            df = fetch_candles("15m", limit=20)
+            from backend.engine.multi_asset_fetcher import fetch_asset_candles
+            df = fetch_asset_candles(asset, "15m", limit=20)
             n = len(df)
             if n > 0:
                 curr_start_price = round(float(df.iloc[-1]["open"]), 2)
@@ -759,29 +786,29 @@ def get_live_15m_target_data() -> dict:
                 streak_summary = compute_streak_summary(last_5)
 
                 with _target_lock:
-                    _target_cache["active_target"] = curr_start_price
-                    _target_cache["interval_id"] = interval_id
-                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                    _target_cache["timestamp"] = now
-                    _target_cache["last_5_targets"] = last_5
-                    _target_cache["streak_summary"] = streak_summary
+                    _target_cache[asset]["active_target"] = curr_start_price
+                    _target_cache[asset]["interval_id"] = interval_id
+                    _target_cache[asset]["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache[asset]["timestamp"] = now
+                    _target_cache[asset]["last_5_targets"] = last_5
+                    _target_cache[asset]["streak_summary"] = streak_summary
         except Exception as e:
             with _target_lock:
-                if not _target_cache["active_target"]:
-                    _target_cache["active_target"] = curr_price
-                    _target_cache["interval_id"] = interval_id
-                    _target_cache["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
-                    _target_cache["last_5_targets"] = []
-                    _target_cache["streak_summary"] = "--"
+                if not _target_cache[asset]["active_target"]:
+                    _target_cache[asset]["active_target"] = curr_price
+                    _target_cache[asset]["interval_id"] = interval_id
+                    _target_cache[asset]["target_source"] = f"15M Start Price ({start_time_12hr} ET)"
+                    _target_cache[asset]["last_5_targets"] = []
+                    _target_cache[asset]["streak_summary"] = "--"
 
     with _target_lock:
-        target_price = _target_cache["active_target"] or curr_price
-        target_source = _target_cache.get("target_source", f"15M Start Price ({start_time_12hr} ET)")
-        last_5_targets = _target_cache["last_5_targets"]
-        streak_summary = _target_cache["streak_summary"]
+        target_price = _target_cache[asset]["active_target"] or curr_price
+        target_source = _target_cache[asset].get("target_source", f"15M Start Price ({start_time_12hr} ET)")
+        last_5_targets = _target_cache[asset]["last_5_targets"]
+        streak_summary = _target_cache[asset]["streak_summary"]
 
     # Override with Kalshi Official Strike
-    kalshi_m = get_kalshi_15m_market(force_refresh=needs_refresh)
+    kalshi_m = get_kalshi_15m_market(series_ticker=f"KX{asset}15M", force_refresh=needs_refresh)
     if kalshi_m:
         kalshi_m = dict(kalshi_m)
         kalshi_m["is_synthetic"] = (kalshi_m.get("status") == "synthetic") or (kalshi_m.get("source") == "Kalshi Synthetic")
@@ -812,8 +839,10 @@ def get_live_15m_target_data() -> dict:
         "latency_ms": round((time.time() - now) * 1000, 3)
     }
     with _live_target_lock:
-        _live_target_result_cache["timestamp"] = time.time()
-        _live_target_result_cache["data"] = res
+        if asset not in _live_target_result_cache:
+            _live_target_result_cache[asset] = {"timestamp": 0.0, "data": None}
+        _live_target_result_cache[asset]["timestamp"] = time.time()
+        _live_target_result_cache[asset]["data"] = res
     return res
 
 
@@ -829,7 +858,7 @@ _ob_cache = {"time": 0.0, "data": None}
 _ob_lock = threading.Lock()
 
 def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
-    global _ob_cache
+
     now = time.time()
     with _ob_lock:
         if _ob_cache["data"] is not None and (now - _ob_cache["time"]) < 4.0:

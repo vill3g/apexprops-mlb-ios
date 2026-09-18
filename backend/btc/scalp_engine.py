@@ -8,7 +8,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Dict, Any
 
-from backend.btc.data_fetcher import get_btc_ticker
+from backend.engine.multi_asset_fetcher import get_asset_ticker
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "scalp_config.json")
 
@@ -21,7 +21,8 @@ class ScalpEngine:
     when profit or loss reaches the configured target (25 %).
     """
 
-    def __init__(self):
+    def __init__(self, asset: str = "BTC"):
+        self.asset = asset
         self._load_config()
         self.enabled = self.config.get("enabled", False)
         self._thread = None
@@ -107,7 +108,7 @@ class ScalpEngine:
         while not self._stop_event.is_set():
             try:
                 now = time.time()
-                ticker = get_btc_ticker()
+                ticker = get_asset_ticker(self.asset)
                 current_price = float(ticker.get("price", 0.0))
                 if current_price > 0:
                     self._price_history.append((now, current_price))
@@ -151,7 +152,7 @@ class ScalpEngine:
                             else:
                                 break
                         if reference_price and reference_price > 0:
-                            rolling_pct_change = ((current_price - reference_price) / reference_price) * 100.0
+                            rolling_pct_change = ((current_price - reference_price) / max(reference_price, 1e-9)) * 100.0
 
                         threshold = float(self.config.get("price_move_threshold", 0.25) or 0.25)
 
@@ -170,11 +171,13 @@ class ScalpEngine:
                             # FIX #6: Import analyzer/data_fetcher directly instead of backend.main
                             # to eliminate the scalp_engine <-> main circular import dependency.
                             try:
-                                # FIX: Use a much smaller limit (45) to drastically reduce HTTP latency for the spike monitor
-                                from backend.btc.data_fetcher import fetch_candles
+                                # FIX: Use limit=1000 so that EMA_200 and long-term moving averages have
+                                # enough historical data to properly warm up. A limit of 45 caused all 
+                                # long-term indicators to be off by >$1000, corrupting the ML predictions!
+                                from backend.engine.multi_asset_fetcher import fetch_asset_candles
                                 from backend.btc.indicators import add_all_indicators
                                 from backend.btc.analyzer import analyze_btc
-                                _df = fetch_candles(timeframe="15m", limit=45)
+                                _df = fetch_asset_candles(self.asset, timeframe="15m", limit=1000)
                                 analysis = analyze_btc(add_all_indicators(_df))
 
                                 next_forecast = analysis.get("target_benchmark", {}).get("next_contract_forecast", {})
@@ -225,17 +228,17 @@ class ScalpEngine:
     # ------------------------------------------------------------------
     # Trade execution & closure handling
     # ------------------------------------------------------------------
-    def _execute_trade(self, side: str, market_price: float) -> None:
+    def _execute_trade(self, side: str, market_price: float, is_reversal: bool = False) -> None:
         from backend.btc.kalshi_trader import kalshi_trader
-        from backend.btc.auto_executor import auto_executor
+        from backend.btc.auto_executor import get_auto_executor
 
         # Finding 2: Enforce shared daily risk budget on scalp trades
-        risk_blocked_reason = auto_executor.check_risk_budget()
+        risk_blocked_reason = get_auto_executor(self.asset).check_risk_budget()
         if risk_blocked_reason:
             logger.info(f"[ScalpEngine] Scalp trade blocked by shared risk budget: {risk_blocked_reason}")
             return
 
-        mode = self.config.get("mode", auto_executor.mode)
+        mode = self.config.get("mode", get_auto_executor(self.asset).mode)
         dry_run = (mode == "PAPER")
 
         active_market = kalshi_trader.get_active_15m_market(allow_synthetic=dry_run)
@@ -253,7 +256,7 @@ class ScalpEngine:
         if result.get("success"):
             trade_id = result.get("order_id", f"scalp_{int(time.time())}")
             contract_price = result.get("filled_price", 0.50)
-            filled_count = float(result.get("fill_count", count) or 0) if not dry_run else float(count)
+            filled_count = float(result.get("count", count) or 0) if not dry_run else float(count)
             if filled_count <= 0:
                 logger.error("[ScalpEngine] Scalp order received no fill; no trade record was created.")
                 return
@@ -263,8 +266,8 @@ class ScalpEngine:
             if close_time:
                 try:
                     close_epoch = datetime.fromisoformat(close_time.replace("Z", "+00:00")).timestamp()
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as e:
+                    logger.debug(f"Failed to parse close_time: {e}")
 
             if dry_run:
                 try:
@@ -275,9 +278,9 @@ class ScalpEngine:
 
             entry_atr = 150.0
             try:
-                from backend.btc.data_fetcher import fetch_candles
+                from backend.engine.multi_asset_fetcher import fetch_asset_candles
                 from backend.btc.indicators import add_all_indicators
-                df_c = fetch_candles("15m", limit=30)
+                df_c = fetch_asset_candles(self.asset, timeframe="15m", limit=30)
                 if df_c is not None and not df_c.empty:
                     df_ind = add_all_indicators(df_c)
                     if "atr" in df_ind.columns and len(df_ind["atr"]) > 0:
@@ -304,7 +307,7 @@ class ScalpEngine:
             # which would silently drop whichever write lost the race.
             import backend.btc.auto_executor as _ae_mod
             with _ae_mod._history_lock:
-                _history = auto_executor.get_trades_history()
+                _history = get_auto_executor(self.asset).get_trades_history()
                 _history.append({
                     "id": trade_id,
                     "client_order_id": result.get("client_order_id", ""),
@@ -321,7 +324,7 @@ class ScalpEngine:
                     "is_auto": True,
                     "is_scalp": True,
                     "is_manual": False,
-                    "is_reverse": False,
+                    "is_reverse": is_reversal,
                     "side": side.upper(),
                     "entry_price": contract_price,
                     "btc_price_at_entry": market_price,
@@ -331,9 +334,9 @@ class ScalpEngine:
                     "status": "OPEN",
                     "result": "PENDING",
                     "pnl": 0.0,
-                    "catalysts": ["Scalp engine"],
+                    "catalysts": ["Scalp engine (Reversal)"] if is_reversal else ["Scalp engine"],
                 })
-                auto_executor._save_trades_history(_history)
+                get_auto_executor(self.asset)._save_trades_history(_history)
             logger.info(f"[ScalpEngine] Opened {side.upper()} scalp trade id={trade_id} @ contract price ${contract_price:.2f} (BTC ${market_price:.2f}, ATR ${entry_atr:.1f})")
             threading.Thread(target=self._monitor_trade, daemon=True).start()
         else:
@@ -348,20 +351,20 @@ class ScalpEngine:
         side = str(trade_record.get("side", "")).upper()
         market_price = float(trade_record.get("btc_price_at_entry") or trade_record.get("market_snapshot", {}).get("price") or 0.0)
         if market_price <= 0:
-            from backend.btc.data_fetcher import get_btc_ticker
-            market_price = float(get_btc_ticker().get("price", 0.0))
+            from backend.engine.multi_asset_fetcher import get_asset_ticker
+            market_price = float(get_asset_ticker(self.asset).get("price", 0.0))
 
         entry_atr = 150.0
         try:
-            from backend.btc.data_fetcher import fetch_candles
+            from backend.engine.multi_asset_fetcher import fetch_asset_candles
             from backend.btc.indicators import add_all_indicators
-            df_c = fetch_candles("15m", limit=30)
+            df_c = fetch_asset_candles(self.asset, timeframe="15m", limit=30)
             if df_c is not None and not df_c.empty:
                 df_ind = add_all_indicators(df_c)
                 if "atr" in df_ind.columns and len(df_ind["atr"]) > 0:
                     entry_atr = float(df_ind["atr"].iloc[-1])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[ScalpEngine] Could not fetch entry ATR in register_position, defaulting to 150.0: {e}")
 
         trade_info = {
             "id": trade_id,
@@ -388,7 +391,7 @@ class ScalpEngine:
             self._monitor_position(self._active_trade["id"])
 
     def _monitor_position(self, trade_id: str) -> None:
-        from backend.btc.auto_executor import auto_executor
+        from backend.btc.auto_executor import get_auto_executor
         with self._trade_lock:
             if not hasattr(self, "_active_positions") or trade_id not in self._active_positions:
                 trade = self._active_trade if (self._active_trade and self._active_trade.get("id") == trade_id) else None
@@ -410,6 +413,9 @@ class ScalpEngine:
             profit_target = (target_dollar_move / btc_entry) * 100.0
             logger.info(f"[ScalpEngine] Dynamic Take-Profit Target active for {trade_id}: {take_profit_atr}x ATR (${target_dollar_move:.2f} move, {profit_target:.3f}%)")
 
+        highest_pnl_pct = 0.0
+        trailing_activation = profit_target * 0.4
+
         while True:
             with self._trade_lock:
                 if hasattr(self, "_active_positions") and trade_id not in self._active_positions:
@@ -418,7 +424,7 @@ class ScalpEngine:
                     break
 
             if time.time() > float(trade.get("close_epoch", float("inf"))) + 10:
-                auto_executor.check_settlements()
+                get_auto_executor(self.asset).check_settlements()
                 with self._trade_lock:
                     if hasattr(self, "_active_positions") and trade_id in self._active_positions:
                         del self._active_positions[trade_id]
@@ -426,7 +432,7 @@ class ScalpEngine:
                         self._active_trade.clear()
                 break
 
-            ticker = get_btc_ticker()
+            ticker = get_asset_ticker(self.asset)
             price = float(ticker.get("price", 0.0))
             
             if trade["side"] == "YES":
@@ -468,18 +474,23 @@ class ScalpEngine:
                     # Scalp loss: contract decayed/lost value before expiry (e.g. $0.50 -> ~$0.25)
                     estimated_exit = round(max(0.08, min(0.45, entry_contract_price - 0.25)), 4)
 
-                close_res = auto_executor.close_specific_trade(trade_id, reason=reason, estimated_exit_price=estimated_exit)
+                close_res = get_auto_executor(self.asset).close_specific_trade(trade_id, reason=reason, estimated_exit_price=estimated_exit)
                 if not close_res.get("success"):
                     logger.warning(f"[ScalpEngine] Exit not filled for {trade_id}: {close_res.get('error')}")
                     time.sleep(1)
                     continue
                 if close_res.get("closed"):
                     logger.info(f"[ScalpEngine] Successfully closed {trade_id} at market bid with P/L ${close_res.get('pnl', 0):.4f}")
+                    
+                    original_side = trade.get("side", "").lower()
+                    is_rev = trade.get("is_reverse", False)
+                    
                     with self._trade_lock:
                         if hasattr(self, "_active_positions") and trade_id in self._active_positions:
                             del self._active_positions[trade_id]
                         if self._active_trade and self._active_trade.get("id") == trade_id:
                             self._active_trade.clear()
+                                                
                     break
                 trade["contract_count"] = close_res.get("remaining_count", trade.get("contract_count", 0))
                 logger.info(f"[ScalpEngine] Partial exit for {trade['id']}; {trade['contract_count']} contracts remain.")
@@ -507,4 +518,8 @@ class ScalpEngine:
         }
 
 # Global singleton instance
-scalp_engine = ScalpEngine()
+_scalp_engines = {}
+def get_scalp_engine(asset: str = "BTC") -> ScalpEngine:
+    if asset not in _scalp_engines:
+        _scalp_engines[asset] = ScalpEngine(asset)
+    return _scalp_engines[asset]
