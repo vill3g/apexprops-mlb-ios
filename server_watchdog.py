@@ -112,8 +112,13 @@ def main():
                 restart_count = 0
 
             restart_count += 1
-            logger.info(f"[Watchdog] Automatically restarting server in 2 seconds... (Restart #{restart_count})")
-            time.sleep(2)
+            MAX_RESTARTS = 10
+            if restart_count > MAX_RESTARTS:
+                logger.critical('Max restarts exceeded')
+                sys.exit(1)
+            backoff_delay = min(2.0 * (1.5 ** (restart_count - 1)), 60.0)
+            logger.info(f"[Watchdog] Automatically restarting server in {backoff_delay:.1f} seconds... (Restart #{restart_count})")
+            time.sleep(backoff_delay)
 
         except Exception as e:
             logger.error(f"[Watchdog] Supervisor error: {e}")

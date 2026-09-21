@@ -1,0 +1,1 @@
+import json, pandas as pd; trades = json.load(open('backend/data/trades_history.json')); df = pd.DataFrame(trades); man = df[df['trade_source'] == 'MANUAL']; wins = man[man['pnl'] > 0]; losses = man[man['pnl'] < 0]; print(wins['pnl'].mean()); print(losses['pnl'].mean())

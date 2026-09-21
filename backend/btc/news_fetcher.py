@@ -12,6 +12,34 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from typing import Dict, Any, List, Optional
+import os
+
+import threading
+try:
+    from transformers import pipeline
+except ImportError:
+    pipeline = None
+
+_FINBERT_PIPELINE = None
+_FINBERT_LOCK = threading.Lock()
+
+def _get_finbert():
+    global _FINBERT_PIPELINE
+    if pipeline is None:
+        return None
+    with _FINBERT_LOCK:
+        if _FINBERT_PIPELINE is None:
+            logger.info("[FinBERT] Loading mrm8488/distilroberta model. This runs completely offline...")
+            try:
+                # Specify device=-1 for CPU, or check torch.cuda.is_available() for GPU
+                import torch
+                device = 0 if torch.cuda.is_available() else -1
+                _FINBERT_PIPELINE = pipeline("sentiment-analysis", model="mrm8488/distilroberta-finetuned-financial-news-sentiment-analysis", device=device)
+            except Exception as e:
+                logger.error(f"[FinBERT] Failed to load model: {e}")
+                return None
+    return _FINBERT_PIPELINE
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +71,53 @@ CACHE_TTL = 120.0  # 2 minutes
 _news_lock = threading.Lock()
 
 def analyze_headline_sentiment(title: str) -> Dict[str, Any]:
+    # Check if FinBERT is enabled in trading_config.json
+    use_finbert = False
+    try:
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "trading_config.json")
+        if os.path.exists(config_path):
+            with open(config_path, "r") as cf:
+                cfg = json.load(cf)
+                use_finbert = cfg.get("ai_settings", {}).get("useFinbertNLP", True)
+    except Exception as e:
+        logger.debug(f"Could not read FinBERT config, defaulting to True: {e}")
+        use_finbert = True
+
+    if use_finbert:
+        nlp_model = _get_finbert()
+        if nlp_model:
+            try:
+                res = nlp_model(title)
+                # [{'label': 'positive', 'score': 0.85}]
+                if res and isinstance(res, list) and len(res) > 0:
+                    label = res[0]['label']
+                    conf = res[0]['score']
+                    
+                    if label == "positive":
+                        score = conf
+                        sentiment = "BULLISH"
+                    elif label == "negative":
+                        score = -conf
+                        sentiment = "BEARISH"
+                    else:
+                        score = 0.0
+                        sentiment = "NEUTRAL"
+                    
+                    # IMPORTANT: Scale down the Deep Learning logits so we don't shock the old XGBoost model.
+                    # The old keyword model maxed out around 0.25. 
+                    score = score * 0.25
+                        
+                    return {
+                        "title": title,
+                        "score": round(score, 3),
+                        "raw_score": round(score, 2),
+                        "keywords": [f"FinBERT:{label}"],
+                        "sentiment": sentiment
+                    }
+            except Exception as e:
+                logger.warning(f"[FinBERT] Inference failed on '{title}', falling back to keyword logic. Error: {e}")
+
+    # FALLBACK to Keyword logic
     text = title.lower()
     score = 0.0
     matched_keywords = []
@@ -185,3 +260,28 @@ def correlate_news_with_price_action(df_candles: Any, news_list: Optional[List[D
             logger.debug(f"[News] Price confirmation failed: {_e}")
             
     return score
+
+import threading
+import time
+
+_bg_thread_started = False
+
+def _background_news_updater():
+    while True:
+        try:
+            # Force a fresh fetch by temporarily overriding TTL logic
+            global _NEWS_CACHE_TIME
+            _NEWS_CACHE_TIME = 0.0
+            fetch_crypto_news()
+        except Exception as e:
+            pass
+        time.sleep(115) # Refresh every ~2 minutes
+
+def start_news_background_task():
+    global _bg_thread_started
+    if not _bg_thread_started:
+        t = threading.Thread(target=_background_news_updater, daemon=True)
+        t.start()
+        _bg_thread_started = True
+
+start_news_background_task()

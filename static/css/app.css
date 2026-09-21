@@ -1,0 +1,1153 @@
+
+    :root {
+      --sat: env(safe-area-inset-top, 54px);
+      --sab: env(safe-area-inset-bottom, 24px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+      --color-win: #10b981;
+      --color-loss: #ef4444;
+      --color-warn: #f59e0b;
+      --color-bg-deep: #020617;
+    }
+    /* Stop pinch-to-zoom & horizontal/vertical page scroll shifting on iOS */
+    html, body {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100dvh;
+      overflow: hidden !important;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      touch-action: pan-x pan-y;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Text selection stays enabled everywhere EXCEPT inside chart/canvas
+       areas, where it interferes with drag/draw gestures. */
+    #btc-chart-container, #btcChartCard, .tv-lightweight-charts, canvas {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* Fixed background lock when modal is open */
+    body.modal-open {
+      overflow: hidden !important;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      backdrop-filter: blur(16px);
+    }
+    body.is-iphone-17-promax .glass-panel,
+    body.is-iphone-portrait .glass-panel,
+    body[data-device="iphone-portrait"] .glass-panel,
+    #btcChartCard {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    /* Sticky Bottom Bar */
+    #bottomSlipBar {
+      position: sticky;
+      bottom: 1rem;
+      z-index: 40;
+    }
+        /* Drawing Tools Styling */
+    .btc-draw-btn {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.30s ease;
+      touch-action: manipulation;
+    }
+    .btc-draw-btn:hover {
+      color: #ffffff;
+      border-color: #64748b;
+    }
+    .btc-draw-btn.active {
+      background: var(--color-warn);
+      color: var(--color-bg-deep);
+      border-color: var(--color-warn);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+    .btc-color-dot {
+      transition: transform 0.30s ease;
+    }
+    .btc-color-dot.active {
+      outline: 2px solid #ffffff;
+      outline-offset: 1px;
+      transform: scale(1.15);
+    }
+
+    /* Legibility floor: nothing in the app renders smaller than 8.5px,
+       regardless of which Tailwind arbitrary-size utility was used. */
+    .text-\[6\.5px\], .text-\[7px\], .text-\[7\.5px\], .text-\[8px\] {
+      font-size: 8.5px !important;
+    }
+
+    /* ========================================================================= */
+    /* ADAPTIVE MULTI-DEVICE RESPONSIVE ENGINE (IPHONE / IPAD / DESKTOP)          */
+    /* ========================================================================= */
+    :root {
+      --app-height: 100dvh;
+    }
+
+    /* Common safe-area & viewport reset */
+    html, body {
+      height: 100%;
+      height: var(--app-height, 100dvh);
+      max-height: var(--app-height, 100dvh);
+      overflow: hidden !important;
+      margin: 0;
+      padding: 0;
+    }
+
+    .app-main-wrapper {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden !important;
+      padding-top: max(0.2rem, env(safe-area-inset-top, 0px)) !important;
+      padding-bottom: max(0.2rem, env(safe-area-inset-bottom, 0px)) !important;
+      padding-left: max(0.25rem, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(0.25rem, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    /* ------------------------------------------------------------------------- */
+    /* 1. IPHONE / SMARTPHONE (PORTRAIT) - VERTICAL SPLIT 50/50                   */
+    /* ------------------------------------------------------------------------- */
+    @media screen and (max-width: 680px) and (orientation: portrait),
+           screen and (max-width: 680px) {
+      .app-main-wrapper {
+        padding: 0.2rem 0.3rem !important;
+        gap: 0.25rem !important;
+      }
+      
+      header {
+        padding: 0.25rem 0.4rem !important;
+        height: auto !important;
+        min-height: 52px !important;
+        flex-shrink: 0 !important;
+      }
+
+      #mainAppLogo {
+        height: 28px !important;
+        width: 28px !important;
+        border-radius: 8px !important;
+      }
+
+      #view_btc_analyzer {
+        flex: 1 !important;
+        height: calc(100% - 46px) !important;
+        max-height: calc(100% - 46px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.25rem !important;
+        overflow: hidden !important;
+      }
+
+      .btc-main-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        height: 100% !important;
+        gap: 0.25rem !important;
+        overflow: hidden !important;
+      }
+
+      /* Top Half: TradingView Chart (~46% height) */
+      .btc-chart-card {
+        height: 46% !important;
+        min-height: 230px !important;
+        max-height: 48% !important;
+        flex-shrink: 0 !important;
+        padding: 0.25rem 0.35rem !important;
+        border-radius: 12px !important;
+      }
+
+      #btc-chart-container {
+        min-height: 0 !important;
+        height: calc(100% - 28px) !important;
+      }
+
+      /* Bottom Half: Confluence & Analysis 2-Column Micro-Grid (~54% height) */
+      .btc-right-panel {
+        flex: 1 !important;
+        height: 54% !important;
+        max-height: 54% !important;
+        padding: 0.25rem !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.25rem !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+
+      /* Item positioning in bottom 2-column grid */
+      .btc-card-confluence { grid-column: span 1 !important; }
+      .btc-card-prediction { grid-column: span 1 !important; }
+      .btc-card-trend      { grid-column: span 2 !important; padding: 0.25rem 0.35rem !important; }
+      .btc-card-price      { grid-column: span 1 !important; }
+      .btc-card-target     { grid-column: span 1 !important; }
+      .btc-card-countdown  { grid-column: span 1 !important; }
+      .btc-card-structure  { grid-column: span 1 !important; }
+
+      .btc-card-confluence .meter-wrapper {
+        max-height: 38px !important;
+      }
+      .btc-card-confluence .meter-score-display {
+        font-size: 13px !important;
+      }
+      .btc-card-prediction #btcPredFactorsList {
+        max-height: 28px !important;
+      }
+    }
+
+    /* ------------------------------------------------------------------------- */
+    /* 2. IPHONE / SMARTPHONE (LANDSCAPE) - SIDE-BY-SIDE 75/25                    */
+    /* ------------------------------------------------------------------------- */
+    @media screen and (max-height: 500px) and (orientation: landscape) {
+      .app-main-wrapper {
+        padding: 0.15rem 0.35rem !important;
+      }
+      header {
+        height: auto !important;
+        min-height: 46px !important;
+        padding: 0.15rem 0.5rem !important;
+      }
+      #mainAppLogo {
+        height: 22px !important;
+        width: 22px !important;
+      }
+      #view_btc_analyzer {
+        height: calc(100% - 36px) !important;
+        max-height: calc(100% - 36px) !important;
+        overflow: hidden !important;
+      }
+      .btc-main-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        height: 100% !important;
+        gap: 0.25rem !important;
+      }
+      .btc-chart-card {
+        grid-column: span 3 !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        padding: 0.25rem !important;
+      }
+      .btc-right-panel {
+        grid-column: span 1 !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+        padding: 0.25rem !important;
+      }
+    }
+
+    /* ------------------------------------------------------------------------- */
+    /* 3. IPAD MINI 7 & TABLETS (LANDSCAPE) - SIDE-BY-SIDE 80/20                  */
+    /* ------------------------------------------------------------------------- */
+    @media screen and (min-width: 740px) and (max-height: 850px) and (orientation: landscape) {
+      .app-main-wrapper {
+        padding: 0.35rem 0.5rem !important;
+      }
+      #view_btc_analyzer {
+        height: calc(100% - 52px) !important;
+        max-height: calc(100% - 52px) !important;
+        overflow: hidden !important;
+      }
+      .btc-main-grid {
+        height: 100% !important;
+        max-height: 100% !important;
+      }
+      .btc-chart-card {
+        height: 100% !important;
+        min-height: 0 !important;
+      }
+      .btc-right-panel {
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow-y: auto !important;
+      }
+    }
+
+    /* ------------------------------------------------------------------------- */
+    /* 4. IPAD & TABLETS (PORTRAIT) - TOP 52% CHART / BOTTOM 48% 2-COL GRID      */
+    /* ------------------------------------------------------------------------- */
+    @media screen and (min-width: 700px) and (min-height: 850px) and (orientation: portrait) {
+      .app-main-wrapper {
+        padding: 0.4rem 0.6rem !important;
+      }
+      #view_btc_analyzer {
+        height: calc(100% - 56px) !important;
+        max-height: calc(100% - 56px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+      }
+      .btc-main-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        gap: 0.35rem !important;
+      }
+      .btc-chart-card {
+        height: 52% !important;
+        min-height: 380px !important;
+        max-height: 55% !important;
+      }
+      .btc-right-panel {
+        flex: 1 !important;
+        height: 48% !important;
+        max-height: 48% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.35rem !important;
+        overflow-y: auto !important;
+      }
+      .btc-card-confluence { grid-column: span 1 !important; }
+      .btc-card-prediction { grid-column: span 1 !important; }
+      .btc-card-trend      { grid-column: span 2 !important; }
+      .btc-card-price      { grid-column: span 1 !important; }
+      .btc-card-target     { grid-column: span 1 !important; }
+      .btc-card-countdown  { grid-column: span 1 !important; }
+      .btc-card-structure  { grid-column: span 1 !important; }
+    }
+
+    /* Keep the iPad header clear of the iOS status area. The tablet layout
+       previously replaced the safe-area padding with a fixed value. */
+    body.device-ipad .app-main-wrapper {
+      padding-top: max(0.6rem, calc(env(safe-area-inset-top, 0px) + 0.35rem)) !important;
+    }
+    body.device-ipad header {
+      background: var(--color-bg-deep) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    
+    /* Lock Horizontal Scroll on Right Panel */
+    .btc-right-panel {
+      overflow-x: hidden !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-x: none !important;
+    }
+    .btc-right-panel * {
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    
+    /* BTC 15M Analyzer Styling */
+    .btc-tf-btn {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btc-tf-btn:hover {
+      color: #fff;
+      border-color: var(--color-warn);
+    }
+    .btc-tf-btn.active {
+      background: var(--color-warn);
+      color: var(--color-bg-deep);
+      border-color: var(--color-warn);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+    }
+    .signal-banner {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 9999px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .signal-up { background: rgba(16, 185, 129, 0.15); color: var(--color-win); border: 1px solid var(--color-win); }
+    .signal-down { background: rgba(239, 68, 68, 0.15); color: var(--color-loss); border: 1px solid var(--color-loss); }
+    .signal-neutral { background: rgba(245, 158, 11, 0.15); color: var(--color-warn); border: 1px solid var(--color-warn); }
+    .meter-wrapper {
+      position: relative;
+      width: 220px;
+      height: 115px;
+      margin: 0 auto 8px auto;
+    }
+    .meter-svg { width: 100%; height: 100%; overflow: visible; }
+    .meter-score-display {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 26px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+    .meter-score-display.positive { color: var(--color-win); }
+    .meter-score-display.negative { color: var(--color-loss); }
+    .meter-score-display.neutral { color: var(--color-warn); }
+    .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .setup-box {
+      background: #0f172a;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .setup-box.highlight-entry { border-color: #38bdf8; }
+    .setup-box.highlight-sl { border-color: var(--color-loss); background: rgba(239, 68, 68, 0.12); }
+    .setup-box.highlight-tp { border-color: var(--color-win); background: rgba(16, 185, 129, 0.12); }
+    .rr-bar {
+      height: 6px;
+      background: #334155;
+      border-radius: 3px;
+      margin-top: 10px;
+      overflow: hidden;
+      display: flex;
+    }
+    .rr-risk { width: 30%; background: var(--color-loss); }
+    .rr-reward { width: 70%; background: var(--color-win); }
+    .factors-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .factor-item {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.35;
+    }
+    .factor-item.bull { background: rgba(16, 185, 129, 0.12); border-left: 3px solid var(--color-win); color: #a7f3d0; }
+    .factor-item.bear { background: rgba(239, 68, 68, 0.12); border-left: 3px solid var(--color-loss); color: #fecaca; }
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .matrix-item {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .matrix-item .m-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+    .matrix-item .m-val { font-size: 14px; font-weight: 800; font-family: monospace; margin-top: 2px; }
+    .matrix-item .m-sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+    .hero-price-card {
+      background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(16, 185, 129, 0.08);
+    }
+    .price-flash-up {
+      animation: flashGreen 0.4s ease-out;
+    }
+    .price-flash-down {
+      animation: flashRed 0.4s ease-out;
+    }
+    @keyframes flashGreen {
+      0% { color: #34d399; text-shadow: 0 0 15px rgba(52, 211, 153, 0.8); }
+      100% { color: #ffffff; text-shadow: none; }
+    }
+    @keyframes flashRed {
+      0% { color: #f87171; text-shadow: 0 0 15px rgba(248, 113, 113, 0.8); }
+      100% { color: #ffffff; text-shadow: none; }
+    }
+    .trend-box-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      width: 100%;
+    }
+    @media (max-width: 640px) {
+      .trend-box-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+      }
+    }
+    .trend-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 2px 6px !important;
+      height: 28px !important;
+      max-height: 28px !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-sizing: border-box;
+      line-height: 1.1;
+      transition: all 0.30s ease;
+    }
+    .trend-card:hover {
+      filter: brightness(1.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .trend-card.trend-up {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: linear-gradient(to bottom, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.9));
+    }
+    .trend-card.trend-down {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: linear-gradient(to bottom, rgba(239, 68, 68, 0.08), rgba(15, 23, 42, 0.9));
+    }
+
+    /* Ultra-sleek Glassmorphic Floating Top Bar & Glass Telemetry Cards */
+    .sleek-glass-header {
+      background: var(--color-bg-deep) !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.85), 0 0 25px -2px rgba(6, 182, 212, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.12) !important;
+      margin: 4px auto 8px auto !important;
+      width: calc(100% - 8px) !important;
+      min-height: 56px !important;
+    }
+
+    .sleek-glass-card {
+      background: #0f172a !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.08) !important;
+      border-radius: 12px !important;
+      transition: all 0.2s ease !important;
+    }
+    .sleek-glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.22) !important;
+      box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15) !important;
+      transform: translateY(-1px);
+    }
+    .sleek-glass-card-target {
+      border: 1px solid rgba(16, 185, 129, 0.45) !important;
+      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.4), 0 0 14px -2px rgba(16, 185, 129, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+    .sleek-glass-card-countdown {
+      border: 1px solid rgba(6, 182, 212, 0.45) !important;
+      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.4), 0 0 14px -2px rgba(6, 182, 212, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+    .sleek-glass-card-likely {
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    }
+    .sleek-glass-card-likely:hover {
+      border-color: rgba(6, 182, 212, 0.6) !important;
+      box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.4), 0 0 14px -2px rgba(6, 182, 212, 0.25) !important;
+    }
+
+    /* iPad Mini 7 Dedicated Layout & Spacing Engine */
+    body.is-ipad-mini-7 #btcPreviousDaysAccuracy,
+    @media screen and (min-width: 740px) and (max-width: 760px) and (min-height: 1120px) and (max-height: 1150px) {
+      #btcPreviousDaysAccuracy {
+        display: none !important;
+      }
+    }
+    body.is-ipad-mini-7 #btcPreviousDaysAccuracy {
+      display: none !important;
+    }
+
+    /* Expand remaining top-bar cards to comfortably fill the freed space */
+    body.is-ipad-mini-7 .sleek-glass-header {
+      gap: 0.45rem !important;
+      margin: 0 auto 0 auto !important;
+      min-height: 52px !important;
+      padding: 0.35rem 0.6rem !important;
+    }
+    body.is-ipad-mini-7 .sleek-glass-header .flex-1.flex.items-center.justify-center {
+      justify-content: space-between !important;
+      gap: 0.4rem !important;
+      width: 100% !important;
+    }
+    body.is-ipad-mini-7 .sleek-glass-header .sleek-glass-card {
+      flex: 1 1 auto !important;
+      min-width: 115px !important;
+      padding: 0.35rem 0.5rem !important;
+    }
+
+    /* Zero out all empty margins/paddings between navigation bar and chart / AI console */
+    body.is-ipad-mini-7 .app-main-wrapper {
+      padding-top: max(0px, calc(env(safe-area-inset-top, 0px) + 0px)) !important;
+      padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px)) !important;
+      padding-left: 0.4rem !important;
+      padding-right: 0.4rem !important;
+      gap: 0 !important;
+    }
+    body.is-ipad-mini-7 .app-main-wrapper > * + * {
+      margin-top: 0 !important;
+    }
+    body.is-ipad-mini-7 #view_btc_analyzer {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      gap: 0.2rem !important;
+      height: calc(100% - 54px) !important;
+      max-height: calc(100% - 54px) !important;
+    }
+    body.is-ipad-mini-7 #iphone17Hero {
+      display: none !important;
+    }
+    body.is-ipad-mini-7 .btc-main-grid {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      gap: 0.3rem !important;
+    }
+    body.is-ipad-mini-7 .btc-chart-card {
+      margin-top: 0 !important;
+    }
+    body.is-ipad-mini-7 .btc-right-panel {
+      margin-top: 0 !important;
+    }
+  
+    
+    /* =========================================================================
+       IPHONE 17 PRO MAX & NATIVE IOS PORTRAIT LAYOUT (MATCHING KALSHI SCREENSHOT)
+       ========================================================================= */
+    
+    /* Dedicated iPhone 17 Pro Max & iPhone Portrait Rules */
+    html.is-iphone-17-promax,
+    html.is-iphone-portrait,
+    html[data-device="iphone-portrait"],
+    body.is-iphone-17-promax,
+    body.is-iphone-portrait,
+    body[data-device="iphone-portrait"] {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif !important;
+      padding-top: 0 !important;
+      padding-bottom: max(env(safe-area-inset-bottom, 20px), 16px) !important;
+      margin: 0 !important;
+      overflow-x: hidden !important;
+      -webkit-font-smoothing: antialiased !important;
+    }
+
+    body.is-iphone-17-promax .app-main-wrapper,
+    body.is-iphone-portrait .app-main-wrapper,
+    body[data-device="iphone-portrait"] .app-main-wrapper {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    /* Hide desktop/tablet top navigation header on iPhone portrait */
+    body.is-iphone-17-promax .sleek-glass-header,
+    body.is-iphone-portrait .sleek-glass-header,
+    body[data-device="iphone-portrait"] .sleek-glass-header {
+      display: none !important;
+    }
+
+    /* Native iPhone 17 Hero Display (Hidden on desktop, active on iPhone portrait) */
+    #iphone17Hero {
+      display: none;
+    }
+
+    body.is-iphone-17-promax .app-main-wrapper > * + *,
+    body.is-iphone-portrait .app-main-wrapper > * + * {
+      margin-top: 0 !important;
+    }
+
+    body.is-iphone-17-promax #view_btc_analyzer,
+    body.is-iphone-portrait #view_btc_analyzer,
+    body[data-device="iphone-portrait"] #view_btc_analyzer {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
+    body.is-iphone-17-promax #iphone17Hero,
+    body.is-iphone-portrait #iphone17Hero,
+    body[data-device="iphone-portrait"] #iphone17Hero {
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+      padding: 1px 16px 0 16px !important; /* Starts exactly below the nav bar */
+      box-sizing: border-box !important;
+      background: #000000 !important;
+    }
+
+    .iphone17-top-row {
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+
+    .iphone17-top-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      margin-bottom: 2px !important;
+    }
+
+    .iphone17-interval-text {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      color: rgba(255, 255, 255, 0.75) !important;
+      letter-spacing: -0.2px !important;
+      font-family: -apple-system, "SF Pro Text", sans-serif !important;
+    }
+
+    .iphone17-countdown-pill {
+      display: none !important;
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.65);
+      color: var(--color-win);
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+      padding: 2.5px 9px !important;
+      border-radius: 8px !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+      letter-spacing: 0.5px !important;
+      transition: color 1s ease, border-color 1s ease, background-color 1s ease, box-shadow 1s ease !important;
+    }
+
+    .iphone17-title-row {
+      margin-top: 4px !important;
+    }
+
+    .iphone17-title {
+      font-size: 30px !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      letter-spacing: -0.6px !important;
+      line-height: 1.1 !important;
+      margin: 0 !important;
+    }
+
+    .iphone17-price-row {
+      margin-top: 2px !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 0 !important;
+    }
+
+    .iphone17-live-price {
+      font-size: 44px !important;
+      font-weight: 800 !important;
+      letter-spacing: -1.2px !important;
+      line-height: 0.85 !important;
+      font-family: -apple-system, "SF Pro Display", sans-serif !important;
+      color: #ff6b35 !important; /* Default vibrant orange matching Kalshi */
+      transition: color 0.2s ease !important;
+    }
+
+    .iphone17-target-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      font-size: 13.5px !important;
+      margin-top: 2px !important;
+    }
+
+    .iphone17-target-label {
+      color: rgba(255, 255, 255, 0.6) !important;
+      font-weight: 500 !important;
+    }
+
+    .iphone17-target-val {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+    }
+
+    .iphone17-source-text {
+      color: rgba(255, 255, 255, 0.5) !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+    }
+
+    /* Full-width Dotted Line across screen (hidden on iPhone portrait so chart starts 1px below conviction panel) */
+    .iphone17-dotted-line {
+      display: none !important;
+      width: 100% !important;
+      border-top: 1.5px dotted rgba(255, 255, 255, 0.45) !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    body.is-iphone-17-promax .iphone17-dotted-line,
+    body.is-iphone-portrait .iphone17-dotted-line,
+    body[data-device="iphone-portrait"] .iphone17-dotted-line {
+      display: none !important;
+    }
+
+    /* Single column layout for iPhone portrait: Chart panel starts 1px below conviction panel */
+    body.is-iphone-17-promax #view_btc_analyzer > *,
+    body.is-iphone-portrait #view_btc_analyzer > *,
+    body[data-device="iphone-portrait"] #view_btc_analyzer > * {
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    body.is-iphone-17-promax .btc-main-grid,
+    body.is-iphone-portrait .btc-main-grid,
+    body[data-device="iphone-portrait"] .btc-main-grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 1px !important;
+      width: 100% !important;
+      padding: 0 !important;
+      margin-top: 1px !important; /* EXACTLY 1 PIXEL BELOW CONVICTION PANEL */
+    }
+
+    /* Chart Card styling (starts 1px below conviction panel) */
+    body.is-iphone-17-promax #btcChartCard,
+    body.is-iphone-portrait #btcChartCard,
+    body[data-device="iphone-portrait"] #btcChartCard {
+      width: 100% !important;
+      background: #000000 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+      min-height: 330px !important;
+      height: 330px !important;
+      box-shadow: none !important;
+    }
+
+    /* Hide desktop chart header bar in iPhone view */
+    body.is-iphone-17-promax #btcChartCard > div:first-child,
+    body.is-iphone-portrait #btcChartCard > div:first-child,
+    body[data-device="iphone-portrait"] #btcChartCard > div:first-child {
+      display: none !important;
+    }
+
+    body.is-iphone-17-promax #btc-chart-container,
+    body.is-iphone-portrait #btc-chart-container,
+    body[data-device="iphone-portrait"] #btc-chart-container {
+      height: 280px !important;
+      min-height: 280px !important;
+      border-radius: 0 !important;
+    }
+
+    /* Toolbar below chart */
+    #iphone17ChartToolbar {
+      display: none;
+    }
+
+    body.is-iphone-17-promax #iphone17ChartToolbar,
+    body.is-iphone-portrait #iphone17ChartToolbar,
+    body[data-device="iphone-portrait"] #iphone17ChartToolbar {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      padding: 4px 12px 10px 12px !important;
+      box-sizing: border-box !important;
+      background: transparent !important;
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      z-index: 50 !important;
+      pointer-events: none !important;
+    }
+    
+    #iphone17ChartToolbar > * {
+      pointer-events: auto !important;
+    }
+
+    .iphone17-vol-pill {
+      background: rgba(255, 255, 255, 0.08) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      border-radius: 8px !important;
+      padding: 3px 10px !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+      color: #ffffff !important;
+    }
+
+    .iphone17-tf-btn {
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      padding: 4px 12px !important;
+      border-radius: 9999px !important;
+      color: rgba(255, 255, 255, 0.65) !important;
+      background: transparent !important;
+      border: none !important;
+      cursor: pointer !important;
+      transition: all 0.30s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+    }
+
+    .iphone17-tf-btn.active {
+      background: #ff5722 !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4) !important;
+    }
+
+    .iphone17-tf-btn .tf-dot {
+      font-size: 8px !important;
+    }
+
+    /* Kalshi AI Console placed directly at the bottom */
+    body.is-iphone-17-promax .btc-right-panel,
+    body.is-iphone-portrait .btc-right-panel,
+    body[data-device="iphone-portrait"] .btc-right-panel {
+      width: 100% !important;
+      order: 3 !important;
+      border-radius: 20px !important;
+      background: #0b1120 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      padding: 12px !important;
+      margin: 0 auto 16px auto !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+      height: auto !important;
+      min-height: auto !important;
+      max-height: none !important;
+    }
+    body.is-iphone-17-promax #kalshiTradingDeck,
+    body.is-iphone-portrait #kalshiTradingDeck,
+    body[data-device="iphone-portrait"] #kalshiTradingDeck {
+      height: auto !important;
+      min-height: auto !important;
+    }
+
+    /* Native iOS smooth touch & haptic behavior */
+    button, input, select {
+      -webkit-tap-highlight-color: transparent !important;
+      touch-action: manipulation !important;
+    }
+
+
+    /* Fallback media query for any mobile screen in portrait under 480px width */
+    @media screen and (max-width: 480px) and (orientation: portrait) {
+      body {
+        padding-top: 0 !important;
+        margin: 0 !important;
+      }
+      .app-main-wrapper {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      .sleek-glass-header {
+        display: none !important;
+      }
+      #iphone17NavBar {
+        display: flex !important;
+        position: sticky !important;
+        top: 0 !important;
+        padding-top: calc(env(safe-area-inset-top, 54px) + 1px) !important;
+        background: #000000 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      #iphone17Hero {
+        display: flex !important;
+        padding-top: 1px !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      .iphone17-price-row {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+      }
+      .iphone17-dotted-line {
+        display: none !important;
+      }
+      #iphone17ChartToolbar {
+        display: flex !important;
+      }
+      #view_btc_analyzer > * {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      .btc-main-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 1px !important;
+        margin-top: 1px !important; /* Starts 1px below conviction panel */
+        padding: 0 !important;
+      }
+      #btcChartCard {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      #btcChartCard > div:first-child {
+        display: none !important;
+      }
+      .btc-right-panel {
+        width: 100% !important;
+        order: 3 !important;
+      }
+    }
+
+
+    
+    /* iPhone 17 Price Delta Panel (Matching Volume Pill next to it) */
+    .iphone17-delta-panel {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      background: #1e293b !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: var(--color-win) !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace !important;
+      padding: 4px 10px !important;
+      border-radius: 8px !important;
+      letter-spacing: 0.5px !important;
+      transition: all 0.2s ease !important;
+    }
+    .iphone17-delta-panel.delta-up {
+      color: var(--color-win) !important;
+      border-color: rgba(16, 185, 129, 0.5) !important;
+      background: rgba(16, 185, 129, 0.12) !important;
+    }
+    .iphone17-delta-panel.delta-down {
+      color: #ff6b35 !important;
+      border-color: rgba(255, 107, 53, 0.5) !important;
+      background: rgba(255, 107, 53, 0.12) !important;
+    }
+
+    /* Absolute ban on blur over nav bar and top of screen */
+    #iphone17NavBar,
+    #iphone17NavBar *,
+    .iphone17-nav-bar,
+    .iphone17-nav-bar *,
+    .sleek-glass-header,
+    .sleek-glass-header *,
+    #iphone17Hero,
+    #iphone17Hero *,
+    .iphone17-pred-card,
+    .iphone17-countdown-pill,
+    body.is-iphone-17-promax header,
+    body.is-iphone-portrait header,
+    body.is-iphone-17-promax .glass-panel,
+    body.is-iphone-portrait .glass-panel {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+    }
+
+    html.is-iphone-portrait .sleek-glass-header,
+    body.is-iphone-portrait .sleek-glass-header,
+    body.is-iphone-17-promax .sleek-glass-header {
+      display: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    /* iPhone 17 Prediction Card */
+    .iphone17-pred-card {
+      background: #0a0f1d !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+      border: 1px solid rgba(6, 182, 212, 0.35) !important;
+      transition: all 0.2s ease !important;
+    }
+    .iphone17-pred-card.pred-up {
+      border-color: rgba(16, 185, 129, 0.5) !important;
+      box-shadow: 0 4px 14px -2px rgba(16, 185, 129, 0.2) !important;
+    }
+    .iphone17-pred-card.pred-down {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+      box-shadow: 0 4px 14px -2px rgba(239, 68, 68, 0.2) !important;
+    }
+
+
+    /* iPhone 17 Pro Max Top Navigation Bar:
+       Starts exactly 1 row of pixels below iPhone Dynamic Island */
+    #iphone17NavBar {
+      display: none;
+    }
+    body.is-iphone-17-promax #iphone17NavBar,
+    body.is-iphone-portrait #iphone17NavBar,
+    body[data-device="iphone-portrait"] #iphone17NavBar {
+      display: flex !important;
+      position: sticky !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 100 !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding-top: env(safe-area-inset-top, 44px) !important;
+      background: #000000 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      filter: none !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+      /* env(safe-area-inset-top) clears the Dynamic Island.
+         + 1px padding starts the nav bar items exactly 1 row of pixels below the Dynamic Island! */
+      padding-top: calc(env(safe-area-inset-top, 54px) + 1px) !important;
+      padding-bottom: 6px !important;
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+      box-sizing: border-box !important;
+    }
+
+    /* iOS Safari Auto-Zoom Prevention:
+       iOS auto-zooms and distorts fixed-height layouts when inputs have font-size < 16px.
+       Ensuring 16px input font on mobile devices completely prevents viewport jumping on tap. */
+    @media screen and (max-width: 768px) {
+      input[type="number"],
+      input[type="text"],
+      select {
+        font-size: 16px !important;
+      }
+    }
+
+
+
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+.animate-marquee { animation: marquee 20s linear infinite; display: flex; flex-shrink: 0; white-space: nowrap; }
+
+    body.is-iphone-17-promax .iphone17-countdown-pill,
+    body.is-iphone-portrait .iphone17-countdown-pill,
+    body[data-device="iphone-portrait"] .iphone17-countdown-pill {
+      display: flex !important;
+    }

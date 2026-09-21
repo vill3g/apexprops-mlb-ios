@@ -9,11 +9,12 @@ from backend.btc.ml_engine import MLEngine
 logger = logging.getLogger(__name__)
 
 class DualMLEngine:
-    def __init__(self, data_dir, trading_style="SNIPER"):
+    def __init__(self, data_dir, trading_style="SNIPER", asset="BTC"):
         self.data_dir = data_dir
         self.trading_style = trading_style
-        self.day_engine = MLEngine(data_dir, trading_style=trading_style)
-        self.night_engine = MLEngine(data_dir, trading_style=trading_style)
+        self.asset = asset
+        self.day_engine = MLEngine(data_dir, trading_style=trading_style, asset=asset)
+        self.night_engine = MLEngine(data_dir, trading_style=trading_style, asset=asset)
         self._lock = threading.Lock()
         
     def _is_night_time(self):
@@ -22,6 +23,8 @@ class DualMLEngine:
 
     @property
     def is_trained(self):
+        if not getattr(self, "_auto_train_attempted", False):
+            return False
         if self._is_night_time():
             return self.night_engine.is_trained or self.day_engine.is_trained
         return self.day_engine.is_trained
@@ -49,6 +52,7 @@ class DualMLEngine:
 
     def self_train_on_historical_market(self, df_ind):
         with self._lock:
+            self._auto_train_attempted = True
             n_day = 0
             n_night = 0
             if not self.day_engine.is_trained:
@@ -56,6 +60,17 @@ class DualMLEngine:
             if not self.night_engine.is_trained:
                 n_night = self.night_engine.self_train_on_historical_market(df_ind, time_filter="night")
             return (n_day or 0) + (n_night or 0)
+
+
+    def predict_with_reasoning(self, raw_features):
+        with self._lock:
+            if self._is_night_time():
+                if self.night_engine.is_trained:
+                    return self.night_engine.predict_with_reasoning(raw_features)
+                else:
+                    return self.day_engine.predict_with_reasoning(raw_features)
+            else:
+                return self.day_engine.predict_with_reasoning(raw_features)
 
     def predict_probability(self, raw_features):
         with self._lock:

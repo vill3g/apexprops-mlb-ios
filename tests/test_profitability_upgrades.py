@@ -33,9 +33,10 @@ def test_manual_trade_not_blocked_above_60_cents():
             "count": 1,
             "total_cost": 0.63,
         }
-        res = executor.execute_manual_trade("ABOVE")
-        assert res["success"] is True
-        assert res["trade"]["entry_price"] == 0.63
+        with patch.object(executor, "_save_trades_history"):
+            res = executor.execute_manual_trade("ABOVE")
+            assert res["success"] is True
+            assert res["trade"]["entry_price"] == 0.63
 
 
 def test_grade_a_plus_blocked_by_heavy_spot_sell_wall():

@@ -17,13 +17,13 @@ _adapter = HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=Retry(t
 _session.mount("https://", _adapter)
 _session.mount("http://", _adapter)
 
-_kalshi_cache = None
-_kalshi_cache_time = 0.0
+_kalshi_cache = {}
+_kalshi_cache_times = {}
 _kalshi_cache_lock = threading.Lock()  # FIX #8: protects module-level cache globals from concurrent writes
 CACHE_TTL_SEC = 8.0  # 8-second cache to maintain high responsiveness without rate limiting
 
 
-def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
+def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool = True, **kwargs):
     """
     Fetch active open KXBTC15M market from Kalshi.
     Returns:
@@ -36,19 +36,19 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
             status: str
             source: str
     """
-    global _kalshi_cache, _kalshi_cache_time
+
     now = time.time()
     # FIX #8: Check cache under lock so concurrent threads don't all fire HTTP requests on expiry.
     with _kalshi_cache_lock:
-        if _kalshi_cache and (now - _kalshi_cache_time) < CACHE_TTL_SEC:
-            return _kalshi_cache
+        if series_ticker in _kalshi_cache and (now - _kalshi_cache_times.get(series_ticker, 0)) < CACHE_TTL_SEC:
+            return _kalshi_cache.get(series_ticker)
         # Optimistic stamp: claim this slot so other threads see it as "fresh" and wait
-        _kalshi_cache_time = now
+        _kalshi_cache_times[series_ticker] = now
 
     try:
         markets = []
         for status_param in ["open", None]:
-            params = {"series_ticker": "KXBTC15M"}
+            params = {"series_ticker": series_ticker}
             if status_param:
                 params["status"] = status_param
             try:
@@ -79,8 +79,8 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
                         ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
                         if ct > now_utc - datetime.timedelta(seconds=15):
                             valid_m.append((ct, m))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"close_time parse error: {e}")
 
             if valid_m:
                 valid_m.sort(key=lambda x: x[0])
@@ -88,8 +88,8 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
 
         if not active_m:
             if allow_synthetic:
-                from backend.btc.data_fetcher import get_btc_ticker
-                cur_p = float(get_btc_ticker().get("price", 60000.0))
+                from backend.engine.multi_asset_fetcher import get_asset_ticker
+                cur_p = float(get_asset_ticker(series_ticker.replace("KX", "").replace("15M", "")).get("price", 0.0))
                 synth = {
                     "target_price": cur_p,
                     "yes_prob": 50.0,
@@ -117,9 +117,11 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
         if floor_strike is not None:
             target_price = float(floor_strike)
         else:
-            from backend.btc.data_fetcher import get_live_15m_target_data, get_btc_ticker
-            target_data = get_live_15m_target_data()
-            target_price = float(target_data.get("target_price") or get_btc_ticker().get("price", 78000.0))
+            from backend.btc.data_fetcher import get_live_15m_target_data
+            from backend.engine.multi_asset_fetcher import get_asset_ticker
+            asset = series_ticker.replace("KX", "").replace("15M", "")
+            target_data = get_live_15m_target_data(asset)
+            target_price = float(target_data.get("target_price") or get_asset_ticker(asset).get("price", 0.0))
         # Extract detailed top-of-book order metrics
         yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
         yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
@@ -168,15 +170,15 @@ def get_kalshi_15m_market(allow_synthetic: bool = True, **kwargs):
             "status": active_m.get("status", "active"),
             "volume_24h": float(active_m.get("volume_24h_fp") or active_m.get("volume_24h") or 0.0),
             "open_interest": float(active_m.get("open_interest_fp") or active_m.get("open_interest") or 0.0),
-            "source": "Kalshi KXBTC15M"
+            "source": f"Kalshi {series_ticker}"
         }
         with _kalshi_cache_lock:
-            _kalshi_cache = result
-            _kalshi_cache_time = time.time()
+            _kalshi_cache[series_ticker] = result
+            _kalshi_cache_times[series_ticker] = time.time()
         return result
     except Exception as e:
         logger.error(f"[Kalshi Client] Error fetching KXBTC15M: {e}")
 
     with _kalshi_cache_lock:
-        return _kalshi_cache or {}
+        return _kalshi_cache.get(series_ticker) or {}
 

@@ -1,0 +1,1 @@
+import json, pandas as pd; trades = json.load(open('backend/data/trades_history.json')); df = pd.DataFrame(trades); df_manual = df[(df['trade_source'] == 'MANUAL') & df['result'].isin(['LOSS', 'CLOSED_LOSS'])]; df_manual['loss_cat'] = df_manual['loss_analysis'].apply(lambda x: x.get('category') if isinstance(x, dict) else None); print(df_manual['loss_cat'].value_counts())

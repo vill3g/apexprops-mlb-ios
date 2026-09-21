@@ -19,6 +19,49 @@ import optuna
 
 logger = logging.getLogger(__name__)
 
+class PyTorchLSTM(nn.Module):
+    def __init__(self, input_dim, seq_len=5, seq_features=5):
+        super(PyTorchLSTM, self).__init__()
+        self.seq_len = seq_len
+        self.seq_features = seq_features
+        # We split the tabular input: 
+        # Flat features: input_dim - (seq_len * seq_features)
+        self.flat_dim = input_dim - (seq_len * seq_features)
+        
+        self.lstm = nn.LSTM(input_size=seq_features, hidden_size=32, num_layers=1, batch_first=True)
+        
+        # Dense branch for the flat tabular features
+        self.tabular_fc = nn.Sequential(
+            nn.Linear(self.flat_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
+        
+        # Merge layer
+        self.fc_merged = nn.Sequential(
+            nn.Linear(32 + 64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
+        
+    def forward(self, x):
+        # x is shape (Batch, input_dim)
+        x_flat = x[:, :self.flat_dim]
+        x_seq_flat = x[:, self.flat_dim:]
+        
+        # Reshape sequence: (Batch, seq_len, seq_features)
+        x_seq = x_seq_flat.view(-1, self.seq_len, self.seq_features)
+        
+        lstm_out, (hn, cn) = self.lstm(x_seq)
+        # Get the last timestep's output
+        lstm_feat = lstm_out[:, -1, :]  # shape: (Batch, 32)
+        
+        tab_feat = self.tabular_fc(x_flat)
+        
+        merged = torch.cat((tab_feat, lstm_feat), dim=1)
+        return self.fc_merged(merged)
+
 class PyTorchDNN(nn.Module):
     def __init__(self, input_dim):
         super(PyTorchDNN, self).__init__()
@@ -46,17 +89,17 @@ class GodTierEnsemble:
     3. Random Forest
     Meta-Learner: Logistic Regression strictly forcing UP/DOWN
     """
-    def __init__(self):
+    def __init__(self, xgb_estimators=150, xgb_max_depth=4, xgb_lr=0.05, rf_estimators=150):
         self.xgb = XGBClassifier(
-            n_estimators=150,
-            max_depth=4,
-            learning_rate=0.05,
+            n_estimators=xgb_estimators,
+            max_depth=xgb_max_depth,
+            learning_rate=xgb_lr,
             objective='binary:logistic',
             random_state=42,
             n_jobs=-1
         )
         self.rf = RandomForestClassifier(
-            n_estimators=150,
+            n_estimators=rf_estimators,
             max_depth=5,
             random_state=42,
             n_jobs=-1
@@ -66,6 +109,21 @@ class GodTierEnsemble:
         self.scaler = StandardScaler()
         self.is_trained = False
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def update_params(self, class_weight="balanced", reg_c=0.7, xgb_estimators=None, xgb_max_depth=None, xgb_lr=None):
+        """Allow live hyperparameter updates from config"""
+        scale_pos = 1.0
+        if class_weight == "balanced":
+            scale_pos = 2.0  # Simplified balance ratio
+        self.xgb.set_params(scale_pos_weight=scale_pos)
+        self.meta_learner.set_params(C=reg_c, class_weight=class_weight)
+        
+        if xgb_estimators is not None:
+            self.xgb.set_params(n_estimators=xgb_estimators)
+        if xgb_max_depth is not None:
+            self.xgb.set_params(max_depth=xgb_max_depth)
+        if xgb_lr is not None:
+            self.xgb.set_params(learning_rate=xgb_lr)
         
     def fit(self, X, y, sample_weight=None):
         if len(X) < 10 or len(np.unique(y)) < 2:
@@ -142,9 +200,24 @@ class GodTierEnsemble:
 
     def predict_proba_calibrated(self, X):
         preds = self.predict_proba(X)
-        # Ensure it returns an array of probabilities for class 1
-        return preds[:, 1] if len(preds.shape) > 1 else preds
+        raw_p = preds[:, 1] if len(preds.shape) > 1 else preds
+        calibrator = getattr(self, "calibrator", None)
+        if calibrator is not None and getattr(calibrator, "is_fitted", False):
+            try:
+                return calibrator.predict(raw_p)
+            except Exception:
+                pass
+        return raw_p
 
     def fit_calibration(self, X_holdout, y_holdout):
-        # Meta-learner is already calibrated via LogisticRegression
-        pass
+        if X_holdout is None or len(X_holdout) < 20 or len(np.unique(y_holdout)) < 2:
+            return
+        try:
+            raw_p = self.predict_proba(X_holdout)[:, 1]
+            from backend.btc.ml_engine import PlattCalibrator
+            self.calibrator = PlattCalibrator(C=1.0).fit(raw_p, y_holdout)
+            if getattr(self.calibrator, "is_fitted", False):
+                logger.info(f"[GodTierEnsemble] Fitted holdout Platt calibration on {len(X_holdout)} samples.")
+        except Exception as e:
+            logger.warning(f"[GodTierEnsemble] Holdout calibration failed: {e}")
+            self.calibrator = None

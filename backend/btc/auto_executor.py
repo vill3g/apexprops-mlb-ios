@@ -12,11 +12,12 @@ import json
 import uuid
 from typing import Dict, Any, List, Optional
 import math
+import pandas as pd
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from backend.btc.kalshi_trader import kalshi_trader
-from backend.btc.data_fetcher import fetch_candles, get_candle_countdown
+from backend.engine.multi_asset_fetcher import is_market_open, fetch_asset_candles as fetch_candles, get_asset_ticker as get_btc_ticker, get_candle_countdown
 from backend.btc.indicators import add_all_indicators
 from backend.btc.analyzer import evaluate_next_15m_contract
 from backend.btc.pattern_detector import detect_candlestick_patterns
@@ -39,17 +40,21 @@ from backend.btc.io_utils import atomic_json_write as _atomic_json_write
 def normalize_prediction_direction(value: Any) -> str:
     """Map analyzer and recommendation labels to the two Kalshi outcomes."""
     label = str(value or "").upper().strip()
-    if not label or "PASS" in label or "CHOP" in label:
+    if not label:
         return "PASS"
-    if label in {"YES", "ABOVE", "UP"} or "BID YES" in label or "ABOVE" in label:
+    # Explicitly check for action keywords first so CHOP FADE trades execute
+    if "BID YES" in label or "ABOVE" in label or label in {"YES", "UP"}:
         return "ABOVE"
-    if label in {"NO", "BELOW", "DOWN"} or "BID NO" in label or "BELOW" in label:
+    if "BID NO" in label or "BELOW" in label or label in {"NO", "DOWN"}:
         return "BELOW"
+    if "PASS" in label or "CHOP" in label:
+        return "PASS"
     return "PASS"
 
 
 class AutoExecutor:
-    def __init__(self):
+    def __init__(self, asset: str = "BTC"):
+        self.asset = asset
         self.enabled: bool = False
         self.mode: str = "PAPER"  # "PAPER" or "LIVE"
         self.min_conviction: str = "GRADE B SETUP"  # "GRADE A+ SETUP", "GRADE A SETUP", or "GRADE B SETUP"
@@ -66,8 +71,22 @@ class AutoExecutor:
         self._cached_trades_mtime: float = 0.0
         self._settled_since_drift_check: int = 0
 
+        # Per-asset config and history paths — BTC keeps legacy filenames for backward compatibility
+        asset_suffix = "" if asset == "BTC" else f"_{asset}"
+        self._config_file = os.path.join(DATA_DIR, f"trading_config{asset_suffix}.json")
+        self._history_file = os.path.join(DATA_DIR, f"trades_history{asset_suffix}.json")
+
         os.makedirs(DATA_DIR, exist_ok=True)
+        try:
+            from backend.btc.trade_db import get_trade_db
+            self.trade_db = get_trade_db()
+            self.trade_db.import_from_json_if_needed(self._history_file, asset=self.asset)
+        except Exception as dbe:
+            logger.warning(f"[AutoExecutor] TradeDB init error: {dbe}")
+            self.trade_db = None
+
         self._load_config()
+
 
     def set_ai_settings(self, data: dict):
         self.ai_settings = data
@@ -76,9 +95,9 @@ class AutoExecutor:
         return {"status": "ok"}
 
     def _load_config(self):
-        if os.path.exists(CONFIG_FILE):
+        if os.path.exists(self._config_file):
             try:
-                with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                with open(self._config_file, "r", encoding="utf-8") as f:
                     cfg = json.load(f)
                     self.enabled = bool(cfg.get("enabled", False))
                     self.mode = cfg.get("mode", "PAPER")
@@ -91,7 +110,9 @@ class AutoExecutor:
                     if not isinstance(self.ai_settings, dict):
                         self.ai_settings = {}
                     if "dryRun" not in self.ai_settings:
-                        self.ai_settings["dryRun"] = True
+                        # Safe default: only force dryRun=True if mode is also PAPER
+                        # Never silently override an explicit False from saved config
+                        self.ai_settings["dryRun"] = (self.mode == "PAPER")
                     if "ignorePass" not in self.ai_settings:
                         self.ai_settings["ignorePass"] = False
                     if "dynamicStopLoss" not in self.ai_settings:
@@ -117,9 +138,9 @@ class AutoExecutor:
                     if "oneShotAiStartTrade" not in self.ai_settings:
                         self.ai_settings["oneShotAiStartTrade"] = False
                     # Finding 1: Startup safety override
-                    if self.mode == "LIVE" and not os.path.exists(HISTORY_FILE):
+                    if self.mode == "LIVE" and not os.path.exists(self._history_file):
                         logger.warning(
-                            "[AutoExecutor] SAFETY OVERRIDE: Deployment has mode=LIVE but no trades_history.json found. "
+                            f"[AutoExecutor] SAFETY OVERRIDE: Deployment has mode=LIVE but no trades history found for {self.asset}. "
                             "Demoting mode to 'PAPER' and setting enabled=False for safety."
                         )
                         self.mode = "PAPER"
@@ -130,7 +151,7 @@ class AutoExecutor:
 
     def _save_config(self):
         try:
-            _atomic_json_write(CONFIG_FILE, {
+            _atomic_json_write(self._config_file, {
                 "enabled": self.enabled,
                 "mode": self.mode,
                 "min_conviction": self.min_conviction,
@@ -144,20 +165,38 @@ class AutoExecutor:
             logger.error(f"[AutoExecutor] Error saving config: {e}")
 
     def get_trades_history(self) -> List[Dict[str, Any]]:
+        import copy
         with _history_lock:
-            if os.path.exists(HISTORY_FILE):
+            trade_db = getattr(self, "trade_db", None)
+            if trade_db is not None:
                 try:
-                    mtime = os.path.getmtime(HISTORY_FILE)
+                    db_trades = trade_db.get_trades(asset=self.asset)
+                    if db_trades:
+                        self._cached_trades = db_trades
+                        if os.path.exists(self._history_file):
+                            try:
+                                self._cached_trades_mtime = os.path.getmtime(self._history_file)
+                            except Exception:
+                                pass
+                        return copy.deepcopy(db_trades)
+                except Exception as dbe:
+                    logger.debug(f"[AutoExecutor] TradeDB get_trades fallback to file: {dbe}")
+
+            if os.path.exists(self._history_file):
+                try:
+                    mtime = os.path.getmtime(self._history_file)
                     if self._cached_trades and self._cached_trades_mtime == mtime:
-                        return list(self._cached_trades)
-                    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                        return copy.deepcopy(self._cached_trades)
+                    with open(self._history_file, "r", encoding="utf-8") as f:
                         trades = json.load(f)
                         self._cached_trades = trades
                         self._cached_trades_mtime = mtime
-                        return list(trades)
+                        if trade_db is not None and trades:
+                            trade_db.upsert_trades(trades, asset=self.asset)
+                        return copy.deepcopy(trades)
                 except Exception as e:
                     logger.warning(f"Swallowed exception: {e}")
-                    return list(self._cached_trades) if self._cached_trades else []
+                    return copy.deepcopy(self._cached_trades) if self._cached_trades else []
         return []
 
     def get_history(self, limit: int = 100) -> List[Dict[str, Any]]:
@@ -167,9 +206,16 @@ class AutoExecutor:
     def _save_trades_history(self, trades: List[Dict[str, Any]]):
         try:
             with _history_lock:
-                _atomic_json_write(HISTORY_FILE, trades)
+                trade_db = getattr(self, "trade_db", None)
+                if trade_db is not None:
+                    try:
+                        trade_db.upsert_trades(trades, asset=self.asset)
+                    except Exception as dbe:
+                        logger.error(f"[AutoExecutor] TradeDB upsert error: {dbe}")
+
+                _atomic_json_write(self._history_file, trades)
                 self._cached_trades = trades
-                self._cached_trades_mtime = os.path.getmtime(HISTORY_FILE)
+                self._cached_trades_mtime = os.path.getmtime(self._history_file)
         except Exception as e:
             logger.error(f"[AutoExecutor] Error saving trades: {e}")
 
@@ -194,6 +240,8 @@ class AutoExecutor:
         clean = threshold.upper().strip()
         if "A+" in clean:
             self.min_conviction = "GRADE A+ SETUP"
+        elif "B+" in clean:
+            self.min_conviction = "GRADE B+ SETUP"
         elif "B" in clean:
             self.min_conviction = "GRADE B SETUP"
         else:
@@ -202,10 +250,8 @@ class AutoExecutor:
         return {"status": "ok", "min_conviction": self.min_conviction}
 
     def set_max_contracts(self, count: int) -> Dict[str, Any]:
-        # FIX #10: Clamp at ABSOLUTE_MAX_CONTRACTS (50) so the stored value always reflects
-        # the true effective ceiling — prevents UI from showing a value that is silently
-        # ignored at execution time.
-        c = max(1, min(int(count), 50))
+        # FIX #10: We removed the ABSOLUTE_MAX_CONTRACTS clamp at user request
+        c = max(1, int(count))
         self.max_contracts = c
         self._save_config()
         return {"status": "ok", "max_contracts": self.max_contracts}
@@ -223,6 +269,22 @@ class AutoExecutor:
                     "ai_settings": self.ai_settings
         }
 
+    def _compute_effective_daily_risk(self, today_trades: list) -> tuple:
+        """Returns (today_net_pnl, open_collateral, effective_risk) for a list of
+        today's trades already filtered to the current mode. Shared by
+        check_risk_budget() and get_status() so pause/block logic never diverges.
+        """
+        today_net_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades if t.get("status") in ["SETTLED", "CLOSED"])
+        # Also account for realized profits already locked in on still-open trades (partial exits, trailing TP)
+        today_net_pnl += sum(float(t.get("realized_pnl", 0.0)) for t in today_trades if t.get("status") == "OPEN" and float(t.get("realized_pnl", 0.0)) != 0.0)
+        open_collateral = sum(
+            float(t.get("entry_price", 0.50)) * int(t.get("count", 1))
+            for t in today_trades
+            if t.get("status") in ["OPEN", "PENDING"]
+        )
+        effective_risk = today_net_pnl - open_collateral
+        return today_net_pnl, open_collateral, effective_risk
+
     def check_risk_budget(self, trades: Optional[List[Dict[str, Any]]] = None) -> Optional[str]:
         """Returns None if trading is allowed, or a human-readable reason string if blocked.
 
@@ -231,7 +293,7 @@ class AutoExecutor:
         """
         if trades is None:
             trades = self.get_trades_history()
-        from zoneinfo import ZoneInfo
+#         from zoneinfo import ZoneInfo
         today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
         today_trades = [
             t for t in trades
@@ -241,13 +303,7 @@ class AutoExecutor:
         if len(today_trades) >= self.max_daily_trades:
             return f"Max daily trades reached ({len(today_trades)}/{self.max_daily_trades})"
 
-        today_net_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades if t.get("status") in ["SETTLED", "CLOSED"])
-        open_collateral = sum(
-            float(t.get("entry_price", 0.50)) * int(t.get("count", 1))
-            for t in today_trades
-            if t.get("status") in ["OPEN", "PENDING"]
-        )
-        effective_risk = today_net_pnl - open_collateral
+        today_net_pnl, open_collateral, effective_risk = self._compute_effective_daily_risk(today_trades)
         if effective_risk <= -abs(self.max_daily_risk):
             return (
                 f"Max daily risk limit reached (Settled PnL: ${today_net_pnl:.2f}, "
@@ -299,7 +355,8 @@ class AutoExecutor:
                             try:
                                 trade_dt = datetime.strptime(ts_str, "%Y-%m-%d %I:%M:%S %p ET").replace(tzinfo=ZoneInfo("America/New_York"))
                                 trade_age_seconds = now_ts - trade_dt.timestamp()
-                            except Exception:
+                            except Exception as e:
+                                logger.error(f"Timestamp parse failed for {ts_str}: {e}")
                                 trade_age_seconds = 999.0
 
                         # Do NOT reconcile trades younger than 60 seconds — give Kalshi API time to catch up
@@ -327,16 +384,16 @@ class AutoExecutor:
         win_rate = round((wins / max(1, wins + losses)) * 100.0, 1) if (wins + losses) > 0 else 0.0
 
         # Calculate daily ET statistics
-        from zoneinfo import ZoneInfo
+#         from zoneinfo import ZoneInfo
         today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
         today_trades = [
             t for t in mode_trades
             if str(t.get("timestamp", "")).startswith(today_str)
         ]
         today_trade_count = len(today_trades)
-        today_realized_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades)
+        today_realized_pnl, today_open_collateral, today_effective_risk = self._compute_effective_daily_risk(today_trades)
 
-        active_market = kalshi_trader.get_active_15m_market(force_refresh=True)
+        active_market = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", force_refresh=True)
 
         # Compute live unrealized (mark-to-market) P&L for each open trade.
         # FIX #1: Work on deep copies so we never mutate the shared _cached_trades objects
@@ -382,9 +439,13 @@ class AutoExecutor:
             if today_trade_count >= self.max_daily_trades:
                 is_risk_paused = True
                 pause_reason = f"Daily trade limit reached ({today_trade_count}/{self.max_daily_trades})"
-            elif today_realized_pnl <= -abs(self.max_daily_risk):
+            elif today_effective_risk <= -abs(self.max_daily_risk):
                 is_risk_paused = True
-                pause_reason = f"Daily loss limit reached (-${abs(today_realized_pnl):.2f}/-${abs(self.max_daily_risk):.2f})"
+                pause_reason = (
+                    f"Daily loss limit reached (Settled: ${today_realized_pnl:.2f}, "
+                    f"Open Collateral: ${today_open_collateral:.2f}, Effective: ${today_effective_risk:.2f} "
+                    f"<= -${self.max_daily_risk:.2f})"
+                )
 
         return {
             "enabled": self.enabled,
@@ -414,6 +475,19 @@ class AutoExecutor:
             "active_market": active_market,
             "prediction_accuracy": prediction_accuracy,
         }
+
+    def reset_prediction_accuracy(self):
+        with _history_lock:
+            trades = self.get_trades_history()
+            modified = False
+            for trade in trades:
+                if trade.get("accuracy_eligible", True):
+                    trade["accuracy_eligible"] = False
+                    modified = True
+            
+            if modified:
+                self._save_trades_history(trades)
+        return {"status": "ok"}
 
     def get_prediction_accuracy(self, trades: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """Return accuracy for settled, automated predictions only.
@@ -621,7 +695,7 @@ class AutoExecutor:
                         t["result"] = "WIN" if is_win else "LOSS"
                         t["official_result"] = official_result
                         t["settlement_source"] = "kalshi_official"
-                        t["prediction_correct"] = is_win if t.get("prediction_kind") == "AUTO" else None
+                        t["prediction_correct"] = (not is_win if t.get("is_reverse") else is_win) if t.get("prediction_kind") == "AUTO" else None
                         if not is_win:
                             try:
                                 from backend.btc.loss_analyzer import loss_analyzer
@@ -630,7 +704,10 @@ class AutoExecutor:
                                 logger.warning(f"[AutoExecutor] Loss diagnosis error for {t.get('ticker', t.get('id'))}: {ele}")
                         if settle_price is not None and settle_price > 0:
                             t["settle_price"] = settle_price
-                        t["pnl"] = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
+                        prior_realized_pnl = float(t.get("realized_pnl", 0.0))
+                        settlement_pnl = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
+                        t["pnl"] = round(prior_realized_pnl + settlement_pnl, 4)
+                        t["settlement_pnl"] = settlement_pnl
                         t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
                         modified = True
                         newly_settled_count += 1
@@ -653,7 +730,7 @@ class AutoExecutor:
                         continue
                     if settle_candles_df is None:
                         try:
-                            settle_candles_df = fetch_candles(timeframe="15m", limit=5)
+                            settle_candles_df = fetch_candles(self.asset, timeframe="15m", limit=5)
                         except Exception as ce:
                             logger.debug(f"[AutoExecutor] Legacy settlement data unavailable for {ticker}: {ce}")
                             settle_candles_df = None
@@ -677,7 +754,7 @@ class AutoExecutor:
 
             if modified:
                 try:
-                    _atomic_json_write(HISTORY_FILE, trades)
+                    self._save_trades_history(trades)
                     self._settled_since_drift_check += newly_settled_count
                     if self._settled_since_drift_check >= 50:
                         self._settled_since_drift_check = 0
@@ -696,7 +773,15 @@ class AutoExecutor:
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error saving trades in check_settlements: {e}")
 
+        # Hook: RL Shadow Sandbox settlements
+        try:
+            from backend.btc.shadow_executor import update_shadow_settlements
+            update_shadow_settlements(kalshi_trader)
+        except Exception as e:
+            logger.error(f"[ShadowExecutor Hook] Error: {e}")
+
     def check_and_execute_rollover(self) -> Optional[Dict[str, Any]]:
+        self._load_config()
         """
         Core autonomous trigger:
         Evaluates at rollover (first 60 seconds of a new 15-minute contract interval).
@@ -709,30 +794,35 @@ class AutoExecutor:
             logger.debug("[AutoExecutor] Rollover evaluation already in progress by another worker. Skipping concurrent execution.")
             return None
 
+        lock_held = True
         try:
             now = time.time()
             if (now - self.last_check_time) < 4.0:
                 return None
             self.last_check_time = now
 
+            if not is_market_open(self.asset):
+                logger.debug(f"[AutoExecutor] {self.asset} market is closed; skipping rollover evaluation.")
+                return None
+
             countdown_info = get_candle_countdown(timeframe="15m")
             sec_left = countdown_info.get("seconds_left", 900)
             sec_elapsed = 900 - sec_left
 
-            trading_style = self.ai_settings.get("tradingStyle", "SNIPER")
-            if trading_style == "MACHINE_GUN":
-                window_valid = sec_left > 30
+            trading_style = str(self.ai_settings.get("tradingStyle", "SNIPER")).upper()
+            is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
+            is_prediction_window = 30 <= sec_elapsed <= 55 or 845 <= sec_left <= 870
+            
+            if trading_style in ["MOMENTUM_SURFER", "AMBUSH", "AUTO"]:
+                window_valid = sec_left > 30  # Allows mid-candle evaluation
             else:
-                # SNIPER MODE: The standard rollover evaluation window is the first 60 seconds
-                is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
-                is_prediction_window = 30 <= sec_elapsed <= 55 or 845 <= sec_left <= 870
                 window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
 
             if not window_valid:
                 return None
 
             # Fetch active Kalshi KXBTC15M market (require at least 45s before close)
-            active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"), min_seconds_left=45)
+            active_m = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", allow_synthetic=(self.mode == "PAPER"), min_seconds_left=45)
             if not active_m:
                 logger.debug("[AutoExecutor] No active market")
                 return None
@@ -774,20 +864,59 @@ class AutoExecutor:
                 return None
 
             # Fetch technical indicator data based on Trading Style
-            tf = "1m" if trading_style == "MACHINE_GUN" else "15m"
-            df = fetch_candles(timeframe=tf, limit=1000)
+            tf = "15m"
+            df = fetch_candles(self.asset, timeframe=tf, limit=1000)
             df_ind = add_all_indicators(df)
+            
+            effective_style = trading_style
+            if effective_style == "AUTO":
+                curr = df_ind.iloc[-1] if len(df_ind) > 0 else None
+                if curr is not None:
+                    try:
+                        vr_raw = curr.get("vol_ratio", 1.0)
+                        vol_ratio = float(vr_raw) if vr_raw is not None and not pd.isna(vr_raw) else 1.0
+                    except (ValueError, TypeError):
+                        vol_ratio = 1.0
+                    try:
+                        bb_raw = curr.get("bb_bandwidth", 1.0)
+                        bb_width = float(bb_raw) if bb_raw is not None and not pd.isna(bb_raw) else 1.0
+                    except (ValueError, TypeError):
+                        bb_width = 1.0
+                        
+                    adx = float(curr.get("adx", 20.0))
+                    
+                    try:
+                        from backend.btc.liquidation_stream import get_liquidation_imbalance
+                        liq = get_liquidation_imbalance()
+                        liq_total = liq["short_liquidations_usd"] + liq["long_liquidations_usd"]
+                    except Exception:
+                        liq_total = 0.0
+
+                    if liq_total > 1_500_000 or (vol_ratio > 1.5 and adx > 25.0):
+                        effective_style = "MOMENTUM_SURFER"
+                        logger.info(f"[AutoExecutor] AUTO Mode routed to MOMENTUM_SURFER (Vol: {vol_ratio:.2f}, ADX: {adx:.1f}, Liq: ${liq_total/1e6:.1f}M)")
+                    elif vol_ratio < 0.85 and bb_width < 0.015 and adx < 20.0:
+                        effective_style = "CHOP"
+                        logger.info(f"[AutoExecutor] AUTO Mode routed to CHOP (Vol: {vol_ratio:.2f}, BBW: {bb_width:.4f}, ADX: {adx:.1f})")
+                    elif vol_ratio > 1.1:
+                        effective_style = "AMBUSH"
+                        logger.info(f"[AutoExecutor] AUTO Mode routed to AMBUSH (Vol: {vol_ratio:.2f}, ADX: {adx:.1f})")
+                    else:
+                        effective_style = "SNIPER"
+                        logger.info(f"[AutoExecutor] AUTO Mode routed to SNIPER (Vol: {vol_ratio:.2f}, ADX: {adx:.1f})")
+                else:
+                    effective_style = "SNIPER"
 
             # Inject historical market intervals directly into the ML Engine to train it instantly
             try:
                 from backend.btc.ml_engine import get_ml_engine
                 import os
                 data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-                ml_engine = get_ml_engine(data_dir, trading_style)
+                ml_engine = get_ml_engine(data_dir, effective_style)
                 if not ml_engine.is_trained:
                     from backend.btc.data_fetcher import fetch_15m_candles_history, fetch_1m_candles_history
                     
-                    if trading_style == "MACHINE_GUN":
+                    if effective_style == "MOMENTUM_SURFER":
                         hist_df = fetch_1m_candles_history(days=15)
                     else:
                         hist_df = fetch_15m_candles_history(days=60)
@@ -799,15 +928,35 @@ class AutoExecutor:
 
             # Detect advanced chart patterns (triangles, flags, head & shoulders)
             patterns = []
-            if trading_style != "MACHINE_GUN":
+            if effective_style != "MOMENTUM_SURFER":
                 try:
                     patterns = detect_candlestick_patterns(df_ind)
                 except Exception as _pat_err:
                     logger.debug(f"[AutoExecutor] Pattern detector error: {_pat_err}")
 
-            forecast = evaluate_next_15m_contract(
-                df_ind, target_price=strike, patterns=patterns, kalshi_m=active_m, trading_style=trading_style
-            )
+            if effective_style == "CHOP":
+                try:
+                    from backend.btc.chop_engine import evaluate_chop_contract
+                    forecast = evaluate_chop_contract(df_ind, target_price=strike, kalshi_m=active_m)
+                except Exception as chop_err:
+                    logger.error(
+                        f"[AutoExecutor] chop_engine unavailable ({chop_err}); "
+                        f"falling back to standard SNIPER evaluation for this cycle."
+                    )
+                    forecast = evaluate_next_15m_contract(
+                        df_ind, target_price=strike, patterns=patterns, kalshi_m=active_m, trading_style="SNIPER"
+                    )
+            else:
+                forecast = evaluate_next_15m_contract(
+                    df_ind, target_price=strike, patterns=patterns, kalshi_m=active_m, trading_style=effective_style
+                )
+
+            # Hook: RL Shadow Sandbox execution
+            try:
+                from backend.btc.shadow_executor import execute_shadow_trade
+                execute_shadow_trade(forecast, kalshi_market=active_m)
+            except Exception as e:
+                logger.error(f"[ShadowExecutor Hook] Error: {e}")
 
             raw_score = float(forecast.get("probability_percent", 50.0))
             edge_label = str(forecast.get("primary_edge", ""))
@@ -817,6 +966,7 @@ class AutoExecutor:
             direction = normalize_prediction_direction(forecast.get("direction") or rec)
 
             pre_gate_dir = forecast.get("pre_gate_direction")
+            pre_gate_grade = str(forecast.get("pre_gate_grade", ""))
             pre_gate_prob = float(forecast.get("pre_gate_prob", raw_score))
             raw_ml_prob = float(forecast.get("raw_ml_prob", forecast.get("ml_prob", 0.5)))
             ml_prob = float(forecast.get("ml_prob", 0.5))
@@ -832,14 +982,20 @@ class AutoExecutor:
                 logger.info(f"[AutoExecutor] Strike Pin Risk active (price within $15 of strike target in low volatility). Sitting out to protect win rate.")
                 return None
 
-            if (one_shot_ai or ignore_pass) and raw_ml_prob != 0.50:
+            if (one_shot_ai or ignore_pass):
                 # 100% AI Prediction mode (until toggled off if ignore_pass, or 1-shot if one_shot_ai)
                 # Use raw unmolested ML probability directly from the model
                 ai_model_prob = raw_ml_prob
-                direction = "ABOVE" if ai_model_prob > 0.50 else "BELOW"
-                raw_score = max(51.0, ai_model_prob * 100.0) if ai_model_prob > 0.50 else max(51.0, (1.0 - ai_model_prob) * 100.0)
+                if ai_model_prob != 0.50:
+                    direction = "ABOVE" if ai_model_prob > 0.50 else "BELOW"
+                    raw_score = max(51.0, ai_model_prob * 100.0) if ai_model_prob > 0.50 else max(51.0, (1.0 - ai_model_prob) * 100.0)
+                else:
+                    direction = pre_gate_dir if pre_gate_dir in ["ABOVE", "BELOW"] else "ABOVE"
+                    raw_score = pre_gate_prob if pre_gate_prob else 51.0
+
                 if pre_gate_prob and pre_gate_dir == direction and pre_gate_prob > raw_score:
                     raw_score = pre_gate_prob
+
                 grade = "GRADE A+ (100% AI)"
                 badge = f"🎯 100% AI ({raw_score:.0f}%)"
                 rec = f"100% AI Prediction{' (Force Trade)' if ignore_pass else ' at Start'}: {'YES' if direction == 'ABOVE' else 'NO'}"
@@ -848,6 +1004,12 @@ class AutoExecutor:
                     f"[AutoExecutor] [{'100% AI MODE (UNTIL TOGGLED OFF)' if ignore_pass else '1-SHOT AI MODE'}] Trading 100% on AI Prediction: "
                     f"{direction} ({raw_score:.1f}% Conf, Raw ML: {ai_model_prob*100:.1f}%). Technical and PASS filters bypassed."
                 )
+                if ignore_pass:
+                    logger.warning(
+                        "[AutoExecutor] 'Force Trade on PASS' is ENABLED — bypassing 1H-trend, "
+                        "CVD, orderbook, and chop safety gates on this trade. This trades off "
+                        "accuracy for frequency; verify this is intentional."
+                    )
             elif ignore_pass_technical_only and direction == "PASS":
                 # Only force trade if there was a real technical chart setup detected (not just ML fallback)
                 if "ML MODEL" not in pre_gate_grade and pre_gate_dir in ["ABOVE", "BELOW"]:
@@ -906,12 +1068,25 @@ class AutoExecutor:
             actual_conf = actual_conf * conviction_multiplier
 
             # Base threshold check against minConf
+            applied_threshold = min_conf
             if one_shot_ai:
                 meets_conviction = True
             elif is_forced_pass or is_reverse:
                 # User explicitly requested Force Trade on PASS or Reverse on CVD Divergence
                 meets_conviction = True
                 logger.info(f"[AutoExecutor] Conviction check bypassed for forced/reversed trade ({direction} @ {actual_conf:.1f}%).")
+            elif isinstance(self.ai_settings.get("minConfByGrade"), dict):
+                floors = self.ai_settings["minConfByGrade"]
+                if "A+" in grade:
+                    applied_threshold = float(floors.get("A_PLUS", 70))
+                elif "GRADE A " in grade or "GRADE A SETUP" in grade:
+                    applied_threshold = float(floors.get("A", 65))
+                elif "B SETUP" in grade:
+                    applied_threshold = float(floors.get("B", 60))
+                else:
+                    applied_threshold = float(floors.get("ML_FALLBACK", 65))
+                if actual_conf >= applied_threshold:
+                    meets_conviction = True
             elif min_conf > 0:
                 if actual_conf >= min_conf:
                     meets_conviction = True
@@ -928,21 +1103,25 @@ class AutoExecutor:
                     ml_fallback_lo = 35.0 - extra_conviction_cushion
                     is_confident_ml_fallback = ("GRADE C" in grade and "ML MODEL" in grade) and (actual_conf >= ml_fallback_hi or actual_conf <= ml_fallback_lo)
 
-                    if trading_style == "MACHINE_GUN":
+                    if effective_style == "MOMENTUM_SURFER":
                         # Dynamic Confidence Minimums for Machine Gun Mode
                         min_conf = 60.0 if sec_elapsed <= 60 else 75.0
                         actual_win_conf = max(actual_conf, 100.0 - actual_conf)
                         meets_conviction = (actual_win_conf >= min_conf)
                     else:
-                        if self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
+                        if effective_style == "CHOP":
+                            meets_conviction = ("CHOP" in grade) and (actual_conf >= min_conf)
+                        elif self.min_conviction == "GRADE A+ SETUP" and "A+" in grade:
                             meets_conviction = True
                         elif self.min_conviction == "GRADE A SETUP" and ("A+" in grade or "GRADE A " in grade or is_confident_ml_fallback):
                             meets_conviction = True
-                        elif self.min_conviction == "GRADE B SETUP" and ("A+" in grade or "GRADE A " in grade or "B SETUP" in grade or is_confident_ml_fallback):
+                        elif self.min_conviction == "GRADE B+ SETUP" and ("A+" in grade or "GRADE A " in grade or "B+ SETUP" in grade or is_confident_ml_fallback):
+                            meets_conviction = True
+                        elif self.min_conviction == "GRADE B SETUP" and ("A+" in grade or "GRADE A " in grade or "B+ SETUP" in grade or "B SETUP" in grade or is_confident_ml_fallback):
                             meets_conviction = True
 
             if not meets_conviction:
-                logger.debug(f"[AutoExecutor] Skipping because conviction not met: {actual_conf} < {min_conf} (Grade: {grade})")
+                logger.debug(f"[AutoExecutor] Skipping because conviction not met: {actual_conf} < {applied_threshold} (Grade: {grade})")
                 return None
 
             # If bot is disabled, do not execute
@@ -969,7 +1148,7 @@ class AutoExecutor:
             unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
         
             # AUDIT FIX #3: Hard ceiling on contracts to prevent black-swan order sizes
-            ABSOLUTE_MAX_CONTRACTS = 50
+            ABSOLUTE_MAX_CONTRACTS = 999999
 
             if max_cap > 0:
                 contracts_to_buy = int(max_cap // unit_price_est)
@@ -991,10 +1170,12 @@ class AutoExecutor:
             if exec_delay > 0:
                 logger.info(f"[AutoExecutor] Delaying execution by {exec_delay}s (lock released during wait)...")
                 self._rollover_lock.release()
+                lock_held = False
                 try:
                     time.sleep(exec_delay)
                 finally:
-                    if not self._rollover_lock.acquire(blocking=True, timeout=10):
+                    lock_held = self._rollover_lock.acquire(blocking=True, timeout=10)
+                    if not lock_held:
                         logger.error("[AutoExecutor] Could not re-acquire rollover lock after exec_delay sleep; aborting trade.")
                         return None
             
@@ -1007,8 +1188,11 @@ class AutoExecutor:
                     unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
                     if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
                         affordable = int(avail_bal // unit_price)
-                        if affordable >= 1:
-                            contracts_to_buy = affordable
+                        contracts_to_buy = affordable
+            
+            if contracts_to_buy < 1:
+                logger.warning(f"Insufficient balance to execute trade. Skipping.")
+                return None
 
             slippage_buffer = float(self.ai_settings.get("slippageBufferDollars", self.ai_settings.get("slippageBufferCents", 0.04)))
 
@@ -1066,12 +1250,12 @@ class AutoExecutor:
                     "timestamp": prediction_generated_at,
                     "prediction_id": prediction_id,
                     "prediction_kind": "AUTO",
-                    "trade_source": f"AUTO ({trading_style})" if not is_reverse else f"AUTO ({trading_style}) - REVERSE",
+                    "trade_source": f"AUTO ({effective_style})" if not is_reverse else f"AUTO ({effective_style}) - REVERSE",
                     "is_auto": True,
                     "is_reverse": is_reverse,
                     "is_forced_pass": is_forced_pass,
                     "is_scalp": False,
-                    "trading_style": trading_style,
+                    "trading_style": effective_style,
                     "prediction_direction": direction,
                     "prediction_generated_at": prediction_generated_at,
                     "accuracy_eligible": True,
@@ -1141,9 +1325,11 @@ class AutoExecutor:
 
             return None
         finally:
-            self._rollover_lock.release()
+            if lock_held:
+                self._rollover_lock.release()
 
     def execute_manual_trade(self, direction: str) -> Dict[str, Any]:
+        self._load_config()
         """
         Enables user to click 1-click execution for the current interval directly from the UI.
         """
@@ -1156,17 +1342,27 @@ class AutoExecutor:
             logger.info(f"[AutoExecutor] Manual trade blocked: {risk_blocked_reason}")
             return {"success": False, "error": risk_blocked_reason}
 
-        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"), min_seconds_left=30)
+        active_m = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", allow_synthetic=(self.mode == "PAPER"), min_seconds_left=30)
         if not active_m:
-            return {"success": False, "error": "No active KXBTC15M market found (>30s before expiration required)."}
+            return {"success": False, "error": f"No active KX{self.asset}15M market found (>30s before expiration required)."}
 
         if dir_clean in ["AI_START", "AI", "AUTO"]:
             try:
-                df = fetch_candles(timeframe="15m", limit=100)
+                df = fetch_candles(self.asset, timeframe="15m", limit=1000)
                 df_ind = add_all_indicators(df)
                 forecast = evaluate_next_15m_contract(df_ind, kalshi_m=active_m)
-                ml_prob = float(forecast.get("ml_prob", 0.5))
-                dir_clean = "ABOVE" if ml_prob >= 0.50 else "BELOW"
+                # Use the blended forecast direction (same signal shown in the UI prediction panel)
+                # NOT raw ml_prob alone — that can disagree with the displayed prediction
+                forecast_dir = str(forecast.get("direction", "")).upper().strip()
+                if forecast_dir in ["ABOVE", "UP", "YES"]:
+                    dir_clean = "ABOVE"
+                elif forecast_dir in ["BELOW", "DOWN", "NO"]:
+                    dir_clean = "BELOW"
+                else:
+                    # Fallback: use ml_prob only if direction is ambiguous/PASS
+                    ml_prob = float(forecast.get("ml_prob", 0.5))
+                    dir_clean = "ABOVE" if ml_prob >= 0.50 else "BELOW"
+                    logger.warning(f"[AutoExecutor] AI_START: forecast direction was '{forecast_dir}', falling back to ml_prob={ml_prob:.3f} -> {dir_clean}")
             except Exception as _ai_err:
                 logger.error(f"[AutoExecutor] Error resolving AI start direction: {_ai_err}")
                 dir_clean = "ABOVE"
@@ -1183,7 +1379,7 @@ class AutoExecutor:
         max_cap = float(self.ai_settings.get("maxCap", 0.0))
         unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
         
-        ABSOLUTE_MAX_CONTRACTS = 50
+        ABSOLUTE_MAX_CONTRACTS = 999999
         if max_cap > 0:
             contracts_to_buy = int(max_cap // unit_price_est)
             if contracts_to_buy < 1:
@@ -1206,8 +1402,11 @@ class AutoExecutor:
                 unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
                 if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
                     affordable = int(avail_bal // unit_price)
-                    if affordable >= 1:
-                        contracts_to_buy = affordable
+                    contracts_to_buy = affordable
+        
+        if contracts_to_buy < 1:
+            logger.warning(f"Insufficient balance to execute trade. Skipping.")
+            return None
 
         slippage_buffer = float(self.ai_settings.get("slippageBufferDollars", self.ai_settings.get("slippageBufferCents", 0.04)))
 
@@ -1242,9 +1441,10 @@ class AutoExecutor:
 
             strike_val = active_m.get("strike_price")
             if not strike_val:
-                from backend.btc.data_fetcher import get_live_15m_target_data, get_btc_ticker
+                from backend.btc.data_fetcher import get_live_15m_target_data
+                from backend.engine.multi_asset_fetcher import is_market_open, get_asset_ticker
                 target_data = get_live_15m_target_data()
-                strike_val = target_data.get("target_price") or get_btc_ticker().get("price", 78000.0)
+                strike_val = target_data.get("target_price") or get_btc_ticker(self.asset).get("price", 78000.0)
 
             trade_record = {
                 "id": order_res.get("order_id", str(uuid.uuid4())[:8]),
@@ -1261,6 +1461,7 @@ class AutoExecutor:
                 "conviction_badge": "MANUAL TRADE",
                 "probability_percent": 65,
                 "trade_source": "MANUAL",
+                "trading_style": "MANUAL",
                 "is_auto": False,
                 "is_manual": True,
                 "is_scalp": False,
@@ -1442,8 +1643,8 @@ class AutoExecutor:
                 est_exit = None
                 if strike > 0:
                     try:
-                        from backend.btc.data_fetcher import get_btc_ticker
-                        spot = float(get_btc_ticker().get("price", 0.0))
+                        from backend.engine.multi_asset_fetcher import get_asset_ticker as get_btc_ticker
+                        spot = float(get_btc_ticker(self.asset).get("price", 0.0))
                         if spot > 0:
                             diff = (spot - strike) if side == "YES" else (strike - spot)
                             import math
@@ -1493,8 +1694,10 @@ class AutoExecutor:
         """
         dynamic_stop_enabled = bool(self.ai_settings.get("dynamicStopLoss", True))
         position_reversal_enabled = bool(self.ai_settings.get("positionReversal", False))
+        take_profit_enabled = bool(self.ai_settings.get("takeProfitEnabled", True))
+        take_profit_percent = float(self.ai_settings.get("takeProfitPercent", 50.0))
 
-        if not dynamic_stop_enabled and not position_reversal_enabled:
+        if not dynamic_stop_enabled and not position_reversal_enabled and not take_profit_enabled:
             return
 
         trades = self.get_trades_history()
@@ -1502,9 +1705,9 @@ class AutoExecutor:
         if not open_trades:
             return
 
-        from backend.btc.data_fetcher import get_btc_ticker
+        from backend.engine.multi_asset_fetcher import get_asset_ticker as get_btc_ticker
         try:
-            ticker_data = get_btc_ticker()
+            ticker_data = get_btc_ticker(self.asset)
             spot_price = float(ticker_data.get("price", 0.0) or 0.0)
         except Exception as te:
             logger.debug(f"[AutoExecutor] Could not fetch spot price for stop/reversal check: {te}")
@@ -1517,7 +1720,7 @@ class AutoExecutor:
         atr_multiplier = float(self.ai_settings.get("atrStopMultiplier", 0.75))
         try:
             from backend.btc.indicators import compute_atr
-            recent_candles = fetch_candles(timeframe="15m", limit=30)
+            recent_candles = fetch_candles(self.asset, timeframe="15m", limit=30)
             if recent_candles is not None and len(recent_candles) >= 14:
                 atr_series = compute_atr(recent_candles)
                 atr_val = float(atr_series.iloc[-1])
@@ -1550,6 +1753,101 @@ class AutoExecutor:
 
             minutes_elapsed = time_elapsed_sec / 60.0
             minutes_remaining = time_remaining_sec / 60.0
+
+            if take_profit_enabled and minutes_remaining >= 1.0:
+                ticker = trade.get("ticker")
+                bid_price = 0.0
+                if ticker and not ticker.endswith("_SYNTH") and self.mode == "LIVE":
+                    try:
+                        from backend.btc.kalshi_trader import kalshi_trader
+                        quote = kalshi_trader.get_market_quote(ticker)
+                        if quote.get("success"):
+                            bid_price = float(quote.get("yes_bid", 0.0)) if side == "YES" else float(quote.get("no_bid", 0.0))
+                    except Exception as e:
+                        logger.warning(f"[AutoExecutor] Take profit quote fetch failed: {e}")
+                elif self.mode == "PAPER":
+                    # Paper trading: Use live Kalshi public orderbook if available, or realistic spot-based delta model
+                    if ticker and not ticker.endswith("_SYNTH"):
+                        try:
+                            from backend.btc.kalshi_trader import kalshi_trader
+                            quote = kalshi_trader.get_market_quote(ticker)
+                            if quote.get("success"):
+                                bid_price = float(quote.get("yes_bid", 0.0)) if side == "YES" else float(quote.get("no_bid", 0.0))
+                        except Exception:
+                            pass
+                    if bid_price <= 0.0 and strike > 0:
+                        import math
+                        diff = (spot_price - strike) if side == "YES" else (strike - spot_price)
+                        prob = 1.0 / (1.0 + math.exp(-diff / 150.0))
+                        bid_price = round(max(0.05, min(0.95, prob)), 4)
+
+                if entry_price > 0 and bid_price > 0:
+                    try:
+                        profit_pct = ((bid_price - entry_price) / entry_price) * 100.0
+                        
+                        # Track Max Seen Bid for Trailing Stop
+                        max_seen_bid = float(trade.get("max_seen_bid", entry_price))
+                        if bid_price > max_seen_bid:
+                            # C1 FIX: Do NOT save the detached snapshot. Re-fetch fresh data under lock.
+                            with _history_lock:
+                                fresh_trades = self.get_trades_history()
+                                for ft in fresh_trades:
+                                    if ft.get("id") == trade_id:
+                                        ft["max_seen_bid"] = bid_price
+                                        break
+                                self._save_trades_history(fresh_trades)
+                            trade["max_seen_bid"] = bid_price
+                            max_seen_bid = bid_price
+
+                        max_seen_profit_pct = ((max_seen_bid - entry_price) / entry_price) * 100.0
+
+                        # 1. Hard Take-Profit Check
+                        if profit_pct >= take_profit_percent:
+                            logger.info(
+                                f"[AutoExecutor] TAKE-PROFIT TRIGGERED for {trade_id} ({side}): "
+                                f"Current bid ${bid_price:.2f} is up {profit_pct:.1f}% from entry ${entry_price:.2f} "
+                                f"(Target: {take_profit_percent}%)."
+                            )
+                            close_res = self.close_specific_trade(trade_id, reason="TAKE_PROFIT", estimated_exit_price=bid_price)
+                            if close_res.get("success"):
+                                logger.info(f"[AutoExecutor] Take profit executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
+                                self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
+                                continue
+
+                        # 2. Dynamic Trailing Profit Stop (Locks in gains if they drop from peak)
+                        # If the trade was ever up >35% (e.g. $100+ on a $250 size), activate a tight 12% trailing floor
+                        if max_seen_profit_pct >= 35.0:
+                            # We trail the max seen bid by 12 cents or 12%, whichever tightens first
+                            trail_threshold = max(max_seen_bid - 0.12, max_seen_bid * 0.88)
+                            
+                            # Ensure we don't accidentally trail into a loss
+                            trail_threshold = max(trail_threshold, entry_price * 1.10) # Minimum 10% profit secured
+
+                            if bid_price <= trail_threshold:
+                                logger.info(
+                                    f"[AutoExecutor] DYNAMIC TRAILING PROFIT TRIGGERED for {trade_id} ({side}): "
+                                    f"Max bid was ${max_seen_bid:.2f} (+{max_seen_profit_pct:.1f}%), now dropped to ${bid_price:.2f}. Securing gains."
+                                )
+                                close_res = self.close_specific_trade(trade_id, reason="TRAILING_TAKE_PROFIT", estimated_exit_price=bid_price)
+                                if close_res.get("success"):
+                                    logger.info(f"[AutoExecutor] Trailing profit executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
+                                    self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
+                                    continue
+                                    
+                        # 3. Contract Price Stop Loss
+                        stop_loss_pct = float(self.ai_settings.get("stopLossPercent", 50.0))
+                        if profit_pct <= -stop_loss_pct:
+                            logger.info(
+                                f"[AutoExecutor] CONTRACT STOP-LOSS TRIGGERED for {trade_id} ({side}): "
+                                f"Current bid ${bid_price:.2f} is down {abs(profit_pct):.1f}% from entry ${entry_price:.2f} "
+                                f"(Target: {stop_loss_pct}%)."
+                            )
+                            close_res = self.close_specific_trade(trade_id, reason="CONTRACT_STOP_LOSS", estimated_exit_price=bid_price)
+                            if close_res.get("success"):
+                                logger.info(f"[AutoExecutor] Contract stop loss executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
+                                continue
+                    except Exception as e:
+                        logger.warning(f"[AutoExecutor] Take profit check failed: {e}")
 
             if dynamic_stop_enabled:
                 # Early stop window check: first stop_loss_max_minutes and at least 90 seconds left
@@ -1638,7 +1936,7 @@ class AutoExecutor:
 
         # Guardrail 3: Market quote on opposite contract
         opposite_ask = 0.50
-        active_m = kalshi_trader.get_active_15m_market(allow_synthetic=(self.mode == "PAPER"))
+        active_m = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", allow_synthetic=(self.mode == "PAPER"))
         if active_m and (active_m.get("ticker") == ticker or not ticker):
             if opposite_side == "YES":
                 opposite_ask = float(active_m.get("yes_ask", 0.50) or 0.50)
@@ -1657,11 +1955,11 @@ class AutoExecutor:
         conf = None
         model_direction = None
         try:
-            from backend.btc.data_fetcher import fetch_candles
+            from backend.engine.multi_asset_fetcher import is_market_open, fetch_asset_candles as fetch_candles, get_asset_ticker as get_btc_ticker
             from backend.btc.indicators import add_all_indicators
             from backend.btc.analyzer import evaluate_next_15m_contract
             strike = float(stopped_trade.get("strike", 0.0) or (active_m.get("strike_price", 0.0) if active_m else 0.0))
-            df_c = fetch_candles("15m", limit=30)
+            df_c = fetch_candles(self.asset, timeframe="15m", limit=30)
             if df_c is not None and not df_c.empty:
                 df_ind = add_all_indicators(df_c)
                 eval_res = evaluate_next_15m_contract(df_ind, target_price=strike, kalshi_m=active_m)
@@ -1735,6 +2033,7 @@ class AutoExecutor:
                     "conviction_badge": f"🔄 REVERSAL ({int(conf)}%)",
                     "probability_percent": conf,
                     "trade_source": "SCALP",
+                    "trading_style": "SCALP",
                     "side": opposite_side,
                     "entry_price": fill_price,
                     "count": count,
@@ -1776,6 +2075,185 @@ class AutoExecutor:
 
         return None
 
+    def _attempt_profit_reentry(
+        self,
+        closed_trade: Dict[str, Any],
+        minutes_remaining: float,
+        spot_price: float
+    ) -> Optional[Dict[str, Any]]:
+        """
+        After securing a take-profit or trailing take-profit, evaluate if there is still
+        enough time (>= 4.0 minutes) and conviction to enter a fresh contract in the same
+        or newly confirmed trend direction.
+        """
+        if minutes_remaining < 4.0:
+            logger.info(f"[AutoExecutor] Profit re-entry skipped: Only {minutes_remaining:.1f}m remaining in interval (< 4.0m minimum).")
+            return None
+
+        ticker = closed_trade.get("ticker", "")
+        # Prevent spamming multiple re-entries in the exact same interval (max 1 re-entry per contract)
+        interval_trades = self.get_trades_history()
+        already_reentered = any(
+            t.get("ticker") == ticker and t.get("is_profit_reentry")
+            for t in interval_trades
+        )
+        if already_reentered:
+            logger.info(f"[AutoExecutor] Profit re-entry skipped: Interval {ticker} already executed a profit re-entry.")
+            return None
+
+        # Fetch active market and live analysis
+        try:
+            from backend.engine.multi_asset_fetcher import is_market_open, fetch_asset_candles as fetch_candles
+            from backend.btc.indicators import add_all_indicators
+            from backend.btc.analyzer import evaluate_next_15m_contract
+            from backend.btc.kalshi_trader import kalshi_trader
+
+            active_m = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", allow_synthetic=(self.mode == "PAPER"), min_seconds_left=120)
+            if not active_m:
+                logger.info("[AutoExecutor] Profit re-entry skipped: No active Kalshi contract found with >=120s remaining.")
+                return None
+
+            strike = float(active_m.get("strike_price") or closed_trade.get("strike", 0.0))
+            df_c = fetch_candles(self.asset, timeframe="15m", limit=60)
+            if df_c is None or df_c.empty:
+                return None
+
+            df_ind = add_all_indicators(df_c)
+            forecast = evaluate_next_15m_contract(df_ind, target_price=strike, kalshi_m=active_m, trading_style=self.ai_settings.get("tradingStyle", "MOMENTUM_SURFER"), asset=self.asset)
+
+            pred_dir = str(forecast.get("direction", "")).upper()
+            if pred_dir == "PASS" or "PASS" in str(forecast.get("recommendation", "")):
+                # If Force Trade is enabled, check underlying pre-gate direction
+                if bool(self.ai_settings.get("ignorePass", False)):
+                    pre_dir = str(forecast.get("pre_gate_direction", "")).upper()
+                    if pre_dir in ["ABOVE", "YES", "UP"]:
+                        direction = "ABOVE"
+                        side = "yes"
+                    elif pre_dir in ["BELOW", "NO", "DOWN"]:
+                        direction = "BELOW"
+                        side = "no"
+                    else:
+                        logger.info("[AutoExecutor] Profit re-entry: Setup is PASS even with Force Trade. Standing down.")
+                        return None
+                else:
+                    logger.info("[AutoExecutor] Profit re-entry: Fresh evaluation returned PASS. Preserving profits.")
+                    return None
+            elif pred_dir in ["ABOVE", "YES", "UP"]:
+                direction = "ABOVE"
+                side = "yes"
+            else:
+                direction = "BELOW"
+                side = "no"
+
+            closed_side = str(closed_trade.get("side", "")).lower()
+            if side != closed_side:
+                logger.info(f"[AutoExecutor] Profit re-entry skipped: Model suggested {side.upper()} but original trade was {closed_side.upper()}. Only trend-aligned re-entries are permitted.")
+                return None
+
+            conf = float(forecast.get("probability_percent", 50.0))
+            min_conf = float(self.ai_settings.get("minConf", 60.0))
+            if conf < min_conf and not bool(self.ai_settings.get("ignorePass", False)):
+                logger.info(f"[AutoExecutor] Profit re-entry: Model confidence {conf:.1f}% below minimum {min_conf}%. Standing down.")
+                return None
+
+            # Check market price on chosen side
+            market_price = float(active_m.get(f"{side}_ask", 0.50) or 0.50)
+            max_reentry_ask = float(self.ai_settings.get("profitReentryMaxAsk", 0.75))
+            if market_price >= max_reentry_ask:
+                logger.info(f"[AutoExecutor] Profit re-entry: {side.upper()} ask is ${market_price:.2f} >= ${max_reentry_ask:.2f} (too expensive/poor risk-reward). Standing down.")
+                return None
+
+            # Calculate contract count
+            max_cap = float(self.ai_settings.get("maxCap", 0.0))
+            unit_price_est = min(0.99, max(0.01, market_price + 0.04))
+            if max_cap > 0:
+                contracts_to_buy = max(1, int(max_cap // unit_price_est))
+            else:
+                contracts_to_buy = self.max_contracts
+
+            dry_run = (self.mode == "PAPER") or bool(self.ai_settings.get("dryRun", False))
+            trade_mode = "PAPER" if dry_run else "LIVE"
+
+            logger.info(
+                f"[AutoExecutor] EXECUTING POST-TAKE-PROFIT RE-ENTRY: Buying {side.upper()} on {ticker} "
+                f"@ ${market_price:.2f} ({minutes_remaining:.1f}m left, Conf: {conf:.1f}%, Count: {contracts_to_buy})"
+            )
+
+            order_res = kalshi_trader.place_order(
+                ticker=ticker,
+                side=side,
+                count=contracts_to_buy,
+                limit_price_dollars=market_price,
+                dry_run=dry_run,
+                slippage_buffer_dollars=0.04
+            )
+
+            if order_res.get("success"):
+                fill_price = float(order_res.get("filled_price", market_price))
+                fill_cost = round(fill_price * contracts_to_buy, 4)
+                reentry_record = {
+                    "id": f"{'sim' if trade_mode == 'PAPER' else 'live'}_{uuid.uuid4().hex[:8]}",
+                    "client_order_id": order_res.get("client_order_id") or order_res.get("order_id", str(uuid.uuid4())),
+                    "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                    "interval_close_time": active_m.get("close_time", closed_trade.get("interval_close_time")),
+                    "close_epoch": closed_trade.get("close_epoch"),
+                    "ticker": ticker,
+                    "title": f"Profit Re-Entry ({side.upper()})",
+                    "market_snapshot": {
+                        "price": spot_price,
+                        "target": strike,
+                        "confidence": conf,
+                        "conviction_grade": "PROFIT RE-ENTRY",
+                        "primary_edge": "Secured TP -> Fresh Trend Re-Entry",
+                        "raw_features": forecast.get("raw_features", {})
+                    },
+                    "strike": strike,
+                    "direction": direction,
+                    "recommendation": f"PROFIT RE-ENTRY ({direction})",
+                    "conviction_grade": "GRADE A (PROFIT RE-ENTRY)",
+                    "conviction_badge": f"🎯 RE-ENTRY ({int(conf)}%)",
+                    "probability_percent": conf,
+                    "trade_source": "AUTO (RE-ENTRY)",
+                    "trading_style": self.ai_settings.get("tradingStyle", "MOMENTUM_SURFER"),
+                    "side": side.upper(),
+                    "entry_price": fill_price,
+                    "count": contracts_to_buy,
+                    "cost": fill_cost,
+                    "mode": trade_mode,
+                    "status": "OPEN",
+                    "result": "PENDING",
+                    "pnl": 0.0,
+                    "catalysts": [f"Secured take-profit; trend confirmed fresh {side.upper()} continuation with {minutes_remaining:.1f}m left"],
+                    "is_profit_reentry": True,
+                    "reentry_after": closed_trade.get("id"),
+                    "btc_price_at_entry": spot_price
+                }
+
+                with _history_lock:
+                    trades_hist = self.get_trades_history()
+                    trades_hist.append(reentry_record)
+                    self._save_trades_history(trades_hist)
+
+                if trade_mode == "PAPER":
+                    try:
+                        from backend.btc.paper_balance import update_balance
+                        update_balance(-fill_cost)
+                    except Exception as ep:
+                        logger.warning(f"Failed to deduct paper balance for re-entry: {ep}")
+
+                logger.info(f"[AutoExecutor] Successfully executed PROFIT RE-ENTRY {reentry_record['id']} ({side.upper()})")
+                return reentry_record
+            else:
+                logger.error(f"[AutoExecutor] Profit re-entry order placement failed: {order_res.get('error')}")
+        except Exception as err:
+            logger.error(f"[AutoExecutor] Error during profit re-entry evaluation: {err}", exc_info=True)
+
+        return None
+
 
 # Global singleton instance
-auto_executor = AutoExecutor()
+_executors = {}
+def get_auto_executor(asset: str = "BTC") -> AutoExecutor:
+    if asset not in _executors:
+        _executors[asset] = AutoExecutor(asset)
+    return _executors[asset]

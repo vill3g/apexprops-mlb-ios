@@ -1,0 +1,1 @@
+import json, pandas as pd; trades = json.load(open('backend/data/trades_history.json')); df = pd.DataFrame(trades); df_momo = df[(df['trade_source'] == 'AUTO (MOMENTUM_SURFER)') & df['result'].isin(['LOSS', 'CLOSED_LOSS'])]; df_momo['loss_cat'] = df_momo['loss_analysis'].apply(lambda x: x.get('category') if isinstance(x, dict) else None); print(df_momo['loss_cat'].value_counts())

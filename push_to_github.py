@@ -47,14 +47,15 @@ def get_tracked_files():
 
     # Include explicit core and newly added files
     core_files = [
-        "package.json", "capacitor.config.json", "README.md", "static/index.html",
-        "static/trades.html", "static/manifest.json", "backend/main.py",
+        "package.json", "capacitor.config.json", "README.md", "static/index.html", "static/js/app.js",
+        "static/css/app.css", "static/trades.html", "static/manifest.json", "backend/main.py",
         "backend/btc/__init__.py", "backend/btc/analyzer.py", "backend/btc/auto_executor.py",
         "backend/btc/data_fetcher.py", "backend/btc/dual_ml_engine.py", "backend/btc/indicators.py",
         "backend/btc/io_utils.py", "backend/btc/kalshi_client.py", "backend/btc/kalshi_trader.py",
         "backend/btc/loss_analyzer.py", "backend/btc/ml_engine.py", "backend/btc/paper_balance.py",
         "backend/btc/pattern_detector.py", "backend/btc/scalp_engine.py", "backend/btc/scalp_config.json",
         "backend/btc/trend_boxes.py", "backend/btc/backtest.py",
+        "backend/engine/__init__.py", "backend/engine/multi_asset_fetcher.py", "backend/engine/bvp_weather.py", "backend/engine/international_model.py", "backend/engine/pitcher_k_model.py", "backend/engine/simulator.py", "backend/engine/top5_selector.py",
         "tests/test_trend_boxes.py", "tests/test_audit_findings.py", "tests/test_remediation.py",
         "tests/test_accuracy_improvements.py", "tests/test_analyzer_blend.py",
         "tests/test_force_trade_pass.py",
@@ -65,6 +66,8 @@ def get_tracked_files():
 
     blacklist = {
         "backend/kalshi_credentials.json",
+        "kalshi_credentials.json",
+        ".local_token",
         "backend/btc/paper_balance.json",
         "backend/data/trades_history.json",
         "backend/data/trading_config.json.live"
@@ -114,7 +117,7 @@ def upload_files(repo: str, message: str = "Update iPad portrait single-row navi
             sha = None
             try:
                 req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req) as resp:
+                with urllib.request.urlopen(req, timeout=15) as resp:
                     data = json.loads(resp.read().decode())
                     sha = data.get("sha")
                     remote_content = data.get("content", "").replace("\n", "").strip()
@@ -136,7 +139,7 @@ def upload_files(repo: str, message: str = "Update iPad portrait single-row navi
 
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="PUT")
             try:
-                with urllib.request.urlopen(req) as resp:
+                with urllib.request.urlopen(req, timeout=15) as resp:
                     print(f"Uploaded: {rel_path} -> HTTP {resp.status}")
                     success = True
                     import time

@@ -37,8 +37,8 @@ class KalshiTrader:
 
         self._cached_balance = None
         self._cached_balance_time = 0.0
-        self._cached_market = None
-        self._cached_market_time = 0.0
+        self._cached_markets = {}
+        self._cached_market_times = {}
         self._lock = threading.Lock()
 
         self.session = requests.Session()
@@ -141,26 +141,26 @@ class KalshiTrader:
                 "balance_cents": 0
             }
 
-    def get_active_15m_market(self, allow_synthetic: bool = True, force_refresh: bool = False, min_seconds_left: int = 0) -> Optional[Dict[str, Any]]:
+    def get_active_15m_market(self, series_ticker: str = "KXBTC15M", allow_synthetic: bool = True, force_refresh: bool = False, min_seconds_left: int = 0) -> Optional[Dict[str, Any]]:
         """
         Finds the active KXBTC15M market (cached for 2.5s for ultra-low latency real-time feeds).
         """
         now_ts = time.time()
         with self._lock:
-            if not force_refresh and self._cached_market and (now_ts - self._cached_market_time < 2.5):
+            if not force_refresh and self._cached_markets.get(series_ticker) and (now_ts - self._cached_market_times.get(series_ticker, 0.0) < 2.5):
                 # Synthetic contracts are useful only for paper trading. Never
                 # surface one to the live-order path from the short-lived cache.
-                if allow_synthetic or not self._cached_market.get("is_synthetic"):
-                    cached_close = self._cached_market.get("close_time")
+                if allow_synthetic or not self._cached_markets[series_ticker].get("is_synthetic"):
+                    cached_close = self._cached_markets[series_ticker].get("close_time")
                     if cached_close and min_seconds_left > 0:
                         try:
                             ct = datetime.fromisoformat(cached_close.replace("Z", "+00:00"))
                             if (ct - datetime.now(timezone.utc)).total_seconds() > min_seconds_left:
-                                return self._cached_market
+                                return self._cached_markets.get(series_ticker)
                         except Exception:
-                            return self._cached_market
+                            return self._cached_markets.get(series_ticker)
                     else:
-                        return self._cached_market
+                        return self._cached_markets.get(series_ticker)
 
         path = "/trade-api/v2/markets"
         try:
@@ -168,7 +168,7 @@ class KalshiTrader:
             headers = self._sign_headers('GET', path)
             resp = self.session.get(
                 f"{BASE_URL}{path}",
-                params={"series_ticker": "KXBTC15M", "status": "open", "limit": 100},
+                params={"series_ticker": series_ticker, "status": "open", "limit": 100},
                 headers=headers,
                 timeout=5.0,
             )
@@ -186,8 +186,8 @@ class KalshiTrader:
                         seconds_left = (ct - now_utc).total_seconds()
                         if (min_seconds_left <= 0 or seconds_left > min_seconds_left) and m.get("status") in ["active", "open"]:
                             valid.append((ct, m))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Quote parse error: {e}")
             if valid:
                 ct, active_m = min(valid, key=lambda x: x[0])
 
@@ -216,8 +216,8 @@ class KalshiTrader:
                             no_bid     = float(pub.get("no_bid")   or no_bid)
                             no_ask     = float(pub.get("no_ask")   or no_ask)
                             last_price = float(pub.get("last_price") or pub.get("yes_bid") or last_price)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Quote parse error: {e}")
 
                 floor_strike = active_m.get("floor_strike")
                 strike_price = active_m.get("strike_price")
@@ -241,8 +241,8 @@ class KalshiTrader:
                     "is_synthetic": False,
                 }
                 with self._lock:
-                    self._cached_market = res_market
-                    self._cached_market_time = now_ts
+                    self._cached_markets[series_ticker] = res_market
+                    self._cached_market_times[series_ticker] = now_ts
                 return res_market
         except Exception as e:
             logger.error(f"[KalshiTrader] Error getting active 15M market: {e}")
@@ -252,7 +252,7 @@ class KalshiTrader:
             pub_strike = 0.0
             try:
                 from backend.btc.kalshi_client import get_kalshi_15m_market
-                from backend.btc.data_fetcher import get_btc_ticker
+                from backend.engine.multi_asset_fetcher import get_asset_ticker
                 pub = get_kalshi_15m_market()
                 if pub:
                     pub_yes_bid = float(pub.get("yes_bid") or 0.0)
@@ -262,12 +262,12 @@ class KalshiTrader:
                     pub_strike  = float(pub.get("target_price") or pub.get("strike") or pub.get("floor_strike") or 0.0)
                 
                 if pub_strike <= 0.0:
-                    pub_strike = float(get_btc_ticker().get("price", 0.0))
+                    pub_strike = float(get_asset_ticker(series_ticker.replace("KX", "").replace("15M", "")).get("price", 0.0))
             except Exception:
                 pass
             return {
-                "ticker": "KXBTC15M_SYNTH",
-                "title": "Synthetic BTC 15M",
+                "ticker": f"{series_ticker}_SYNTH",
+                "title": f"Synthetic {series_ticker} 15M",
                 "strike_price": pub_strike,
                 "close_time": "",
                 "yes_bid": pub_yes_bid,
@@ -727,16 +727,21 @@ class KalshiTrader:
                 "message": f"Simulated BUY of {count_int} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
             }
 
+        # Extract series_ticker from the passed ticker (e.g., "KXETH15M-..." -> "KXETH15M")
+        series_t = "KXBTC15M"
+        if ticker and ticker.startswith("KX"):
+            series_t = ticker.split("-")[0]
+
         # Fast-Path: Use active market (from cache or fast fetch) without redundant GET roundtrips
         # Requires at least 30s before expiration to prevent entering dying contracts
-        verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=False, min_seconds_left=30)
+        verified_market = self.get_active_15m_market(series_ticker=series_t, allow_synthetic=False, force_refresh=False, min_seconds_left=30)
         if not verified_market or verified_market.get("is_synthetic"):
             # Fallback to force refresh if cache empty
-            verified_market = self.get_active_15m_market(allow_synthetic=False, force_refresh=True, min_seconds_left=30)
+            verified_market = self.get_active_15m_market(series_ticker=series_t, allow_synthetic=False, force_refresh=True, min_seconds_left=30)
             if not verified_market or verified_market.get("is_synthetic"):
                 return {
                     "success": False,
-                    "error": "No verified open Kalshi BTC 15M market is available (>30s remaining required). Live order was not submitted."
+                    "error": f"No verified open Kalshi {series_t} market is available (>30s remaining required). Live order was not submitted."
                 }
         
         verified_ticker = verified_market.get("ticker") or verified_market.get("event_ticker", "")
@@ -757,8 +762,8 @@ class KalshiTrader:
                         "success": False,
                         "error": f"Contract '{verified_ticker}' expires in {int(sec_remaining)}s (< 30s remaining). Live order rejected to prevent instant settlement."
                     }
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"close_time_str parse error: {e}")
             
         if ticker and ticker.strip() and ticker.strip() != verified_ticker:
             logger.warning(
@@ -824,7 +829,7 @@ class KalshiTrader:
 
             if resp.status_code in [200, 201]:
                 self._cached_balance_time = 0.0
-                self._cached_market_time = 0.0
+                self._cached_market_times = {}
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
                 if fill_count == 0:

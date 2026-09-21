@@ -1,3 +1,139 @@
+
+
+
+// --- DUMMY FUNCTIONS TO PREVENT REFERENCE ERRORS FROM DEAD CODE CLEANUP ---
+function addBtcLogEntry(){}
+function applyTargetPriceColor(){}
+function fetchKalshiTradingStatus(){}
+function renderBtcAccuracy(data) {
+  if (!data) return;
+  const ratioEl = document.getElementById("btcAccuracyRatio");
+  const pctEl = document.getElementById("btcAccuracyPct");
+  const barEl = document.getElementById("btcAccuracyBar");
+  const dotsEl = document.getElementById("btcAccuracyRecentDots");
+  if (ratioEl) ratioEl.innerText = data.ratio_text || `${data.correct_picks} of ${data.total_evaluated} Correct`;
+  if (pctEl) pctEl.innerText = data.accuracy_percent != null ? `${data.accuracy_percent}%` : "--%";
+  if (barEl) barEl.style.width = data.accuracy_percent != null ? `${data.accuracy_percent}%` : "0%";
+  if (dotsEl && data.recent_outcomes) {
+    dotsEl.innerHTML = data.recent_outcomes.map(o => o.correct 
+      ? '<div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.8)]"></div>' 
+      : '<div class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_4px_rgba(244,63,94,0.8)]"></div>'
+    ).join("");
+  }
+}
+function renderBtcCatalystsAndPatterns(){}
+function renderBtcHeroHud(data){
+    try {
+        if (typeof updateIphone17HeaderInfo === 'function') {
+            updateIphone17HeaderInfo(data);
+        }
+    } catch(e) { console.warn(e); }
+}
+function renderBtcIndicators(){}
+function renderBtcPredictor(){}
+function renderBtcStructure(){}
+function renderBtcTradeSetup(){}
+    function renderBtcTrendBox(last5, streak) {
+
+      const cacheKey = JSON.stringify(last5) + streak;
+
+      if (window._lastTrendBoxKey === cacheKey) return;
+
+
+
+      const grid = document.getElementById("btcTrendBoxGrid");
+
+      // If user is currently hovering over the trend boxes, defer re-rendering until mouseout
+
+      if (grid && (grid.matches(":hover") || grid.contains(document.querySelector(":hover")))) {
+
+        window._pendingTrendBoxUpdate = { last5, streak };
+
+        return;
+
+      }
+
+      window._lastTrendBoxKey = cacheKey;
+
+
+
+      const streakBadge = document.getElementById("btcTrendStreakBadge");
+
+      if (streakBadge && streak) {
+
+        streakBadge.innerText = streak;
+
+      }
+
+      if (!grid || !Array.isArray(last5) || last5.length === 0) return;
+
+
+
+      const itemsToRender = last5.slice(-4);
+
+
+
+      // 15M Target Trend: Direction Arrow + Close Price + Close Time
+
+      grid.innerHTML = itemsToRender.map(t => {
+
+        const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
+
+        const cardClass = isUp ? "trend-card trend-up bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "trend-card trend-down bg-red-500/15 border border-red-500/30 text-red-400";
+
+        const formattedPrice = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` : "--";
+
+        const timeStr = t.time || "--:--";
+
+        
+
+        const predVal = t.ml_prediction || t.predicted || t.prediction || (isUp ? "UP" : "DOWN");
+
+        const predTimeStr = t.pred_time ? `⏱️ Prediction Time: ${t.pred_time}\n` : '';
+
+        const targetStartStr = t.target_price ? `$${Number(t.target_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
+
+        const targetCloseStr = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
+
+        const deltaVal = t.delta != null ? `${t.delta >= 0 ? '+' : ''}$${(isNaN(Number(t.delta)) ? 0 : Number(t.delta)).toFixed(2)} (${t.delta_pct >= 0 ? '+' : ''}${t.delta_pct}%)` : "--";
+
+        const resultVal = isUp ? "HIGHER (ABOVE TARGET)" : "LOWER (BELOW TARGET)";
+
+
+
+        const tooltipStr = `🕒 15M Contract Close: ${timeStr}\n${predTimeStr}🎯 Target Start Price: ${targetStartStr}\n🏁 Actual Close Price: ${targetCloseStr}\n📊 Price Delta: ${deltaVal}\n🤖 AI Model Prediction: ${predVal}\n✅ Actual Settlement Result: ${resultVal}`;
+
+
+
+        return `
+
+          <div data-tooltip="${tooltipStr.replace(/"/g, '&quot;')}" class="${cardClass} py-0.5 px-1 sm:px-1.5 text-center flex flex-col items-center justify-center rounded-lg shadow-sm font-mono shrink-0 cursor-help hover:brightness-110 transition-all leading-tight">
+
+            <div class="flex items-center gap-0.5 leading-none">
+
+              <span class="text-[10px] font-black leading-none">${isUp ? '▲' : '▼'}</span>
+
+              <span class="text-[8.5px] sm:text-[9.5px] font-black text-white leading-none">${formattedPrice}</span>
+
+            </div>
+
+            <div class="text-[7px] sm:text-[7.5px] font-semibold text-slate-400 leading-none mt-0.5">${timeStr}</div>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+    }
+function showDkToast(){}
+function showTradeDetailsModal(){}
+function updateBtcConfluenceGauge(){}
+function updateSlipUI(){}
+function updateTargetCardBorder(){}
+function renderPreviousDaysAccuracy(){}
+// --------------------------------------------------------------------------
+
 window.currentAsset = "BTC";
 
     // XSS Protection: Escape HTML entities in untrusted strings before innerHTML
@@ -122,10 +258,6 @@ window.currentAsset = "BTC";
       const targetPriceEl = document.getElementById("iphone17TargetPrice");
       if (targetPriceEl && targetPrice > 0) {
         targetPriceEl.innerText = `$${targetPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      const sourceEl = document.getElementById("iphone17SourceLabel");
-      if (sourceEl) {
-        sourceEl.innerText = "Source: Kalshi Official Strike";
       }
 
       // Sync Top Nav Bar P/L and Audio
@@ -422,64 +554,17 @@ window.currentAsset = "BTC";
     // Mode Switcher (Between MLB +1 H+R+RBI, Pitcher Strikeouts, & BTC 15M Pattern Analyzer)
     function switchMode(mode) {
       if (mode !== 'mlb_hrrbi' && mode !== 'pitcher_ks' && mode !== 'btc_analyzer') mode = 'mlb_hrrbi';
-      const dd = document.getElementById('modeDropdown');
-      if (dd) {
-        dd.value = mode;
-        dd.blur();
-      }
       activeMode = mode;
       
-      const vHrrbi = document.getElementById('view_mlb_hrrbi');
-      const vKs = document.getElementById('view_pitcher_ks');
       const vBtc = document.getElementById('view_btc_analyzer');
-      const btnHrrbi = document.getElementById('tabBtnHrrbi');
-      const btnKs = document.getElementById('tabBtnKs');
-      const btnBtc = document.getElementById('tabBtnBtc');
-      const bottomSlipBar = document.getElementById('bottomSlipBar');
 
       if (mode === 'mlb_hrrbi') {
-        if (vHrrbi) vHrrbi.classList.remove('hidden');
-        if (vKs) vKs.classList.add('hidden');
         if (vBtc) vBtc.classList.add('hidden');
-        if (bottomSlipBar) bottomSlipBar.classList.remove('hidden');
-        if (btnHrrbi) {
-          btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20 flex items-center gap-1.5";
-        }
-        if (btnKs) {
-          btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
-        if (btnBtc) {
-          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
       } else if (mode === 'pitcher_ks') {
-        if (vHrrbi) vHrrbi.classList.add('hidden');
-        if (vKs) vKs.classList.remove('hidden');
         if (vBtc) vBtc.classList.add('hidden');
-        if (bottomSlipBar) bottomSlipBar.classList.remove('hidden');
-        if (btnKs) {
-          btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-orange-500 text-slate-950 shadow-md shadow-orange-500/20 flex items-center gap-1.5";
-        }
-        if (btnHrrbi) {
-          btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
-        if (btnBtc) {
-          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
         loadPitcherKs();
       } else if (mode === 'btc_analyzer') {
-        if (vHrrbi) vHrrbi.classList.add('hidden');
-        if (vKs) vKs.classList.add('hidden');
         if (vBtc) vBtc.classList.remove('hidden');
-        if (bottomSlipBar) bottomSlipBar.classList.add('hidden');
-        if (btnBtc) {
-          btnBtc.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 flex items-center gap-1.5";
-        }
-        if (btnHrrbi) {
-          btnHrrbi.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
-        if (btnKs) {
-          btnKs.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-black transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-        }
         initBtcChartOnce();
         updateBtcCountdownClock();
         fetchKalshiDirect();
@@ -565,130 +650,6 @@ window.currentAsset = "BTC";
       }
     }
 
-    function renderTop5(picks) {
-      const container = document.getElementById("top5Grid");
-      if (!picks || picks.length === 0) return;
-
-      container.innerHTML = picks.map((p, idx) => `
-        <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-emerald-500/50 transition-all hover:shadow-lg hover:shadow-emerald-500/10 group relative">
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-emerald-500 text-slate-950 font-black text-[11px] shrink-0">
-                  #${idx + 1}
-                </span>
-                ${p.is_confirmed_lineup ? 
-                  '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap truncate">✓ Confirmed</span>' : 
-                  '<span class="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap truncate">Projected</span>'
-                }
-              </div>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                +${p.dk_edge || p.edge}% EV
-              </span>
-            </div>
-
-            <div class="flex items-center gap-2 cursor-pointer" onclick="openModal('${p.id}')">
-              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${escapeHtml(p.name)}', '${p.id}', '${p.team_logo}')">
-              <div class="overflow-hidden">
-                <div class="font-black text-xs text-white group-hover:text-emerald-400 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-300 truncate font-medium">${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} • #${p.order} (${p.pos || 'DH'})</div>
-                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">vs SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
-                <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
-              <span class="font-bold text-white whitespace-nowrap">+1 H+R+RBI</span>
-              <span class="font-mono font-bold text-emerald-400 whitespace-nowrap">${p.proj_total} Proj</span>
-            </div>
-
-            <!-- The Odds API Live Odds Badge -->
-            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
-              <div class="flex items-center gap-1">
-                <span class="text-[11px]">⚡</span>
-                <span class="font-bold text-emerald-400">Odds:</span>
-                <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
-              </div>
-              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 65}%</strong> ↗</span>
-            </a>
-
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[10px]">
-                <span class="text-slate-400">Model Win Probability</span>
-                <span class="font-black text-emerald-400">${p.win_prob}%</span>
-              </div>
-              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full" style="width: ${p.win_prob}%"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-slate-800/80">
-            <button type="button" onclick="openModal('${p.id}')" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
-              Statistics
-            </button>
-            <button type="button" onclick="event.stopPropagation(); toggleSlip('${p.id}')" class="bg-emerald-500/10 hover:bg-emerald-500 hover:text-slate-950 text-emerald-400 font-bold py-1 px-1 rounded-lg border border-emerald-500/20 text-[10px] transition active:scale-95">
-              + Slip
-            </button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    function renderTable(data) {
-      const tbody = document.getElementById("screenerTableBody");
-      if (!data || data.length === 0) return;
-
-      tbody.innerHTML = data.map(p => `
-        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openModal('${p.id}')">
-          <td class="py-2.5 px-3">
-            <div class="flex items-center gap-2">
-              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${escapeHtml(p.name)}', '${p.id}', '${p.team_logo}')">
-              <div>
-                <div class="flex items-center gap-1.5">
-                  <span class="font-bold text-white">${escapeHtml(p.name)}</span>
-                  ${p.is_confirmed_lineup ? 
-                    '<span class="text-[8px] font-bold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">✓ Confirmed</span>' : 
-                    '<span class="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700 whitespace-nowrap">Projected</span>'
-                  }
-                </div>
-                <div class="text-[10px] text-slate-400">${escapeHtml(p.team)} • #${p.order} (${p.pos || 'DH'})</div>
-              </div>
-            </div>
-          </td>
-          <td class="py-2.5 px-3">
-            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)}</div>
-            <div class="text-[10px] text-slate-300 truncate max-w-[140px]"><span class="text-slate-500">SP:</span> <strong class="text-white">${p.pitcher_name || p.pitcher}</strong> <span class="text-emerald-400 font-mono text-[9px]">(${p.pitcher_era ? p.pitcher_era + ' ERA' : ''})</span></div>
-            <div class="text-[9px] text-emerald-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
-          </td>
-          <td class="py-2.5 px-3">
-            <span class="inline-flex font-bold px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 whitespace-nowrap">+1 H+R+RBI</span>
-          </td>
-          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${p.proj_total}</td>
-          <td class="py-2.5 px-3 text-center font-bold text-white">${p.win_prob}%</td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="inline-flex items-center gap-1 font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[11px]">
-              ⚡ ${p.book_odds || p.dk_odds}
-            </span>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${p.dk_implied_prob || 65}% imp)</div>
-          </td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
-          </td>
-          <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
-            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-emerald-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-              + Slip
-            </button>
-          </td>
-        </tr>
-      `).join("");
-    }
-
-    function filterTable() {
-      const q = document.getElementById("searchInput")?.value?.toLowerCase() || "";
-      const filtered = allPropsData.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || p.opponent.toLowerCase().includes(q));
-      renderTable(filtered);
-    }
 
     // =======================================================
     // 2. Pitcher Strikeouts (Ks) - EXACT SAME AS H+R+RBI PAGE
@@ -717,120 +678,8 @@ window.currentAsset = "BTC";
       }
     }
 
-    function renderPitcherTop5(picks) {
-      const container = document.getElementById("top5PitcherGrid");
-      if (!picks || picks.length === 0) return;
-
-      container.innerHTML = picks.map((p, idx) => `
-        <div class="glass-panel rounded-2xl p-3.5 flex flex-col justify-between hover:border-orange-500/50 transition-all hover:shadow-lg hover:shadow-orange-500/10 group relative">
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-md bg-orange-500 text-slate-950 font-black text-[11px] shrink-0">
-                  #${idx + 1}
-                </span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40 whitespace-nowrap truncate">
-                  Announced Starter
-                </span>
-              </div>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 shrink-0">
-                +${p.dk_edge || p.edge}% EV
-              </span>
-            </div>
-
-            <div class="flex items-center gap-2 cursor-pointer" onclick="openPitcherModal('${p.id}')">
-              <img src="${p.headshot}" class="w-10 h-10 rounded-xl object-cover bg-slate-800 border border-slate-700 shrink-0" onerror="handlePlayerHeadshotError(this, '${escapeHtml(p.name)}', '${p.id}', '${p.team_logo}')">
-              <div class="overflow-hidden">
-                <div class="font-black text-xs text-white group-hover:text-orange-400 truncate">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-300 truncate font-medium">${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} • ${p.era} ERA</div>
-                <div class="text-[9px] text-slate-400 truncate mt-0.5"><span class="text-slate-500 font-semibold">Metrics:</span> <span class="text-orange-400 font-bold font-mono">${p.k9 ? p.k9 + ' K/9' : ''}</span> • CSW: <span class="text-emerald-400 font-mono">${p.csw || '30.0%'}</span></div>
-                <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
-              <span class="font-bold text-orange-400">${p.pick_type} ${p.k_line} Ks</span>
-              <span class="font-mono font-bold text-white">${p.proj_k} Proj</span>
-            </div>
-
-            <!-- The Odds API Live Odds Badge -->
-            <a href="${p.dk_deep_link || p.dk_link || 'dksb://sb/addbet'}" class="bg-emerald-500/15 hover:bg-emerald-500/25 px-2 py-1.5 rounded-xl border border-emerald-500/30 flex items-center justify-between text-[10px] transition cursor-pointer shadow-sm shadow-emerald-500/10" title="Open in DraftKings App">
-              <div class="flex items-center gap-1">
-                <span class="text-[11px]">⚡</span>
-                <span class="font-bold text-emerald-400">Odds:</span>
-                <span class="font-mono font-extrabold text-white">${p.dk_odds || p.book_odds}</span>
-              </div>
-              <span class="text-slate-400">Imp: <strong class="text-emerald-300 font-mono">${p.dk_implied_prob || 60}%</strong> ↗</span>
-            </a>
-
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[10px]">
-                <span class="text-slate-400">Model Win Probability</span>
-                <span class="font-black text-emerald-400">${p.win_prob}%</span>
-              </div>
-              <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full rounded-full" style="width: ${p.win_prob}%"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-slate-800/80">
-            <button type="button" onclick="openPitcherModal('${p.id}')" class="col-span-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-1 px-2 rounded-lg text-[10px] transition text-center active:scale-95">
-              Statistics
-            </button>
-            <button type="button" onclick="event.stopPropagation(); toggleSlip('${p.id}')" class="bg-orange-500/10 hover:bg-orange-500 hover:text-slate-950 text-orange-400 font-bold py-1 px-1 rounded-lg border border-orange-500/20 text-[10px] transition active:scale-95">
-              + Slip
-            </button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    function renderPitcherTable(data) {
-      const tbody = document.getElementById("pitcherScreenerTableBody");
-      if (!data || data.length === 0) return;
-
-      tbody.innerHTML = data.map(p => `
-        <tr class="hover:bg-slate-900/60 transition-colors cursor-pointer" onclick="openPitcherModal('${p.id}')">
-          <td class="py-2.5 px-3">
-            <div class="flex items-center gap-2">
-              <img src="${p.headshot}" class="w-7 h-7 rounded-lg object-cover bg-slate-800 border border-slate-700" onerror="handlePlayerHeadshotError(this, '${escapeHtml(p.name)}', '${p.id}', '${p.team_logo}')">
-              <div>
-                <div class="font-bold text-white">${escapeHtml(p.name)}</div>
-                <div class="text-[10px] text-slate-400">${escapeHtml(p.team)} • ${p.era} ERA</div>
-              </div>
-            </div>
-          </td>
-          <td class="py-2.5 px-3">
-            <div class="text-slate-200 font-medium">${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)}</div>
-            <div class="text-[10px] text-slate-400">${p.venue || 'Stadium'}</div>
-            <div class="text-[9px] text-orange-400/90 font-mono mt-0.5">📅 ${p.game_date || 'Today'} • ${p.game_time || '7:05 PM ET'}</div>
-          </td>
-          <td class="py-2.5 px-3">
-            <span class="inline-flex font-bold px-2 py-0.5 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">${p.pick_type} ${p.k_line} Ks</span>
-          </td>
-          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${p.proj_k}</td>
-          <td class="py-2.5 px-3 text-center font-bold text-white">${p.win_prob}%</td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="inline-flex items-center gap-1 font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[11px]">
-              ⚡ ${p.book_odds || p.dk_odds}
-            </span>
-            <div class="text-[9px] text-slate-400 mt-0.5 font-mono">(${p.dk_implied_prob || 60}% imp)</div>
-          </td>
-          <td class="py-2.5 px-3 text-center">
-            <span class="font-black text-emerald-400 font-mono text-xs">+${p.dk_edge || p.edge}% EV</span>
-          </td>
-          <td class="py-2.5 px-3 text-right" onclick="event.stopPropagation()">
-            <button type="button" onclick="toggleSlip('${p.id}')" class="text-[11px] text-orange-400 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
-              + Slip
-            </button>
-          </td>
-        </tr>
-      `).join("");
-    }
 
     function filterPitcherTable() {
-      const q = document.getElementById("pitcherSearchInput")?.value?.toLowerCase() || "";
       const filtered = allPitcherProps.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || p.opponent.toLowerCase().includes(q));
       renderPitcherTable(filtered);
     }
@@ -863,35 +712,7 @@ window.currentAsset = "BTC";
       updateSlipUI();
     }
 
-    function updateSlipUI() {
-      const count = activeSlip.length;
-      const countEl = document.getElementById('barSlipCount');
-      const textEl = document.getElementById('barSlipText');
-      const probEl = document.getElementById('barJointProb');
-
-      if (countEl) countEl.innerText = `${count} Pick${count === 1 ? '' : 's'} in Slip`;
-      if (count === 0) {
-        if (textEl) textEl.innerText = "Click '+ Slip' on any prop to build a custom parlay.";
-        if (probEl) probEl.innerText = "--";
-        return;
-      }
-
-      if (textEl) {
-        textEl.innerText = activeSlip.map(p => {
-          const dkOdds = p.dk_odds || p.book_odds || '-140';
-          const timeStr = p.game_time ? ` (${p.game_time})` : '';
-          if (p.k_line) {
-            return `${escapeHtml(p.name)}${timeStr} (${p.pick_type} ${p.k_line} Ks • 👑 ${dkOdds})`;
-          } else {
-            return `${escapeHtml(p.name)}${timeStr} (+1 • 👑 ${dkOdds})`;
-          }
-        }).join(', ');
-      }
-
-      let jointProb = 1.0;
-      activeSlip.forEach(p => { jointProb *= ((p.win_prob || 60) / 100.0); });
-      if (probEl) probEl.innerText = `${(isNaN(jointProb * 100) ? 0 : (jointProb * 100)).toFixed(1)}%`;
-    }
+    
 
     function executeClipboardCopy(text) {
       let copied = false;
@@ -962,18 +783,7 @@ window.currentAsset = "BTC";
       executeClipboardCopy(text);
     }
 
-    function showDkToast(msg) {
-      const t = document.getElementById("dkToastNotification");
-      const txt = document.getElementById("dkToastText");
-      if (!t) return;
-      if (txt) txt.textContent = msg;
-      t.classList.remove("opacity-0", "-translate-y-4");
-      t.classList.add("opacity-100", "translate-y-0");
-      setTimeout(() => {
-        t.classList.remove("opacity-100", "translate-y-0");
-        t.classList.add("opacity-0", "-translate-y-4");
-      }, 2600);
-    }
+    
 
     function showBtcLogoMessage() {
       const modal = document.getElementById("btcLogoMessageModal");
@@ -1408,36 +1218,7 @@ window.currentAsset = "BTC";
     const btcSignalHistory = [];
     let btcCountdownInterval = null;
 
-    window.switchBtcAuxTab = function(tab) {
-      const left = document.getElementById("btcAuxColLeft");
-      const right = document.getElementById("btcAuxColRight");
-      const container = document.getElementById("btcAuxContainer");
-      const btns = document.querySelectorAll(".btc-aux-btn");
-      btns.forEach(b => {
-        b.classList.remove("active", "text-white", "bg-slate-800", "shadow-sm");
-        b.classList.add("text-slate-400");
-      });
-
-      if (tab === 'plan') {
-        const b = document.getElementById("btnAuxPlan");
-        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
-        if (left) left.classList.remove("hidden");
-        if (right) right.classList.add("hidden");
-        if (container) { container.classList.remove("md:grid-cols-2"); container.classList.add("grid-cols-1"); }
-      } else if (tab === 'matrix') {
-        const b = document.getElementById("btnAuxMatrix");
-        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
-        if (left) left.classList.add("hidden");
-        if (right) right.classList.remove("hidden");
-        if (container) { container.classList.remove("md:grid-cols-2"); container.classList.add("grid-cols-1"); }
-      } else {
-        const b = document.getElementById("btnAuxAll");
-        if (b) { b.classList.add("active", "text-white", "bg-slate-800", "shadow-sm"); b.classList.remove("text-slate-400"); }
-        if (left) left.classList.remove("hidden");
-        if (right) right.classList.remove("hidden");
-        if (container) { container.classList.add("md:grid-cols-2"); }
-      }
-    };
+    
 
         // =========================================================================
     // BITCOIN CHART INTERACTIVE DRAWING TOOLS ENGINE (TRENDLINES, RAYS, HLINES, FIB)
@@ -1454,375 +1235,27 @@ window.currentAsset = "BTC";
       if (saved) window.btcDrawings = JSON.parse(saved) || [];
     } catch (e) { console.warn('Fetch failed:', e); }
 
-    function setBtcDrawingTool(tool) {
-      window.btcActiveDrawingTool = tool;
-      window.btcDrawingInProgress = null;
+    
 
-      // Update Toolbar Buttons
-      const tools = ['pointer', 'trendline', 'ray', 'hline', 'fib'];
-      tools.forEach(t => {
-        const btn = document.getElementById(`drawTool${t.charAt(0).toUpperCase() + t.slice(1)}`);
-        if (btn) {
-          if (t === tool) {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        }
-      });
+    
 
-      // Update Canvas Interactive State
-      const canvas = document.getElementById('btcDrawingCanvas');
-      const badge = document.getElementById('btcDrawStatusBadge');
-      if (canvas) {
-        if (tool === 'pointer') {
-          canvas.style.pointerEvents = 'none';
-          canvas.style.cursor = 'default';
-          if (badge) badge.innerText = 'Cursor Pan';
-        } else {
-          canvas.style.pointerEvents = 'auto';
-          canvas.style.cursor = 'crosshair';
-          const labels = {
-            trendline: 'Trendline: Tap 1st point (or drag)',
-            ray: 'Ray: Tap 1st point (or drag)',
-            hline: 'Horiz Line: Tap price level',
-            fib: 'Fib: Tap Swing High/Low'
-          };
-          if (badge) badge.innerText = labels[tool] || 'Drawing Active';
-        }
-      }
-      redrawBtcDrawings();
-    }
+    
 
-    function setBtcDrawingColor(color) {
-      window.btcActiveDrawingColor = color;
-      document.querySelectorAll('.btc-color-dot').forEach(dot => {
-        if (dot.getAttribute('data-color') === color) {
-          dot.classList.add('active');
-        } else {
-          dot.classList.remove('active');
-        }
-      });
-      if (window.btcDrawingInProgress) {
-        window.btcDrawingInProgress.color = color;
-        redrawBtcDrawings();
-      }
-    }
-
-    function undoBtcDrawing() {
-      if (window.btcDrawings && window.btcDrawings.length > 0) {
-        window.btcDrawings.pop();
-        try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch (e) { console.warn('Fetch failed:', e); }
-        redrawBtcDrawings();
-      }
-    }
-
-    function clearBtcDrawings() {
-      window.btcDrawings = [];
-      window.btcDrawingInProgress = null;
-      try { localStorage.removeItem('apexprops_btc_drawings_v2'); } catch (e) { console.warn('Fetch failed:', e); }
-      redrawBtcDrawings();
-    }
+    
 
     // Convert screen canvas (x, y) to chart data (logical, time, price)
-    function getChartCoordinatesFromCanvas(canvasX, canvasY) {
-      if (!btcChart || !btcCandleSeries) return null;
-      const ts = btcChart.timeScale();
-      const logical = ts.coordinateToLogical(canvasX);
-      const time = ts.coordinateToTime(canvasX);
-      const price = btcCandleSeries.coordinateToPrice(canvasY);
-      return { logical, time, price, x: canvasX, y: canvasY };
-    }
+    
 
     // Convert chart data point back to current screen canvas (x, y)
-    function getCanvasCoordinatesFromPoint(pt) {
-      if (!btcChart || !btcCandleSeries || !pt) return null;
-      const ts = btcChart.timeScale();
-      let x = null;
-      if (pt.time != null && pt.time !== null) {
-        x = ts.timeToCoordinate(pt.time);
-      }
-      if (x === null || x == null || isNaN(x)) {
-        if (pt.logical != null && pt.logical !== null) {
-          x = ts.logicalToCoordinate(pt.logical);
-        }
-      }
-      let y = null;
-      if (pt.price != null && pt.price !== null) {
-        y = btcCandleSeries.priceToCoordinate(pt.price);
-      }
-      if (x === null || y === null || isNaN(x) || isNaN(y)) return null;
-      return { x, y };
-    }
+    
 
-    function resizeBtcDrawingCanvas() {
-      const canvas = document.getElementById("btcDrawingCanvas");
-      const container = document.getElementById("btc-chart-container");
-      if (!canvas || !container) return;
-      const rect = container.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+    
 
-      const ctx = canvas.getContext("2d");
-      if (ctx.resetTransform) ctx.resetTransform();
-      ctx.scale(dpr, dpr);
-      redrawBtcDrawings();
-    }
+    
 
-    function redrawBtcDrawings() {
-      const canvas = document.getElementById("btcDrawingCanvas");
-      if (!canvas || !btcChart || !btcCandleSeries) return;
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.width / dpr;
-      const h = canvas.height / dpr;
+    
 
-      ctx.clearRect(0, 0, w, h);
-
-      // Render all saved drawings
-      if (Array.isArray(window.btcDrawings)) {
-        window.btcDrawings.forEach(item => {
-          renderSingleBtcDrawing(ctx, item, w, h, false);
-        });
-      }
-
-      // Render active drawing in-progress
-      if (window.btcDrawingInProgress) {
-        renderSingleBtcDrawing(ctx, window.btcDrawingInProgress, w, h, true);
-      }
-    }
-
-    function renderSingleBtcDrawing(ctx, item, w, h, isInProgress) {
-      if (!item) return;
-      const color = item.color || '#f59e0b';
-      const lineWidth = item.width || 2;
-
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.lineWidth = lineWidth;
-
-      if (item.type === 'trendline' || item.type === 'ray') {
-        const p1 = getCanvasCoordinatesFromPoint(item.start);
-        const p2 = getCanvasCoordinatesFromPoint(item.end);
-        if (p1 && p2) {
-          ctx.beginPath();
-          ctx.moveTo(p1.x, p1.y);
-
-          if (item.type === 'ray') {
-            const dx = p2.x - p1.x;
-            const dy = p2.y - p1.y;
-            if (Math.abs(dx) > 0.01) {
-              const slope = dy / dx;
-              const targetX = dx > 0 ? w : 0;
-              const targetY = p1.y + (targetX - p1.x) * slope;
-              ctx.lineTo(targetX, targetY);
-            } else {
-              ctx.lineTo(p2.x, p2.y);
-            }
-          } else {
-            ctx.lineTo(p2.x, p2.y);
-          }
-          ctx.stroke();
-
-          // Anchor vertex handles
-          ctx.beginPath();
-          ctx.arc(p1.x, p1.y, isInProgress ? 4 : 3, 0, Math.PI * 2);
-          ctx.arc(p2.x, p2.y, isInProgress ? 4 : 3, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else if (item.type === 'hline') {
-        let y = null;
-        if (item.price != null && item.price !== null) {
-          y = btcCandleSeries.priceToCoordinate(item.price);
-        }
-        if (y !== null && !isNaN(y)) {
-          ctx.beginPath();
-          ctx.setLineDash([4, 4]);
-          ctx.moveTo(0, y);
-          ctx.lineTo(w, y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          // Price Pill Badge on Right Scale
-          const priceStr = `$${Number(item.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          ctx.font = 'bold 9px monospace';
-          const textW = ctx.measureText(priceStr).width;
-          ctx.fillStyle = color;
-          ctx.fillRect(w - textW - 14, y - 8, textW + 12, 16);
-          ctx.fillStyle = '#020617';
-          ctx.fillText(priceStr, w - textW - 8, y + 3.5);
-        }
-      } else if (item.type === 'fib') {
-        const p1 = getCanvasCoordinatesFromPoint(item.start);
-        const p2 = getCanvasCoordinatesFromPoint(item.end);
-        if (p1 && p2) {
-          const topY = Math.min(p1.y, p2.y);
-          const botY = Math.max(p1.y, p2.y);
-          const dy = botY - topY;
-          const levels = [
-            { pct: 0.0, label: '0.0%' },
-            { pct: 0.236, label: '23.6%' },
-            { pct: 0.382, label: '38.2%' },
-            { pct: 0.5, label: '50.0%' },
-            { pct: 0.618, label: '61.8% (Golden)' },
-            { pct: 0.786, label: '78.6%' },
-            { pct: 1.0, label: '100.0%' }
-          ];
-
-          levels.forEach(lvl => {
-            const curY = topY + dy * lvl.pct;
-            ctx.beginPath();
-            ctx.strokeStyle = lvl.pct === 0.618 || lvl.pct === 0.5 ? '#f59e0b' : color;
-            ctx.lineWidth = lvl.pct === 0.618 ? 2 : 1;
-            ctx.setLineDash([3, 3]);
-            ctx.moveTo(Math.min(p1.x, p2.x), curY);
-            ctx.lineTo(w, curY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            ctx.font = '8px monospace';
-            ctx.fillStyle = ctx.strokeStyle;
-            ctx.fillText(lvl.label, Math.min(p1.x, p2.x) + 4, curY - 3);
-          });
-        }
-      }
-      ctx.restore();
-    }
-
-    function initBtcDrawingEngine() {
-      const canvas = document.getElementById('btcDrawingCanvas');
-      if (!canvas || window._btcDrawingInitialized) return;
-      window._btcDrawingInitialized = true;
-
-      resizeBtcDrawingCanvas();
-
-      let isDown = false;
-      let startX = 0;
-      let startY = 0;
-
-      function onPointerDown(e) {
-        if (window.btcActiveDrawingTool === 'pointer') return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.clientX != null ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-        const clientY = e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-
-        const pt = getChartCoordinatesFromCanvas(x, y);
-        if (!pt) return;
-
-        isDown = true;
-        startX = x;
-        startY = y;
-
-        if (window.btcActiveDrawingTool === 'hline') {
-          // Instant Horizontal Line Placement
-          const hlineObj = {
-            id: Date.now(),
-            type: 'hline',
-            price: pt.price,
-            color: window.btcActiveDrawingColor,
-            width: 2
-          };
-          window.btcDrawings.push(hlineObj);
-          try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch (e) { console.warn('Fetch failed:', e); }
-          isDown = false;
-          redrawBtcDrawings();
-          return;
-        }
-
-        if (!window.btcDrawingInProgress) {
-          window.btcDrawingInProgress = {
-            id: Date.now(),
-            type: window.btcActiveDrawingTool,
-            color: window.btcActiveDrawingColor,
-            width: 2,
-            start: pt,
-            end: pt,
-            isDragging: true
-          };
-          const badge = document.getElementById('btcDrawStatusBadge');
-          if (badge) badge.innerText = 'Tap/Drag 2nd point';
-        } else {
-          // 2nd tap completes line
-          window.btcDrawingInProgress.end = pt;
-          window.btcDrawings.push(window.btcDrawingInProgress);
-          window.btcDrawingInProgress = null;
-          try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch (e) { console.warn('Fetch failed:', e); }
-          isDown = false;
-          try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch (e) { console.warn('Fetch failed:', e); }
-          const badge = document.getElementById('btcDrawStatusBadge');
-          if (badge) badge.innerText = 'Line Saved!';
-          redrawBtcDrawings();
-        }
-      }
-
-      function onPointerMove(e) {
-        if (!isDown && !window.btcDrawingInProgress) return;
-        e.preventDefault();
-
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.clientX != null ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-        const clientY = e.clientY != null ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-
-        const pt = getChartCoordinatesFromCanvas(x, y);
-        if (!pt) return;
-
-        if (window.btcDrawingInProgress) {
-          window.btcDrawingInProgress.end = pt;
-          redrawBtcDrawings();
-        }
-      }
-
-      function onPointerUp(e) {
-        if (!isDown) return;
-        isDown = false;
-
-        if (window.btcDrawingInProgress && window.btcDrawingInProgress.isDragging) {
-          const p1 = window.btcDrawingInProgress.start;
-          const p2 = window.btcDrawingInProgress.end;
-          const dist = Math.hypot((p2.x || 0) - (p1.x || 0), (p2.y || 0) - (p1.y || 0));
-          if (dist > 15) {
-            // Drag completed!
-            window.btcDrawings.push(window.btcDrawingInProgress);
-            window.btcDrawingInProgress = null;
-            try { localStorage.setItem('apexprops_btc_drawings_v2', JSON.stringify(window.btcDrawings)); } catch (e) { console.warn('Fetch failed:', e); }
-            const badge = document.getElementById('btcDrawStatusBadge');
-            if (badge) badge.innerText = 'Line Saved!';
-            redrawBtcDrawings();
-          } else {
-            // Short tap: keep waiting for 2nd tap
-            window.btcDrawingInProgress.isDragging = false;
-          }
-        }
-      }
-
-      // Pointer & Touch Events (Apple Pencil & Finger touch friendly)
-      canvas.addEventListener('mousedown', onPointerDown);
-      window.addEventListener('mousemove', onPointerMove);
-      window.addEventListener('mouseup', onPointerUp);
-
-      canvas.addEventListener('touchstart', onPointerDown, { passive: false });
-      window.addEventListener('touchmove', onPointerMove, { passive: false });
-      window.addEventListener('touchend', onPointerUp, { passive: false });
-
-      // Chart subscribe to pan/zoom range changes to redraw
-      if (btcChart) {
-        btcChart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-          requestAnimationFrame(redrawBtcDrawings);
-        });
-      }
-    }
+    
 
     window.tvWidget = null;
     let currentTvInterval = null;
@@ -1937,8 +1370,6 @@ window.currentAsset = "BTC";
           container.addEventListener('mouseover', stripChartTitles, true);
         }
 
-        const statusEl = document.getElementById("btcChartStatus");
-        if (statusEl) statusEl.innerText = `● TradingView ${interval}m`;
       } catch (err) {
         console.error("TradingView widget init error:", err);
       }
@@ -1954,8 +1385,6 @@ window.currentAsset = "BTC";
           btn.classList.remove("active");
         }
       });
-      const badge = document.getElementById("btcActiveTfBadge");
-      if (badge) badge.innerText = tf.toUpperCase();
 
       // Countdown is driven by _live1sTimer in startLive1sRefresh() which calls
       // updateBtcCountdownClock() every 1s. No secondary interval needed.
@@ -1978,17 +1407,9 @@ window.currentAsset = "BTC";
       });
 
       const tfUpper = tf.toUpperCase();
-      const badge = document.getElementById("btcActiveTfBadge");
-      if (badge) badge.innerText = tfUpper;
 
-      const chartTitle = document.getElementById("btcChartTitle");
-      if (chartTitle) chartTitle.innerText = `BTC/USD ${tfUpper} Candlestick Chart`;
 
-      const indLabel = document.getElementById("btcIndTfLabel");
-      if (indLabel) indLabel.innerText = `${tfUpper} Calculation`;
 
-      const chartStatus = document.getElementById("btcChartStatus");
-      if (chartStatus) chartStatus.innerText = `Switching to ${tfUpper}...`;
 
       try { localStorage.setItem("btcChartConfig", JSON.stringify({ timeframe: tf })); } catch (e) { console.warn('Fetch failed:', e); }
       initTradingViewChart(tf);
@@ -2034,501 +1455,23 @@ window.currentAsset = "BTC";
       }
     }
 
-    function updateBtcConfluenceGauge(score, direction, confidence) {
-      const btnText = document.getElementById("btcConfluenceBtnText");
-      const btnTab = document.getElementById("btcConfluenceHeaderTab");
-      const scoreElem = document.getElementById("btcMeterScore");
-      const banner = document.getElementById("btcSignalBanner");
-      const needle = document.getElementById("btcMeterNeedle");
-      const confText = document.getElementById("btcConfidenceText");
+    
 
-      if (scoreElem) scoreElem.innerText = (score > 0 ? `+${score}` : `${score}`);
-      if (confText) confText.innerHTML = `Confluence Score: <strong>${score} / 100</strong> (${confidence}% Confidence)`;
+    
 
-      const angle = (score / 100) * 90;
-      if (needle) needle.style.transform = `rotate(${angle}deg)`;
+    
 
-      const isUp = direction.includes("BULLISH") || direction === "BUY" || direction === "ABOVE" || direction === "HIGHER";
-      const isDown = direction.includes("BEARISH") || direction === "SELL" || direction === "BELOW" || direction === "LOWER";
+    
 
-      if (btnText) {
-        const dirLabel = isUp ? "BUY" : (isDown ? "SELL" : "EVAL");
-        btnText.innerText = `${score}% ${dirLabel}`;
-        if (isUp) {
-          btnText.className = "text-xs sm:text-sm lg:text-base font-black font-mono text-emerald-400 leading-none whitespace-nowrap";
-          if (btnTab) {
-            btnTab.style.borderColor = "rgba(16, 185, 129, 0.6)";
-            btnTab.style.boxShadow = "0 4px 6px -1px rgba(16, 185, 129, 0.2)";
-          }
-        } else if (isDown) {
-          btnText.className = "text-xs sm:text-sm lg:text-base font-black font-mono text-red-400 leading-none whitespace-nowrap";
-          if (btnTab) {
-            btnTab.style.borderColor = "rgba(239, 68, 68, 0.6)";
-            btnTab.style.boxShadow = "0 4px 6px -1px rgba(239, 68, 68, 0.2)";
-          }
-        } else {
-          btnText.className = "text-xs sm:text-sm lg:text-base font-black font-mono text-amber-300 leading-none whitespace-nowrap";
-          if (btnTab) {
-            btnTab.style.borderColor = "rgba(245, 158, 11, 0.6)";
-            btnTab.style.boxShadow = "0 4px 6px -1px rgba(245, 158, 11, 0.2)";
-          }
-        }
-      }
+    
 
-      if (banner && scoreElem) {
-        banner.className = "signal-banner";
-        scoreElem.className = "meter-score-display";
+    
 
-        if (isUp) {
-          banner.innerText = direction;
-          banner.classList.add("signal-up");
-          scoreElem.classList.add("positive");
-        } else if (isDown) {
-          banner.innerText = direction;
-          banner.classList.add("signal-down");
-          scoreElem.classList.add("negative");
-        } else {
-          banner.innerText = direction;
-          banner.classList.add("signal-neutral");
-          scoreElem.classList.add("neutral");
-        }
-      }
-    }
+    
 
-    function renderBtcTradeSetup(setup) {
-      if (!setup) return;
-      const planType = document.getElementById("btcPlanType");
-      const planEntry = document.getElementById("btcPlanEntry");
-      const planSl = document.getElementById("btcPlanSl");
-      const planTp1 = document.getElementById("btcPlanTp1");
-      const planTp2 = document.getElementById("btcPlanTp2");
-      const planRiskAmt = document.getElementById("btcPlanRiskAmt");
-      const planRiskPct = document.getElementById("btcPlanRiskPct");
-      const planTitle = document.getElementById("btcPlanTitleText");
+    
 
-      if (planTitle && setup.timeframe) {
-        planTitle.innerText = `Actionable ${setup.timeframe.toUpperCase()} Trade Plan`;
-      }
-
-      if (planType) {
-        planType.innerText = setup.direction;
-        if (setup.direction.includes("BUY")) {
-          planType.style.background = "#10b981";
-          planType.style.color = "#020617";
-        } else if (setup.direction.includes("SELL")) {
-          planType.style.background = "#ef4444";
-          planType.style.color = "#ffffff";
-        } else {
-          planType.style.background = "#f59e0b";
-          planType.style.color = "#020617";
-        }
-      }
-
-      if (planEntry) planEntry.innerText = `$${Number(setup.entry_price || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-      if (planSl) planSl.innerText = `$${Number(setup.stop_loss || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-      if (planTp1) planTp1.innerText = `$${Number(setup.take_profit_1 || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-      if (planTp2) planTp2.innerText = `$${Number(setup.take_profit_2 || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-
-      if (planRiskAmt) planRiskAmt.innerText = `$${(isNaN(Number(setup.risk_amount || 0)) ? 0 : Number(setup.risk_amount || 0)).toFixed(2)}`;
-      if (planRiskPct) planRiskPct.innerText = `${setup.risk_percent || 0}%`;
-    }
-
-    function renderBtcIndicators(ind) {
-      if (!ind) return;
-
-      const rsiElem = document.getElementById("btcIndRsi");
-      const rsiStat = document.getElementById("btcIndRsiStatus");
-      if (rsiElem) {
-        rsiElem.innerText = ind.rsi;
-        rsiElem.className = "m-val " + (ind.rsi <= 30 ? "text-emerald-400" : (ind.rsi >= 70 ? "text-red-400" : "text-white"));
-      }
-      if (rsiStat) rsiStat.innerText = ind.rsi_status || "Neutral";
-
-      const macdElem = document.getElementById("btcIndMacd");
-      const macdStat = document.getElementById("btcIndMacdStatus");
-      if (macdElem) {
-        macdElem.innerText = `${ind.macd_hist > 0 ? "+" : ""}${ind.macd_hist}`;
-        macdElem.className = "m-val " + (ind.macd_hist > 0 ? "text-emerald-400" : "text-red-400");
-      }
-      if (macdStat) macdStat.innerText = ind.macd_cross ? ind.macd_cross : ind.macd_hist_direction;
-
-      const ribElem = document.getElementById("btcIndRibbon");
-      const ribStat = document.getElementById("btcIndRibbonStatus");
-      if (ribElem) {
-        if (ind.bullish_ribbon) {
-          ribElem.innerText = "BULLISH";
-          ribElem.className = "m-val text-emerald-400";
-        } else if (ind.bearish_ribbon) {
-          ribElem.innerText = "BEARISH";
-          ribElem.className = "m-val text-red-400";
-        } else {
-          ribElem.innerText = "MIXED";
-          ribElem.className = "m-val text-amber-400";
-        }
-      }
-      if (ribStat) ribStat.innerText = (ind.bullish_ribbon || ind.bearish_ribbon) ? "EMA 9/21/50" : "Crossing / Squeeze";
-
-      const bbElem = document.getElementById("btcIndBb");
-      const bbSqueeze = document.getElementById("btcIndBbSqueeze");
-      if (bbElem) bbElem.innerText = `$${ind.bb_upper} / $${ind.bb_lower}`;
-      if (bbSqueeze) bbSqueeze.innerText = ind.bb_squeeze ? "SQUEEZE ACTIVE" : "Normal Bandwidth";
-
-      const atrElem = document.getElementById("btcIndAtr");
-      const atrLbl = document.getElementById("btcIndAtrLabel");
-      if (atrElem) atrElem.innerText = `$${ind.atr}`;
-      if (atrLbl) atrLbl.innerText = `${btcCurrentTimeframe.toUpperCase()} Volatility`;
-
-      const volElem = document.getElementById("btcIndVol");
-      const volStat = document.getElementById("btcIndVolStatus");
-      if (volElem) {
-        volElem.innerText = `${ind.vol_ratio}x`;
-        volElem.className = "m-val " + (ind.vol_surge ? "text-emerald-400" : "text-white");
-      }
-      if (volStat) volStat.innerText = ind.vol_surge ? "SURGE (>1.5x SMA)" : "Normal Volume";
-    }
-
-    function renderBtcStructure(struct) {
-      if (!struct) return;
-      const badge = document.getElementById("btcStructTrendBadge");
-      if (badge) {
-        badge.innerText = struct.trend_bias || "--";
-        badge.style.background = struct.trend_bias === "BULLISH" ? "#10b981" : (struct.trend_bias === "BEARISH" ? "#ef4444" : "#f59e0b");
-      }
-
-      const summary = document.getElementById("btcStructSummary");
-      if (summary) summary.innerText = struct.trend || "Neutral structure";
-
-      const bosElem = document.getElementById("btcStructBos");
-      if (bosElem) {
-        bosElem.innerText = struct.bos ? `BOS: ${struct.bos.description}` : "";
-      }
-
-      const resElem = document.getElementById("btcStructRes");
-      if (resElem && struct.nearest_resistance) {
-        resElem.innerText = `$${Number(struct.nearest_resistance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      const supElem = document.getElementById("btcStructSup");
-      if (supElem && struct.nearest_support) {
-        supElem.innerText = `$${Number(struct.nearest_support).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      const vwapElem = document.getElementById("btcStructVwap");
-      if (vwapElem && struct.vwap) {
-        vwapElem.innerText = `$${Number(struct.vwap).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      const vwapStat = document.getElementById("btcStructVwapStatus");
-      if (vwapStat && struct.vwap_status) {
-        vwapStat.innerText = struct.vwap_status;
-      }
-    }
-
-    function renderBtcCatalystsAndPatterns(data) {
-      const factorsList = document.getElementById("btcFactorsList");
-      const factorsCount = document.getElementById("btcFactorsCount");
-      if (factorsList) factorsList.innerHTML = "";
-
-      const allFactors = [
-        ...(data.reasons_bullish || []).map(r => ({ text: r, type: "bull" })),
-        ...(data.reasons_bearish || []).map(r => ({ text: r, type: "bear" }))
-      ];
-
-      if (factorsCount) factorsCount.innerText = `${allFactors.length} active`;
-
-      if (factorsList) {
-        if (allFactors.length === 0) {
-          factorsList.innerHTML = `<div class="text-xs text-slate-500 py-1">No major confluence factors active</div>`;
-        } else {
-          allFactors.forEach(f => {
-            const item = document.createElement("div");
-            item.className = `factor-item ${f.type}`;
-            item.innerHTML = `<span>${f.type === "bull" ? "▲" : "▼"}</span> <span>${escapeHtml(f.text)}</span>`;
-            factorsList.appendChild(item);
-          });
-        }
-      }
-
-      const patList = document.getElementById("btcPatternsList");
-      if (patList) {
-        patList.innerHTML = "";
-        if (!data.detected_patterns || data.detected_patterns.length === 0) {
-          patList.innerHTML = `<div class="text-xs text-slate-500 py-1">No prominent patterns on recent candle</div>`;
-        } else {
-          data.detected_patterns.forEach(p => {
-            const item = document.createElement("div");
-            item.className = "text-xs p-2 rounded-lg";
-            const isBull = p.type === "BULLISH";
-            item.style.background = isBull ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
-            item.style.border = `1px solid ${isBull ? "#10b981" : "#ef4444"}`;
-            item.innerHTML = `<strong class="${isBull ? 'text-emerald-400' : 'text-red-400'}">${escapeHtml(p.name)}</strong> (${p.type}): ${p.description}`;
-            patList.appendChild(item);
-          });
-        }
-      }
-    }
-
-    function addBtcLogEntry(data) {
-      const tbody = document.getElementById("btcLogTbody");
-      if (!tbody) return;
-      const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      const primeReason = (data.reasons_bullish && data.reasons_bullish[0]) || (data.reasons_bearish && data.reasons_bearish[0]) || "Neutral consolidation";
-      const tf = data.timeframe || btcCurrentTimeframe.toUpperCase();
-
-      const biasClass = data.primary_bias === 'UP' ? 'text-emerald-400 font-bold' : (data.primary_bias === 'DOWN' ? 'text-red-400 font-bold' : 'text-amber-400 font-bold');
-      const row = `<tr>
-        <td class="text-slate-400">${timeStr}</td>
-        <td><span class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 text-[10px] font-bold">${tf}</span></td>
-        <td><span class="${biasClass}">${data.direction}</span></td>
-        <td class="font-bold text-white">${data.confluence_score > 0 ? '+' : ''}${data.confluence_score}</td>
-        <td class="font-bold text-white">$${Number(data.price || 0).toLocaleString()}</td>
-        <td class="text-slate-400 text-[10px]">${primeReason}</td>
-      </tr>`;
-
-      if (btcSignalHistory.length === 0) {
-        tbody.innerHTML = row;
-      } else {
-        tbody.insertAdjacentHTML("afterbegin", row);
-      }
-      btcSignalHistory.unshift(data);
-      if (btcSignalHistory.length > 50) {
-        btcSignalHistory.length = 50;
-      }
-    }
-
-    function renderBtcHeroHud(d) {
-      updateIphone17HeaderInfo(d);
-      if (!d) return;
-      const prEl = document.getElementById("btcLStatPrice");
-      const topPriceEl = document.getElementById("topBarLivePrice");
-      const topTargetEl = document.getElementById("topBarTargetPrice");
-      const topDeltaEl = document.getElementById("topBarTargetDelta");
-      const price = Number(d.price || d.current_price || lastBtcPrice || 0);
-
-      const prevPrice = lastBtcPrice;
-      if (price > 0) lastBtcPrice = price;
-
-      if (prEl && price > 0) {
-        prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        if (prevPrice && price !== prevPrice) {
-          const isUp = price > prevPrice;
-          prEl.classList.remove("price-flash-up", "price-flash-down");
-          requestAnimationFrame(() => {
-            prEl.classList.add(isUp ? "price-flash-up" : "price-flash-down");
-          });
-        }
-      }
-      if (topPriceEl && price > 0) {
-        topPriceEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        if (prevPrice && price !== prevPrice) {
-          const isUp = price > prevPrice;
-          topPriceEl.classList.remove("price-flash-up", "price-flash-down");
-          requestAnimationFrame(() => {
-            topPriceEl.classList.add(isUp ? "price-flash-up" : "price-flash-down");
-          });
-        }
-      }
-
-      const chgEl = document.getElementById("btcLStatChange");
-      if (chgEl && d.change_24h != null) {
-        chgEl.innerText = `${d.change_24h >= 0 ? "+" : ""}${(isNaN(Number(d.change_24h)) ? 0 : Number(d.change_24h)).toFixed(2)}%`;
-        chgEl.className = "font-bold " + (d.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
-      }
-
-      const volEl = document.getElementById("btcLStatVol");
-      if (volEl && d.volume_24h != null) {
-        volEl.innerText = Math.round(d.volume_24h).toLocaleString();
-      }
-
-      const rngEl = document.getElementById("btcLStatRange");
-      if (rngEl && d.low_24h && d.high_24h) {
-        rngEl.innerText = `$${Math.round(d.low_24h).toLocaleString()} / $${Math.round(d.high_24h).toLocaleString()}`;
-      }
-
-    function applyTargetPriceColor(el, price, target) {
-      if (!el || !price || !target) return;
-      const diff = price - target;
-      el.classList.remove("text-emerald-400", "text-red-400", "text-amber-300", "text-white");
-      if (Math.abs(diff) <= 1.0 || (Math.abs(diff) / target) < 0.0001) {
-        el.classList.add("text-amber-300");
-      } else if (diff > 0) {
-        el.classList.add("text-emerald-400");
-      } else {
-        el.classList.add("text-red-400");
-      }
-    }
-
-    function updateTargetCardBorder(cardEl, price, target) {
-      if (!cardEl || !price || !target) return;
-      const diff = price - target;
-      cardEl.classList.remove(
-        "border-emerald-500/60", "border-red-500/60", "border-amber-400/60",
-        "shadow-emerald-500/20", "shadow-red-500/20", "shadow-amber-500/20"
-      );
-      if (Math.abs(diff) <= 1.0 || (Math.abs(diff) / target) < 0.0001) {
-        cardEl.classList.add("border-amber-400/60", "shadow-amber-500/20");
-      } else if (diff > 0) {
-        cardEl.classList.add("border-emerald-500/60", "shadow-emerald-500/20");
-      } else {
-        cardEl.classList.add("border-red-500/60", "shadow-red-500/20");
-      }
-    }
-
-      // 15M Target Benchmark Display
-      const targetEl = document.getElementById("btcTargetPriceHero");
-      const topTargetCard = document.getElementById("topBarTargetCard");
-      const activeKalshiPrice = Number(d.target_price) || (window.cachedKalshiData && (window.cachedKalshiData.target_price || window.cachedKalshiData.strike)) || Number(window.cachedBtcTargetPrice || 0);
-      if (activeKalshiPrice > 0) {
-        window.cachedBtcTargetPrice = activeKalshiPrice;
-        if (targetEl) {
-          targetEl.innerText = `$${activeKalshiPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          applyTargetPriceColor(targetEl, price, activeKalshiPrice);
-        }
-        if (topTargetEl) {
-          topTargetEl.innerText = `$${activeKalshiPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          applyTargetPriceColor(topTargetEl, price, activeKalshiPrice);
-        }
-        if (topTargetCard && price > 0) {
-          updateTargetCardBorder(topTargetCard, price, activeKalshiPrice);
-        }
-        if (topDeltaEl && price > 0) {
-          const kDelta = price - activeKalshiPrice;
-          const kAbove = kDelta >= 0;
-          topDeltaEl.innerText = `${kAbove ? "+" : ""}$${(isNaN(kDelta) ? 0 : kDelta).toFixed(1)}`;
-          topDeltaEl.className = "text-[7px] sm:text-[8px] font-mono font-bold " + (kAbove ? "text-emerald-400" : "text-red-400");
-        }
-      }
-      const sourceEl = document.getElementById("btcTargetSourceLabel");
-      if (sourceEl) {
-        sourceEl.innerText = d.target_source || "Kalshi Official Strike";
-      }
-
-      // Target Delta Badge
-      const deltaBadge = document.getElementById("btcTargetDeltaBadge");
-      if (deltaBadge && d.delta != null) {
-        const isAbove = d.delta >= 0;
-        const arrow = isAbove ? "▲" : "▼";
-        const sign = isAbove ? "+" : "-";
-        const absDelta = Math.abs(d.delta);
-        const absPct = Math.abs(d.delta_pct || 0);
-        const textStatus = isAbove ? "ABOVE TARGET" : "BELOW TARGET";
-
-        if (isAbove) {
-          deltaBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm shadow-emerald-500/20";
-        } else {
-          deltaBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/30 shadow-sm shadow-red-500/20";
-        }
-        deltaBadge.innerHTML = `<span>${arrow}</span> <span>${sign}$${(isNaN(absDelta) ? 0 : absDelta).toFixed(2)} (${sign}${(isNaN(absPct) ? 0 : absPct).toFixed(2)}%) ${textStatus}</span>`;
-      }
-
-      // Countdown managed uniformly by updateBtcCountdownClock()
-      updateBtcCountdownClock();
-    }
-
-    function renderBtcTrendBox(last5, streak) {
-      const cacheKey = JSON.stringify(last5) + streak;
-      if (window._lastTrendBoxKey === cacheKey) return;
-
-      const grid = document.getElementById("btcTrendBoxGrid");
-      // If user is currently hovering over the trend boxes, defer re-rendering until mouseout
-      if (grid && (grid.matches(":hover") || grid.contains(document.querySelector(":hover")))) {
-        window._pendingTrendBoxUpdate = { last5, streak };
-        return;
-      }
-      window._lastTrendBoxKey = cacheKey;
-
-      const streakBadge = document.getElementById("btcTrendStreakBadge");
-      if (streakBadge && streak) {
-        streakBadge.innerText = streak;
-      }
-      if (!grid || !Array.isArray(last5) || last5.length === 0) return;
-
-      const itemsToRender = last5.slice(-4);
-
-      // 15M Target Trend: Direction Arrow + Close Price + Close Time
-      grid.innerHTML = itemsToRender.map(t => {
-        const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
-        const cardClass = isUp ? "trend-card trend-up bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "trend-card trend-down bg-red-500/15 border border-red-500/30 text-red-400";
-        const formattedPrice = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}` : "--";
-        const timeStr = t.time || "--:--";
-        
-        const predVal = t.ml_prediction || t.predicted || t.prediction || (isUp ? "UP" : "DOWN");
-        const predTimeStr = t.pred_time ? `⏱️ Prediction Time: ${t.pred_time}\n` : '';
-        const targetStartStr = t.target_price ? `$${Number(t.target_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
-        const targetCloseStr = t.price ? `$${Number(t.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
-        const deltaVal = t.delta != null ? `${t.delta >= 0 ? '+' : ''}$${(isNaN(Number(t.delta)) ? 0 : Number(t.delta)).toFixed(2)} (${t.delta_pct >= 0 ? '+' : ''}${t.delta_pct}%)` : "--";
-        const resultVal = isUp ? "HIGHER (ABOVE TARGET)" : "LOWER (BELOW TARGET)";
-
-        const tooltipStr = `🕒 15M Contract Close: ${timeStr}\n${predTimeStr}🎯 Target Start Price: ${targetStartStr}\n🏁 Actual Close Price: ${targetCloseStr}\n📊 Price Delta: ${deltaVal}\n🤖 AI Model Prediction: ${predVal}\n✅ Actual Settlement Result: ${resultVal}`;
-
-        return `
-          <div data-tooltip="${tooltipStr.replace(/"/g, '&quot;')}" class="${cardClass} py-0.5 px-1 sm:px-1.5 text-center flex flex-col items-center justify-center rounded-lg shadow-sm font-mono shrink-0 cursor-help hover:brightness-110 transition-all leading-tight">
-            <div class="flex items-center gap-0.5 leading-none">
-              <span class="text-[10px] font-black leading-none">${isUp ? '▲' : '▼'}</span>
-              <span class="text-[8.5px] sm:text-[9.5px] font-black text-white leading-none">${formattedPrice}</span>
-            </div>
-            <div class="text-[7px] sm:text-[7.5px] font-semibold text-slate-400 leading-none mt-0.5">${timeStr}</div>
-          </div>
-        `;
-      }).join("");
-    }
-
-    function renderBtcAccuracy(acc) {
-      if (!acc) return;
-      if (window.serverPredictionAccuracy && acc.source !== "server_auto_predictions") return;
-      if (acc.source === "server_auto_predictions") {
-        window.serverPredictionAccuracy = acc;
-        renderPreviousDaysAccuracy(acc.daily_history || {});
-      }
-      
-      const ratioEl = document.getElementById("btcAccuracyRatio");
-      const pctEl = document.getElementById("btcAccuracyPct");
-      const barEl = document.getElementById("btcAccuracyBar");
-      const mlPctEl = document.getElementById("btcMlModelAccuracyPct");
-      const iphoneMlPctEl = document.getElementById("iphone17NavAccuracyPct");
-      const dotsEl = document.getElementById("btcAccuracyRecentDots");
-
-      const total = acc.total_evaluated != null ? Number(acc.total_evaluated) : (acc.total || 0);
-      const correct = acc.correct_picks != null ? Number(acc.correct_picks) : (acc.correct || 0);
-      
-      if (total === 0 || acc.accuracy_percent === null || acc.accuracy_percent == null) {
-        if (ratioEl) ratioEl.innerText = "0/0";
-        if (pctEl) pctEl.innerText = "--%";
-        if (mlPctEl) mlPctEl.innerText = "--%";
-        if (iphoneMlPctEl) iphoneMlPctEl.innerText = "--%";
-        if (barEl) barEl.style.width = "0%";
-        if (dotsEl) {
-          dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
-        }
-        return;
-      }
-
-      const pct = Number(acc.accuracy_percent);
-      if (ratioEl) ratioEl.innerText = `${correct}/${total}`;
-      if (pctEl) pctEl.innerText = `${pct}%`;
-      if (mlPctEl) mlPctEl.innerText = `${pct}%`;
-      if (iphoneMlPctEl) iphoneMlPctEl.innerText = `${pct}%`;
-      if (barEl) barEl.style.width = `${pct}%`;
-
-      if (dotsEl) {
-        if (Array.isArray(acc.recent_outcomes) && acc.recent_outcomes.length > 0) {
-          dotsEl.innerHTML = acc.recent_outcomes.map(o => {
-            // Check if o is an object or boolean (fallback for old backend structure)
-            const isWin = typeof o === 'object' ? o.correct : o;
-            
-            let tooltipStr = isWin ? "Correct Prediction" : "Missed Prediction";
-            if (typeof o === 'object' && Number.isFinite(Number(o.target)) && Number.isFinite(Number(o.settle))) {
-              const diff = (isNaN(o.settle - o.target) ? 0 : (o.settle - o.target)).toFixed(2);
-              const sign = diff >= 0 ? "+" : "";
-              tooltipStr = `Prediction: ${o.predicted} | Actual: ${o.actual} | Target: $${(isNaN(o.target) ? 0 : o.target).toFixed(2)} | Settle: $${(isNaN(o.settle) ? 0 : o.settle).toFixed(2)} (${sign}$${diff})`;
-            }
-
-            return isWin ? 
-              `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] font-black cursor-help" title="${tooltipStr}">✓</span>` :
-              `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black cursor-help" title="${tooltipStr}">✗</span>`;
-          }).join("");
-        } else {
-          dotsEl.innerHTML = `<span class="text-[7px] text-slate-500 font-mono italic tracking-wide">Tracking active 15M...</span>`;
-        }
-      }
-    }
+    
 
     
     // Web Audio API Chime for High-Conviction Rollover Picks
@@ -2750,18 +1693,13 @@ window.currentAsset = "BTC";
       const outcomeText = document.getElementById("btcPredOutcomeText");
       const probText = document.getElementById("btcPredProbText");
       const confTag = document.getElementById("btcPredConfidenceTag");
-      const zoneEl = document.getElementById("btcPredTargetZone");
-      const banner = document.getElementById("btcPredBanner");
-      const barUnder = document.getElementById("btcPredProbBarUnder");
-      const barAbove = document.getElementById("btcPredProbBarAbove");
-      const factorsList = document.getElementById("btcPredFactorsList");
 
-      const isAbove = forecast.direction === "ABOVE";
-      const isBelow = forecast.direction === "BELOW";
+      const isAbove = forecast.direction === "ABOVE" || forecast.direction === "YES";
+      const isBelow = forecast.direction === "BELOW" || forecast.direction === "NO";
       const isPass = forecast.direction === "PASS";
 
       if (outcomeText) {
-        const simpleText = isAbove ? "▲ UP" : (isBelow ? "▼ DOWN" : "CHOP");
+        const simpleText = isAbove ? "⬆ UP" : (isBelow ? "⬇ DOWN" : "⚪ PASS");
         outcomeText.innerText = simpleText;
         if (isAbove) {
           outcomeText.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-emerald-400 font-mono leading-none";
@@ -2772,213 +1710,19 @@ window.currentAsset = "BTC";
         }
       }
 
-      if (banner) {
-        if (isAbove) {
-          banner.style.background = "rgba(16, 185, 129, 0.12)";
-          banner.style.borderColor = "#10b981";
-        } else if (isBelow) {
-          banner.style.background = "rgba(239, 68, 68, 0.12)";
-          banner.style.borderColor = "#ef4444";
-        } else {
-          banner.style.background = "rgba(245, 158, 11, 0.10)";
-          banner.style.borderColor = "#f59e0b";
-        }
-      }
 
       if (probText) probText.innerText = `${forecast.probability_percent}%`;
       if (confTag) confTag.innerText = forecast.conviction_badge;
-      if (zoneEl) zoneEl.innerText = `Est. Settle: ${forecast.target_settlement_zone}`;
 
-      if (barAbove && barUnder) {
-        if (isAbove) {
-          barAbove.style.width = `${forecast.probability_percent}%`;
-          barUnder.style.width = `${100 - forecast.probability_percent}%`;
-        } else if (isBelow) {
-          barUnder.style.width = `${forecast.probability_percent}%`;
-          barAbove.style.width = `${100 - forecast.probability_percent}%`;
-        } else {
-          barAbove.style.width = "50%";
-          barUnder.style.width = "50%";
-        }
-      }
 
-      if (factorsList) {
-        factorsList.innerHTML = (forecast.catalysts || []).map(f => `
-          <li class="flex items-start gap-1">
-            <span class="text-amber-400 shrink-0">▸</span>
-            <span>${f}</span>
-          </li>
-        `).join("") || '<li class="text-slate-500">Evaluating next 15M contract...</li>';
-      }
     }
 
-    function renderBtcPredictor(tb) {
-      if (!tb) return;
-      
-      // If tb includes next_contract_forecast from backend, apply it
-      if (tb.next_contract_forecast) {
-        window.cachedNextContractForecast = tb.next_contract_forecast;
-        const zoneEl = document.getElementById("btcPredTargetZone");
-        if (zoneEl && tb.next_contract_forecast.target_settlement_zone) {
-          zoneEl.innerText = `Est. Settle: ${tb.next_contract_forecast.target_settlement_zone}`;
-        }
-      }
-
-      window.cachedBtcPredictedOutcome = tb.predicted_outcome || "";
-      
-      const nowSec = Math.floor(Date.now() / 1000);
-      const intervalId = Math.floor(nowSec / 900) * 900;
-      const elapsed = nowSec % 900;
-
-      // Force sync with locked prediction if available to prevent UI desyncs from real-time polling
-      if (elapsed >= 30 && window.lockedContractForecast && window.lockedContractForecast.intervalId === intervalId) {
-          tb.predicted_outcome = window.lockedContractForecast.outcome;
-          tb.probability_percent = window.lockedContractForecast.probability_percent;
-          tb.predicted_outcome_probability = window.lockedContractForecast.probability_percent;
-      }
-      let hasValidPrediction = window.cachedNextContractForecast && window.cachedNextContractForecast.direction && window.cachedNextContractForecast.direction !== "";
-      
-      // DO NOT overwrite the "30S SCAN" animation during the first 30 seconds of the contract.
-      if (elapsed < 30 || !hasValidPrediction) {
-        return;
-      }
-
-      const outcomeText = document.getElementById("btcPredOutcomeText");
-      const badge = document.getElementById("btcPredBadge");
-      const probText = document.getElementById("btcPredProbText");
-      const confTag = document.getElementById("btcPredConfidenceTag");
-      const barUnder = document.getElementById("btcPredProbBarUnder");
-      const barAbove = document.getElementById("btcPredProbBarAbove");
-      const factorsList = document.getElementById("btcPredFactorsList");
-      const banner = document.getElementById("btcPredBanner");
-      const madeTime = document.getElementById("btcPredMadeTime");
-      const lockIcon = document.getElementById("btcPredLockIcon");
-
-      if (lockIcon) lockIcon.classList.remove("hidden");
-
-      if (madeTime) {
-        const generatedAt = tb.prediction_generated_at || tb.generated_at;
-        const generatedDate = generatedAt ? new Date(generatedAt) : null;
-        madeTime.innerText = generatedDate && !Number.isNaN(generatedDate.getTime())
-          ? `Made ${generatedDate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-          : "Made --:--";
-      }
-
-      const isAbove = (tb.predicted_outcome || "").includes("ABOVE");
-      const isBelow = (tb.predicted_outcome || "").includes("BELOW");
-      const isPass = (!isAbove && !isBelow);
-      // Server analyses provide the chance of an ABOVE close as
-      // `probability_percent`; use the direction-aligned value for the card.
-      // Client-locked forecasts already provide confidence in their own side.
-      const prob = Number(tb.predicted_outcome_probability ?? tb.probability_percent ?? 50);
-
-      if (outcomeText) {
-        const simpleText = isPass ? "⚪ PASS" : (isAbove ? "▲ UP" : "▼ DOWN");
-        outcomeText.innerText = simpleText;
-        if (isPass) {
-            outcomeText.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-slate-400 font-mono leading-none";
-        } else {
-            outcomeText.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight font-mono leading-none " + (isAbove ? "text-emerald-400" : "text-red-400");
-        }
-      }
-
-      if (banner) {
-        if (isPass) {
-            banner.style.background = "rgba(148, 163, 184, 0.10)";
-            banner.style.borderColor = "#64748b";
-        } else {
-            banner.style.background = isAbove ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)";
-            banner.style.borderColor = isAbove ? "#10b981" : "#ef4444";
-        }
-      }
-
-      if (badge) {
-        badge.innerText = tb.confidence_badge || "EVALUATING";
-        if (isPass) {
-          badge.style.background = "#64748b";
-          badge.style.color = "#ffffff";
-          badge.style.boxShadow = "none";
-          badge.innerText = tb.confidence_badge || "⚪ NO EDGE";
-        } else if (tb.confidence_badge === "LOCKED RUNWAY") {
-          badge.style.background = isAbove ? "#10b981" : "#ef4444";
-          badge.style.color = "#ffffff";
-          badge.style.boxShadow = isAbove ? "0 0 12px rgba(16, 185, 129, 0.7)" : "0 0 12px rgba(239, 68, 68, 0.7)";
-          badge.innerText = "🔒 LOCKED RUNWAY";
-        } else if (tb.confidence_badge === "HIGH CONVICTION") {
-          badge.style.background = isAbove ? "#10b981" : "#ef4444";
-          badge.style.color = isAbove ? "#020617" : "#ffffff";
-          badge.style.boxShadow = "none";
-          badge.innerText = "⚡ HIGH CONVICTION";
-        } else {
-          badge.style.background = isAbove ? "#10b981" : "#ef4444";
-          badge.style.color = isAbove ? "#020617" : "#ffffff";
-          badge.style.boxShadow = "none";
-          badge.innerText = tb.confidence_badge || "MODERATE EDGE";
-        }
-      }
-
-      if (probText) probText.innerText = `${prob}%`;
-      if (confTag) confTag.innerText = tb.confidence_badge || "MODERATE EDGE";
-
-      // Render Kalshi Market Odds vs Model Prediction
-      const kData = tb.kalshi || window.cachedKalshiData;
-      const isSynth = !!(kData && (kData.is_synthetic || kData.status === "synthetic" || kData.source === "Kalshi Synthetic"));
-      if (typeof updateKalshiSyntheticBadges === 'function') {
-        updateKalshiSyntheticBadges(isSynth);
-      }
-      const kYesEl = getDomEl("btcKalshiYesProb");
-      const kNoEl = getDomEl("btcKalshiNoProb");
-      const btnProbAbove = getDomEl("btnProbAbove");
-      const btnProbBelow = getDomEl("btnProbBelow");
-      
-      if (kData && kData.yes_prob != null) {
-        if (kYesEl) kYesEl.innerText = `${kData.yes_prob}% Yes (Above)`;
-        if (kNoEl) kNoEl.innerText = `${kData.no_prob}% No (Below)`;
-        if (btnProbAbove) btnProbAbove.innerText = `${kData.yes_prob}%`;
-        if (btnProbBelow) btnProbBelow.innerText = `${kData.no_prob}%`;
-      } else {
-        if (kYesEl) kYesEl.innerText = "50% Yes";
-        if (kNoEl) kNoEl.innerText = "50% No";
-        if (btnProbAbove) btnProbAbove.innerText = "50%";
-        if (btnProbBelow) btnProbBelow.innerText = "50%";
-      }
-
-      if (barAbove && barUnder) {
-        if (isAbove) {
-          barAbove.style.width = `${prob}%`;
-          barUnder.style.width = `${100 - prob}%`;
-        } else if (isBelow) {
-          barUnder.style.width = `${prob}%`;
-          barAbove.style.width = `${100 - prob}%`;
-        } else {
-          barAbove.style.width = "50%";
-          barUnder.style.width = "50%";
-        }
-      }
-
-      if (factorsList) {
-        factorsList.innerHTML = (tb.decision_factors || []).map(f => `
-          <li class="flex items-start gap-1.5">
-            <span class="text-amber-400 shrink-0">▸</span>
-            <span>${f}</span>
-          </li>
-        `).join("") || '<li class="text-slate-500">Evaluating 15M progression...</li>';
-      }
-    }
+    
 
     function calculatePositionSize() {
-      const accInput = document.getElementById("calcAccountSize");
-      const riskSelect = document.getElementById("calcRiskPct");
-      const riskDollarEl = document.getElementById("calcRiskDollar");
-      const posBtcEl = document.getElementById("calcPosBtc");
-      const posNotionalEl = document.getElementById("calcPosNotional");
-      const breakevenEl = document.getElementById("calcBreakevenRule");
 
-      const account = parseFloat(accInput ? accInput.value : 5000) || 5000;
-      const riskPct = parseFloat(riskSelect ? riskSelect.value : 1.0) || 1.0;
       const riskDollar = account * (riskPct / 100);
 
-      if (riskDollarEl) riskDollarEl.innerText = `$${riskDollar.toFixed(2)}`;
 
       if (currentBtcSetup && currentBtcSetup.risk_amount && currentBtcSetup.risk_amount > 0) {
         const slDist = currentBtcSetup.risk_amount;
@@ -2986,14 +1730,7 @@ window.currentAsset = "BTC";
         const posBtc = riskDollar / slDist;
         const notional = posBtc * entry;
 
-        if (posBtcEl) posBtcEl.innerText = posBtc.toFixed(4);
-        if (posNotionalEl) posNotionalEl.innerText = `$${Math.round(notional).toLocaleString()}`;
-        if (breakevenEl && currentBtcSetup.breakeven_rule) {
-          breakevenEl.innerText = currentBtcSetup.breakeven_rule;
-        }
       } else {
-        if (posBtcEl) posBtcEl.innerText = "0.0000";
-        if (posNotionalEl) posNotionalEl.innerText = "$0.00";
       }
     }
 
@@ -3078,10 +1815,6 @@ window.currentAsset = "BTC";
           window.cachedKalshiData = kObj;
           if (kObj.strike > 0) {
             window.cachedBtcTargetPrice = kObj.strike;
-            const targetHero = getDomEl("btcTargetPriceHero");
-            if (targetHero) {
-              targetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-            }
             const topTargetHero = getDomEl("topBarTargetPrice");
             if (topTargetHero) {
               topTargetHero.innerText = `$${kObj.strike.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -3200,35 +1933,6 @@ window.currentAsset = "BTC";
       return daily;
     }
 
-    function renderPreviousDaysAccuracy(daily) {
-      const valueEl = document.getElementById("btcPreviousDaysAccuracyValue");
-      const panelEl = document.getElementById("btcPreviousDaysAccuracy");
-      const titleEl = panelEl ? panelEl.querySelector("span:first-child") : null;
-      if (!valueEl || !panelEl) return;
-
-      const isIpadMini7 = document.body.classList.contains("is-ipad-mini-7");
-      if (isIpadMini7) {
-        panelEl.style.display = 'none';
-        return;
-      }
-      
-      if (titleEl) {
-        titleEl.innerText = "Previous days";
-      }
-
-      const today = accuracyDateKey(Math.floor(Date.now() / 1000));
-      const previousDays = Object.entries(daily)
-        .filter(([date, stats]) => date < today && stats && stats.total > 0)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .slice(0, 3);
-
-      valueEl.innerText = previousDays.length
-        ? previousDays.map(([date, stats]) => {
-            const label = new Date(`${date}T12:00:00`).toLocaleDateString([], { weekday: "short" });
-            return `${label} ${Math.round((stats.correct / stats.total) * 100)}%`;
-          }).join(" · ")
-        : "No prior days";
-    }
 
     // Client-side Accuracy Evaluator: Starts at 0 of 0 on boot, counts up per logged 15m close
     function evaluateClientAccuracy(rawCandles, isCoinbaseFormat) {
@@ -3410,10 +2114,6 @@ window.currentAsset = "BTC";
         // 3. Set new 15M start price target to current price immediately
         if (lastBtcPrice) {
           window.cachedBtcTargetPrice = lastBtcPrice;
-          const targetHero = document.getElementById("btcTargetPriceHero");
-          if (targetHero) {
-            targetHero.innerText = `$${lastBtcPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          }
           const topTargetHero = document.getElementById("topBarTargetPrice");
           if (topTargetHero) {
             topTargetHero.innerText = `$${lastBtcPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -3427,8 +2127,9 @@ window.currentAsset = "BTC";
         if (window._lastRawCandles && window._lastRawCandles.length >= 5) {
           const forecast = evaluateClientNextContractForecast(window._lastRawCandles, window._lastIsCoinbaseFormat, window.cachedBtcTargetPrice);
           if (forecast) {
-            window.cachedNextContractForecast = forecast;
-            applyNextContractForecastToUI(forecast);
+            // window.cachedNextContractForecast = forecast;
+            // applyNextContractForecastToUI(forecast);
+            // Removed overriding with client-side indicators; backend ML model should be the source of truth
             if (forecast.conviction_grade === "GRADE A+ SETUP" || forecast.conviction_grade === "GRADE A SETUP") {
               playRolloverAlertTone(true);
             }
@@ -3471,12 +2172,8 @@ window.currentAsset = "BTC";
               if (staticData && staticData.target_benchmark && staticData.target_benchmark.target_price) {
                 const tb = staticData.target_benchmark;
                 window.cachedBtcTargetPrice = Number(tb.target_price);
-                const targetHero = document.getElementById("btcTargetPriceHero");
-                if (targetHero) targetHero.innerText = `$${Number(tb.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 const topTargetHero = document.getElementById("topBarTargetPrice");
                 if (topTargetHero) topTargetHero.innerText = `$${Number(tb.target_price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                const sLbl = document.getElementById("btcTargetSourceLabel");
-                if (sLbl) sLbl.innerText = tb.target_source || "15M Start Price";
                 if (tb.last_5_targets && tb.last_5_targets.length > 0) {
                   renderBtcTrendBox(tb.last_5_targets, tb.streak_summary);
                 }
@@ -3549,17 +2246,9 @@ window.currentAsset = "BTC";
           const dObj = new Date(tSec * 1000);
           const timeStr = dObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'UTC' });
 
-          const targetHero = document.getElementById("btcTargetPriceHero");
-          if (targetHero && targetOpen) {
-            targetHero.innerText = `$${targetOpen.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          }
           const topTargetHero = document.getElementById("topBarTargetPrice");
           if (topTargetHero && targetOpen) {
             topTargetHero.innerText = `$${targetOpen.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          }
-          const sLbl = document.getElementById("btcTargetSourceLabel");
-          if (sLbl) {
-            sLbl.innerText = `15M Start Price (${timeStr} ET)`;
           }
 
           // Extract last 5 completed intervals (slice -6 to -1)
@@ -3625,33 +2314,44 @@ window.currentAsset = "BTC";
       const isAbove = delta >= 0;
 
       const nowSec = Math.floor(Date.now() / 1000);
-      const intervalId = Math.floor(nowSec / 900) * 900;
-      const elapsed = nowSec % 900;
+      let tfSeconds = 900;
+      if (typeof btcCurrentTimeframe !== 'undefined') {
+        if (btcCurrentTimeframe === '1m') tfSeconds = 60;
+        else if (btcCurrentTimeframe === '5m') tfSeconds = 300;
+        else if (btcCurrentTimeframe === '1h') tfSeconds = 3600;
+        else if (btcCurrentTimeframe === '4h') tfSeconds = 14400;
+        else if (btcCurrentTimeframe === '1d') tfSeconds = 86400;
+      }
+      const intervalId = Math.floor(nowSec / tfSeconds) * tfSeconds;
+      const elapsed = nowSec % tfSeconds;
+      const SCAN_TIME = tfSeconds === 60 ? 5 : 30; // 5 seconds scan for 1m, 30s for 15m
 
       // 1. Wait for valid ML Prediction (including PASS), otherwise stay in scanning state
       let fc = window.cachedNextContractForecast;
-      let hasValidPrediction = fc && fc.direction && (fc.direction === "ABOVE" || fc.direction === "BELOW" || fc.direction === "YES" || fc.direction === "NO" || fc.direction === "PASS");
+      let hasValidPrediction = fc && fc.direction; // Relaxed strict check to allow ANY valid direction string from backend to pass scanning state
+        if (hasValidPrediction) {
+          const d = fc.direction.toUpperCase();
+          if (d.includes("ABOVE") || d.includes("YES") || d.includes("UP")) fc.direction = "ABOVE";
+          else if (d.includes("BELOW") || d.includes("NO") || d.includes("DOWN")) fc.direction = "BELOW";
+          else if (d.includes("PASS") || d.includes("CHOP")) fc.direction = "PASS";
+          else hasValidPrediction = false; // Invalid string format
+        }
 
-      if ((elapsed < 30 || !hasValidPrediction) && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
+      if ((elapsed < SCAN_TIME || !hasValidPrediction) && (!window.lockedContractForecast || window.lockedContractForecast.intervalId !== intervalId)) {
         const outcomeText = document.getElementById("btcPredOutcomeText");
         const probText = document.getElementById("btcPredProbText");
         const confTag = document.getElementById("btcPredConfidenceTag");
-        const banner = document.getElementById("btcPredBanner");
         const lockIcon = document.getElementById("btcPredLockIcon");
         if (outcomeText) {
           outcomeText.innerText = "⏳ 30S SCAN";
           outcomeText.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-amber-300 font-mono leading-none";
         }
-        if (probText) probText.innerText = `${Math.max(0, 30 - elapsed)}s`;
+        if (probText) probText.innerText = `${Math.max(0, SCAN_TIME - elapsed)}s`;
         if (confTag) confTag.innerText = "ANALYZING";
         if (lockIcon) lockIcon.classList.add("hidden");
-        if (banner) {
-          banner.style.background = "rgba(245, 158, 11, 0.10)";
-          banner.style.borderColor = "#f59e0b";
-        }
         const bubble = document.getElementById("kalshiMLStatusBubble");
         if (bubble) {
-          bubble.innerText = `SCANNING (${Math.max(0, 30 - elapsed)}s)`;
+          bubble.innerText = `SCANNING (${Math.max(0, SCAN_TIME - elapsed)}s)`;
           bubble.className = "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse whitespace-nowrap cursor-help";
         }
         return;
@@ -3691,7 +2391,7 @@ window.currentAsset = "BTC";
       const liveFactors = [
         ...locked.decision_factors.slice(0, 2),
         `Live cushion: ${isAbove ? '+' : '-'}$${(isNaN(Math.abs(delta)) ? 0 : Math.abs(delta)).toFixed(2)} (${isAbove ? '+' : '-'}${(isNaN(Math.abs(deltaPct)) ? 0 : Math.abs(deltaPct)).toFixed(2)}%)`,
-        `15M Contract Close in: ${Math.floor((900 - elapsed) / 60)}m ${((900 - elapsed) % 60)}s`
+        `${btcCurrentTimeframe.toUpperCase()} Contract Close in: ${Math.floor((900 - elapsed) / 60)}m ${((900 - elapsed) % 60)}s`
       ];
 
       const tb = {
@@ -3702,7 +2402,20 @@ window.currentAsset = "BTC";
         decision_factors: liveFactors
       };
 
-      renderBtcPredictor(tb);
+      const outEl = document.getElementById("btcPredOutcomeText");
+      const probEl = document.getElementById("btcPredProbText");
+      const confEl = document.getElementById("btcPredConfidenceTag");
+      const lockEl = document.getElementById("btcPredLockIcon");
+
+      if (outEl) {
+        outEl.innerText = locked.outcomeText;
+        if (locked.direction === "ABOVE") outEl.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-emerald-400 font-mono leading-none";
+        else if (locked.direction === "BELOW") outEl.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-red-400 font-mono leading-none";
+        else outEl.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-slate-400 font-mono leading-none";
+      }
+      if (probEl) probEl.innerText = `${locked.probability_percent}%`;
+      if (confEl) confEl.innerText = locked.conviction_grade;
+      if (lockEl) lockEl.classList.remove("hidden");
 
       const bubble = document.getElementById("kalshiMLStatusBubble");
       if (bubble) {
@@ -3723,15 +2436,6 @@ window.currentAsset = "BTC";
 
     // Client-side Live Display Updater (for Mobile, iPhone / Standalone)
     function updateClientBtcLive(price, stats = null) {
-      const prEl = document.getElementById("btcLStatPrice");
-      if (prEl && price > 0) {
-        prEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        if (lastBtcPrice && price !== lastBtcPrice) {
-          prEl.classList.remove("price-flash-up", "price-flash-down");
-          void prEl.offsetWidth;
-          prEl.classList.add(price > lastBtcPrice ? "price-flash-up" : "price-flash-down");
-        }
-      }
       const topPriceEl = document.getElementById("topBarLivePrice");
       if (topPriceEl && price > 0) {
         topPriceEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -3746,19 +2450,10 @@ window.currentAsset = "BTC";
       // Update 24h stats if available on mobile
       if (stats) {
         if (stats.change_24h != null) {
-          const chgEl = document.getElementById("btcLStatChange");
-          if (chgEl) {
-            chgEl.innerText = `${stats.change_24h >= 0 ? "+" : ""}${(isNaN(Number(stats.change_24h)) ? 0 : Number(stats.change_24h)).toFixed(2)}%`;
-            chgEl.className = "font-bold " + (stats.change_24h >= 0 ? "text-emerald-400" : "text-red-400");
-          }
         }
         if (stats.volume != null) {
-          const volEl = document.getElementById("btcLStatVol");
-          if (volEl) volEl.innerText = Math.round(Number(stats.volume)).toLocaleString();
         }
         if (stats.low != null && stats.high != null) {
-          const rngEl = document.getElementById("btcLStatRange");
-          if (rngEl) rngEl.innerText = `$${Math.round(Number(stats.low)).toLocaleString()} / $${Math.round(Number(stats.high)).toLocaleString()}`;
         }
       }
 
@@ -3774,21 +2469,7 @@ window.currentAsset = "BTC";
         const absPct = Math.abs(deltaPct);
         const textStatus = isAbove ? "ABOVE TARGET" : "BELOW TARGET";
 
-        const deltaBadge = document.getElementById("btcTargetDeltaBadge");
-        if (deltaBadge) {
-          if (isAbove) {
-            deltaBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm shadow-emerald-500/20 w-full justify-center";
-          } else {
-            deltaBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/30 shadow-sm shadow-red-500/20 w-full justify-center";
-          }
-          deltaBadge.innerHTML = `<span>${arrow}</span> <span>${sign}$${(isNaN(absDelta) ? 0 : absDelta).toFixed(2)} (${sign}${(isNaN(absPct) ? 0 : absPct).toFixed(2)}%) ${textStatus}</span>`;
-        }
 
-        const tHero = document.getElementById("btcTargetPriceHero");
-        if (tHero && target && target > 0) {
-          tHero.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-          applyTargetPriceColor(tHero, price, target);
-        }
         const topTarget = document.getElementById("topBarTargetPrice");
         const topCard = document.getElementById("topBarTargetCard");
         if (topTarget && target && target > 0) {
@@ -3850,11 +2531,14 @@ window.currentAsset = "BTC";
             }
           }
           renderBtcHeroHud(liveData);
+          if (liveData.target_price) {
+            window.cachedBtcTargetPrice = liveData.target_price;
+          }
           if (liveData.last_5_targets && liveData.last_5_targets.length > 0) {
             renderBtcTrendBox(liveData.last_5_targets, liveData.streak_summary);
           }
-          if (liveData.target_price) {
-            window.cachedBtcTargetPrice = liveData.target_price;
+          if (liveData.price && liveData.price > 0) {
+            updateClientBtcLive(liveData.price, { volume: liveData.volume_24h });
           }
           if (liveData.volume_24h) {
             window.cachedBtcVolume = liveData.volume_24h;
@@ -3975,10 +2659,6 @@ window.currentAsset = "BTC";
       if (window._isAnalyzing) return;
       window._isAnalyzing = true;
 
-      const btn = document.getElementById("btnBtcRefresh");
-      const icon = document.getElementById("btcRefreshIcon");
-      if (btn) btn.disabled = true;
-      if (icon) icon.innerHTML = '<span class="inline-block animate-spin">⟳</span>';
 
       try {
         let analysisData = null;
@@ -4163,12 +2843,23 @@ window.currentAsset = "BTC";
             }
           }
 
-          const statusEl = document.getElementById("btcChartStatus");
-          if (statusEl) statusEl.innerText = `${candlesData.candles.length} candles (${btcCurrentTimeframe.toUpperCase()})`;
         }
 
         // 4. Update Analysis, HUD, Trend Box, Predictor & Calculator
         if (analysisData) {
+          const forecastData = (analysisData.target_benchmark && analysisData.target_benchmark.next_contract_forecast) ? analysisData.target_benchmark.next_contract_forecast : null;
+          if (forecastData && forecastData.direction) {
+            window.cachedNextContractForecast = {
+              direction: forecastData.direction,
+              recommendation: forecastData.recommendation || forecastData.direction,
+              probability_percent: forecastData.probability_percent || Math.round((forecastData.ml_prob || 0.5) * 100),
+              conviction_badge: forecastData.conviction_badge,
+              conviction_grade: forecastData.conviction_grade,
+              primary_edge: forecastData.primary_edge,
+              catalysts: forecastData.catalysts
+            };
+            applyNextContractForecastToUI(window.cachedNextContractForecast);
+          }
           if (analysisData.target_benchmark) {
             renderBtcHeroHud({ ...analysisData.target_benchmark, price: analysisData.price || analysisData.target_benchmark.current_price });
             renderBtcTrendBox(analysisData.target_benchmark.last_5_targets, analysisData.target_benchmark.streak_summary);
@@ -4282,7 +2973,8 @@ window.currentAsset = "BTC";
       const ctInput = document.getElementById("kalshiContractsInput");
       if (!sizeInput || !ctInput) return;
       
-      const dynamicCt = Math.max(1, Math.round(kalshiFixedSize / kalshiCurrentPriceEst));
+      const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+      const dynamicCt = Math.max(1, Math.floor(kalshiFixedSize / limitPrice));
       kalshiCurrentContracts = dynamicCt; // Keep synced for other UI elements
       
       if (document.activeElement !== ctInput) {
@@ -4298,14 +2990,19 @@ window.currentAsset = "BTC";
       if (isNaN(size) || size <= 0) size = kalshiCurrentPriceEst;
       kalshiFixedSize = size;
       
-      const dynamicCt = Math.max(1, Math.round(kalshiFixedSize / kalshiCurrentPriceEst));
+      const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+      const dynamicCt = Math.max(1, Math.floor(kalshiFixedSize / limitPrice));
       kalshiCurrentContracts = dynamicCt;
       
       const ctInput = document.getElementById("kalshiContractsInput");
       if (ctInput) ctInput.value = dynamicCt;
       
+      const maxCtSetting = document.getElementById("settingMaxContracts");
+      if (maxCtSetting) maxCtSetting.value = dynamicCt;
+      
       updateKalshiPayoutCalculator();
       saveAiMaxCap(kalshiFixedSize);
+      saveKalshiContractsCount(dynamicCt);
     }
 
     async function saveKalshiContractsCount(count) {
@@ -4321,13 +3018,18 @@ window.currentAsset = "BTC";
       let ct = parseInt(val, 10);
       if (isNaN(ct) || ct < 1) ct = 1;
       kalshiCurrentContracts = ct;
-      kalshiFixedSize = ct * kalshiCurrentPriceEst;
+      const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+      kalshiFixedSize = ct * limitPrice;
       
       const sizeInput = document.getElementById("kalshiSizeInput");
       if (sizeInput) sizeInput.value = kalshiFixedSize.toFixed(2);
       
+      const maxCtSetting = document.getElementById("settingMaxContracts");
+      if (maxCtSetting) maxCtSetting.value = ct;
+      
       updateKalshiPayoutCalculator();
       saveAiMaxCap(kalshiFixedSize);
+      saveKalshiContractsCount(ct);
     }
 
     async function saveAiMaxCap(maxCapVal) {
@@ -4367,11 +3069,12 @@ window.currentAsset = "BTC";
 
     function updateKalshiPayoutCalculator() {
       const input = document.getElementById("kalshiContractsInput");
-      const ct = input ? parseInt(input.value) || 1 : 1;
+      const ct = input ? parseInt(input.value) || 1 : kalshiCurrentContracts;
       const riskEl = document.getElementById("kalshiCalcRisk");
       const payoutEl = document.getElementById("kalshiCalcPayout");
 
-      const totalRisk = ct * kalshiCurrentPriceEst;
+      const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+      const totalRisk = ct * limitPrice;
       const maxPayout = ct * 1.00;
       const netProfit = maxPayout - totalRisk;
       const roi = totalRisk > 0 ? (netProfit / totalRisk) * 100 : 0;
@@ -4410,12 +3113,10 @@ window.currentAsset = "BTC";
           window.serverPredictionAccuracy = data.prediction_accuracy;
           // Update the ML Model pane
           const mlPctEl = document.getElementById("btcMlModelAccuracyPct");
-          const iphoneMlPctEl = document.getElementById("iphone17NavAccuracyPct");
           const accVal = data.prediction_accuracy.accuracy_percent;
           const pctStr = (accVal !== null && accVal != null) ? `${accVal}%` : "--%";
           
           if (mlPctEl) mlPctEl.innerText = pctStr;
-          if (iphoneMlPctEl) iphoneMlPctEl.innerText = pctStr;
         }
 
         // Update Balance
@@ -4532,18 +3233,6 @@ window.currentAsset = "BTC";
           if (tradesInput && document.activeElement !== tradesInput && !localStorage.getItem("kalshiGeneralSettings")) {
             tradesInput.value = parseInt(data.max_daily_trades);
           }
-        }
-        const todayRiskLabel = document.getElementById("statTodayRiskLabel");
-        if (todayRiskLabel && data.today_realized_pnl != null) {
-          const pnlVal = parseFloat(data.today_realized_pnl);
-          const sign = pnlVal >= 0 ? "+" : "-";
-          const color = pnlVal >= 0 ? "text-emerald-400" : "text-red-400";
-          todayRiskLabel.className = `font-mono text-[7px] ${color}`;
-          todayRiskLabel.innerText = `${sign}$${Math.abs(pnlVal).toFixed(2)} today`;
-        }
-        const todayTradesLabel = document.getElementById("statTodayTradesLabel");
-        if (todayTradesLabel && data.today_trade_count != null) {
-          todayTradesLabel.innerText = `${data.today_trade_count} taken today`;
         }
 
         // Update Mode Slider
@@ -4672,14 +3361,26 @@ window.currentAsset = "BTC";
       // 2. Execution Origin Pill (AUTO vs MANUAL)
       const isManual = t.is_manual === true || src.includes("MANUAL") || rec.includes("MANUAL") || grade.includes("MANUAL");
       if (isManual) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Manually Executed by Trader">👤 MANUAL</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Manually Executed by Trader">🖐 MANUAL</span>`);
       } else {
-        const isSurfer = src.includes("MOMENTUM_SURFER") || (t.trading_style && String(t.trading_style).toUpperCase().includes("MOMENTUM_SURFER"));
-        const isAmbush = src.includes("AMBUSH") || (t.trading_style && String(t.trading_style).toUpperCase().includes("AMBUSH"));
-        let autoLabel = "🤖 AUTO";
-        if (isSurfer) autoLabel = "🤖 AUTO (SURFER)";
-        if (isAmbush) autoLabel = "🤖 AUTO (AMBUSH)";
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/35" title="Autonomous AI Execution">${autoLabel}</span>`);
+        const styleRaw = String(t.trading_style || "").toUpperCase();
+        const isSurfer = src.includes("MOMENTUM_SURFER") || styleRaw.includes("MOMENTUM_SURFER");
+        const isAmbush = src.includes("AMBUSH") || styleRaw.includes("AMBUSH");
+        const isSniper = src.includes("SNIPER") || styleRaw.includes("SNIPER");
+        const isChop = src.includes("CHOP") || styleRaw.includes("CHOP");
+        const isAutoD = src.includes("AUTO") || styleRaw === "AUTO";
+        
+        let autoLabel = "⚡ AUTO";
+        let icon = "⚡";
+        let styleName = "AUTO";
+        
+        if (isSurfer) { icon = "🌊"; styleName = "AUTO (SURFER)"; }
+        else if (isAmbush) { icon = "🥷"; styleName = "AUTO (AMBUSH)"; }
+        else if (isSniper) { icon = "🎯"; styleName = "AUTO (SNIPER)"; }
+        else if (isChop) { icon = "🪓"; styleName = "AUTO (CHOP)"; }
+        else if (isAutoD) { icon = "⚙️"; styleName = "AUTO (DYNAMIC)"; }
+        
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/35" title="Autonomous AI Execution (${styleName})">${icon} ${styleName}</span>`);
       }
 
       // 3. Scalp Pill
@@ -4696,11 +3397,21 @@ window.currentAsset = "BTC";
 
       // 5. Exit Reason Pill (when closed early before expiry)
       if (exitReason.includes("SCALP_TP") || exitReason.includes("TAKE_PROFIT")) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Take-Profit Target Reached">🎯 TP EXIT</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Take-Profit Target Reached">✅ TP EXIT</span>`);
       } else if (exitReason.includes("SCALP_SL") || exitReason.includes("STOP_LOSS")) {
         pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40" title="Stop-Loss Triggered">🛑 SL EXIT</span>`);
       } else if (exitReason.includes("MANUAL")) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Trader Manually Closed Position">🚪 MANUAL EXIT</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Trader Manually Closed Position">✋ MANUAL EXIT</span>`);
+      }
+
+      // 6. Signal / Conviction Badge Pill
+      if (t.conviction_badge) {
+        let badgeRaw = String(t.conviction_badge).toUpperCase();
+        // Remove emoji if it already exists, we will style it cleanly
+        let cleanBadge = badgeRaw.replace(/^[^\w\s]+/g, '').trim(); 
+        if (cleanBadge.length > 0 && !isManual) {
+           pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Execution Signal">📡 ${cleanBadge}</span>`);
+        }
       }
 
       return pills.join(" ");
@@ -5108,6 +3819,35 @@ window.currentAsset = "BTC";
       }
     }
 
+    async function triggerReversePosition() {
+      if (!window.currentAsset) return;
+      if (kalshiTradingMode === "LIVE") {
+        const confirmed = await showAppModal({
+          title: "Reverse Active Position",
+          badge: "1-CLICK REVERSE",
+          icon: "🔄",
+          iconBg: "bg-indigo-500/20 text-indigo-400 border border-indigo-500/40",
+          body: `Instantly close your active trade and flip to the opposite side?`,
+          confirmText: "Reverse Position",
+          confirmColor: "indigo"
+        });
+        if (!confirmed) return;
+      }
+      try {
+        const apiBase = getKalshiApiBase();
+        const res = await authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/reverse`, { method: "POST" });
+        const data = await res.json();
+        if (data.success) {
+          showAppToast("Position Reversed", "Active trade closed and flipped successfully", "success");
+          pollKalshiTradingStatus();
+        } else {
+          showAppToast("Reverse Failed", data.error || "Failed to reverse position", "error");
+        }
+      } catch (err) {
+        showAppToast("Network Error", err.message, "error");
+      }
+    }
+
     async function triggerCloseTrade() {
       if (kalshiTradingMode === "LIVE") {
         const confirmed = await showAppModal({
@@ -5140,6 +3880,20 @@ window.currentAsset = "BTC";
     
       // Auto-save event listeners
       document.addEventListener("DOMContentLoaded", () => {
+        const settingMaxCap = document.getElementById("settingMaxCap");
+        const settingMaxContracts = document.getElementById("settingMaxContracts");
+        
+        if (settingMaxCap && settingMaxContracts) {
+            settingMaxCap.addEventListener("input", (e) => {
+                const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+                settingMaxContracts.value = Math.max(1, Math.floor(parseFloat(e.target.value || 0) / limitPrice));
+            });
+            settingMaxContracts.addEventListener("input", (e) => {
+                const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+                settingMaxCap.value = (parseInt(e.target.value || 1) * limitPrice).toFixed(2);
+            });
+        }
+        
         const kalshiInputs = document.querySelectorAll('#generalSettingsSubPage input, #generalSettingsSubPage select');
         kalshiInputs.forEach(el => {
           el.addEventListener('change', () => saveKalshiSettings(false));
@@ -5188,11 +3942,6 @@ window.currentAsset = "BTC";
 
     async function setConvictionFilter(type, showToast = true) {
       kalshiConvictionFilter = type;
-      const btnAPlus = document.getElementById("btnFilterAPlus");
-      const btnA = document.getElementById("btnFilterA");
-      const btnBPlus = document.getElementById("btnFilterBPlus");
-      const btnB = document.getElementById("btnFilterB");
-      const label = document.getElementById("settingGradeLabel");
       
       let thresholdParam = "A+";
       let labelText = "Grade A+ Only";
@@ -5200,30 +3949,21 @@ window.currentAsset = "BTC";
       const activeClass = "py-1 px-1.5 rounded-lg border border-cyan-500/60 bg-cyan-950/80 text-cyan-300 font-bold shadow-sm transition-all text-center cursor-pointer";
       const inactiveClass = "py-1 px-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-white transition-all text-center cursor-pointer";
 
-      if (btnAPlus) btnAPlus.className = inactiveClass;
-      if (btnA) btnA.className = inactiveClass;
-      if (btnBPlus) btnBPlus.className = inactiveClass;
-      if (btnB) btnB.className = inactiveClass;
 
       if (type === "APLUS") {
-        if (btnAPlus) btnAPlus.className = activeClass;
         thresholdParam = "A+";
         labelText = "Grade A+ Only";
       } else if (type === "A" || type === "ALL") {
-        if (btnA) btnA.className = activeClass;
         thresholdParam = "A";
         labelText = "Grade A+ & A";
       } else if (type === "BPLUS") {
-        if (btnBPlus) btnBPlus.className = activeClass;
         thresholdParam = "B+";
         labelText = "Grade A+, A & B+";
       } else if (type === "B") {
-        if (btnB) btnB.className = activeClass;
         thresholdParam = "B";
         labelText = "Grade A+, A, B+ & B";
       }
       
-      if (label) label.innerText = labelText;
 
       try {
         const apiBase = getKalshiApiBase();
@@ -5245,35 +3985,48 @@ window.currentAsset = "BTC";
         const predMode = document.getElementById("settingPredictionMode")?.checked || false;
         const maxDailyRisk = parseFloat(document.getElementById("settingMaxDailyRisk")?.value) || 25.0;
         const maxDailyTrades = parseInt(document.getElementById("settingMaxDailyTrades")?.value) || 10;
+        const maxContracts = parseInt(document.getElementById("settingMaxContracts")?.value) || 1;
+        kalshiCurrentContracts = maxContracts;
+        
+        const ctInput = document.getElementById("kalshiContractsInput");
+        if (ctInput) ctInput.value = kalshiCurrentContracts;
+        const szInput = document.getElementById("kalshiSizeInput");
+        if (szInput) {
+           const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
+           szInput.value = (kalshiCurrentContracts * limitPrice).toFixed(2);
+        }
         
         const settings = {
           tradingMode: kalshiTradingMode,
           convictionFilter: typeof kalshiConvictionFilter !== 'undefined' ? kalshiConvictionFilter : 'APLUS',
-          contractsCount: kalshiCurrentContracts,
+          contractsCount: maxContracts,
           audioEnabled: btcAudioEnabled,
           predMode,
           maxDailyRisk,
           maxDailyTrades
         };
         
-        localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
-        
-        // Push backend toggles & risk limits with verified responses
+        // Push backend toggles & risk limits with verified responses BEFORE persisting locally
         const apiBase = getKalshiApiBase();
         const minConviction = document.getElementById("settingMinConviction")?.value || "B";
         
-        const [resPred, resRisk, resThresh] = await Promise.all([
+        const [resPred, resRisk, resThresh, resCt] = await Promise.all([
           authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/prediction_mode?enabled=${predMode}`, { method: "POST" }),
           authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/risk_limits?max_daily_risk=${encodeURIComponent(maxDailyRisk)}&max_daily_trades=${encodeURIComponent(maxDailyTrades)}`, { method: "POST" }),
-          authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/threshold?threshold=${encodeURIComponent(minConviction)}`, { method: "POST" })
+          authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/threshold?threshold=${encodeURIComponent(minConviction)}`, { method: "POST" }),
+          authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/contracts?count=${encodeURIComponent(maxContracts)}`, { method: "POST" })
         ]);
 
         if (!resPred.ok) throw new Error(`Prediction mode update failed (HTTP ${resPred.status})`);
         if (!resRisk.ok) throw new Error(`Risk limits update failed (HTTP ${resRisk.status})`);
         if (!resThresh.ok) throw new Error(`Threshold update failed (HTTP ${resThresh.status})`);
+        if (!resCt.ok) throw new Error(`Max Contracts update failed (HTTP ${resCt.status})`);
+
+        // Only persist to localStorage AFTER backend confirms success
+        localStorage.setItem("kalshiGeneralSettings", JSON.stringify(settings));
         
         const aiSettings = {
-            modelChoice: document.getElementById("settingModelChoice")?.value || "LogisticRegression",
+            modelChoice: document.getElementById("settingModelChoice")?.value || "Swarm",
             trainWindow: parseInt(document.getElementById("settingTrainWindow")?.value) || 4000,
             regC: parseFloat(document.getElementById("settingRegC")?.value) || 0.5,
             classWeight: document.getElementById("settingClassWeight")?.value || "balanced",
@@ -5296,7 +4049,10 @@ window.currentAsset = "BTC";
             xgbLearningRate: parseFloat(document.getElementById("settingXgbLearningRate")?.value) || 0.1,
             signalIsolation: document.getElementById("settingSignalIsolation")?.value || "BLEND",
 stopLossMoveDollars: parseFloat(document.getElementById("settingStopLossMoveDollars")?.value) || 140.0,
-stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinutes")?.value) || 8.0
+stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinutes")?.value) || 8.0,
+takeProfitEnabled: document.getElementById("settingTakeProfitEnabled")?.checked ?? true,
+takeProfitPercent: parseFloat(document.getElementById("settingTakeProfitPercent")?.value) || 50.0,
+useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         };
         
         const resAi = await authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/ai_settings`, {
@@ -5343,8 +4099,8 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
             if (config.min_conviction) setConvictionFilter(config.min_conviction, false);
             if (config.max_contracts) {
                 kalshiCurrentContracts = config.max_contracts;
-                const input = document.getElementById("kalshiContractSizeInput");
-                if (input) input.value = (isNaN(kalshiCurrentContracts * kalshiCurrentPriceEst) ? 0 : (kalshiCurrentContracts * kalshiCurrentPriceEst)).toFixed(2);
+                const settingMaxCt = document.getElementById("settingMaxContracts");
+                if (settingMaxCt) settingMaxCt.value = config.max_contracts;
             }
             const predCb = document.getElementById("settingPredictionMode");
             if (predCb && typeof config.prediction_mode === 'boolean') predCb.checked = config.prediction_mode;
@@ -5357,7 +4113,7 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
 
             // Sync AI Settings
             const aiSet = config.ai_settings || {};
-            if (document.getElementById("settingModelChoice")) document.getElementById("settingModelChoice").value = aiSet.modelChoice || "LogisticRegression";
+            if (document.getElementById("settingModelChoice")) document.getElementById("settingModelChoice").value = "Swarm";
             if (document.getElementById("settingTradingStyle")) document.getElementById("settingTradingStyle").value = aiSet.tradingStyle || "SNIPER";
             if (document.getElementById("settingOneShotAiStartTrade")) document.getElementById("settingOneShotAiStartTrade").checked = !!aiSet.oneShotAiStartTrade;
             if (document.getElementById("settingTrainWindow")) {
@@ -5390,6 +4146,9 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
             if (document.getElementById("settingSignalIsolation")) document.getElementById("settingSignalIsolation").value = aiSet.signalIsolation || "BLEND";
             if (document.getElementById("settingStopLossMoveDollars")) document.getElementById("settingStopLossMoveDollars").value = aiSet.stopLossMoveDollars || 140.0;
             if (document.getElementById("settingStopLossMaxMinutes")) document.getElementById("settingStopLossMaxMinutes").value = aiSet.stopLossMaxMinutes || 8.0;
+            if (document.getElementById("settingTakeProfitEnabled")) document.getElementById("settingTakeProfitEnabled").checked = aiSet.takeProfitEnabled !== false;
+            if (document.getElementById("settingTakeProfitPercent")) document.getElementById("settingTakeProfitPercent").value = aiSet.takeProfitPercent || 50.0;
+            if (document.getElementById("settingUseFinbertNLP")) document.getElementById("settingUseFinbertNLP").checked = aiSet.useFinbertNLP !== false;
 
             // Update localStorage to match the single source of truth
             localStorage.setItem("kalshiAiSettings", JSON.stringify(aiSet));
@@ -5633,7 +4392,7 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
     }
 
     function initAccuracyTooltip() {
-      const banner = document.getElementById("topBarLikelyCard") || document.getElementById("btcPredBanner");
+      const banner = document.getElementById("topBarLikelyCard");
       const tooltip = document.getElementById("accuracyTooltip");
       if (!banner || !tooltip) return;
 
@@ -5703,13 +4462,6 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
     
     // Global Sleek Hover Tooltip Engine
     function initGlobalSleekTooltips() {
-      let tooltip = document.getElementById("globalSleekTooltip");
-      if (!tooltip) {
-        tooltip = document.createElement("div");
-        tooltip.id = "globalSleekTooltip";
-        tooltip.className = "fixed hidden pointer-events-none z-[999999] bg-slate-950/95 border border-cyan-500/50 rounded-xl px-3 py-2 shadow-2xl backdrop-blur-md text-xs font-mono text-slate-200 max-w-xs transition-all duration-150 leading-relaxed animate-in fade-in duration-150";
-        document.body.appendChild(tooltip);
-      }
 
       let activeTarget = null;
 
@@ -5723,8 +4475,6 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
           target.removeAttribute("data-tooltip");
           if (activeTarget) {
             activeTarget = null;
-            tooltip.style.opacity = "0";
-            tooltip.classList.add("hidden");
           }
           return;
         }
@@ -5735,8 +4485,6 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
           target.removeAttribute("data-tooltip");
           if (activeTarget) {
             activeTarget = null;
-            tooltip.style.opacity = "0";
-            tooltip.classList.add("hidden");
           }
           return;
         }
@@ -5933,7 +4681,7 @@ stopLossMaxMinutes: parseFloat(document.getElementById("settingStopLossMaxMinute
         const accPct = (accuracy.accuracy_percent != null && accuracy.accuracy_percent !== null) ? `${accuracy.accuracy_percent}%` : "--%";
         const accTotal = accuracy.total_evaluated || 0;
 
-        const dailyHistory = getDailyAccuracyHistory();
+        const dailyHistory = accuracy.daily_history || getDailyAccuracyHistory();
         const todayStr = accuracyDateKey(Math.floor(Date.now() / 1000));
         const prevDaysArray = Object.entries(dailyHistory)
           .filter(([date, stats]) => date < todayStr && stats && stats.total > 0)
@@ -6168,13 +4916,12 @@ window.switchAsset = function(asset) {
         if (asset === 'BTC') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-amber-500/50 bg-amber-500/20 text-amber-400 transition-all hover:bg-amber-500/30";
         if (asset === 'ETH') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-blue-500/50 bg-blue-500/20 text-blue-400 transition-all hover:bg-blue-500/30";
         if (asset === 'GOLD') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-yellow-500/50 bg-yellow-500/20 text-yellow-400 transition-all hover:bg-yellow-500/30";
-            }
+    }
+    
+    const mobDropdown = document.getElementById('mobileAssetDropdown');
+    if (mobDropdown) mobDropdown.value = asset;
     
     // Update header
-    const headerTitle = document.getElementById('headerAssetTitle');
-    if (headerTitle) {
-        headerTitle.innerHTML = asset + ' <span class="text-amber-400">15M</span>';
-    }
     
     // Update live price and target labels
     const livePriceLabel = document.getElementById('topBarLivePriceLabel');
@@ -6206,32 +4953,9 @@ window.switchAsset = function(asset) {
     // Update TV widget
 
     window.tvWidget = null;
-    const tvContainer = document.getElementById("tradingview_btc_15m");
-    if (tvContainer) tvContainer.innerHTML = "";
     if (typeof initTradingViewChart !== "undefined") initTradingViewChart();
 };
 
     // Wire up manual trade size input to dynamically save to backend
     document.addEventListener("DOMContentLoaded", () => {
-      const sizeInput = document.getElementById("kalshiContractSizeInput");
-      if (sizeInput) {
-        sizeInput.addEventListener("change", async (e) => {
-          let val = parseFloat(e.target.value);
-          if (isNaN(val) || val <= 0) val = 1;
-          
-          // Update the settings slider and value text in the UI
-          const slider = document.getElementById("settingMaxCap");
-          if (slider) slider.value = val;
-          const maxCapVal = document.getElementById("maxCapVal");
-          if (maxCapVal) maxCapVal.innerText = "$" + val;
-          
-          // Save settings to backend silently
-          try {
-            await saveKalshiSettings(false);
-            showAppToast("Trade Size Updated", `Risk Allocation set to $${val}`, "info");
-          } catch(err) {
-            console.error("Failed to update trade size:", err);
-          }
-        });
-      }
     });

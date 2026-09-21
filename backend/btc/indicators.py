@@ -105,7 +105,7 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
         prev_low = df.loc[prev_low_idx, "low"]
         prev_rsi = df.loc[prev_low_idx, "rsi"]
 
-        if curr_low < prev_low and curr_rsi > prev_rsi and curr_rsi < 45 and (curr_idx - prev_low_idx) >= 3:
+        if curr_low < prev_low and curr_rsi > prev_rsi and curr_rsi < 45 and prev_rsi < 45 and (curr_idx - prev_low_idx) >= 3:
             divergences.append({
                 "type": "BULLISH_RSI_DIVERGENCE",
                 "curr_idx": curr_idx,
@@ -124,7 +124,7 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
         prev_high = df.loc[prev_high_idx, "high"]
         prev_rsi = df.loc[prev_high_idx, "rsi"]
 
-        if curr_high > prev_high and curr_rsi < prev_rsi and curr_rsi > 55 and (curr_idx - prev_high_idx) >= 3:
+        if curr_high > prev_high and curr_rsi < prev_rsi and curr_rsi > 55 and prev_rsi > 55 and (curr_idx - prev_high_idx) >= 3:
             divergences.append({
                 "type": "BEARISH_RSI_DIVERGENCE",
                 "curr_idx": curr_idx,
@@ -170,11 +170,56 @@ def detect_cvd_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     return divs
 
 
+def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, window: int = 14) -> pd.Series:
+    import numpy as np
+    h = high.values
+    l = low.values
+    c = close.values
+    
+    plus_dm = h[1:] - h[:-1]
+    minus_dm = l[:-1] - l[1:]
+    
+    plus_dm_arr = np.where((plus_dm > minus_dm) & (plus_dm > 0), plus_dm, 0.0)
+    minus_dm_arr = np.where((minus_dm > plus_dm) & (minus_dm > 0), minus_dm, 0.0)
+    
+    tr1 = h[1:] - l[1:]
+    tr2 = np.abs(h[1:] - c[:-1])
+    tr3 = np.abs(l[1:] - c[:-1])
+    tr = np.maximum(tr1, np.maximum(tr2, tr3))
+    
+    plus_dm_arr = np.concatenate([[0.0], plus_dm_arr])
+    minus_dm_arr = np.concatenate([[0.0], minus_dm_arr])
+    tr = np.concatenate([[0.0], tr])
+    
+    def smooth(data, win):
+        res = np.zeros_like(data)
+        if len(data) > win:
+            res[win] = np.sum(data[1:win+1])
+            for i in range(win+1, len(data)):
+                res[i] = res[i-1] - (res[i-1]/win) + data[i]
+        return res
+        
+    atr = smooth(tr, window)
+    plus_di = 100 * smooth(plus_dm_arr, window) / np.where(atr == 0, 1, atr)
+    minus_di = 100 * smooth(minus_dm_arr, window) / np.where(atr == 0, 1, atr)
+    
+    dx = 100 * np.abs(plus_di - minus_di) / np.where((plus_di + minus_di) == 0, 1, (plus_di + minus_di))
+    adx = smooth(dx, window)
+    
+    return pd.Series(adx, index=high.index)
+
 def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Append all technical indicators to the DataFrame.
     """
     df = df.copy()
+
+    df["adx"] = compute_adx(df["high"], df["low"], df["close"], 14)
+
+    # C4 FIX: Rate of Change indicators (were never computed, always 0.0)
+    df["roc_15m"] = df["close"].pct_change(1) * 100   # 1-candle = 15 minutes
+    df["roc_1h"] = df["close"].pct_change(4) * 100    # 4 candles = 1 hour
+    df["roc_4h"] = df["close"].pct_change(16) * 100   # 16 candles = 4 hours
 
     # Moving Averages
     df["ema_9"] = compute_ema(df["close"], 9)
@@ -184,12 +229,14 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     # RSI
     df["rsi"] = compute_rsi(df["close"], 14)
+    df["rsi_224"] = compute_rsi(df["close"], 224)
 
     # MACD
     macd_line, signal_line, histogram = compute_macd(df["close"], 12, 26, 9)
     df["macd_line"] = macd_line
     df["macd_signal"] = signal_line
     df["macd_hist"] = histogram
+    df["macd_hist_momentum"] = df["macd_hist"] - df["macd_hist"].shift(1).fillna(0)
 
     # Bollinger Bands
     upper, middle, lower, bandwidth = compute_bollinger_bands(df["close"], 20, 2.0)
@@ -213,6 +260,10 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     
     # CVD Proxy
     df["cvd"] = compute_cvd_proxy(df)
+    df["cvd_acceleration"] = compute_cvd_acceleration(df)
+    
+    # Point of Control (POC)
+    df["poc"] = compute_trailing_poc(df)
 
     return df
 
@@ -369,8 +420,51 @@ def extract_indicator_summary(df: pd.DataFrame) -> dict:
         "vwap": round(float(last["vwap"]), 2) if "vwap" in last and not pd.isna(last["vwap"]) else None,
         "vwap_status": "ABOVE_VWAP" if ("vwap" in last and last["close"] >= last["vwap"]) else "BELOW_VWAP",
         "fvgs": detect_fair_value_gaps(df),
+        "cvd_acceleration": round(float(last["cvd_acceleration"]), 2) if "cvd_acceleration" in last and not pd.isna(last["cvd_acceleration"]) else 0.0,
+        "poc": round(float(last["poc"]), 2) if "poc" in last and not pd.isna(last["poc"]) else None,
     }
 
+def compute_cvd_acceleration(df: pd.DataFrame) -> pd.Series:
+    range_hl = (df["high"] - df["low"]).replace(0, 1e-9)
+    delta_proxy = df["volume"] * ((df["close"] - df["open"]) / range_hl)
+    return delta_proxy.rolling(3).sum()
+
+def compute_trailing_poc(df: pd.DataFrame, window: int = 96) -> pd.Series:
+    import numpy as np
+    pocs = np.zeros(len(df))
+    close_vals = df['close'].values
+    high_vals = df['high'].values
+    low_vals = df['low'].values
+    vol_vals = df['volume'].values
+    typ_price = (high_vals + low_vals + close_vals) / 3.0
+    
+    for i in range(len(df)):
+        if i < 10:
+            pocs[i] = close_vals[i]
+            continue
+            
+        start = max(0, i - window + 1)
+        sub_high = high_vals[start:i+1]
+        sub_low = low_vals[start:i+1]
+        sub_typ = typ_price[start:i+1]
+        sub_vol = vol_vals[start:i+1]
+        
+        min_p = np.min(sub_low)
+        max_p = np.max(sub_high)
+        
+        if min_p == max_p:
+            pocs[i] = min_p
+            continue
+            
+        bins = np.linspace(min_p, max_p, 50)
+        idx = np.digitize(sub_typ, bins) - 1
+        idx = np.clip(idx, 0, 48)
+        
+        vol_profile = np.bincount(idx, weights=sub_vol, minlength=49)
+        poc_idx = np.argmax(vol_profile)
+        pocs[i] = (bins[poc_idx] + bins[poc_idx+1]) / 2.0
+        
+    return pd.Series(pocs, index=df.index) 
 
 if __name__ == "__main__":
     from data_fetcher import fetch_15m_candles

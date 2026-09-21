@@ -50,6 +50,8 @@ class TestFinding3SlippageBuffer(unittest.TestCase):
 
     def test_auto_executor_config_migration_cents_to_dollars(self):
         executor = AutoExecutor.__new__(AutoExecutor)
+        executor.asset = "BTC"
+        executor._config_file = "dummy.json"
         executor.ai_settings = {"slippageBufferCents": 0.05}
         # Simulate migration logic
         if "slippageBufferDollars" not in executor.ai_settings:
@@ -265,6 +267,8 @@ class TestExpirationSafetyGuard(unittest.TestCase):
 
     def test_auto_executor_ignores_final_seconds(self):
         executor = AutoExecutor.__new__(AutoExecutor)
+        executor.asset = "BTC"
+        executor._config_file = "dummy.json"
         executor.mode = "LIVE"
         executor.enabled = True
         executor.prediction_mode = True
@@ -284,4 +288,15 @@ class TestExpirationSafetyGuard(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+import unittest
+from backend.btc.auto_executor import get_auto_executor
+auto_executor = get_auto_executor('BTC')
+
+import unittest
+from unittest.mock import patch, MagicMock
+from backend.btc.auto_executor import get_auto_executor
+auto_executor = get_auto_executor('BTC')
+import pandas as pd
+import time
 

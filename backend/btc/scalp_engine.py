@@ -321,6 +321,7 @@ class ScalpEngine:
                     "recommendation": "SCALP",
                     "conviction_grade": "SCALP",
                     "trade_source": "SCALP",
+                    "trading_style": "SCALP",
                     "is_auto": True,
                     "is_scalp": True,
                     "is_manual": False,
@@ -523,3 +524,6 @@ def get_scalp_engine(asset: str = "BTC") -> ScalpEngine:
     if asset not in _scalp_engines:
         _scalp_engines[asset] = ScalpEngine(asset)
     return _scalp_engines[asset]
+
+scalp_engine = get_scalp_engine("BTC")
+

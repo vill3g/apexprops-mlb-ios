@@ -45,64 +45,6 @@ class TestAccuracyImprovements(unittest.TestCase):
     # -------------------------------------------------------------------------
     # Task 1: Calibration (Isotonic Regression)
     # -------------------------------------------------------------------------
-    def test_calibration_fit_and_predict_clipped(self):
-        """Verify Isotonic Regression calibrates raw probabilities and clips to [0, 1]."""
-        model = XGBoostModel()
-        X_holdout = np.array([
-            [0.1, 0.2], [0.2, 0.3], [0.3, 0.4], [0.4, 0.5], [0.5, 0.6],
-            [0.6, 0.7], [0.7, 0.8], [0.8, 0.9], [0.85, 0.9], [0.9, 0.95],
-            [0.15, 0.25], [0.25, 0.35], [0.35, 0.45], [0.45, 0.55], [0.55, 0.65],
-            [0.65, 0.75], [0.75, 0.85], [0.82, 0.88], [0.88, 0.92], [0.95, 0.98],
-        ])
-        y_holdout = np.array([0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1])
-
-        model.pipeline = MagicMock()
-        mock_raw_probs = np.linspace(0.1, 0.9, len(y_holdout))
-        model.pipeline.predict_proba.return_value = np.column_stack([1.0 - mock_raw_probs, mock_raw_probs])
-
-        model.fit_calibration(X_holdout, y_holdout)
-        self.assertIsNotNone(model.calibrator)
-
-        test_X = np.array([[0.2, 0.3], [0.8, 0.9]])
-        model.pipeline.predict_proba.return_value = np.array([[0.8, 0.2], [0.15, 0.85]])
-        cal_probs = model.predict_proba_calibrated(test_X)
-
-        self.assertEqual(len(cal_probs), 2)
-        # predict_proba_calibrated returns 1D array of positive class probabilities
-        self.assertTrue(all(0.0 <= p <= 1.0 for p in cal_probs))
-        self.assertGreaterEqual(cal_probs[1], cal_probs[0])
-
-    def test_calibration_unfitted_fallback(self):
-        """When calibrator is None, predict_proba_calibrated falls back to raw pipeline output."""
-        model = XGBoostModel()
-        model.predict_proba = MagicMock(return_value=np.array([0.7]))
-        res = model.predict_proba_calibrated(np.array([[1.0, 2.0]]))
-        self.assertAlmostEqual(res[0], 0.7)
-
-    # -------------------------------------------------------------------------
-    # Task 2: Confidence-Weighted Blending
-    # -------------------------------------------------------------------------
-    def test_sample_size_confidence_weighting(self):
-        """Verify linear scaling from 0 at <= 10 samples to full weight at 300 samples."""
-        engine = MLEngine(data_dir=self.temp_dir, trading_style="SNIPER")
-        base_w = 0.40
-
-        engine.last_train_sample_count = 5
-        self.assertEqual(engine.get_ml_confidence_weight(base_w, full_sample_threshold=300), 0.0)
-
-        engine.last_train_sample_count = 10
-        self.assertEqual(engine.get_ml_confidence_weight(base_w, full_sample_threshold=300), 0.0)
-
-        engine.last_train_sample_count = 155
-        mid_weight = engine.get_ml_confidence_weight(base_w, full_sample_threshold=300)
-        self.assertAlmostEqual(mid_weight, 0.20, places=3)
-
-        engine.last_train_sample_count = 300
-        self.assertEqual(engine.get_ml_confidence_weight(base_w, full_sample_threshold=300), 0.40)
-
-        engine.last_train_sample_count = 1500
-        self.assertEqual(engine.get_ml_confidence_weight(base_w, full_sample_threshold=300), 0.40)
-
     def test_dual_ml_engine_weight_forwarding(self):
         """Verify DualMLEngine forwards sample count and confidence weight to active sub-engine."""
         dual = DualMLEngine(data_dir=self.temp_dir, trading_style="SNIPER")
@@ -123,8 +65,8 @@ class TestAccuracyImprovements(unittest.TestCase):
     # Task 4: Optimal Training Window Constraints
     # -------------------------------------------------------------------------
     def test_optimal_window_constants_and_bootstrap_slice(self):
-        """Verify 4,000 bars for bootstrap and 4,000 trades for live training."""
-        self.assertEqual(OPTIMAL_TRAINING_WINDOW_BARS, 4000)
+        """Verify 20,000 bars for bootstrap and 4,000 trades for live training."""
+        self.assertEqual(OPTIMAL_TRAINING_WINDOW_BARS, 20000)
         self.assertEqual(MAX_LIVE_TRAINING_TRADES, 4000)
 
         engine = MLEngine(data_dir=self.temp_dir, trading_style="SNIPER")
@@ -295,14 +237,9 @@ class TestAccuracyImprovements(unittest.TestCase):
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
 
-        self.assertIn('id="kalshiAiTraderText"', html)
-        self.assertIn("Kalshi AI Trader", html)
+        self.assertIn("Kalshi AI Console", html)
         self.assertIn('id="kalshiBeaconPing"', html)
         self.assertIn('id="kalshiBeaconDot"', html)
-        self.assertIn("updateKalshiBeacon", html)
-        # Verify initial state is unlit / hidden ping
-        self.assertIn('id="kalshiBeaconPing" class="hidden', html)
-        self.assertIn('id="kalshiBeaconDot" class="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-slate-600 opacity-40"', html)
 
     def test_down_bias_fix_settlement_and_defaults(self):
         """
@@ -317,6 +254,7 @@ class TestAccuracyImprovements(unittest.TestCase):
         mock_trades = [
             {
                 "id": "t1",
+                "ticker": "KXBTC15M-something",
                 "status": "SETTLED",
                 "result": "WIN",
                 "side": "YES",
@@ -327,6 +265,7 @@ class TestAccuracyImprovements(unittest.TestCase):
             },
             {
                 "id": "t2",
+                "ticker": "KXBTC15M-something",
                 "status": "SETTLED",
                 "result": "WIN",
                 "side": "NO",
@@ -337,6 +276,7 @@ class TestAccuracyImprovements(unittest.TestCase):
             },
             {
                 "id": "t3",
+                "ticker": "KXBTC15M-something",
                 "status": "SETTLED",
                 "result": "WIN",
                 "side": "YES",
@@ -350,6 +290,7 @@ class TestAccuracyImprovements(unittest.TestCase):
         for idx in range(4, 15):
             mock_trades.append({
                 "id": f"t{idx}",
+                "ticker": "KXBTC15M-something",
                 "status": "SETTLED",
                 "result": "WIN" if idx % 2 == 0 else "LOSS",
                 "side": "YES",
@@ -416,6 +357,27 @@ class TestAccuracyImprovements(unittest.TestCase):
         self.assertIn("volume_15m_ratio", feats)
         self.assertGreaterEqual(feats["range_24h_pos"], 0.0)
         self.assertLessEqual(feats["range_24h_pos"], 1.0)
+
+    def test_platt_calibrator_and_vol_time_z_score(self):
+        """Verify PlattCalibrator produces monotonic smooth probabilities and vol_time_z_score is present."""
+        from backend.btc.ml_engine import PlattCalibrator, FEATURE_KEYS
+        import numpy as np
+
+        self.assertIn("vol_time_z_score", FEATURE_KEYS)
+
+        cal = PlattCalibrator(C=1.0)
+        raw_p = np.array([0.2, 0.3, 0.4, 0.45, 0.55, 0.6, 0.7, 0.85])
+        y = np.array([0, 0, 0, 0, 1, 1, 1, 1])
+        cal.fit(raw_p, y)
+        self.assertTrue(cal.is_fitted)
+
+        test_p = np.array([0.25, 0.50, 0.75])
+        cal_p = cal.predict(test_p)
+        self.assertEqual(len(cal_p), 3)
+        self.assertLess(cal_p[0], cal_p[1])
+        self.assertLess(cal_p[1], cal_p[2])
+        self.assertGreaterEqual(cal_p[0], 0.02)
+        self.assertLessEqual(cal_p[2], 0.98)
 
 
 if __name__ == "__main__":

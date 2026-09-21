@@ -12,6 +12,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from enum import Enum
 from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field
+
+class ScalpConfigUpdate(BaseModel):
+    """Validated input model for scalp engine configuration updates."""
+    enabled: Optional[bool] = None
+    mode: Optional[str] = Field(None, pattern="^(PAPER|LIVE)$")
+    price_move_threshold: Optional[float] = Field(None, ge=0.01, le=10.0)
+    profit_target: Optional[float] = Field(None, ge=0.01, le=50.0)
+    loss_target: Optional[float] = Field(None, ge=0.01, le=50.0)
+    take_profit_atr: Optional[float] = Field(None, ge=0.1, le=20.0)
+    max_contracts: Optional[int] = Field(None, ge=1, le=500)
+    max_trades_per_interval: Optional[int] = Field(None, ge=1, le=50)
+    interval_seconds: Optional[int] = Field(None, ge=60, le=86400)
+    minimum_conviction: Optional[str] = Field(None, pattern="^(A\\+|A|B\\+|B|C|D)$")
 
 class DirectionEnum(str, Enum):
     ABOVE = "ABOVE"
@@ -27,11 +41,12 @@ import pandas as pd
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from backend.btc.data_fetcher import fetch_candles, get_btc_ticker, get_candle_countdown, get_live_15m_target_data, format_volume_series
+from backend.engine.multi_asset_fetcher import fetch_asset_candles, get_asset_ticker
+from backend.btc.data_fetcher import get_candle_countdown, get_live_15m_target_data, format_volume_series
 from backend.btc.indicators import add_all_indicators
 from backend.btc.pattern_detector import detect_candlestick_patterns
 from backend.btc.analyzer import analyze_btc
-from backend.btc.auto_executor import auto_executor
+from backend.btc.auto_executor import get_auto_executor
 
 from backend.data.espn_client import ESPNClient
 from backend.data.draftkings_client import DraftKingsClient
@@ -48,6 +63,16 @@ app = FastAPI(
     version="4.0.0",
     description="Real-time Bitcoin 15-Minute Pattern & Confluence Analyzer."
 )
+
+
+@app.on_event("startup")
+def _start_liquidation_feed():
+    """C6 FIX: Safe startup hook — won't crash the server if the stream fails."""
+    try:
+        from backend.btc.liquidation_stream import start_stream as start_liquidation_stream
+        start_liquidation_stream()
+    except Exception as e:
+        logger.warning(f"[Startup] Liquidation stream failed to start: {e}. Trading will continue without live liquidation data.")
 
 # Allowed CORS origins
 allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
@@ -375,21 +400,21 @@ def live_poll():
 btc_timeframe_cache: Dict[str, Any] = {}
 _btc_cache_lock = threading.Lock()
 
-def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 10):
+def get_cached_btc_analysis(asset: str = "BTC", timeframe: str = "15m", max_age_seconds: int = 10):
     """Retrieve or compute BTC analysis with smart per-timeframe caching."""
     now = time.time()
     tf = timeframe.lower()
     with _btc_cache_lock:
-        if tf in btc_timeframe_cache and (now - btc_timeframe_cache[tf]["last_fetched"]) < max_age_seconds:
-            if btc_timeframe_cache[tf].get("df") is not None:
-                return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+        if f"{asset}_{tf}" in btc_timeframe_cache and (now - btc_timeframe_cache[f"{asset}_{tf}"]["last_fetched"]) < max_age_seconds:
+            if btc_timeframe_cache[f"{asset}_{tf}"].get("df") is not None:
+                return btc_timeframe_cache[f"{asset}_{tf}"]["df"], btc_timeframe_cache[f"{asset}_{tf}"]["analysis"]
 
         try:
-            df = fetch_candles(timeframe=tf, limit=1000)
-            analysis = analyze_btc(df, timeframe=tf)
+            df = fetch_asset_candles(asset, timeframe=tf, limit=1000)
+            analysis = analyze_btc(df, asset=asset, timeframe=tf)
             analysis["generated_at"] = datetime.now(timezone.utc).isoformat()
             
-            btc_timeframe_cache[tf] = {
+            btc_timeframe_cache[f"{asset}_{tf}"] = {
                 "df": df,
                 "analysis": analysis,
                 "last_fetched": time.time()
@@ -397,8 +422,8 @@ def get_cached_btc_analysis(timeframe: str = "15m", max_age_seconds: int = 10):
             return df, analysis
         except Exception as e:
             logger.error(f"Error fetching live BTC candles for {tf}: {e}")
-            if tf in btc_timeframe_cache and btc_timeframe_cache[tf].get("df") is not None:
-                return btc_timeframe_cache[tf]["df"], btc_timeframe_cache[tf]["analysis"]
+            if f"{asset}_{tf}" in btc_timeframe_cache and btc_timeframe_cache[f"{asset}_{tf}"].get("df") is not None:
+                return btc_timeframe_cache[f"{asset}_{tf}"]["df"], btc_timeframe_cache[f"{asset}_{tf}"]["analysis"]
             raise e
 
 def sanitize_btc_json(val):
@@ -418,14 +443,14 @@ def sanitize_btc_json(val):
     if isinstance(val, pd.Timestamp):
         return str(val)
     if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
-        return None
+        return 0.0
     return val
 
-@app.get("/api/btc/analyze")
-def api_btc_analyze(timeframe: str = "15m"):
+@app.get("/api/engine/{asset}/analyze")
+def api_btc_analyze(asset: str, timeframe: str = "15m"):
     """Returns comprehensive directional analysis, score, and trade setup for selected timeframe."""
     try:
-        _, analysis = get_cached_btc_analysis(timeframe=timeframe)
+        _, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
         return JSONResponse(sanitize_btc_json(analysis))
     except Exception as e:
         static_backup = os.path.join(STATIC_DIR, "data", "btc_analysis.json")
@@ -437,14 +462,24 @@ def api_btc_analyze(timeframe: str = "15m"):
                 logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.get("/api/btc/prediction/accuracy")
-def api_btc_prediction_accuracy():
+@app.post("/api/engine/{asset}/prediction/accuracy/reset")
+def api_btc_prediction_accuracy_reset(asset: str):
+    """Reset prediction accuracy tracker by marking past trades ineligible."""
+    try:
+        get_auto_executor(asset).reset_prediction_accuracy()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        logger.error(f"[API] Error resetting prediction accuracy: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.get("/api/engine/{asset}/prediction/accuracy")
+def api_btc_prediction_accuracy(asset: str):
     """Return accuracy based only on settled automated Kalshi predictions."""
     try:
-        from backend.btc.auto_executor import auto_executor
-        trades = auto_executor.get_trades_history()
-        auto_executor.check_settlements(trades)
-        accuracy = auto_executor.get_prediction_accuracy(trades)
+        from backend.btc.auto_executor import get_auto_executor
+        trades = get_auto_executor(asset).get_trades_history()
+        get_auto_executor(asset).check_settlements(trades)
+        accuracy = get_auto_executor(asset).get_prediction_accuracy(trades)
         latest = accuracy.get("recent_outcomes", [])[-1] if accuracy.get("recent_outcomes") else None
         return JSONResponse({
             "accuracy": accuracy,
@@ -467,15 +502,15 @@ def api_btc_prediction_accuracy():
             "error": str(e)
         }, status_code=500)
 
-@app.get("/api/btc/live")
-def api_btc_live():
+@app.get("/api/engine/{asset}/live")
+def api_btc_live(asset: str):
     """
     Ultra-low latency endpoint returning live price, 15m target benchmark,
     spread delta, 5-target trend box, and candle countdown for 1s polling.
     Autonomous rollover execution is handled in a dedicated background worker.
     """
     try:
-        data = get_live_15m_target_data()
+        data = get_live_15m_target_data(asset.upper())
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
         return JSONResponse({
@@ -492,11 +527,11 @@ def api_btc_live():
             "error": str(e)
         }, status_code=500)
 
-@app.get("/api/btc/ticker")
-def api_btc_ticker():
+@app.get("/api/engine/{asset}/ticker")
+def api_btc_ticker(asset: str):
     """Returns live 24h ticker info."""
     try:
-        ticker = get_btc_ticker()
+        ticker = get_asset_ticker(asset)
         return JSONResponse(sanitize_btc_json(ticker))
     except Exception as e:
         static_backup = os.path.join(STATIC_DIR, "data", "btc_ticker.json")
@@ -508,20 +543,21 @@ def api_btc_ticker():
                 logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
-@app.get("/api/btc/countdown")
-def api_btc_countdown(timeframe: str = "15m"):
+@app.get("/api/engine/{asset}/countdown")
+def api_btc_countdown(asset: str, timeframe: str = "15m"):
     """Returns countdown to current candle close for selected timeframe."""
     try:
         return JSONResponse(sanitize_btc_json(get_candle_countdown(timeframe=timeframe)))
     except Exception as e:
+        logger.error(f"Error in countdown: {e}")
         return JSONResponse({"formatted": "--:--", "seconds_left": 0})
 
-@app.get("/api/btc/kalshi")
-def api_btc_kalshi():
+@app.get("/api/engine/{asset}/kalshi")
+def api_btc_kalshi(asset: str):
     """Returns active Kalshi 15M target strike and market odds."""
     try:
         from backend.btc.kalshi_client import get_kalshi_15m_market
-        data = get_kalshi_15m_market()
+        data = get_kalshi_15m_market(series_ticker=f"KX{asset.upper()}15M")
         if not data:
             return JSONResponse({"status": "unavailable", "target_price": None, "is_synthetic": True})
         data = dict(data)
@@ -530,13 +566,13 @@ def api_btc_kalshi():
     except Exception as e:
         return JSONResponse({"error": str(e), "target_price": None, "is_synthetic": True}, status_code=500)
 
-@app.get("/api/btc/kalshi/orderbook")
-@app.get("/api/btc/kalshi/pricebook")
-def api_btc_kalshi_orderbook():
+@app.get("/api/engine/{asset}/kalshi/orderbook")
+@app.get("/api/engine/{asset}/kalshi/pricebook")
+def api_btc_kalshi_orderbook(asset: str):
     """Returns top-of-book market depth, spread, bid/ask sizes and order imbalance."""
     try:
         from backend.btc.kalshi_client import get_kalshi_15m_market
-        data = get_kalshi_15m_market()
+        data = get_kalshi_15m_market(series_ticker=f"KX{asset.upper()}15M")
         if not data:
             return JSONResponse({"status": "unavailable", "bids": [], "asks": [], "is_synthetic": True})
         
@@ -581,162 +617,229 @@ def api_btc_kalshi_orderbook():
 # AUTONOMOUS KALSHI TRADING REST ENDPOINTS
 # =====================================================================
 
-@app.get("/api/btc/trade/status", dependencies=[Depends(require_auth)])
-def api_btc_trade_status():
+@app.get("/api/engine/{asset}/trade/status", dependencies=[Depends(require_auth)])
+def api_btc_trade_status(asset: str):
     """Returns full status of the Kalshi automated trading engine."""
     try:
-        status = auto_executor.get_status()
+        status = get_auto_executor(asset).get_status()
         return JSONResponse(sanitize_btc_json(status))
     except Exception as e:
         return JSONResponse({"error": str(e), "enabled": False, "mode": "PAPER"}, status_code=500)
 
-@app.post("/api/btc/trade/toggle", dependencies=[Depends(require_auth)])
-def api_btc_trade_toggle(enabled: bool = Query(...)):
+@app.post("/api/engine/{asset}/trade/toggle", dependencies=[Depends(require_auth)])
+def api_btc_trade_toggle(asset: str, enabled: bool = Query(...)):
     """Toggle auto-trading execution ON or OFF."""
-    res = auto_executor.set_enabled(enabled)
-    return JSONResponse(res)
+    try:
+        res = get_auto_executor(asset).set_enabled(enabled)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": f"Toggle error: {str(e)}"}, status_code=500)
 
-@app.post("/api/btc/trade/mode", dependencies=[Depends(require_auth)])
-def api_btc_trade_mode(mode: str = Query(...)):
+@app.post("/api/engine/{asset}/trade/mode", dependencies=[Depends(require_auth)])
+def api_btc_trade_mode(asset: str, mode: str = Query(...)):
     """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
     # FIX #7: The previous guard `not API_TOKEN` was dead code — require_auth already
     # blocks the request with HTTP 401 when APP_API_TOKEN is empty.
     # Replace with a meaningful check: LIVE mode also requires Kalshi credentials.
-    if str(mode).upper() == "LIVE" and not auto_executor.mode == "LIVE":
+    if str(mode).upper() == "LIVE" and not get_auto_executor(asset).mode == "LIVE":
         from backend.btc.kalshi_trader import kalshi_trader as _kt
         if not _kt.is_authenticated():
             raise HTTPException(
                 status_code=403,
                 detail="Kalshi API credentials must be configured before switching to LIVE trading."
             )
-    res = auto_executor.set_mode(mode)
+    res = get_auto_executor(asset).set_mode(mode)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/prediction_mode", dependencies=[Depends(require_auth)])
-def api_btc_trade_prediction_mode(enabled: bool = Query(...)):
+@app.post("/api/engine/{asset}/trade/prediction_mode", dependencies=[Depends(require_auth)])
+def api_btc_trade_prediction_mode(asset: str, enabled: bool = Query(...)):
     """Toggle prediction mode ON or OFF."""
-    auto_executor.prediction_mode = enabled
-    auto_executor._save_config()
+    get_auto_executor(asset).prediction_mode = enabled
+    get_auto_executor(asset)._save_config()
     return JSONResponse({"status": "ok", "prediction_mode": enabled})
 
-@app.post("/api/btc/trade/threshold", dependencies=[Depends(require_auth)])
-def api_btc_trade_threshold(threshold: str = Query(...)):
+@app.post("/api/engine/{asset}/trade/threshold", dependencies=[Depends(require_auth)])
+def api_btc_trade_threshold(asset: str, threshold: str = Query(...)):
     """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
-    res = auto_executor.set_conviction_threshold(threshold)
+    res = get_auto_executor(asset).set_conviction_threshold(threshold)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/contracts", dependencies=[Depends(require_auth)])
-def api_btc_trade_contracts(count: int = Query(...)):
+@app.post("/api/engine/{asset}/trade/contracts", dependencies=[Depends(require_auth)])
+def api_btc_trade_contracts(asset: str, count: int = Query(...)):
     """Set number of contracts per trade."""
-    res = auto_executor.set_max_contracts(count)
+    res = get_auto_executor(asset).set_max_contracts(count)
     return JSONResponse(res)
 
 
-@app.post("/api/btc/trade/ai_settings", dependencies=[Depends(require_auth)])
-async def api_btc_trade_ai_settings(request: Request):
+@app.get("/api/engine/{asset}/trade/config", dependencies=[Depends(require_auth)])
+def api_btc_trade_config_get(asset: str):
+    """Retrieve the full current configuration from the server (source of truth)."""
+    ex = get_auto_executor(asset)
+    return JSONResponse({
+        "mode": ex.mode,
+        "prediction_mode": ex.prediction_mode,
+        "max_daily_risk": ex.max_daily_risk,
+        "max_daily_trades": ex.max_daily_trades,
+        "min_conviction": ex.min_conviction,
+        "max_contracts": ex.max_contracts,
+        "enabled": ex.enabled,
+        "ai_settings": ex.ai_settings
+    })
+
+@app.get("/api/engine/{asset}/trade/ai_settings", dependencies=[Depends(require_auth)])
+def api_btc_trade_ai_settings_get(asset: str):
+    """Retrieve the current AI settings from the server (source of truth)."""
+    return JSONResponse(get_auto_executor(asset).ai_settings)
+
+@app.post("/api/engine/{asset}/trade/ai_settings", dependencies=[Depends(require_auth)])
+async def api_btc_trade_ai_settings(asset: str, request: Request):
     try:
         data = await request.json()
-        res = auto_executor.set_ai_settings(data)
+        res = get_auto_executor(asset).set_ai_settings(data)
         from backend.btc.ml_engine import get_ml_engine
         style = data.get("tradingStyle", "SNIPER")
-        get_ml_engine(trading_style=style).apply_settings(data)
-        if style != "SNIPER":
-            get_ml_engine(trading_style="SNIPER").apply_settings(data)
+        # Update settings for all active engine styles
+        for st in ["SNIPER", "MOMENTUM_SURFER", "AMBUSH", "CHOP"]:
+            eng = get_ml_engine(trading_style=st)
+            eng.apply_settings(data)
+            
+            # Force immediate synchronous retraining using historical candles
+            try:
+                from backend.btc.data_fetcher import fetch_15m_candles_history
+                from backend.btc.indicators import add_all_indicators
+                hist_df = fetch_15m_candles_history(days=60)
+                if hist_df is not None and not hist_df.empty:
+                    df_ind = add_all_indicators(hist_df)
+                    eng.self_train_on_historical_market(df_ind)
+            except Exception as e:
+                pass
         return JSONResponse({"status": "ok", "settings": data})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)})
 
-@app.post("/api/btc/trade/risk_limits", dependencies=[Depends(require_auth)])
-def api_btc_trade_risk_limits(
+@app.post("/api/engine/{asset}/trade/risk_limits", dependencies=[Depends(require_auth)])
+def api_btc_trade_risk_limits(asset: str, 
     max_daily_risk: Optional[float] = Query(None),
     max_daily_trades: Optional[int] = Query(None)
 ):
     """Set maximum daily risk ($) and maximum daily trades."""
-    res = auto_executor.set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
+    res = get_auto_executor(asset).set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
-@app.post("/api/btc/trade/manual", dependencies=[Depends(require_auth)])
-def api_btc_trade_manual(direction: DirectionEnum = Query(...)):
+@app.post("/api/engine/{asset}/trade/manual", dependencies=[Depends(require_auth)])
+def api_btc_trade_manual(asset: str, direction: DirectionEnum = Query(...)):
     """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
-    res = auto_executor.execute_manual_trade(direction.value)
-    return JSONResponse(sanitize_btc_json(res))
+    try:
+        res = get_auto_executor(asset).execute_manual_trade(direction.value)
+        return JSONResponse(sanitize_btc_json(res))
+    except Exception as e:
+        return JSONResponse({"success": False, "error": f"Manual trade error: {str(e)}"}, status_code=500)
 
-@app.post("/api/btc/trade/close", dependencies=[Depends(require_auth)])
-def api_btc_trade_close():
+@app.post("/api/engine/{asset}/trade/reverse", dependencies=[Depends(require_auth)])
+def api_btc_trade_reverse(asset: str):
+    """1-Click manual reverse of open position."""
+    try:
+        executor = get_auto_executor(asset)
+        trades = executor.get_trades_history()
+        open_trades = [t for t in trades if t.get("status") == "OPEN"]
+        if not open_trades:
+            return JSONResponse({"success": False, "error": "No open trades to reverse."})
+        
+        trade = open_trades[-1]
+        side = trade.get("side", "").upper()
+        opposite_dir = "ABOVE" if side == "NO" else "BELOW"
+        
+        close_res = executor.close_open_trades()
+        if not close_res.get("success") and "No open trades" not in str(close_res.get("error", "")):
+            return JSONResponse({"success": False, "error": f"Failed to close current trade: {close_res.get('error')}"})
+            
+        res = executor.execute_manual_trade(opposite_dir)
+        return JSONResponse(sanitize_btc_json(res))
+    except Exception as e:
+        import traceback
+        error_msg = f"Reverse Error: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)
+        return JSONResponse({"success": False, "error": f"Server Error: {str(e)}"})
+
+@app.post("/api/engine/{asset}/trade/close", dependencies=[Depends(require_auth)])
+def api_btc_trade_close(asset: str):
     """1-Click manual close of all open trades."""
-    res = auto_executor.close_open_trades()
-    return JSONResponse(sanitize_btc_json(res))
+    try:
+        res = get_auto_executor(asset).close_open_trades()
+        return JSONResponse(sanitize_btc_json(res))
+    except Exception as e:
+        return JSONResponse({"success": False, "error": f"Close trade error: {str(e)}"}, status_code=500)
 
-@app.get("/api/btc/trade/history", dependencies=[Depends(require_auth)])
-def api_btc_trade_history(mode: Optional[str] = None):
+@app.get("/api/engine/{asset}/trade/history", dependencies=[Depends(require_auth)])
+def api_btc_trade_history(asset: str, mode: Optional[str] = None):
     """Returns list of all historical trades and P&L results."""
-    history = auto_executor.get_trades_history()
+    history = get_auto_executor(asset).get_trades_history()
     if mode:
         history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
 
-@app.get("/api/btc/calibration/drift")
-def api_btc_calibration_drift(min_samples: int = 40, window: int = 100):
-    res = auto_executor.check_live_calibration_drift(min_samples=min_samples, window=window)
+@app.get("/api/engine/{asset}/calibration/drift")
+def api_btc_calibration_drift(asset: str, min_samples: int = 40, window: int = 100):
+    res = get_auto_executor(asset).check_live_calibration_drift(min_samples=min_samples, window=window)
     return JSONResponse(sanitize_btc_json(res))
 
-@app.get("/api/btc/mode", dependencies=[Depends(require_auth)])
-def api_btc_mode():
-    return JSONResponse({"mode": auto_executor.mode})
+@app.get("/api/engine/{asset}/mode", dependencies=[Depends(require_auth)])
+def api_btc_mode(asset: str):
+    return JSONResponse({"mode": get_auto_executor(asset).mode})
 
-@app.get("/api/btc/paper/balance", dependencies=[Depends(require_auth)])
-def api_btc_paper_balance():
+@app.get("/api/engine/{asset}/paper/balance", dependencies=[Depends(require_auth)])
+def api_btc_paper_balance(asset: str):
     from backend.btc.paper_balance import load_balance
     return JSONResponse({"balance": load_balance()})
 
-@app.post("/api/btc/paper/balance/reset", dependencies=[Depends(require_auth)])
-def api_btc_paper_balance_reset():
+@app.post("/api/engine/{asset}/paper/balance/reset", dependencies=[Depends(require_auth)])
+def api_btc_paper_balance_reset(asset: str):
     from backend.btc.paper_balance import reset_balance
     new_bal = reset_balance()
     return JSONResponse({"balance": new_bal})
 
 # ── Scalp Engine Endpoints ────────────────────────────────────────────
-from backend.btc.scalp_engine import scalp_engine
+from backend.btc.scalp_engine import get_scalp_engine
 
-@app.post("/api/btc/scalp/start", dependencies=[Depends(require_auth)])
-def api_btc_scalp_start():
+@app.post("/api/engine/{asset}/scalp/start", dependencies=[Depends(require_auth)])
+def api_btc_scalp_start(asset: str):
     """Start the scalp engine background monitor."""
-    scalp_engine.start()
+    get_scalp_engine(asset).start()
     return JSONResponse({"status": "scalp engine started"})
 
-@app.post("/api/btc/scalp/stop", dependencies=[Depends(require_auth)])
-def api_btc_scalp_stop():
+@app.post("/api/engine/{asset}/scalp/stop", dependencies=[Depends(require_auth)])
+def api_btc_scalp_stop(asset: str):
     """Stop the scalp engine background monitor."""
-    scalp_engine.stop()
+    get_scalp_engine(asset).stop()
     return JSONResponse({"status": "scalp engine stopped"})
 
-@app.get("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
-def api_btc_scalp_config():
+@app.get("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth)])
+def api_btc_scalp_config(asset: str):
     """Get current scalp engine configuration."""
-    return JSONResponse(scalp_engine.load_config())
+    return JSONResponse(get_scalp_engine(asset).load_config())
 
-@app.get("/api/btc/scalp/status", dependencies=[Depends(require_auth)])
-def api_btc_scalp_status():
+@app.get("/api/engine/{asset}/scalp/status", dependencies=[Depends(require_auth)])
+def api_btc_scalp_status(asset: str):
     """Get current scalp engine runtime status and monitored positions."""
-    return JSONResponse(scalp_engine.get_status())
+    return JSONResponse(get_scalp_engine(asset).get_status())
 
-@app.patch("/api/btc/scalp/config", dependencies=[Depends(require_auth)])
-async def api_btc_scalp_config_update(request: Request):
-    """Update scalp engine configuration.
-    FIX #11: FastAPI does not auto-parse `dict` parameters as JSON body without a Pydantic model.
-    Use await request.json() so the full JSON payload is correctly received."""
-    body = await request.json()
-    scalp_engine.save_config(body)
-    return JSONResponse({"status": "config updated", "config": scalp_engine.load_config()})
+@app.patch("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth)])
+async def api_btc_scalp_config_update(asset: str, config: ScalpConfigUpdate):
+    """Update scalp engine configuration with validated input."""
+    body = config.model_dump(exclude_none=True)
+    if not body:
+        raise HTTPException(status_code=400, detail="No valid configuration fields provided")
+    get_scalp_engine(asset).save_config(body)
+    return JSONResponse({"status": "config updated", "config": get_scalp_engine(asset).load_config()})
 
-@app.get("/api/btc/candles")
-def api_btc_candles(timeframe: str = "15m"):
+@app.get("/api/engine/{asset}/candles")
+def api_btc_candles(asset: str, timeframe: str = "15m"):
     """
     Returns formatted candlestick data + indicators + pattern markers + volume series
     for TradingView Lightweight Charts for the selected timeframe.
     """
     try:
-        df, analysis = get_cached_btc_analysis(timeframe=timeframe)
+        df, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
         df_ind = add_all_indicators(df)
 
         candles = []
@@ -779,7 +882,7 @@ def api_btc_candles(timeframe: str = "15m"):
                     "text": p["name"],
                 })
 
-        ticker = get_btc_ticker()
+        ticker = get_asset_ticker(asset)
         volume_series = format_volume_series(df_ind)
         target_benchmark = analysis.get("target_benchmark", {})
 
@@ -820,12 +923,24 @@ def _auto_trader_background_loop():
     while True:
         try:
             _last_autotrader_heartbeat = time.time()
-            auto_executor.check_and_execute_rollover()
+            for asset in ["BTC", "ETH", "GOLD"]:
+                try:
+                    get_auto_executor(asset).check_and_execute_rollover()
+                except Exception:
+                    pass
             settle_tick += 1
             if settle_tick % 5 == 0:  # Fires every 10s (5 ticks * 2s)
-                auto_executor.check_settlements()
+                for asset in ["BTC", "ETH", "GOLD"]:
+                    try:
+                        get_auto_executor(asset).check_settlements()
+                    except Exception:
+                        pass
             # Check early stop-loss and position reversal on active open positions
-            auto_executor.check_active_trades_stop_and_reversal()
+            for asset in ["BTC", "ETH", "GOLD"]:
+                try:
+                    get_auto_executor(asset).check_active_trades_stop_and_reversal()
+                except Exception:
+                    pass
             _last_autotrader_heartbeat = time.time()
         except Exception as e:
             logger.error(f"[AutoTrader Background] Error in loop: {e}", exc_info=True)

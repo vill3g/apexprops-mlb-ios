@@ -1,0 +1,79 @@
+{
+  "total_evaluated_trades": 192,
+  "model_wins": 139,
+  "model_losses": 53,
+  "model_win_rate_pct": 72.4,
+  "hist_win_rate_pct": 51.04,
+  "win_rate_delta": 21.35,
+  "model_total_pnl": -63.41,
+  "hist_total_pnl": -6.69,
+  "pnl_delta": -56.72,
+  "profit_factor": 0.96,
+  "brier_score": 0.1964,
+  "log_loss": 0.6088,
+  "high_conviction": {
+    "threshold": ">= 60%",
+    "count": 178,
+    "wins": 134,
+    "win_rate_pct": 75.28,
+    "pnl": 155.88
+  },
+  "lower_conviction": {
+    "threshold": "< 60%",
+    "count": 14,
+    "wins": 5,
+    "win_rate_pct": 35.71,
+    "pnl": -219.29
+  },
+  "calibration_buckets": [
+    {
+      "range": "0-40%",
+      "count": 94,
+      "predicted_prob": "12.4%",
+      "actual_rate": "25.5%",
+      "calibration_gap": "13.2%"
+    },
+    {
+      "range": "40-45%",
+      "count": 3,
+      "predicted_prob": "42.8%",
+      "actual_rate": "66.7%",
+      "calibration_gap": "23.9%"
+    },
+    {
+      "range": "45-50%",
+      "count": 3,
+      "predicted_prob": "48.4%",
+      "actual_rate": "66.7%",
+      "calibration_gap": "18.3%"
+    },
+    {
+      "range": "50-55%",
+      "count": 4,
+      "predicted_prob": "52.7%",
+      "actual_rate": "25.0%",
+      "calibration_gap": "27.7%"
+    },
+    {
+      "range": "55-60%",
+      "count": 4,
+      "predicted_prob": "57.8%",
+      "actual_rate": "50.0%",
+      "calibration_gap": "7.8%"
+    },
+    {
+      "range": "60-70%",
+      "count": 14,
+      "predicted_prob": "66.5%",
+      "actual_rate": "50.0%",
+      "calibration_gap": "16.5%"
+    },
+    {
+      "range": "70-100%",
+      "count": 70,
+      "predicted_prob": "85.8%",
+      "actual_rate": "81.4%",
+      "calibration_gap": "4.3%"
+    }
+  ]
+}

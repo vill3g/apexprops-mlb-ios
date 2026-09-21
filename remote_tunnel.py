@@ -156,6 +156,7 @@ def run_tunnel():
 
     while True:
         try:
+            active_url = None
             if os.path.exists(CLOUDFLARED_LOG):
                 try:
                     os.remove(CLOUDFLARED_LOG)
@@ -190,8 +191,29 @@ def run_tunnel():
                         pass
                 if proc.poll() is not None:
                     break
-
-            proc.wait()
+            
+            # Liveness loop
+            consecutive_failures = 0
+            while proc.poll() is None:
+                time.sleep(20)
+                if active_url:
+                    try:
+                        import requests
+                        res = requests.get(f"{active_url}/api/health", timeout=10)
+                        if res.status_code == 200:
+                            consecutive_failures = 0
+                        else:
+                            consecutive_failures += 1
+                    except Exception:
+                        consecutive_failures += 1
+                    
+                    if consecutive_failures >= 3:
+                        logger.warning("[RemoteTunnel] Tunnel liveness check failed 3 times. Forcing restart.")
+                        proc.terminate()
+                        time.sleep(2)
+                        proc.kill()
+                        break
+            
             logger.warning("[RemoteTunnel] cloudflared process exited with code %s. Restarting in 5s...", proc.returncode)
             time.sleep(5)
 

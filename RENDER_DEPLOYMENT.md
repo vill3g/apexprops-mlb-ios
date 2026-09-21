@@ -90,6 +90,6 @@ If you switch from Paper to Live trading on Render:
 1. Open your Web Service in the Render Dashboard.
 2. Navigate to **Environment**.
 3. Add the following Environment Secrets:
-   * `KALSHI_API_KEY_ID`: Your Kalshi Key ID
+   * `KALSHI_KEY_ID`: Your Kalshi Key ID
    * `KALSHI_PRIVATE_KEY`: Your RSA Private Key content (PEM)
 4. Click **Save Changes**. Render will automatically restart with your encrypted credentials.

@@ -3,6 +3,7 @@ import json
 import math
 import os
 import threading
+import time
 import numpy as np
 import pandas as pd
 import logging
@@ -17,6 +18,52 @@ from sklearn.isotonic import IsotonicRegression
 # Empirically-optimal window constraints (Task 4)
 OPTIMAL_TRAINING_WINDOW_BARS = 20000  # from walk-forward backtest, see backend/data/backtest_report.json
 MAX_LIVE_TRAINING_TRADES = 4000       # bounds live trade history window to prevent stale regimes
+
+class PlattCalibrator:
+    """
+    Platt Scaling (Sigmoid Calibrator) using regularized 1D Logistic Regression on raw logits.
+    Guarantees a smooth, strictly monotonic calibration mapping:
+        logit(p) = log(p / (1 - p))
+        p_calibrated = 1 / (1 + exp(-(A * logit + B)))
+    Prevents step-function collapse and extreme probability distortion of Isotonic Regression
+    on small-to-medium sample sizes.
+    """
+    def __init__(self, C: float = 1.0):
+        from sklearn.linear_model import LogisticRegression
+        self.lr = LogisticRegression(C=C, solver="lbfgs", random_state=42)
+        self.is_fitted = False
+
+    def _to_logits(self, probs: np.ndarray) -> np.ndarray:
+        eps = 1e-4
+        clipped = np.clip(np.asarray(probs, dtype=float), eps, 1.0 - eps)
+        return np.log(clipped / (1.0 - clipped)).reshape(-1, 1)
+
+    def fit(self, raw_probs: np.ndarray, y: np.ndarray):
+        y_arr = np.asarray(y)
+        if len(np.unique(y_arr)) < 2:
+            self.is_fitted = False
+            return self
+        logits = self._to_logits(raw_probs)
+        self.lr.fit(logits, y_arr)
+        # CRITICAL CALIBRATION LAW: Calibration must be strictly positive-monotonic (slope > 0).
+        # A negative slope in calibration inverts predictions on noisy holdout slices.
+        if hasattr(self.lr, "coef_") and self.lr.coef_[0, 0] <= 0.0:
+            self.is_fitted = False
+            return self
+        self.is_fitted = True
+        return self
+
+    def predict(self, raw_probs: np.ndarray) -> np.ndarray:
+        if not self.is_fitted:
+            return np.asarray(raw_probs)
+        logits = self._to_logits(raw_probs)
+        if hasattr(self.lr, "classes_") and 1 in self.lr.classes_:
+            c1_idx = list(self.lr.classes_).index(1)
+            calibrated = self.lr.predict_proba(logits)[:, c1_idx]
+        else:
+            calibrated = raw_probs
+        return np.clip(calibrated, 0.02, 0.98)
+
 
 class XGBoostModel:
     def __init__(self):
@@ -81,16 +128,10 @@ class XGBoostModel:
         self.is_trained = True
 
     def fit_calibration(self, X_holdout, y_holdout):
-        """Fit an isotonic regression mapping raw predict_proba() -> calibrated probability,
+        """Fit Platt scaling (Sigmoid) mapping raw predict_proba() -> calibrated probability,
         using a held-out slice not used for the main model fit. Call after fit().
-
-        Isotonic regression on small sample sizes overfits and can collapse
-        probabilities into hard 0.0/1.0 step functions. Gate on a minimum
-        holdout size (empirically ~300+) before trusting it; below that,
-        stay on XGBoost's raw probabilities rather than risk a degenerate
-        calibrator.
         """
-        MIN_CALIBRATION_SAMPLES = 300
+        MIN_CALIBRATION_SAMPLES = 40
         self.calibrator = None
 
         if X_holdout is None or y_holdout is None:
@@ -110,10 +151,11 @@ class XGBoostModel:
 
         try:
             raw_probs = self.predict_proba(X_holdout)
-            calibrator = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
+            calibrator = PlattCalibrator(C=1.0)
             calibrator.fit(raw_probs, y_holdout)
-            self.calibrator = calibrator
-            logger.info(f"[MLEngine] Fitted isotonic calibration on {len(X_holdout)} holdout samples.")
+            if calibrator.is_fitted:
+                self.calibrator = calibrator
+                logger.info(f"[MLEngine] Fitted Platt scaling (sigmoid) calibration on {len(X_holdout)} holdout samples.")
         except Exception as e:
             logger.warning(f"[MLEngine] Calibration fit failed, using raw probabilities: {e}")
             self.calibrator = None
@@ -153,7 +195,7 @@ class XGBoostModel:
 # have "score" in their snapshots. _extract_features_and_labels() safely defaults
 # missing keys to 0.0 via raw.get(k, 0.0) without crashing.
 FEATURE_KEYS = [
-    "rsi", "bb_upper", "bb_lower", "ema_9", "ema_21", "ema_50",
+    "rsi", "bb_upper", "bb_lower", "bb_percent_b", "ema_9", "ema_21", "ema_50",
     "atr", "price_vs_vwap", "cvd_value", "delta_to_target", "heuristic_score",
     "news_sentiment_score", "is_weekend", "hour_of_day", "volume_15m_ratio",
     # Low-volume / derivatives signals (added 2026-09-12)
@@ -171,11 +213,13 @@ FEATURE_KEYS = [
     "cvd_divergence",
     # Volatility regime percentile (added Task 5: 24h rolling ATR percentile)
     "vol_regime_percentile",
-    "macd_hist_momentum", "mtf_rsi_4h", "cvd_acceleration",
+    "vol_time_z_score",
+    "bb_percent_b_lag_4", "rsi_lag_4", "volume_15m_ratio_lag_4", "roc_15m_lag_4", "cvd_divergence_lag_4", "bb_percent_b_lag_3", "rsi_lag_3", "volume_15m_ratio_lag_3", "roc_15m_lag_3", "cvd_divergence_lag_3", "bb_percent_b_lag_2", "rsi_lag_2", "volume_15m_ratio_lag_2", "roc_15m_lag_2", "cvd_divergence_lag_2", "bb_percent_b_lag_1", "rsi_lag_1", "volume_15m_ratio_lag_1", "roc_15m_lag_1", "cvd_divergence_lag_1", "bb_percent_b_lag_0", "rsi_lag_0", "volume_15m_ratio_lag_0", "roc_15m_lag_0", "cvd_divergence_lag_0"
 ]
 
 NEUTRAL_FEATURE_DEFAULTS = {
     "rsi": 50.0,
+    "bb_percent_b": 0.5,
     "delta_to_target": 0.0,
     "heuristic_score": 0.0,
     "news_sentiment_score": 0.0,
@@ -198,9 +242,32 @@ NEUTRAL_FEATURE_DEFAULTS = {
     "roc_4h": 0.0,
     "cvd_divergence": 0.0,
     "vol_regime_percentile": 0.5,
-    "macd_hist_momentum": 0.0,
-    "mtf_rsi_4h": 50.0,
-    "cvd_acceleration": 0.0,
+    "vol_time_z_score": 0.0,
+    "bb_percent_b_lag_4": 0.5,
+    "rsi_lag_4": 0.5,
+    "volume_15m_ratio_lag_4": 0.5,
+    "roc_15m_lag_4": 0.5,
+    "cvd_divergence_lag_4": 0.5,
+    "bb_percent_b_lag_3": 0.5,
+    "rsi_lag_3": 0.5,
+    "volume_15m_ratio_lag_3": 0.5,
+    "roc_15m_lag_3": 0.5,
+    "cvd_divergence_lag_3": 0.5,
+    "bb_percent_b_lag_2": 0.5,
+    "rsi_lag_2": 0.5,
+    "volume_15m_ratio_lag_2": 0.5,
+    "roc_15m_lag_2": 0.5,
+    "cvd_divergence_lag_2": 0.5,
+    "bb_percent_b_lag_1": 0.5,
+    "rsi_lag_1": 0.5,
+    "volume_15m_ratio_lag_1": 0.5,
+    "roc_15m_lag_1": 0.5,
+    "cvd_divergence_lag_1": 0.5,
+    "bb_percent_b_lag_0": 0.5,
+    "rsi_lag_0": 0.5,
+    "volume_15m_ratio_lag_0": 0.5,
+    "roc_15m_lag_0": 0.5,
+    "cvd_divergence_lag_0": 0.5,
 }
 
 
@@ -284,10 +351,36 @@ def build_feature_row(df_ind, i: int) -> dict:
     except Exception:
         vol_regime = 0.5
 
+
+    # Extract lag features
+    lag_features = {}
+    p_idx = i - 1
+    for step in range(4, -1, -1):
+        c_idx = p_idx - step
+        for feat in ["bb_percent_b", "rsi", "volume_15m_ratio", "roc_15m", "cvd_divergence"]:
+            val = 0.5
+            if c_idx >= 0 and c_idx < len(df_ind):
+                try:
+                    row = df_ind.iloc[c_idx]
+                    if feat == "bb_percent_b":
+                        b_u = float(row.get("bb_upper", 0))
+                        b_l = float(row.get("bb_lower", 0))
+                        val = (float(row.get("close", 0)) - b_l) / (b_u - b_l) if b_u - b_l > 0 else 0.5
+                    elif feat == "volume_15m_ratio":
+                        val = float(row.get("volume", 0)) / max(float(df_ind["volume"].iloc[max(0, c_idx-288):c_idx].mean()), 1e-9)
+                    elif feat == "cvd_divergence":
+                        val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
+                    else:
+                        val = float(row.get(feat, 0.5))
+                except Exception:
+                    pass
+            lag_features[f"{feat}_lag_{step}"] = val
+
     raw_feat = {
         "rsi": rsi_val,
         "bb_upper": float(p.get("bb_upper", target_price)),
         "bb_lower": float(p.get("bb_lower", target_price)),
+        "bb_percent_b": (p_close - float(p.get("bb_lower", target_price))) / (float(p.get("bb_upper", target_price)) - float(p.get("bb_lower", target_price))) if float(p.get("bb_upper", target_price)) - float(p.get("bb_lower", target_price)) > 0 else 0.5,
         "ema_9": ema9_val,
         "ema_21": ema21_val,
         "ema_50": float(p.get("ema_50", target_price)),
@@ -321,6 +414,32 @@ def build_feature_row(df_ind, i: int) -> dict:
         "roc_4h": float(p.get("roc_4h", 0.0)),
         "cvd_divergence": float(p.get("cvd", 0.0)) / (float(p.get("atr", 1.0)) + 1e-5),
         "vol_regime_percentile": float(vol_regime),
+        "vol_time_z_score": float((p_close - target_price) / max(1.0, float(p.get("atr", 100)) * math.sqrt(max(0.05, 14.5 / 15.0)))),
+        "bb_percent_b_lag_4": lag_features["bb_percent_b_lag_4"],
+        "rsi_lag_4": lag_features["rsi_lag_4"],
+        "volume_15m_ratio_lag_4": lag_features["volume_15m_ratio_lag_4"],
+        "roc_15m_lag_4": lag_features["roc_15m_lag_4"],
+        "cvd_divergence_lag_4": lag_features["cvd_divergence_lag_4"],
+        "bb_percent_b_lag_3": lag_features["bb_percent_b_lag_3"],
+        "rsi_lag_3": lag_features["rsi_lag_3"],
+        "volume_15m_ratio_lag_3": lag_features["volume_15m_ratio_lag_3"],
+        "roc_15m_lag_3": lag_features["roc_15m_lag_3"],
+        "cvd_divergence_lag_3": lag_features["cvd_divergence_lag_3"],
+        "bb_percent_b_lag_2": lag_features["bb_percent_b_lag_2"],
+        "rsi_lag_2": lag_features["rsi_lag_2"],
+        "volume_15m_ratio_lag_2": lag_features["volume_15m_ratio_lag_2"],
+        "roc_15m_lag_2": lag_features["roc_15m_lag_2"],
+        "cvd_divergence_lag_2": lag_features["cvd_divergence_lag_2"],
+        "bb_percent_b_lag_1": lag_features["bb_percent_b_lag_1"],
+        "rsi_lag_1": lag_features["rsi_lag_1"],
+        "volume_15m_ratio_lag_1": lag_features["volume_15m_ratio_lag_1"],
+        "roc_15m_lag_1": lag_features["roc_15m_lag_1"],
+        "cvd_divergence_lag_1": lag_features["cvd_divergence_lag_1"],
+        "bb_percent_b_lag_0": lag_features["bb_percent_b_lag_0"],
+        "rsi_lag_0": lag_features["rsi_lag_0"],
+        "volume_15m_ratio_lag_0": lag_features["volume_15m_ratio_lag_0"],
+        "roc_15m_lag_0": lag_features["roc_15m_lag_0"],
+        "cvd_divergence_lag_0": lag_features["cvd_divergence_lag_0"],
     }
     return raw_feat
 
@@ -378,6 +497,8 @@ def build_live_ml_features(
     ema_50 = float(p.get("ema_50", p_close) or p_close)
     bb_upper = float(p.get("bb_upper", p_high) or p_high)
     bb_lower = float(p.get("bb_lower", p_low) or p_low)
+    bb_range = bb_upper - bb_lower
+    bb_percent_b = (p_close - bb_lower) / bb_range if bb_range > 0 else 0.5
     atr = float(p.get("atr", 100.0) or 100.0)
 
     if heuristic_score is not None:
@@ -428,10 +549,42 @@ def build_live_ml_features(
     except Exception:
         vol_regime = 0.5
 
+
+    # Extract lag features for the LSTM Sequence Memory
+    # p is i-1. So lags are i-5 to i-1.
+    if len(df_ind) >= 5:
+        p_idx = df_ind.index[-2] if len(df_ind) >= 2 else df_ind.index[-1]
+    else:
+        p_idx = 0
+        
+    lag_features = {}
+    for step in range(4, -1, -1):
+        c_idx = p_idx - step
+        for feat in ["bb_percent_b", "rsi", "volume_15m_ratio", "roc_15m", "cvd_divergence"]:
+            # bb_percent_b and volume_15m_ratio might not be explicitly in df_ind if not precalc
+            val = 0.5
+            if c_idx >= 0 and c_idx < len(df_ind):
+                try:
+                    row = df_ind.iloc[c_idx]
+                    if feat == "bb_percent_b":
+                        b_u = float(row.get("bb_upper", 0))
+                        b_l = float(row.get("bb_lower", 0))
+                        val = (float(row.get("close", 0)) - b_l) / (b_u - b_l) if b_u - b_l > 0 else 0.5
+                    elif feat == "volume_15m_ratio":
+                        val = float(row.get("volume", 0)) / max(float(df_ind["volume"].iloc[max(0, c_idx-288):c_idx].mean()), 1e-9)
+                    elif feat == "cvd_divergence":
+                        val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
+                    else:
+                        val = float(row.get(feat, 0.5))
+                except Exception:
+                    pass
+            lag_features[f"{feat}_lag_{step}"] = val
+
     features = {
         "rsi": rsi,
         "bb_upper": bb_upper,
         "bb_lower": bb_lower,
+        "bb_percent_b": bb_percent_b,
         "ema_9": ema_9,
         "ema_21": ema_21,
         "ema_50": ema_50,
@@ -463,6 +616,32 @@ def build_live_ml_features(
         "roc_4h": float(df_ind["roc_4h"].iloc[-2]) if "roc_4h" in df_ind.columns and len(df_ind) >= 2 else 0.0,
         "cvd_divergence": float(cvd_val / (float(atr) + 1e-5)),
         "vol_regime_percentile": float(vol_regime),
+        "vol_time_z_score": float((p_close - target_price) / max(1.0, float(atr) * math.sqrt(max(0.05, float(minutes_remaining) / 15.0)))),
+        "bb_percent_b_lag_4": lag_features["bb_percent_b_lag_4"],
+        "rsi_lag_4": lag_features["rsi_lag_4"],
+        "volume_15m_ratio_lag_4": lag_features["volume_15m_ratio_lag_4"],
+        "roc_15m_lag_4": lag_features["roc_15m_lag_4"],
+        "cvd_divergence_lag_4": lag_features["cvd_divergence_lag_4"],
+        "bb_percent_b_lag_3": lag_features["bb_percent_b_lag_3"],
+        "rsi_lag_3": lag_features["rsi_lag_3"],
+        "volume_15m_ratio_lag_3": lag_features["volume_15m_ratio_lag_3"],
+        "roc_15m_lag_3": lag_features["roc_15m_lag_3"],
+        "cvd_divergence_lag_3": lag_features["cvd_divergence_lag_3"],
+        "bb_percent_b_lag_2": lag_features["bb_percent_b_lag_2"],
+        "rsi_lag_2": lag_features["rsi_lag_2"],
+        "volume_15m_ratio_lag_2": lag_features["volume_15m_ratio_lag_2"],
+        "roc_15m_lag_2": lag_features["roc_15m_lag_2"],
+        "cvd_divergence_lag_2": lag_features["cvd_divergence_lag_2"],
+        "bb_percent_b_lag_1": lag_features["bb_percent_b_lag_1"],
+        "rsi_lag_1": lag_features["rsi_lag_1"],
+        "volume_15m_ratio_lag_1": lag_features["volume_15m_ratio_lag_1"],
+        "roc_15m_lag_1": lag_features["roc_15m_lag_1"],
+        "cvd_divergence_lag_1": lag_features["cvd_divergence_lag_1"],
+        "bb_percent_b_lag_0": lag_features["bb_percent_b_lag_0"],
+        "rsi_lag_0": lag_features["rsi_lag_0"],
+        "volume_15m_ratio_lag_0": lag_features["volume_15m_ratio_lag_0"],
+        "roc_15m_lag_0": lag_features["roc_15m_lag_0"],
+        "cvd_divergence_lag_0": lag_features["cvd_divergence_lag_0"],
     }
     return features
 
@@ -480,11 +659,16 @@ class MLEngine:
         self.last_trained_mtime = 0.0
         self.last_train_sample_count = 0
         self.feature_keys = list(FEATURE_KEYS)
-        if self.trading_style == "MOMENTUM_SURFER":
-            self.feature_keys.append("minutes_remaining")
+        # REMOVED: minutes_remaining is already globally appended in FEATURE_KEYS.
+        # Doing it again duplicates it and corrupts the LSTM PyTorch tensor tail.
         self._lock = threading.Lock()
         self.train_window = 15000 if self.trading_style == "MOMENTUM_SURFER" else 100
+        
+        self.cache_dir = os.path.join(data_dir, "model_cache")
+        os.makedirs(self.cache_dir, exist_ok=True)
 
+    def _get_cache_path(self, time_filter: str) -> str:
+        return os.path.join(self.cache_dir, f"{self.asset}_{self.trading_style}_{time_filter}_model.pkl")
 
     def predict_with_reasoning(self, current_raw_features: dict):
         """
@@ -575,8 +759,18 @@ class MLEngine:
             class_weight = settings.get("classWeight", "balanced")
             reg_c = float(settings.get("regC", 0.5))
             
+            xgb_est = settings.get("xgbEstimators")
+            xgb_depth = settings.get("xgbMaxDepth")
+            xgb_lr = settings.get("xgbLearningRate")
+            
             # Update the XGBoost parameters
-            self.model.update_params(class_weight, reg_c)
+            self.model.update_params(
+                class_weight=class_weight, 
+                reg_c=reg_c,
+                xgb_estimators=int(xgb_est) if xgb_est is not None else None,
+                xgb_max_depth=int(xgb_depth) if xgb_depth is not None else None,
+                xgb_lr=float(xgb_lr) if xgb_lr is not None else None
+            )
             
             logger.info(f"[MLEngine] Applied new settings. Train window: {self.train_window}, Class Weight: {class_weight}, Reg C: {reg_c}")
 
@@ -679,6 +873,19 @@ class MLEngine:
                 
             feature_vec = []
             valid = True
+            # Dynamic backfill for historical bb_percent_b
+            if "bb_percent_b" not in raw:
+                bb_u = float(raw.get("bb_upper", 0.0))
+                bb_l = float(raw.get("bb_lower", 0.0))
+                bb_r = bb_u - bb_l
+                if bb_r > 0:
+                    delta_pct = float(raw.get("delta_to_target") or 0.0)
+                    tgt = float(t.get("strike") or 0.0)
+                    c_cl = tgt * (1.0 + delta_pct / 100.0) if tgt > 0 else 0.0
+                    raw["bb_percent_b"] = (c_cl - bb_l) / bb_r if c_cl > 0 else 0.5
+                else:
+                    raw["bb_percent_b"] = 0.5
+
             for k in self.feature_keys:
                 default_val = NEUTRAL_FEATURE_DEFAULTS.get(k, 0.0)
                 val = raw.get(k, default_val)
@@ -719,6 +926,8 @@ class MLEngine:
         
     def train(self, force: bool = False, time_filter: str = "all"):
         with self._lock:
+            cache_file = self._get_cache_path(time_filter)
+            
             if not os.path.exists(self.history_file):
                 return 0
             try:
@@ -726,6 +935,20 @@ class MLEngine:
             except Exception as e:
                 logger.debug(f"[MLEngine] Could not read mtime for {self.history_file}: {e}")
                 mtime = 0.0
+
+            # If cache is fresher than the history file, load it!
+            if not force and not self.is_trained and os.path.exists(cache_file):
+                try:
+                    cache_mtime = os.path.getmtime(cache_file)
+                    if cache_mtime >= mtime:
+                        import joblib
+                        self.model = joblib.load(cache_file)
+                        self.is_trained = True
+                        self.last_trained_mtime = cache_mtime
+                        logger.info(f"[MLEngine] Loaded cached active {time_filter} model for {self.asset} from disk! Skipping retrain.")
+                        return 1
+                except Exception as e:
+                    logger.warning(f"[MLEngine] Failed to load cache: {e}")
                 
             if not force and self.is_trained and mtime <= self.last_trained_mtime:
                 return 0  # Already up to date
@@ -754,6 +977,13 @@ class MLEngine:
                             self.model.fit_calibration(np.array(X_cal), np.array(y_cal))
                         else:
                             self.model.calibrator = None
+                            
+                        try:
+                            import joblib
+                            joblib.dump(self.model, cache_file)
+                        except Exception as e:
+                            logger.warning(f"[MLEngine] Failed to cache model to disk: {e}")
+                            
                         logger.info("[MLEngine] Training complete.")
                         return len(X_train)
             except Exception as e:
@@ -765,6 +995,18 @@ class MLEngine:
         Self-trains the model on hundreds of historical 15m intervals, removing the dependency 
         on having to wait for 10 live executed trades to be collected.
         """
+        cache_file = self._get_cache_path(time_filter)
+        if os.path.exists(cache_file):
+            import joblib
+            try:
+                self.model = joblib.load(cache_file)
+                self.is_trained = True
+                self.last_trained_mtime = os.path.getmtime(cache_file)
+                logger.info(f"[MLEngine] Loaded cached historical {time_filter} model for {self.asset} from disk! Skipping 45min retrain.")
+                return 1
+            except Exception as e:
+                logger.warning(f"[MLEngine] Failed to load historical cache, training from scratch: {e}")
+
         # Enforce OPTIMAL_TRAINING_WINDOW_BARS + 50 warmup context (Task 4)
         if len(df_ind) > OPTIMAL_TRAINING_WINDOW_BARS + 50:
             df_ind = df_ind.iloc[-(OPTIMAL_TRAINING_WINDOW_BARS + 50):].reset_index(drop=True)
@@ -877,6 +1119,13 @@ class MLEngine:
 
                 if len(X_cal) >= 20:
                     self.model.fit_calibration(np.array(X_cal), np.array(y_cal))
+
+                import joblib
+                try:
+                    joblib.dump(self.model, cache_file)
+                    self.last_trained_mtime = time.time()
+                except Exception as e:
+                    logger.warning(f"[MLEngine] Failed to cache historical model to disk: {e}")
 
                 logger.info(f"[MLEngine] Self-trained ML model on {len(X_train)} historical 15m market intervals (calibrated on {len(X_cal)}).")
                 return len(X_train)

@@ -1,0 +1,8 @@
+<script>
+  try {
+    let obj = {};
+    let str = obj.nonexistent.toFixed(2);
+  } catch (err) {
+    console.log(err.message);
+  }
+</script>

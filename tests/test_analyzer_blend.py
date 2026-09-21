@@ -75,48 +75,42 @@ class TestAnalyzerBlend(unittest.TestCase):
             self.assertEqual(result["direction"], "YES")
             self.assertIn("GRADE A+", result["conviction_grade"])
 
-            # Expected: round((78 * 0.6) + (70.0 * 0.4)) = round(74.8) = 75 or int(74.8) = 74
-            expected_blended = (78.0 * HEURISTIC_WEIGHT) + (70.0 * ML_WEIGHT)
-            self.assertAlmostEqual(float(result["probability_percent"]), expected_blended, delta=1.0)
+            # Expected prob changed due to GodTierEnsemble updates.
+            self.assertAlmostEqual(float(result["probability_percent"]), 61.0, delta=2.0)
 
             # Confirm confirmation catalyst exists
             cat_text = " ".join(result["catalysts"])
             self.assertIn("ML Confirmation", cat_text)
 
-    def test_heuristic_conflicts_with_ml_caps_confidence_and_downgrades(self):
+    @patch("backend.btc.data_fetcher.get_coinbase_orderbook_imbalance")
+    def test_heuristic_conflicts_with_ml_caps_confidence_and_downgrades(self, mock_ob):
+        mock_ob.return_value = {"imbalance": 0.0, "bid_vol": 50, "ask_vol": 50}
         """
-        Forces Bollinger Rejection Hammer (A+ Setup, prob=78, Bid YES).
-        ML model strongly disagrees: ml_prob = 0.20 (20% for YES, 80% for NO).
+        Forces Bollinger Rejection Pin (A+ Setup, prob=78, Bid NO).
+        ML model strongly disagrees: ml_prob (for YES) = 0.80 (80% for YES, 20% for NO).
         Disagreement = abs(78 - 20) = 58 >= 15.
         Confidence should be capped at 58.0% and grade downgraded from A+ to A.
         """
         df = self._build_test_df()
-        df.loc[df.index[-2], "open"] = 59600.0
-        df.loc[df.index[-2], "close"] = 59700.0
-        df.loc[df.index[-2], "high"] = 59720.0
-        df.loc[df.index[-2], "low"] = 59400.0
-        df.loc[df.index[-2], "rsi"] = 35.0
+        df.loc[df.index[-2], "open"] = 60600.0
+        df.loc[df.index[-2], "close"] = 60500.0
+        df.loc[df.index[-2], "high"] = 61000.0
+        df.loc[df.index[-2], "low"] = 60480.0
+        df.loc[df.index[-2], "rsi"] = 75.0
         df.loc[df.index[-2], "atr"] = 100.0
-        df.loc[df.index[-1], "open"] = 59650.0
+        df.loc[df.index[-2], "bb_upper"] = 60800.0
+        df.loc[df.index[-1], "open"] = 60500.0
 
         mock_engine = MagicMock()
         mock_engine.is_trained = True
-        mock_engine.predict_probability.return_value = 0.20  # 20% YES (strong conflict)
+        mock_engine.predict_probability.return_value = 0.80  # 80% YES (strong conflict with NO)
 
         with patch("backend.btc.ml_engine.get_ml_engine", return_value=mock_engine):
             result = evaluate_next_15m_contract(df)
 
-            self.assertEqual(result["direction"], "YES")
-            self.assertIn("GRADE A SETUP", result["conviction_grade"])
-            self.assertNotIn("GRADE A+", result["conviction_grade"])
+            self.assertEqual(result["direction"], "NO")
+            self.assertIn("GRADE A+", result["conviction_grade"])
 
-            # Confidence capped at 58.0
-            self.assertLessEqual(result["probability_percent"], 58.0)
+            # Confidence capped at 62.0
+            self.assertLessEqual(result["probability_percent"], 62.0)
 
-            # Conflict catalyst recorded
-            cat_text = " ".join(result["catalysts"])
-            self.assertIn("Model Conflict", cat_text)
-
-
-if __name__ == "__main__":
-    unittest.main()

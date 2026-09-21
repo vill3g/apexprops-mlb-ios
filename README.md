@@ -114,3 +114,6 @@ Technical analysis and machine learning inferences are computed from spot BTC-US
 
 Additionally, the prediction engine consumes live Kalshi market-implied signals (`kalshi_yes_prob` and `kalshi_book_imbalance`). For offline historical backtesting and candle-only synthetic generation, these features default to uninformative neutral priors (`50.0%` probability and `0.0` neutral orderbook imbalance) to prevent forward data leakage while preserving live model feature vector alignment.
 
+
+## Calibration and Training Window
+The 	rainWindow setting in ackend/data/trading_config.json should be re-validated against ackend/data/backtest_report.json whenever that file is regenerated, since the optimal window will drift with BTC regime changes.

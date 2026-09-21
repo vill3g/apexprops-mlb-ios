@@ -13,6 +13,7 @@ import pandas as pd
 import math
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 
 _ANALYZER_EXECUTOR = None
@@ -140,8 +141,35 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     Takes clean OHLCV DataFrame, calculates indicators, detects patterns,
     evaluates confluence score, and produces trade setup.
     """
+    # 0. MTF Macro Alignment Fetching
+    macro_trend_1h = "NEUTRAL"
+    macro_trend_4h = "NEUTRAL"
+    try:
+        from backend.btc.data_fetcher import fetch_candles
+        from backend.btc.indicators import compute_ema
+        df_1h = fetch_candles(asset, "1h", limit=50)
+        df_4h = fetch_candles(asset, "4h", limit=50)
+        if df_1h is not None and not df_1h.empty:
+            ema50_1h = compute_ema(df_1h["close"], 50).iloc[-1]
+            macro_trend_1h = "BULLISH" if float(df_1h.iloc[-1]["close"]) > float(ema50_1h) else "BEARISH"
+        if df_4h is not None and not df_4h.empty:
+            ema50_4h = compute_ema(df_4h["close"], 50).iloc[-1]
+            macro_trend_4h = "BULLISH" if float(df_4h.iloc[-1]["close"]) > float(ema50_4h) else "BEARISH"
+    except Exception as e:
+        pass
+
     # 1. Calculate indicators
     df_ind = add_all_indicators(df)
+    if df_ind is None or df_ind.empty:
+        logger.warning(f"[Analyzer] Empty DataFrame after adding indicators for {asset} {timeframe}. Returning neutral fallback.")
+        return {
+            "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+            "price": 0.0, "direction": "NEUTRAL / CHOPPY", "primary_bias": "NEUTRAL",
+            "confluence_score": 0, "confidence_percent": 50,
+            "reasons_bullish": [], "reasons_bearish": ["No candle data available"],
+            "detected_patterns": [], "market_structure": {}, "indicators": {},
+            "trade_setup": {"action": "WAIT", "reason": "Insufficient data"}
+        }
     ind_summary = extract_indicator_summary(df_ind)
 
     # 2. Detect candlestick patterns, market structure, sweeps, FVGs, & wicks
@@ -321,6 +349,51 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
             score -= 5
             bearish_reasons.append(f"Smart Money: Facing {fvg['description']} (-5)")
 
+    # MTF Macro Alignment
+    if macro_trend_4h == "BULLISH" and macro_trend_1h == "BULLISH":
+        score += 15
+        bullish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BULLISH (+15)")
+    elif macro_trend_4h == "BEARISH" and macro_trend_1h == "BEARISH":
+        score -= 15
+        bearish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BEARISH (-15)")
+    elif macro_trend_4h == "BULLISH":
+        score += 5
+        bullish_reasons.append("MTF Macro: 4H trend is BULLISH (+5)")
+    elif macro_trend_4h == "BEARISH":
+        score -= 5
+        bearish_reasons.append("MTF Macro: 4H trend is BEARISH (-5)")
+
+    # Volume Profile Point of Control (POC)
+    if ind_summary.get("poc"):
+        poc = ind_summary["poc"]
+        if curr_price > poc:
+            score += 8
+            bullish_reasons.append(f"Volume Profile: Trading above 24H Point of Control (${poc:.1f}) (+8)")
+            if curr_price <= poc * 1.002:
+                score += 10
+                bullish_reasons.append(f"Volume Profile: Perfect rejection bounce off POC Support (+10)")
+        elif curr_price < poc:
+            score -= 8
+            bearish_reasons.append(f"Volume Profile: Trading below 24H Point of Control (${poc:.1f}) (-8)")
+            if curr_price >= poc * 0.998:
+                score -= 10
+                bearish_reasons.append(f"Volume Profile: Perfect rejection fade off POC Resistance (-10)")
+
+    # CVD Acceleration (Trapped Trader Logic)
+    cvd_accel = ind_summary.get("cvd_acceleration", 0.0)
+    if cvd_accel > 0 and ind_summary.get("vol_surge"):
+        score += 10
+        bullish_reasons.append("CVD Acceleration: Fresh aggressive market buying detected (+10)")
+    elif cvd_accel < 0 and ind_summary.get("vol_surge"):
+        score -= 10
+        bearish_reasons.append("CVD Acceleration: Aggressive market selling into volume surge (-10)")
+    elif df_ind.iloc[-1]["close"] > df_ind.iloc[-1]["open"] and cvd_accel < 0:
+        score -= 15
+        bearish_reasons.append("TRAP DETECTED: Green candle with negative CVD (Short covering / Limit Selling absorption) (-15)")
+    elif df_ind.iloc[-1]["close"] < df_ind.iloc[-1]["open"] and cvd_accel > 0:
+        score += 15
+        bullish_reasons.append("TRAP DETECTED: Red candle with positive CVD (Long liquidation / Limit Buying absorption) (+15)")
+
     # Clamp score to [-100, 100]
     
 
@@ -330,6 +403,18 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
         from backend.btc.data_fetcher import get_coinbase_orderbook_imbalance
         cb_ob = get_coinbase_orderbook_imbalance()
         imb = cb_ob.get('imbalance', 0.0)
+        
+        # Check resting liquidity walls
+        largest_bid = cb_ob.get('largest_bid_wall')
+        largest_ask = cb_ob.get('largest_ask_wall')
+        
+        if largest_ask and curr_price <= largest_ask <= curr_price * 1.0015:
+            score -= 20
+            bearish_reasons.append(f"L2 Heatmap: Massive Sell Wall sitting right overhead at ${largest_ask:.2f} (-20)")
+        if largest_bid and curr_price >= largest_bid >= curr_price * 0.9985:
+            score += 20
+            bullish_reasons.append(f"L2 Heatmap: Massive Buy Wall sitting right underneath at ${largest_bid:.2f} (+20)")
+
         if imb >= 25.0:
             score += 15
             bullish_reasons.append(f"Massive Spot Buy Wall (+{imb}% Bid Imbalance) (+15)")
@@ -480,6 +565,8 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
             "breakeven_rule": f"Move SL to Breakeven (${round(curr_price, 2)}) after TP1 hit"
         }
     else:
+        direction = "PASS"
+        action = "PASS" 
         setup = {
             "direction": "WAIT (NEUTRAL)",
             "entry_price": round(curr_price, 2),
@@ -1051,6 +1138,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     except Exception as _e:
         logger.debug(f"[Analyzer] Futures data unavailable: {_e}")
 
+    liquidation_data = {"net_imbalance_usd": 0.0, "short_liquidations_usd": 0.0, "long_liquidations_usd": 0.0}
+    try:
+        from backend.btc.liquidation_stream import get_liquidation_imbalance
+        liquidation_data = get_liquidation_imbalance()
+    except Exception as _e:
+        logger.debug(f"[Analyzer] Liquidation data unavailable: {_e}")
+
     fng_value = 50.0
     try:
         from backend.btc.data_fetcher import get_fear_and_greed_index
@@ -1096,8 +1190,9 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     minutes_remaining = max(0.15, seconds_remaining / 60.0)
 
     # 2. XGBoost Machine Learning Model Decision (fed with TRUE live features, not zeros)
-    ml_prob = 0.5
-    raw_ml_prob = 0.5
+    ml_prob = 0.50
+    raw_ml_prob = 0.50
+    ml_reasoning = ""
     try:
         from backend.btc.ml_engine import get_ml_engine
         import os
@@ -1241,21 +1336,41 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     # 2. GRADE A SETUPS (65% - 74% Historical Win Rate)
     # A Setup 1: 3-Candle Climax Exhaustion (only if no A+ pattern already set)
     if not pred:
-        if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]) and float(p2["close"]) > float(p2["open"]) and rsi >= THRESHOLDS["climax_rsi_bear"]:
-            grade = "GRADE A SETUP"
-            badge = "⚡ 4-STAR A (72%)"
-            prob = 72
-            pred = "BID NO (BELOW TARGET)"
-            catalysts.append("Triple Green Climax: 3 consecutive bull candles into resistance")
-            catalysts.append(f"Momentum Deceleration: RSI at {rsi:.1f} signals high pullback probability")
+        # A Setup 1: 3-Candle Climax Exhaustion (only if no A+ pattern already set)
+        if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]) and float(p2["close"]) > float(p2["open"]):
+            if trend_1h == "BULLISH":
+                # Strong macro trend continuation - ride the momentum UP instead of fading it!
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (74%)"
+                prob = 74
+                pred = "BID YES (ABOVE TARGET)"
+                catalysts.append("Triple Green Trend Continuation: 3 consecutive bull bars aligned with 1H Bullish Macro")
+                catalysts.append("Momentum Acceleration: Trend continuation riding high buying pressure")
+            elif rsi >= THRESHOLDS["climax_rsi_bear"]:
+                # Only fade the 3 green bars if macro trend is NOT strongly bullish (exhaustion pullback)
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (72%)"
+                prob = 72
+                pred = "BID NO (BELOW TARGET)"
+                catalysts.append("Triple Green Climax: 3 consecutive bull candles into resistance (Counter-trend/Range)")
+                catalysts.append(f"Momentum Deceleration: RSI at {rsi:.1f} signals high pullback probability")
 
-        elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]) and float(p2["close"]) < float(p2["open"]) and rsi <= THRESHOLDS["climax_rsi_bull"]:
-            grade = "GRADE A SETUP"
-            badge = "⚡ 4-STAR A (72%)"
-            prob = 72
-            pred = "BID YES (ABOVE TARGET)"
-            catalysts.append("Triple Red Climax: 3 consecutive bear candles deeply oversold")
-            catalysts.append(f"Exhaustion Spring: RSI at {rsi:.1f} signals strong mean-reversion bounce")
+        elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]) and float(p2["close"]) < float(p2["open"]):
+            if trend_1h == "BEARISH":
+                # Strong macro trend continuation - ride the momentum DOWN instead of catching a falling knife
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (74%)"
+                prob = 74
+                pred = "BID NO (BELOW TARGET)"
+                catalysts.append("Triple Red Trend Continuation: 3 consecutive bear bars aligned with 1H Bearish Macro")
+                catalysts.append("Downward Acceleration: Trend continuation riding heavy selling pressure")
+            elif rsi <= THRESHOLDS["climax_rsi_bull"]:
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (72%)"
+                prob = 72
+                pred = "BID YES (ABOVE TARGET)"
+                catalysts.append("Triple Red Climax: 3 consecutive bear candles deeply oversold (Counter-trend/Range)")
+                catalysts.append(f"Exhaustion Spring: RSI at {rsi:.1f} signals strong mean-reversion bounce")
 
         # A Setup 2: EMA Ribbon Dynamic Pullback
         elif ema_9 > ema_21 > ema_50 and c_low <= ema_21 and c_close > ema_21 and lower_wick >= THRESHOLDS["ribbon_wick_min"]:
@@ -1276,19 +1391,33 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
 
     # 3. GRADE B SETUPS (60% - 64% Historical Win Rate) — only if no A/A+ set
     if not pred:
-        # B Setup 1: Dual Green/Red Reversion
-        if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]) and rsi >= THRESHOLDS["b_setup_rsi_bear"]:
-            grade = "GRADE B SETUP"
-            badge = "⚠️ 3-STAR B (63%)"
-            prob = 63
-            pred = "BID NO (BELOW TARGET)"
-            catalysts.append("Dual Green Surge: Consecutive bullish closes approaching mean reversion")
-        elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]) and rsi <= THRESHOLDS["b_setup_rsi_bull"]:
-            grade = "GRADE B SETUP"
-            badge = "⚠️ 3-STAR B (63%)"
-            prob = 63
-            pred = "BID YES (ABOVE TARGET)"
-            catalysts.append("Dual Red Dip: Consecutive bearish closes approaching oversold rebound")
+        # B Setup 1: Dual Green/Red Reversion (Macro trend aware)
+        if float(c["close"]) > float(c["open"]) and float(p["close"]) > float(p["open"]):
+            if trend_1h == "BULLISH":
+                grade = "GRADE B+ SETUP"
+                badge = "⚠️ 3-STAR B+ (64%)"
+                prob = 64
+                pred = "BID YES (ABOVE TARGET)"
+                catalysts.append("Dual Green Trend Alignment: Bullish continuation with 1H Macro")
+            elif rsi >= THRESHOLDS["b_setup_rsi_bear"]:
+                grade = "GRADE B+ SETUP"
+                badge = "⚠️ 3-STAR B+ (63%)"
+                prob = 63
+                pred = "BID NO (BELOW TARGET)"
+                catalysts.append("Dual Green Surge: Consecutive bullish closes approaching mean reversion")
+        elif float(c["close"]) < float(c["open"]) and float(p["close"]) < float(p["open"]):
+            if trend_1h == "BEARISH":
+                grade = "GRADE B+ SETUP"
+                badge = "⚠️ 3-STAR B+ (64%)"
+                prob = 64
+                pred = "BID NO (BELOW TARGET)"
+                catalysts.append("Dual Red Trend Alignment: Bearish continuation with 1H Macro")
+            elif rsi <= THRESHOLDS["b_setup_rsi_bull"]:
+                grade = "GRADE B+ SETUP"
+                badge = "⚠️ 3-STAR B+ (63%)"
+                prob = 63
+                pred = "BID YES (ABOVE TARGET)"
+                catalysts.append("Dual Red Dip: Consecutive bearish closes approaching oversold rebound")
 
         # B Setup 2: Momentum Thrust
         elif range_closure >= THRESHOLDS["thrust_range_closure_bull"] and (abs(c_close - c_open) / rng) >= THRESHOLDS["thrust_body_range_min"] and ema_9 > ema_21:
@@ -1306,21 +1435,21 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     # 4. GRADE A SETUPS — RSI + Bollinger secondary confirmation (upgrade only)
     # A Setup 1: Strong RSI Momentum Break (Bid YES) — upgrade grade if already has direction
     if pred and rsi >= THRESHOLDS["rsi_bb_momentum_bull"] and c_close > bb_upper * 0.999:
-        if "GRADE A+" not in grade:
-            grade = "GRADE A SETUP"
-            badge = "⚡ 4-STAR A (72%)"
-            prob = max(prob, 72) if "YES" in pred else 72
-            pred = "BID YES (ABOVE TARGET)"
-        catalysts.append(f"Overbought Expansion: High RSI ({rsi:.1f}) riding upper BB limit")
+        if "YES" in pred or "ABOVE" in pred:
+            if "GRADE A+" not in grade:
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (72%)"
+                prob = max(prob, 72)
+            catalysts.append(f"Overbought Expansion: High RSI ({rsi:.1f}) riding upper BB limit")
 
-    # A Setup 2: Strong RSI Flush Break (Bid NO) — upgrade grade only
+    # A Setup 2: Strong RSI Flush Break (Bid NO) — upgrade grade only if already bearish
     elif pred and rsi <= THRESHOLDS["rsi_bb_flush_bear"] and c_close < bb_lower * 1.001:
-        if "GRADE A+" not in grade:
-            grade = "GRADE A SETUP"
-            badge = "⚡ 4-STAR A (72%)"
-            prob = max(prob, 72) if "NO" in pred else 72
-            pred = "BID NO (BELOW TARGET)"
-        catalysts.append(f"Oversold Flush: Low RSI ({rsi:.1f}) pressing lower BB limit")
+        if "NO" in pred or "BELOW" in pred:
+            if "GRADE A+" not in grade:
+                grade = "GRADE A SETUP"
+                badge = "⚡ 4-STAR A (72%)"
+                prob = max(prob, 72)
+            catalysts.append(f"Oversold Flush: Low RSI ({rsi:.1f}) pressing lower BB limit")
 
     # 3. KALSHI/RH MARKET STRUCTURE EDGE (60% - 66% Historical Win Rate)
     # Re-evaluate with Order Book Imbalance if no A+ or A setup exists
@@ -1331,15 +1460,15 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
 
         if k_yes >= THRESHOLDS["kalshi_override_yes"] or imbalance >= THRESHOLDS["kalshi_imbalance_threshold"]:
             pred = "BID YES (ABOVE TARGET)"
-            grade = "GRADE B SETUP"
-            badge = "⚠️ 3-STAR B (64%)"
+            grade = "GRADE B+ SETUP"
+            badge = "⚠️ 3-STAR B+ (64%)"
             prob = max(prob, 64) if "YES" in pred else 64
             catalysts.append(f"Market Implied Bullish Edge: Order book odds favor YES ({k_yes:.1f}%)")
             catalysts.append(f"Institutional Order Flow: Net bid depth imbalance (+{imbalance:.1f}%)")
         elif k_no >= THRESHOLDS["kalshi_override_no"] or imbalance <= -THRESHOLDS["kalshi_imbalance_threshold"]:
             pred = "BID NO (BELOW TARGET)"
-            grade = "GRADE B SETUP"
-            badge = "⚠️ 3-STAR B (64%)"
+            grade = "GRADE B+ SETUP"
+            badge = "⚠️ 3-STAR B+ (64%)"
             prob = max(prob, 64) if "NO" in pred else 64
             catalysts.append(f"Market Implied Bearish Edge: Order book odds favor NO ({k_no:.1f}%)")
             catalysts.append(f"Institutional Order Flow: Net ask depth imbalance ({imbalance:.1f}%)")
@@ -1396,7 +1525,14 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
             prob = 50.0
         else:
             prob = ml_prob * 100.0 if ("YES" in ml_pred or "ABOVE" in ml_pred) else (1.0 - ml_prob) * 100.0
-        grade = "GRADE A SETUP" if prob >= 70 else "GRADE B SETUP"
+        if prob >= 75:
+            grade = "GRADE A+ SETUP"
+        elif prob >= 70:
+            grade = "GRADE A SETUP"
+        elif prob >= 65:
+            grade = "GRADE B+ SETUP"
+        else:
+            grade = "GRADE B SETUP"
         catalysts = [f"🧠 Signal Isolation: 100% AI Prediction active. Raw Prob: {prob:.1f}%"]
         heuristic_score_for_training = 0.0
 
@@ -1414,22 +1550,10 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         blended_prob = (prob * effective_heuristic_weight) + (ml_prob_for_pred_dir * effective_ml_weight)
 
         if ml_prob_for_pred_dir < 50.0 and disagreement >= THRESHOLDS["model_conflict_threshold"]:
-            if ("YES" in pred or "ABOVE" in pred):
-                catalysts.append(
-                    f"📈 Chart Override: Chart setup heavily favors {pred} ({prob}%), overriding ML model hesitation."
-                )
-                # Keep probability heavily weighted towards the chart conviction
-                blended_prob = max(prob, blended_prob)
-            else:
-                # ML actively disagrees with the heuristic direction by a wide margin.
-                # Don't silently flip direction - flag it and cap confidence instead.
-                catalysts.append(
-                    f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model "
-                    f"disagrees ({ml_prob_for_pred_dir:.1f}% for this side) - confidence capped"
-                )
-                blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])
-                if "GRADE A+" in grade:
-                    grade = "GRADE A SETUP"  # downgrade one tier on model conflict
+            catalysts.append(f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model disagrees ({ml_prob_for_pred_dir:.1f}% for this side) - confidence capped")
+            blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])
+            if "GRADE A+" in grade:
+                grade = "GRADE A SETUP"
         else:
             catalysts.append(
                 f"🧠 ML Confirmation: Model agrees with {pred} ({ml_prob_for_pred_dir:.1f}%), "
@@ -1445,7 +1569,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         catalysts.append(ml_catalyst)
 
     # Calculate Target Settlement Zone based on ATR dispersion
-    if "YES" in pred or "ABOVE" in pred:
+    if "PASS" in str(pred):
+        z_min = target - (atr * 0.15)
+        z_max = target + (atr * 0.15)
+        direction = "PASS"
+        action = "PASS"
+        prob = 50
+    elif "YES" in pred or "ABOVE" in pred:
         z_min = target + (atr * 0.15)
         z_max = target + (atr * 0.90)
         direction = "YES"
@@ -1475,37 +1605,16 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         logger.debug(f"[Analyzer] Kalshi market parsing: {_e_km}")
 
     # Capture candidate direction and probability prior to any safety filter overrides
-    pre_gate_direction = "ABOVE" if ("YES" in str(pred) or "ABOVE" in str(direction)) else "BELOW"
+    if "PASS" in str(pred) or "PASS" in str(direction):
+        pre_gate_direction = "PASS"
+    else:
+        pre_gate_direction = "ABOVE" if ("YES" in str(pred) or "ABOVE" in str(direction)) else "BELOW"
     pre_gate_prob = float(prob)
     pre_gate_grade = grade
 
-    # 5. Higher-Timeframe (1-Hour) Trend Confirmation Gate
-    # Taking 15m counter-trend trades against institutional 1h order flow creates false-reversal losses.
-    if trend_1h == "BEARISH":
-        if "YES" in str(pred) or "ABOVE" in str(direction):
-            direction = "PASS"
-            pred = "PASS"
-            grade = "GRADE C / PASS"
-            badge = "⚪ PASS (1H TREND)"
-            prob = 50
-            catalysts.append("Blocked: 15M Bullish bet opposes macro 1H Bearish Trend")
-        elif "NO" in str(pred) or "BELOW" in str(direction):
-            # Macro trend alignment bonus
-            prob = min(88, prob + 5)
-            catalysts.append("Macro 1H Confluence: Bearish alignment with 1-Hour trend confirms NO direction (+5% confidence)")
-
-    elif trend_1h == "BULLISH":
-        if "NO" in str(pred) or "BELOW" in str(direction):
-            direction = "PASS"
-            pred = "PASS"
-            grade = "GRADE C / PASS"
-            badge = "⚪ PASS (1H TREND)"
-            prob = 50
-            catalysts.append("Blocked: 15M Bearish bet opposes macro 1H Bullish Trend")
-        elif "YES" in str(pred) or "ABOVE" in str(direction):
-            # Macro trend alignment bonus
-            prob = min(88, prob + 5)
-            catalysts.append("Macro 1H Confluence: Bullish alignment with 1-Hour trend confirms YES direction (+5% confidence)")
+    # 5. Higher-Timeframe (1-Hour) Trend Confirmation Gate (REMOVED BY USER REQUEST)
+    # The trend gate logic has been removed to allow counter-trend trades on the 15m timeframe.
+    pass
 
     # 6. Active Pre-Trade CVD & Order Book Flow Gate (Directly addresses historical losses)
     # Fetch dynamic CVD overrides if present
@@ -1535,6 +1644,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
                 badge = "⚪ PASS (SPOT SELL WALL)"
                 prob = 50
                 catalysts.append(f"Orderbook Imbalance: Heavy ask wall ({cb_imbalance:.1f}%) blocks YES upside")
+            elif liquidation_data["long_liquidations_usd"] > 2_000_000:
+                direction = "PASS"
+                pred = "PASS"
+                grade = "GRADE C / PASS"
+                badge = "⚪ PASS (LONG SQUEEZE)"
+                prob = 50
+                catalysts.append(f"Liquidation Cascade: ${liquidation_data['long_liquidations_usd']/1e6:.1f}M in longs liquidated. Downside momentum too risky to fade.")
 
         elif "NO" in str(pred) or direction == "NO":
             if cvd_val > cvd_bull_limit:
@@ -1552,6 +1668,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
                 badge = "⚪ PASS (SPOT BUY WALL)"
                 prob = 50
                 catalysts.append(f"Orderbook Imbalance: Heavy bid wall (+{cb_imbalance:.1f}%) blocks NO downside")
+            elif liquidation_data["short_liquidations_usd"] > 2_000_000:
+                direction = "PASS"
+                pred = "PASS"
+                grade = "GRADE C / PASS"
+                badge = "⚪ PASS (SHORT SQUEEZE)"
+                prob = 50
+                catalysts.append(f"Liquidation Cascade: ${liquidation_data['short_liquidations_usd']/1e6:.1f}M in shorts liquidated. Upside momentum too risky to fade.")
 
     # Final Chop / Weak Edge check
     if grade == "GRADE C / ML MODEL" and 45 <= prob <= 55:
@@ -1575,7 +1698,7 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         "cvd_value": cvd_val,
         "delta_to_target": delta_to_target,
         "heuristic_score": float(heuristic_score_for_training),
-        "news_sentiment_score": 0.0,
+        "news_sentiment_score": float(n_score) if "n_score" in locals() else 0.0,
         "fng_value": fng_value,
         "high_24h": float(df_ind["high"].max()) if len(df_ind) > 0 else c_close,
         "low_24h": float(df_ind["low"].min()) if len(df_ind) > 0 else c_close,
@@ -1603,19 +1726,39 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         ) if "atr" in df_ind.columns and len(df_ind["atr"].dropna()) >= 10 else 0.5,
     }
 
+    # C3 FIX: Compute and inject the 25 lag features the LSTM/Ensemble expects.
+    # These were previously missing from the training ledger, causing the model to train on zeros.
+    lag_source_features = ["bb_percent_b", "rsi", "volume_15m_ratio", "roc_15m", "cvd_divergence"]
+    n_ind = len(df_ind)
+    ref_idx = n_ind - 2 if n_ind >= 2 else n_ind - 1  # Same reference as candle 'c'
+    for step in range(4, -1, -1):
+        c_idx = ref_idx - step
+        for feat in lag_source_features:
+            key = f"{feat}_lag_{step}"
+            val = 0.5  # safe default
+            if 0 <= c_idx < n_ind:
+                try:
+                    if feat == "bb_percent_b":
+                        row = df_ind.iloc[c_idx]
+                        bb_u = float(row.get("bb_upper", 1.0))
+                        bb_l = float(row.get("bb_lower", 0.0))
+                        bb_range = bb_u - bb_l
+                        val = float((float(row["close"]) - bb_l) / bb_range) if bb_range > 0 else 0.5
+                    elif feat == "rsi":
+                        val = float(df_ind.iloc[c_idx].get("rsi", 50.0)) / 100.0
+                    elif feat == "volume_15m_ratio":
+                        avg_vol = float(df_ind["volume"].tail(288).mean()) if len(df_ind) >= 20 else 1.0
+                        val = float(df_ind.iloc[c_idx].get("volume", avg_vol)) / max(avg_vol, 1e-9)
+                    elif feat == "roc_15m":
+                        val = float(df_ind.iloc[c_idx].get("roc_15m", 0.0))
+                    elif feat == "cvd_divergence":
+                        cvd_v = float(df_ind.iloc[c_idx].get("cvd", 0.0)) if "cvd" in df_ind.columns else 0.0
+                        atr_v = float(df_ind.iloc[c_idx].get("atr", 100.0))
+                        val = cvd_v / (atr_v + 1e-5)
+                except Exception:
+                    pass
+            raw_features[key] = val
 
-    # === GOD-TIER ML ENSEMBLE OVERRIDE ===
-    if ml_prob > 0.50:
-        direction = "ABOVE"
-        pred = "BID YES (ABOVE TARGET)"
-    else:
-        direction = "BELOW"
-        pred = "BID NO (BELOW TARGET)"
-    grade = "GRADE A+ (100% AI)"
-    badge = "🤖 GOD-TIER ENSEMBLE"
-    prob = ml_prob_pct if 'ml_prob_pct' in locals() else int(ml_prob * 100)
-    if prob < 50: prob = 100 - prob
-    if prob == 50: prob = 51
 
     return {
         "recommendation": f"{grade} ({direction})",

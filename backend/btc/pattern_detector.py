@@ -233,17 +233,20 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
 
     # 16. Multi-Candle Advanced Formations (Descending & Ascending)
     if n >= 12:
-        w = df.tail(12)
+        w = df.tail(12)  # NOTE: 3hr window on 15m candles ? real triangle/H&S
+                        # patterns often need longer to form. Known limitation,
+                        # may cause missed patterns / false positives on noise.
+                        # See audit bug #9. Widening requires backtest validation.
         w_highs = w["high"].values
         w_lows = w["low"].values
         w_closes = w["close"].values
 
         # A. Descending Triangle (Bearish Breakdown)
-        sorted_l = sorted(w_lows[:9])
+        sorted_l = sorted(w_lows[3:12])
         if abs(sorted_l[0] - sorted_l[2]) / (sorted_l[0] + 1e-6) < 0.0025:
-            h1 = max(w_highs[0:3])
-            h2 = max(w_highs[3:6])
-            h3 = max(w_highs[6:9])
+            h1 = max(w_highs[3:6])
+            h2 = max(w_highs[6:9])
+            h3 = max(w_highs[9:12])
             if h1 > h2 > h3:
                 patterns.append({
                     "name": "Descending Triangle",
@@ -254,11 +257,11 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
                 })
 
         # B. Ascending Triangle (Bullish Breakout)
-        sorted_h = sorted(w_highs[:9], reverse=True)
+        sorted_h = sorted(w_highs[3:12], reverse=True)
         if abs(sorted_h[0] - sorted_h[2]) / (sorted_h[0] + 1e-6) < 0.0025:
-            l1 = min(w_lows[0:3])
-            l2 = min(w_lows[3:6])
-            l3 = min(w_lows[6:9])
+            l1 = min(w_lows[3:6])
+            l2 = min(w_lows[6:9])
+            l3 = min(w_lows[9:12])
             if l1 < l2 < l3:
                 patterns.append({
                     "name": "Ascending Triangle",
@@ -269,9 +272,9 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
                 })
 
         # C. Head and Shoulders Top (Bearish Reversal)
-        l_peak = max(w_highs[0:3])
-        head = max(w_highs[3:6])
-        r_peak = max(w_highs[6:9])
+        l_peak = max(w_highs[3:6])
+        head = max(w_highs[6:9])
+        r_peak = max(w_highs[9:12])
         if head > l_peak and head > r_peak and abs(l_peak - r_peak) / (head + 1e-6) < 0.006:
             patterns.append({
                 "name": "Head and Shoulders Top",
@@ -282,9 +285,9 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
             })
 
         # D. Bear Flag (Descending Continuation)
-        drop = (w_closes[0] - w_closes[3]) / (w_closes[0] + 1e-6)
+        drop = (w_closes[3] - w_closes[6]) / (w_closes[3] + 1e-6)
         if drop >= 0.003:
-            drift = (w_closes[6] - w_closes[3]) / (w_closes[3] + 1e-6)
+            drift = (w_closes[11] - w_closes[6]) / (w_closes[6] + 1e-6)
             if 0 < drift < (drop * 0.6):
                 patterns.append({
                     "name": "Bear Flag (Descending Continuation)",
@@ -295,9 +298,9 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
                 })
 
         # E. Bull Flag (Ascending Continuation)
-        rally = (w_closes[3] - w_closes[0]) / (w_closes[0] + 1e-6)
+        rally = (w_closes[6] - w_closes[3]) / (w_closes[3] + 1e-6)
         if rally >= 0.003:
-            pullback = (w_closes[3] - w_closes[6]) / (w_closes[3] + 1e-6)
+            pullback = (w_closes[6] - w_closes[11]) / (w_closes[6] + 1e-6)
             if 0 < pullback < (rally * 0.6):
                 patterns.append({
                     "name": "Bull Flag (Ascending Continuation)",

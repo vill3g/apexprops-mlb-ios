@@ -7,6 +7,8 @@ from backend.btc.auto_executor import AutoExecutor
 class TestForceTradeOnPass(unittest.TestCase):
     def setUp(self):
         self.executor = AutoExecutor.__new__(AutoExecutor)
+        self.executor.asset = "BTC"
+        self.executor._config_file = "dummy.json"
         self.executor.mode = "PAPER"
         self.executor.enabled = True
         self.executor.prediction_mode = True

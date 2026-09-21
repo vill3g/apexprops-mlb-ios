@@ -1,29 +1,43 @@
-def fix():
-    with open('static/index.html', 'r', encoding='utf-8') as f:
-        content = f.read()
+import sys
 
-    target = '''        if (banner) {
-          banner.style.background = "rgba(245, 158, 11, 0.10)";
-          banner.style.borderColor = "#f59e0b";
-        }
-        return;'''
+try:
+    with open('backend/btc/analyzer.py', 'r', encoding='utf-8') as f:
+        lines = f.readlines()
 
-    injection = '''        if (banner) {
-          banner.style.background = "rgba(245, 158, 11, 0.10)";
-          banner.style.borderColor = "#f59e0b";
-        }
-        const bubble = document.getElementById("kalshiMLStatusBubble");
-        if (bubble) {
-          bubble.innerText = `SCANNING (${Math.max(0, 30 - elapsed)}s)`;
-          bubble.className = "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/50 animate-pulse whitespace-nowrap";
-        }
-        return;'''
+    start_idx = -1
+    end_idx = -1
 
-    content = content.replace(target, injection)
+    for i, line in enumerate(lines):
+        if 'if ml_prob_for_pred_dir < 50.0 and disagreement >=' in line:
+            start_idx = i
+            break
 
-    with open('static/index.html', 'w', encoding='utf-8') as f:
-        f.write(content)
+    if start_idx != -1:
+        for i in range(start_idx + 1, len(lines)):
+            if '        else:' in lines[i] and 'ML Confirmation:' in lines[i+2]:
+                end_idx = i
+                break
 
-if __name__ == '__main__':
-    fix()
-    print("Fixed via python script!")
+    if end_idx == -1 and start_idx != -1:
+        for i in range(start_idx + 1, len(lines)):
+            if '        else:' in lines[i] and 'ML Confirmation' in lines[i+2]:
+                end_idx = i
+                break
+
+    if start_idx != -1 and end_idx != -1:
+        new_block = [
+            '        if ml_prob_for_pred_dir < 50.0 and disagreement >= THRESHOLDS["model_conflict_threshold"]:\n',
+            '            catalysts.append(f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model disagrees ({ml_prob_for_pred_dir:.1f}% for this side) - confidence capped")\n',
+            '            blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])\n',
+            '            if "GRADE A+" in grade:\n',
+            '                grade = "GRADE A SETUP"\n'
+        ]
+        new_lines = lines[:start_idx] + new_block + lines[end_idx:]
+        with open('backend/btc/analyzer.py', 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+        print("Fixed!")
+    else:
+        print(f"Failed to find indices: {start_idx}, {end_idx}")
+
+except Exception as e:
+    print(f"Error: {e}")

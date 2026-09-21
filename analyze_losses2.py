@@ -1,0 +1,1 @@
+import json, pandas as pd; trades = json.load(open('backend/data/trades_history.json')); df = pd.DataFrame(trades); losses = df[df['result'].isin(['LOSS', 'CLOSED_LOSS'])]; print(losses.groupby('trade_source').size()); print(losses.groupby('conviction_grade').size())

@@ -1,6 +1,10 @@
 import json
 import os
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
+
 from backend.btc.io_utils import atomic_json_write
 
 _lock = threading.RLock()
@@ -22,7 +26,8 @@ def load_balance() -> float:
                 _cached_balance = float(data.get("balance", 500.0))
                 _cached_balance_mtime = mtime
                 return _cached_balance
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to load paper balance: {e}")
             return _cached_balance
 
 def update_balance(delta: float) -> float:

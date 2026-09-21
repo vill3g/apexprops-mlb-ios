@@ -2,7 +2,7 @@
 <html lang="en" class="h-full bg-black text-slate-100">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>BTC 15M // Trade List & Prediction Details</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -27,8 +27,6 @@
       padding: 0 !important;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
       touch-action: pan-y;
-      -webkit-user-select: none;
-      user-select: none;
       -webkit-font-smoothing: antialiased !important;
       overflow-x: hidden !important;
     }
@@ -120,7 +118,7 @@
 
   <!-- TOP NAVIGATION BAR (Solid black, starts below Dynamic Island) -->
   <header class="trade-nav-header flex items-center justify-between w-full">
-    <a href="/" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-white/15 text-xs font-bold text-slate-200 hover:text-white hover:border-cyan-400 active:scale-95 transition-all cursor-pointer">
+    <a href="/" aria-label="Back to chart" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-white/15 text-xs font-bold text-slate-200 hover:text-white hover:border-cyan-400 active:scale-95 transition-all cursor-pointer">
       <span class="text-amber-400 text-sm leading-none">←</span>
       <span>Back to Chart</span>
     </a>
@@ -137,7 +135,7 @@
     </div>
 
     <div class="flex items-center gap-1.5">
-      <button onclick="fetchTradesHistory()" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center text-xs font-bold hover:bg-slate-800 text-slate-300 active:scale-95 transition-all cursor-pointer" title="Refresh Trades">
+      <button onclick="fetchTradesHistory()" aria-label="Refresh trades" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center text-xs font-bold hover:bg-slate-800 text-slate-300 active:scale-95 transition-all cursor-pointer" title="Refresh Trades">
         <span id="refreshIcon" class="text-xs">⟳</span>
       </button>
     </div>
@@ -147,23 +145,22 @@
   <div class="px-3 sm:px-6 py-2 sm:py-4 max-w-4xl mx-auto w-full flex-1 flex flex-col" style="padding-bottom: max(env(safe-area-inset-bottom, 24px), 24px);">
 
     <!-- SUMMARY STATS BAR -->
-    <section class="grid grid-cols-3 gap-2 my-2 sm:my-3">
-      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
-        <span class="text-[8.5px] uppercase font-bold text-slate-400">10-Trade Win Rate</span>
-        <span id="statWinRate" class="text-sm sm:text-base font-black text-emerald-400 mt-0.5">--%</span>
-        <span id="statRecord" class="text-[8px] text-slate-500 mt-0.5">0W - 0L</span>
+    <section class="flex flex-wrap sm:flex-nowrap items-center justify-between px-3 py-2 rounded-lg bg-slate-950/80 border border-slate-800/80 shadow-sm shadow-black/20 my-2 sm:my-3 font-mono text-[10px] sm:text-xs">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-slate-400 uppercase font-bold">Win Rate:</span>
+        <span id="statWinRate" class="font-black text-emerald-400">--%</span>
+        <span id="statRecord" class="text-[9px] sm:text-[10px] text-slate-500">0W - 0L</span>
       </div>
 
-      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
-        <span class="text-[8.5px] uppercase font-bold text-slate-400">Realized P&L</span>
-        <span id="statTotalPnl" class="text-sm sm:text-base font-black text-white mt-0.5">$0.00</span>
-        <span id="statRoi" class="text-[8px] text-slate-500 mt-0.5">--% ROI</span>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-slate-400 uppercase font-bold">P&L:</span>
+        <span id="statTotalPnl" class="font-black text-white">$0.00</span>
+        <span id="statRoi" class="text-[9px] sm:text-[10px] text-slate-500">--% ROI</span>
       </div>
 
-      <div class="p-2.5 rounded-xl bg-slate-950 border border-white/10 flex flex-col items-center justify-center font-mono text-center">
-        <span class="text-[8.5px] uppercase font-bold text-slate-400">Avg Conviction</span>
-        <span id="statAvgConviction" class="text-sm sm:text-base font-black text-cyan-300 mt-0.5">--%</span>
-        <span class="text-[8px] text-slate-500 mt-0.5">AI Confidence</span>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-slate-400 uppercase font-bold">Avg Conf:</span>
+        <span id="statAvgConviction" class="font-black text-cyan-300">--%</span>
       </div>
     </section>
 
@@ -217,27 +214,36 @@
 
     function getAuthHeaders(customHeaders = {}) {
       const headers = { ...customHeaders };
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get("token") || urlParams.get("api_token");
-      if (urlToken) {
-        localStorage.setItem("app_api_token", urlToken);
-        const cleanUrl = window.location.pathname + window.location.hash;
-        window.history.replaceState({}, document.title, cleanUrl);
-      }
-      const token = localStorage.getItem("app_api_token") || "";
-      if (token) {
-        headers["X-API-Token"] = token;
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get("token") || urlParams.get("api_token");
+        if (urlToken) {
+          localStorage.setItem("app_api_token", urlToken);
+          const cleanUrl = window.location.pathname + window.location.hash;
+          try {
+            window.history.replaceState({}, document.title, cleanUrl);
+          } catch(e) { console.warn('replaceState failed', e); }
+        }
+        const token = localStorage.getItem("app_api_token") || "";
+        if (token) {
+          headers["X-API-Token"] = token;
+        }
+      } catch (err) {
+        console.warn("getAuthHeaders error", err);
       }
       return headers;
     }
 
     async function fetchTradesHistory() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const asset = urlParams.get('asset') || 'BTC';
       const refreshIcon = document.getElementById("refreshIcon");
       if (refreshIcon) refreshIcon.classList.add("animate-spin");
+      let data = null;
       try {
-        const res = await fetch("/api/btc/trade/history", { headers: getAuthHeaders() });
+        const res = await fetch(`/api/engine/${asset}/trade/history`, { headers: getAuthHeaders() });
         if (res.status === 401) {
-          console.warn("Authentication required for /api/btc/trade/history");
+          console.warn(`Authentication required for /api/engine/${asset}/trade/history`);
           document.getElementById("tradesContainer").innerHTML = `
             <div class="text-center py-8 font-mono text-xs text-amber-400 bg-amber-950/20 border border-amber-900/40 rounded-xl p-4">
               Authentication required on server. Set APP_API_TOKEN or launch with authorized credentials.
@@ -246,14 +252,26 @@
           return;
         }
         if (!res.ok) throw new Error("HTTP " + res.status);
-        const data = await res.json();
-        cachedTrades = Array.isArray(data) ? data : [];
-        renderTrades(cachedTrades);
+        data = await res.json();
       } catch (err) {
         console.error("Failed to load trades history:", err);
         document.getElementById("tradesContainer").innerHTML = `
           <div class="text-center py-8 font-mono text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded-xl p-4">
-            Failed to connect to /api/btc/trade/history: ${err.message}. Retrying in 5s...
+            Failed to connect to /api/engine/${asset}/trade/history: ${err.message}. Retrying in 5s...
+          </div>
+        `;
+        if (refreshIcon) setTimeout(() => refreshIcon.classList.remove("animate-spin"), 500);
+        return;
+      }
+      
+      try {
+        cachedTrades = Array.isArray(data) ? data : [];
+        renderTrades(cachedTrades);
+      } catch (err) {
+        console.error("Failed to render trades history:", err);
+        document.getElementById("tradesContainer").innerHTML = `
+          <div class="text-center py-8 font-mono text-xs text-red-400 bg-red-950/20 border border-red-900/40 rounded-xl p-4">
+            Render Error: ${err.message}
           </div>
         `;
       } finally {
@@ -283,8 +301,8 @@
       if (isManual) {
         pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Manually Executed by Trader">👤 MANUAL</span>`);
       } else {
-        const isMg = src.includes("MACHINE_GUN") || (t.trading_style && String(t.trading_style).toUpperCase().includes("MACHINE_GUN"));
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/35" title="Autonomous AI Execution">${isMg ? "🤖 AUTO (MG)" : "🤖 AUTO"}</span>`);
+        const isMg = src.includes("MOMENTUM_SURFER") || (t.trading_style && String(t.trading_style).toUpperCase().includes("MOMENTUM_SURFER"));
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/35" title="Autonomous AI Execution">${isMg ? "🤖 AUTO (SURF)" : "🤖 AUTO"}</span>`);
       }
 
       // 3. Scalp Pill
@@ -324,9 +342,10 @@
 
       const displayList = (trades || []).filter(t => t && typeof t === 'object').slice(0, currentLimit);
 
-      // Compute statistics for displayList
+      // Compute global statistics for all trades
       let wins = 0, losses = 0, totalPnl = 0, totalCost = 0, totalProb = 0, probCount = 0;
-      displayList.forEach(t => {
+      (trades || []).forEach(t => {
+        if (!t || typeof t !== 'object') return;
         const res = String(t.result || "").toUpperCase();
         const pnl = parseFloat(t.realized_pnl ?? t.pnl ?? 0);
         const cost = parseFloat(t.cost || 0);
@@ -511,7 +530,10 @@
 
     // Auto load on start & refresh every 5 seconds
     fetchTradesHistorySafe();
-    setInterval(fetchTradesHistorySafe, 5000);
+    setInterval(() => {
+      if (document.hidden) return;
+      fetchTradesHistorySafe();
+    }, 5000);
   </script>
 </body>
 </html>

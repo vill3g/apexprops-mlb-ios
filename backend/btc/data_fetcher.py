@@ -94,7 +94,7 @@ def _fetch_from_coinbase(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     if timeframe == "4h":
         df = _aggregate_to_4h(df)
 
-    return df.tail(limit).reset_index(drop=True)
+    return df
 
 
 def _fetch_from_kraken(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
@@ -125,7 +125,7 @@ def _fetch_from_kraken(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame
             "volume": float(row[6])
         })
     df = pd.DataFrame(records).sort_values("time").reset_index(drop=True)
-    return df
+    return df.tail(limit).reset_index(drop=True)
 
 
 def _fetch_from_binance_us(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
@@ -150,7 +150,7 @@ def _fetch_from_binance_us(timeframe: str = "15m", limit: int = 300) -> pd.DataF
             "volume": float(row[5])
         })
     df = pd.DataFrame(records).sort_values("time").reset_index(drop=True)
-    return df
+    return df.tail(limit).reset_index(drop=True)
 
 
 def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
@@ -174,7 +174,7 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     df = hist[["time", "open", "high", "low", "close", "volume"]].sort_values("time").reset_index(drop=True)
     if timeframe == "4h":
         df = _aggregate_to_4h(df)
-    return df.tail(limit).reset_index(drop=True)
+    return df
 
 
 def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
@@ -221,7 +221,7 @@ def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
                             pass # Just fall back to standard df if history file fails
                             
                 df["datetime"] = pd.to_datetime(df["time"], unit="s", utc=True)
-                return df
+                return df.tail(limit).reset_index(drop=True)
         except Exception as e:
             last_err = e
             continue
@@ -872,20 +872,36 @@ def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
             bids = data.get('bids', [])
             asks = data.get('asks', [])
             if not bids or not asks:
-                return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0}
+                return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}
             best_bid = float(bids[0][0])
             best_ask = float(asks[0][0])
             mid = (best_bid + best_ask) / 2.0
             bid_vol = sum(float(b[1]) for b in bids if float(b[0]) >= mid * (1 - depth_percent/100))
             ask_vol = sum(float(a[1]) for a in asks if float(a[0]) <= mid * (1 + depth_percent/100))
-            total = bid_vol + ask_vol
-            imbalance = ((bid_vol - ask_vol) / total * 100) if total > 0 else 0.0
-            res = {'imbalance': round(imbalance, 2), 'bid_vol': round(bid_vol, 2), 'ask_vol': round(ask_vol, 2)}
-            with _ob_lock:
-                _ob_cache["time"] = time.time()
-                _ob_cache["data"] = res
-            return res
-    except Exception:
-        pass
-    return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0}
 
+            # Find the largest single order level
+            largest_bid_wall = max(bids, key=lambda x: float(x[1])) if bids else None
+            largest_ask_wall = max(asks, key=lambda x: float(x[1])) if asks else None
+
+            imb = 0.0
+            total_vol = bid_vol + ask_vol
+            if total_vol > 0:
+                imb = ((bid_vol - ask_vol) / total_vol) * 100.0
+
+            res = {
+                'imbalance': round(imb, 2),
+                'bid_vol': round(bid_vol, 2),
+                'ask_vol': round(ask_vol, 2),
+                'largest_bid_wall': float(largest_bid_wall[0]) if largest_bid_wall else None,
+                'bid_wall_size': float(largest_bid_wall[1]) if largest_bid_wall else 0.0,
+                'largest_ask_wall': float(largest_ask_wall[0]) if largest_ask_wall else None,
+                'ask_wall_size': float(largest_ask_wall[1]) if largest_ask_wall else 0.0
+            }
+            with _ob_lock:
+                _ob_cache["data"] = res
+                _ob_cache["time"] = now
+            return res
+    except Exception as e:
+        pass
+
+    return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}

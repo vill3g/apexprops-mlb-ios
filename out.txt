@@ -1,0 +1,55 @@
+        except Exception as e:
+                    logger.debug(f"[ML] datetime parse error: {e}")
+                    
+            if ny_dt is None:
+                try:
+                    ny_dt = pd.to_datetime(c.get("time", 0), unit="s", utc=True).astimezone(ZoneInfo("America/New_York"))
+                except Exception:
+                    ny_dt = datetime.now(ZoneInfo("America/New_York"))
+            
+            is_night = 0 <= ny_dt.hour < 7
+            if time_filter == "night" and not is_night:
+                continue
+            if time_filter == "day" and is_night:
+                continue
+                    
+            raw_feat = build_feature_row(df_ind, i)
+            
+            if self.trading_style == "MOMENTUM_SURFER":
+                # 1m data mapping: Find interval start (minute 00, 15, 30, 45) and interval end (minute 14, 29, 44, 59)
+                minute = ny_dt.minute
+                interval_start_min = (minute // 15) * 15
+                minutes_elapsed = minute - interval_start_min
+                minutes_remaining = 15.0 - minutes_elapsed
+                
+                raw_feat["minutes_remaining"] = minutes_remaining
+                
+                # Look backwards up to 14 rows to find the interval open price
+                target_price = float(c["open"])
+                for j in range(0, minutes_elapsed + 1):
+                    if i - j >= 0:
+                        past_c = df_ind.iloc[i - j]
+                        target_price = float(past_c["open"])
+                
+                # Look forwards up to 14 rows to find the interval close price
+                actual_close = float(c["close"])
+                mins_to_close = 14 - minutes_elapsed
+                if i + mins_to_close < len(df_ind):
+                    future_c = df_ind.iloc[i + mins_to_close]
+                    actual_close = float(future_c["close"])
+                else:
+                    continue # Skip if interval hasn't finished yet
+                    
+                label = 1 if actual_close >= target_price else 0
+            else:
+                actual_close = float(c["close"])
+                target_price = float(c.get("open", p["close"]))
+                label = 1 if actual_close >= target_price else 0
+            
+            feature_vec = []
+            valid = True
+            for k in self.feature_keys:
+                val = raw_feat.get(k, 0.0)
+                try:
+                    val = float(val) if val is not None else 0.0
+ 
