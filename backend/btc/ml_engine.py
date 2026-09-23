@@ -363,11 +363,11 @@ def build_feature_row(df_ind, i: int) -> dict:
                 try:
                     row = df_ind.iloc[c_idx]
                     if feat == "bb_percent_b":
-                        b_u = float(row.get("bb_upper", 0))
-                        b_l = float(row.get("bb_lower", 0))
+                        b_u = float(row.get("bb_upper", row.get("high", 1.0)))
+                        b_l = float(row.get("bb_lower", row.get("low", 1.0)))
                         val = (float(row.get("close", 0)) - b_l) / (b_u - b_l) if b_u - b_l > 0 else 0.5
                     elif feat == "volume_15m_ratio":
-                        val = float(row.get("volume", 0)) / max(float(df_ind["volume"].iloc[max(0, c_idx-288):c_idx].mean()), 1e-9)
+                        val = float(row.get("volume", 0)) / max(float(row.get("volume_288_mean", 1.0)), 1e-9)
                     elif feat == "cvd_divergence":
                         val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
                     else:
@@ -567,11 +567,11 @@ def build_live_ml_features(
                 try:
                     row = df_ind.iloc[c_idx]
                     if feat == "bb_percent_b":
-                        b_u = float(row.get("bb_upper", 0))
-                        b_l = float(row.get("bb_lower", 0))
+                        b_u = float(row.get("bb_upper", row.get("high", 1.0)))
+                        b_l = float(row.get("bb_lower", row.get("low", 1.0)))
                         val = (float(row.get("close", 0)) - b_l) / (b_u - b_l) if b_u - b_l > 0 else 0.5
                     elif feat == "volume_15m_ratio":
-                        val = float(row.get("volume", 0)) / max(float(df_ind["volume"].iloc[max(0, c_idx-288):c_idx].mean()), 1e-9)
+                        val = float(row.get("volume", 0)) / max(float(row.get("volume_288_mean", 1.0)), 1e-9)
                     elif feat == "cvd_divergence":
                         val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
                     else:
@@ -662,7 +662,7 @@ class MLEngine:
         # REMOVED: minutes_remaining is already globally appended in FEATURE_KEYS.
         # Doing it again duplicates it and corrupts the LSTM PyTorch tensor tail.
         self._lock = threading.Lock()
-        self.train_window = 15000 if self.trading_style == "MOMENTUM_SURFER" else 100
+        self.train_window = 15000  # Allow deep historical training for ALL styles (prevents underfitting)
         
         self.cache_dir = os.path.join(data_dir, "model_cache")
         os.makedirs(self.cache_dir, exist_ok=True)
@@ -680,6 +680,7 @@ class MLEngine:
             return prob, "ML is neutral or untrained."
             
         try:
+            current_raw_features = self._normalize_features(current_raw_features)
             # Rebuild the feature vector exactly as in predict_probability
             feature_vec = []
             for k in self.feature_keys:
@@ -871,6 +872,8 @@ class MLEngine:
                 # Fallback: if old trades don't have raw_features, skip them
                 continue
                 
+            raw = self._normalize_features(raw)
+            
             feature_vec = []
             valid = True
             # Dynamic backfill for historical bb_percent_b
@@ -955,9 +958,24 @@ class MLEngine:
                 
             try:
                 res = self._extract_features_and_labels(time_filter=time_filter)
-                if res[0] is not None and len(res[0]) >= 10:
+                if res and res[0] is not None and len(res[0]) >= 10:
                     X, y, weights = res
                     n = len(X)
+                    
+                    # CRITICAL FIX: If we only have a tiny amount of live paper trades (e.g. < 300),
+                    # do NOT retrain the model and overwrite the rich historical model cache.
+                    # Just load the existing historical cache and return.
+                    if n < 300 and os.path.exists(cache_file) and not force:
+                        try:
+                            import joblib
+                            self.model = joblib.load(cache_file)
+                            self.is_trained = True
+                            self.last_trained_mtime = mtime  # fake the mtime so it doesn't keep trying
+                            logger.info(f"[MLEngine] Only {n} trades in history. Keeping rich historical model for {time_filter}.")
+                            return 1
+                        except Exception as e:
+                            logger.warning(f"[MLEngine] Failed to load cache fallback: {e}")
+                    
                     # For small sample sizes (< 80), train on the full set to preserve signal;
                     # calibrate only when sufficient holdout samples exist.
                     split = n if n < 80 else max(0, n - max(20, int(n * 0.2)))
@@ -996,16 +1014,21 @@ class MLEngine:
         on having to wait for 10 live executed trades to be collected.
         """
         cache_file = self._get_cache_path(time_filter)
-        if os.path.exists(cache_file):
+        
+        # NOTE: We previously skipped if cache_file existed. 
+        # But if the cache was generated by live paper trades (e.g. 50 trades), it's highly underfit.
+        # We only want to skip if the cache is actually a robust historical model (which we can't easily check).
+        # So we'll skip ONLY if last_train_sample_count > 500.
+        if os.path.exists(cache_file) and self.last_train_sample_count > 500:
             import joblib
             try:
                 self.model = joblib.load(cache_file)
                 self.is_trained = True
                 self.last_trained_mtime = os.path.getmtime(cache_file)
-                logger.info(f"[MLEngine] Loaded cached historical {time_filter} model for {self.asset} from disk! Skipping 45min retrain.")
+                logger.info(f"[MLEngine] Loaded robust cached historical {time_filter} model (>{self.last_train_sample_count} samples). Skipping retrain.")
                 return 1
             except Exception as e:
-                logger.warning(f"[MLEngine] Failed to load historical cache, training from scratch: {e}")
+                logger.warning(f"[MLEngine] Failed to load robust cache fallback: {e}")
 
         # Enforce OPTIMAL_TRAINING_WINDOW_BARS + 50 warmup context (Task 4)
         if len(df_ind) > OPTIMAL_TRAINING_WINDOW_BARS + 50:
@@ -1131,6 +1154,36 @@ class MLEngine:
                 return len(X_train)
         return 0
         
+    def _normalize_features(self, raw: dict) -> dict:
+        """Normalize absolute prices to make features stationary across different BTC price regimes."""
+        norm = dict(raw)
+        base_price = float(raw.get("ema_50") or 1.0)
+        if base_price <= 0:
+            base_price = 1.0
+            
+        abs_keys = ["ema_9", "ema_21", "ema_50", "bb_upper", "bb_lower", "high_24h", "low_24h"]
+        for k in abs_keys:
+            if k in norm:
+                norm[k] = (float(norm[k]) / base_price) - 1.0
+                
+        if "atr" in norm:
+            norm["atr"] = (float(norm["atr"]) / base_price) * 100.0
+            
+        if "price_vs_vwap" in norm:
+            norm["price_vs_vwap"] = (float(norm["price_vs_vwap"]) / base_price) * 100.0
+
+        # Fix non-stationary features that blow out XGBoost bounds
+        for k in ["volume_24h", "open_interest"]:
+            if k in norm:
+                val = float(norm[k])
+                norm[k] = math.log1p(max(0.0, val)) if val > 0 else 0.0
+                
+        if "cvd_value" in norm:
+            val = float(norm["cvd_value"])
+            norm["cvd_value"] = math.copysign(math.log1p(abs(val)), val)
+            
+        return norm
+
     def predict_probability(self, current_raw_features: dict) -> float:
         """
         Returns the ML model's probability of a WIN given the current features.
@@ -1142,6 +1195,8 @@ class MLEngine:
         if not self.is_trained:
             return 0.5
             
+        current_raw_features = self._normalize_features(current_raw_features)
+        
         feature_vec = []
         for k in self.feature_keys:
             default_val = NEUTRAL_FEATURE_DEFAULTS.get(k, 0.0)

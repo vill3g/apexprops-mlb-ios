@@ -14,7 +14,11 @@ TICKER_MAP = {
     "BTC": {"kraken": "XBTUSD", "binance": "BTCUSDT", "coinbase": "BTC-USD", "yf": "BTC-USD"},
     "ETH": {"kraken": "ETHUSD", "binance": "ETHUSDT", "coinbase": "ETH-USD", "yf": "ETH-USD"},
     "GOLD": {"kraken": "PAXGUSD", "binance": None, "coinbase": None, "yf": "PAXG-USD"},
-    "NDQ": {"kraken": None, "binance": None, "coinbase": None, "yf": "NQ=F"}
+    "NDQ": {"kraken": None, "binance": None, "coinbase": None, "yf": "NQ=F"},
+    "EURUSD": {"kraken": None, "binance": None, "coinbase": None, "yf": "EURUSD=X"},
+    "GBPUSD": {"kraken": None, "binance": None, "coinbase": None, "yf": "GBPUSD=X"},
+    "USDJPY": {"kraken": None, "binance": None, "coinbase": None, "yf": "USDJPY=X"},
+    "AUDUSD": {"kraken": None, "binance": None, "coinbase": None, "yf": "AUDUSD=X"},
 }
 
 def _fetch_yf_asset(asset: str, timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
@@ -96,6 +100,7 @@ def _fetch_binance_asset(asset: str, timeframe: str = "15m", limit: int = 300) -
 
 def fetch_asset_candles(asset: str = "BTC", timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
     """Fetch candles for multi-assets with correct fallbacks."""
+    asset = asset.upper()
     if asset == "BTC":
         from backend.btc.data_fetcher import fetch_candles
         return fetch_candles(timeframe, limit)
@@ -117,6 +122,9 @@ def fetch_asset_candles(asset: str = "BTC", timeframe: str = "15m", limit: int =
             ("Binance", lambda: _fetch_binance_asset(asset, tf, limit)),
             ("Yahoo Finance", lambda: _fetch_yf_asset(asset, tf, limit))
         ]
+    elif asset in ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]:
+        from backend.forex.data_fetcher import fetch_forex_candles
+        return fetch_forex_candles(asset, tf, limit)
     else:
         raise ValueError(f"Unknown asset {asset}")
 
@@ -136,9 +144,13 @@ def fetch_asset_candles(asset: str = "BTC", timeframe: str = "15m", limit: int =
 
 
 def get_asset_ticker(asset: str) -> dict:
+    asset = asset.upper()
     if asset == "BTC":
         from backend.btc.data_fetcher import get_btc_ticker
         return get_btc_ticker()
+    if asset in ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]:
+        from backend.forex.data_fetcher import get_forex_ticker
+        return get_forex_ticker(asset)
     df_1m = fetch_asset_candles(asset, "1m", limit=1)
     df_1d = fetch_asset_candles(asset, "1d", limit=2)
     
@@ -162,6 +174,7 @@ def get_asset_ticker(asset: str) -> dict:
 
 import pytz
 def is_market_open(asset: str) -> bool:
+    asset = asset.upper()
     if asset in ["BTC", "ETH"]:
         return True
     now = datetime.now(pytz.timezone("America/New_York"))

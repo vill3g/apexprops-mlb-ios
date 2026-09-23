@@ -8,12 +8,8 @@ echo Stopping Cloudflare Tunnel...
 taskkill /F /IM cloudflared.exe 2>nul
 
 echo Stopping Python server and watchdog processes...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8056" ^| findstr "LISTENING"') do (
-    taskkill /F /PID %%a 2>nul
-)
-
-wmic process where "CommandLine like '%%server_watchdog.py%%'" call terminate 2>nul
-wmic process where "CommandLine like '%%remote_tunnel.py%%'" call terminate 2>nul
+powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort 8056,28056 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*server_watchdog.py*' -or $_.CommandLine -like '*remote_tunnel.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 
 echo.
 echo [OK] All Kalshi AI Trader server and tunnel processes have been stopped.

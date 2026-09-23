@@ -9,6 +9,7 @@ import sys
 import time
 import subprocess
 import logging
+from logging.handlers import RotatingFileHandler
 
 APP_DIR = os.environ.get("APP_DIR", os.path.dirname(os.path.abspath(__file__)))
 venv_python = os.path.join(APP_DIR, ".venv", "Scripts", "python.exe")
@@ -22,7 +23,8 @@ else:
 
 LOG_FILE = os.path.join(APP_DIR, "server_watchdog.log")
 
-log_handlers = [logging.FileHandler(LOG_FILE, encoding="utf-8")]
+# Rotating log handler keeps file under 5 MB to eliminate disk I/O bottlenecks
+log_handlers = [RotatingFileHandler(LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=2, encoding="utf-8")]
 if sys.stdout is not None:
     log_handlers.append(logging.StreamHandler(sys.stdout))
 
@@ -40,7 +42,8 @@ def run_server():
         "backend.main:app",
         "--host", "0.0.0.0",
         "--port", "8056",
-        "--app-dir", APP_DIR
+        "--app-dir", APP_DIR,
+        "--no-access-log"
     ]
     
     flags = 0
@@ -55,19 +58,17 @@ def run_server():
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1,
-        creationflags=flags
+        creationflags=flags,
+        close_fds=True
     )
     return proc
 
 def _acquire_watchdog_lock():
-    import socket
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(("127.0.0.1", 28056))
-        s.listen(1)
-        return s
-    except OSError:
+    import ctypes
+    mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "KalshiAITraderWatchdogLock")
+    if ctypes.windll.kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
         return None
+    return mutex
 
 def main():
     lock_socket = _acquire_watchdog_lock()
@@ -112,12 +113,8 @@ def main():
                 restart_count = 0
 
             restart_count += 1
-            MAX_RESTARTS = 10
-            if restart_count > MAX_RESTARTS:
-                logger.critical('Max restarts exceeded')
-                sys.exit(1)
-            backoff_delay = min(2.0 * (1.5 ** (restart_count - 1)), 60.0)
-            logger.info(f"[Watchdog] Automatically restarting server in {backoff_delay:.1f} seconds... (Restart #{restart_count})")
+            backoff_delay = min(2.0 * (1.5 ** (min(restart_count, 15) - 1)), 60.0)
+            logger.info(f"[Watchdog] Automatically restarting server in {backoff_delay:.1f} seconds... (Attempt #{restart_count})")
             time.sleep(backoff_delay)
 
         except Exception as e:

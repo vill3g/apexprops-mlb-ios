@@ -1,0 +1,27 @@
+﻿Found 4 script blocks
+
+--- Script block 1 (len=51) ---
+<script src="https://cdn.tailwindcss.com"></script>
+...
+
+--- Script block 2 (len=79) ---
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+...
+
+--- Script block 3 (len=324) ---
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'kalshi-blue': '#0052FF',
+            'kalshi-green'
+...
+
+--- Script block 4 (len=22730) ---
+<script>
+    const token = localStorage.getItem('saas_token');
+    if (!token) window.location.href = '/login.html';
+    
+    let currentMode = "PAPER
+...

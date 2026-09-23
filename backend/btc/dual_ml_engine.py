@@ -53,12 +53,9 @@ class DualMLEngine:
     def self_train_on_historical_market(self, df_ind):
         with self._lock:
             self._auto_train_attempted = True
-            n_day = 0
-            n_night = 0
-            if not self.day_engine.is_trained:
-                n_day = self.day_engine.self_train_on_historical_market(df_ind, time_filter="day")
-            if not self.night_engine.is_trained:
-                n_night = self.night_engine.self_train_on_historical_market(df_ind, time_filter="night")
+            # Always run self_train so it can check its internal last_train_sample_count
+            n_day = self.day_engine.self_train_on_historical_market(df_ind, time_filter="day")
+            n_night = self.night_engine.self_train_on_historical_market(df_ind, time_filter="night")
             return (n_day or 0) + (n_night or 0)
 
 

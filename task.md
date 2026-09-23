@@ -1,0 +1,3 @@
+- [x] Redesign UI for iPhone layout
+- [ ] Rewrite saas_dashboard.html
+- [ ] Clean up redundant JS

@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="/static/assets/logo_monogram.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/js/app.js?v=2026091803" defer></script>
+  <script src="/static/js/app.js?v=2026092214" defer></script>
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
   <script>
     (function() {
@@ -100,6 +100,9 @@
         <option value="BTC" selected>BTC</option>
         <option value="ETH">ETH</option>
         <option value="GOLD">GOLD</option>
+        <option value="EURUSD">EUR/USD</option>
+        <option value="GBPUSD">GBP/USD</option>
+        <option value="USDJPY">USD/JPY</option>
       </select>
     </div>
     <!-- Center: Live Clock -->
@@ -141,6 +144,9 @@
             <button onclick="window.switchAsset('BTC')" id="tab_BTC" class="asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-amber-500/50 bg-amber-500/20 text-amber-400 transition-all hover:bg-amber-500/30">₿ BTC</button>
             <button onclick="window.switchAsset('ETH')" id="tab_ETH" class="asset-tab rounded-full px-4 py-1.5 text-xs font-black border border-slate-600 bg-slate-800 text-slate-400 transition-all hover:bg-slate-700">⟠ ETH</button>
             <button onclick="window.switchAsset('GOLD')" id="tab_GOLD" class="asset-tab rounded-full px-4 py-1.5 text-xs font-black border border-slate-600 bg-slate-800 text-slate-400 transition-all hover:bg-slate-700">🪙 GOLD</button>
+            <button onclick="window.switchAsset('EURUSD')" id="tab_EURUSD" class="asset-tab rounded-full px-4 py-1.5 text-xs font-black border border-slate-600 bg-slate-800 text-slate-400 transition-all hover:bg-slate-700">💶 EUR/USD</button>
+            <button onclick="window.switchAsset('GBPUSD')" id="tab_GBPUSD" class="asset-tab rounded-full px-4 py-1.5 text-xs font-black border border-slate-600 bg-slate-800 text-slate-400 transition-all hover:bg-slate-700">💷 GBP/USD</button>
+            <button onclick="window.switchAsset('USDJPY')" id="tab_USDJPY" class="asset-tab rounded-full px-4 py-1.5 text-xs font-black border border-slate-600 bg-slate-800 text-slate-400 transition-all hover:bg-slate-700">💴 USD/JPY</button>
           </div>
         </div>
 
@@ -158,6 +164,12 @@
     <!-- Top Navigation / Header -->
     <header class="sticky top-0 z-40 sleek-glass-header px-2.5 sm:px-4 pt-[1px] pb-1.5 md:py-1.5 flex items-center justify-between gap-1.5 sm:gap-2.5 w-full max-w-full">
       
+      <!-- Market Toggle (BTC / FOREX) -->
+      <div class="flex bg-slate-900 border border-slate-700 rounded-lg p-0.5 shadow-inner shrink-0 mr-1">
+        <button id="modeToggleBtc" onclick="setMarketMode('BTC')" class="px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md bg-cyan-900/50 text-cyan-300 border border-cyan-500/30">BTC 15M</button>
+        <button id="modeToggleFx" onclick="setMarketMode('FOREX')" class="px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200">FOREX</button>
+      </div>
+
       <!-- Left Side Container -->
       <div class="flex items-center gap-1.5 shrink-0">
         <!-- 1. Prediction (Likely) Card -->
@@ -223,7 +235,7 @@
         <!-- 3. 15M Close Time / Countdown -->
         <div id="topBarCountdownCard" class="sleek-glass-card sleek-glass-card-countdown flex flex-col justify-center min-w-[128px] sm:min-w-[144px] px-2.5 py-1.5 shrink-0">
           <div class="flex items-center justify-between gap-1.5 w-full">
-            <span class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-cyan-400 tracking-[0.05em]">15M CLOSE</span>
+            <span id="topBarCountdownCardLabel" class="text-[8px] sm:text-[9px] font-mono font-black uppercase text-cyan-400 tracking-[0.05em]">15M CLOSE</span>
             <span class="text-[7px] sm:text-[8px] font-mono font-bold text-cyan-400/80 bg-cyan-950/60 border border-cyan-500/30 px-1.5 py-0.5 rounded uppercase">LEFT</span>
           </div>
           <div class="flex items-center justify-between gap-2 mt-1 w-full">
@@ -257,7 +269,7 @@
         <!-- Account Balance and Spinning Bitcoin -->
         <div class="sleek-glass-card flex flex-col items-end justify-center px-2.5 py-1 sm:px-3 sm:py-1.5 self-stretch shrink-0 min-w-[84px] leading-tight" title="Account Balance">
           <div class="flex items-center gap-1.5">
-            <span class="inline-block animate-spin text-amber-400 text-sm font-black">₿</span>
+            <span id="topBarBalanceIcon" class="inline-block animate-spin text-amber-400 text-sm font-black">₿</span>
             <span class="text-[9px] sm:text-[10px] lg:text-xs font-mono font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">Balance</span>
           </div>
           <span id="topBarAccountBalanceText" class="text-base sm:text-lg lg:text-2xl font-black font-mono whitespace-nowrap text-emerald-400 drop-shadow-md">$--.--</span>
@@ -309,7 +321,7 @@
             <span id="iphone17IntervalTime" class="iphone17-interval-text">1:15–1:30 PM EDT</span>
             <span class="text-xs text-slate-500 font-bold">•</span>
             <div class="flex items-center gap-1">
-              <span class="iphone17-target-label text-xs font-semibold text-slate-400">Target</span>
+              <span id="iphone17TargetLabel" class="iphone17-target-label text-xs font-semibold text-slate-400">Target</span>
               <span id="iphone17TargetPrice" class="iphone17-target-val text-xs sm:text-sm font-black font-mono text-white">$77,342.17</span>
             </div>
           </div>
@@ -446,7 +458,7 @@
                   <span id="kalshiBeaconPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span id="kalshiBeaconDot" class="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-emerald-500"></span>
                 </span>
-                <span class="text-[10px] sm:text-sm font-black tracking-wider text-cyan-400 font-sans uppercase whitespace-nowrap">Kalshi AI Console</span>
+                <span id="traderDeckTitle" class="text-[10px] sm:text-sm font-black tracking-wider text-cyan-400 font-sans uppercase whitespace-nowrap">Kalshi AI Console</span>
               </div>
 
               <!-- Center: Monitoring Bubble -->
@@ -458,7 +470,7 @@
               <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <!-- AI Model Prediction Accuracy Pane -->
               <div id="btcMlModelAccuracyCard" onclick="openMlPredictionDetailsModal()" class="flex flex-col justify-center items-center px-1.5 sm:px-2 py-0.5 rounded-lg bg-slate-950/80 border border-cyan-500/30 font-mono shadow-sm shadow-cyan-500/10 shrink-0 cursor-pointer hover:border-cyan-400 transition-colors">
-                <span class="text-[7px] sm:text-[7.5px] font-black text-cyan-400 uppercase tracking-wider leading-none">AI ACCURACY</span>
+                <span class="text-[7px] sm:text-[7.5px] font-black text-cyan-400 uppercase tracking-wider leading-none">AI</span>
                 <span id="btcMlModelAccuracyPct" class="text-[9.5px] sm:text-[11px] font-black text-cyan-300 font-mono leading-none mt-0.5">--%</span>
               </div>
 
@@ -510,17 +522,18 @@
               <div class="space-y-1 shrink-0">
                 <div class="flex items-center justify-between px-2 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
                   <div class="flex items-center gap-1.5">
-                    <span class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
-                    <div class="flex items-center">
-                      <span class="text-cyan-400 font-bold text-[10px] mr-0.5">$</span>
-                      <input id="kalshiSizeInput" type="number" min="0.50" step="0.50" value="0.65" onchange="updateKalshiSize(this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1.5 py-0.5 focus:border-cyan-500 focus:outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    <span id="traderSizeLabel" class="text-[10px] sm:text-xs text-slate-300 font-sans font-bold">Size:</span>
+                    <div class="flex items-center" id="traderSizeInputWrap">
+                      <span id="traderCurrencyPrefix" class="text-cyan-400 font-bold text-[10px] mr-0.5">$</span>
+                      <input id="kalshiSizeInput" type="number" min="0.01" step="0.01" value="0.65" onchange="updateKalshiSize(this.value)" class="w-16 bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white px-1.5 py-0.5 focus:border-cyan-500 focus:outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                     </div>
+                    <span id="traderSpreadBadge" class="hidden text-cyan-300 font-mono text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30">0.2 Pips</span>
                   </div>
                   <div class="flex items-center gap-1">
                     <button type="button" onclick="changeKalshiContracts(-1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">-</button>
                     <input id="kalshiContractsInput" type="number" min="1" max="9999" value="1" onchange="updateKalshiContracts(this.value)" class="w-16 text-center bg-slate-900 border border-slate-700 rounded text-[10px] sm:text-xs font-mono font-bold text-white py-0.5 px-1 focus:border-cyan-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                     <button type="button" onclick="changeKalshiContracts(1)" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 font-black flex items-center justify-center text-xs active:scale-90">+</button>
-                    <span class="text-[10px] text-slate-400 font-mono">ct</span>
+                    <span id="traderUnitsLabel" class="text-[10px] text-slate-400 font-mono">ct</span>
                   </div>
                 </div>
 
@@ -542,24 +555,24 @@
                   <span id="kalshiConvictionPill" class="px-1.5 py-0.2 rounded font-bold uppercase text-[8px] bg-slate-800 text-cyan-400">Min: A+, A & B+</span>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 pt-0.5">
-                  <button onclick="triggerManualKalshiTrade('ABOVE')" class="px-1 py-1.5 rounded-lg bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-emerald-950/60 cursor-pointer leading-tight">
-                    <div class="flex items-center gap-1 text-xs sm:text-sm"><span>▲</span> Bid Up</div>
+                  <button id="btnManualAbove" onclick="triggerManualKalshiTrade('ABOVE')" class="px-1 py-1.5 rounded-lg bg-emerald-950/90 border border-emerald-500/60 text-emerald-400 hover:bg-emerald-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-emerald-950/60 cursor-pointer leading-tight">
+                    <div id="btnLabelAbove" class="flex items-center gap-1 text-xs sm:text-sm"><span>▲</span> <span id="btnTextAbove">Bid Up</span></div>
                     <span id="btnProbAbove" class="text-[10px] sm:text-xs font-mono text-emerald-300 opacity-90 font-bold mt-0.5">--%</span>
                   </button>
-                  <button onclick="triggerManualKalshiTrade('BELOW')" class="px-1 py-1.5 rounded-lg bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-red-950/60 cursor-pointer leading-tight">
-                    <div class="flex items-center gap-1 text-xs sm:text-sm"><span>▼</span> Bid Down</div>
+                  <button id="btnManualBelow" onclick="triggerManualKalshiTrade('BELOW')" class="px-1 py-1.5 rounded-lg bg-red-950/90 border border-red-500/60 text-red-400 hover:bg-red-900 active:scale-95 transition-all font-black flex flex-col items-center justify-center shadow-md shadow-red-950/60 cursor-pointer leading-tight">
+                    <div id="btnLabelBelow" class="flex items-center gap-1 text-xs sm:text-sm"><span>▼</span> <span id="btnTextBelow">Bid Down</span></div>
                     <span id="btnProbBelow" class="text-[10px] sm:text-xs font-mono text-red-300 opacity-90 font-bold mt-0.5">--%</span>
                   </button>
                 </div>
                 <!-- 1-Click AI Execute Button -->
 
                 <!-- 1-Click Reverse Position Button -->
-                <button type="button" onclick="triggerReversePosition()" class="w-full py-1.5 px-2 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 active:scale-95 transition-all text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-950/30 cursor-pointer" title="Immediately close active trade and open a position in the opposite direction">
-                  <span>O</span> 1-Click Reverse
+                <button type="button" id="btnReverseTrade" onclick="triggerReversePosition()" class="w-full py-1.5 px-2 rounded-lg bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 active:scale-95 transition-all text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-950/30 cursor-pointer" title="Immediately close active trade and open a position in the opposite direction">
+                  <span>🔄</span> <span id="btnReverseText">1-Click Reverse</span>
                 </button>
                 <!-- 1-Click Close Trade Button -->
                 <button type="button" id="btnCloseTrade" onclick="triggerCloseTrade()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 active:scale-95 transition-all text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm shadow-amber-950/30 cursor-pointer">
-                  <span>×</span> Close Active Trade
+                  <span>×</span> <span id="btnCloseText">Close Active Trade</span>
                 </button>
               </div>
 
@@ -985,7 +998,6 @@
     </div>
   </div>
 
-    <script src="/static/js/app.js?v=2026091804" defer></script>
 
   <!-- Global Sleek Tooltip -->
   <div id="tooltip" class="fixed hidden pointer-events-none z-[99999] bg-slate-950/95 border border-cyan-500/50 rounded-xl p-2.5 shadow-2xl backdrop-blur-md text-xs font-mono text-white max-w-xs transition-opacity duration-150"></div>
@@ -1154,8 +1166,32 @@
             }
           }
         } catch (e) {}
-      }, 1500);
+      }, 15000);
+      
+      setInterval(async () => {
+        try {
+          const curA = window.currentAsset || 'BTC';
+          const r = await fetch(`/api/engine/${curA}/trade/status`, {
+            headers: window.getAuthHeaders ? window.getAuthHeaders() : {}
+          });
+          if(r.status === 401) {
+            document.getElementById('kalshiTotalPnl').textContent = 'AUTH REQ';
+          }
+        } catch (e) {}
+      }, 15000);
     })();
+
+    // Forex Integration Logic
+    window.setMarketMode = function(mode) {
+      if (typeof window.switchAsset === 'function') {
+        window.switchAsset(mode === 'FOREX' ? 'EURUSD' : 'BTC');
+      }
+    };
   </script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9999;">
+    <a href="/login.html" style="background: #00ff88; color: #121212; padding: 8px 12px; border-radius: 20px; font-weight: bold; font-size: 12px; text-decoration: none; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">SaaS Copilot Login</a>
+</div>
+
 </body>
 </html>

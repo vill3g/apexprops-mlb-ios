@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "mode": "PAPER",
+  "min_conviction": "GRADE A SETUP",
+  "max_contracts": 10,
+  "prediction_mode": false,
+  "max_daily_risk": 500.0,
+  "max_daily_trades": 50,
+  "ai_settings": {}
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalshi AI Trader - Copilot Login</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #00ff88;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: #2a2a2a;
+            color: white;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #00ff88;
+            color: #121212;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        button:hover {
+            background: #00cc6a;
+        }
+        .toggle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #aaa;
+            cursor: pointer;
+        }
+        .toggle:hover {
+            color: #fff;
+        }
+        .error {
+            color: #ff4444;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="auth-box">
+    <h2 id="form-title">Login</h2>
+    <div id="error-msg" class="error"></div>
+    
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <input type="text" id="invite-code" placeholder="Invite Code (KALSHI2026)" style="display: none;">
+    
+    <button id="submit-btn" onclick="submitAuth()">Login</button>
+    <div class="toggle" onclick="toggleMode()" id="toggle-text">Need an account? Register</div>
+</div>
+
+<script>
+    let isLogin = true;
+
+    function toggleMode() {
+        isLogin = !isLogin;
+        document.getElementById('form-title').innerText = isLogin ? 'Login' : 'Register';
+        document.getElementById('submit-btn').innerText = isLogin ? 'Login' : 'Register';
+        document.getElementById('toggle-text').innerText = isLogin ? 'Need an account? Register' : 'Already have an account? Login';
+        document.getElementById('invite-code').style.display = isLogin ? 'none' : 'block';
+        document.getElementById('error-msg').style.display = 'none';
+    }
+
+    async function submitAuth() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const inviteCode = document.getElementById('invite-code').value;
+        const errorMsg = document.getElementById('error-msg');
+
+        if (!username || !password) {
+            errorMsg.innerText = "Please fill out all fields.";
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+        const payload = isLogin ? { username, password } : { username, password, invite_code: inviteCode };
+
+        try {
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                localStorage.setItem('saas_token', data.token);
+                localStorage.setItem('saas_username', data.username);
+                window.location.href = '/saas_dashboard.html';
+            } else {
+                errorMsg.innerText = data.detail || "Authentication failed.";
+                errorMsg.style.display = 'block';
+            }
+        } catch (err) {
+            errorMsg.innerText = "Network error. Server might be down.";
+            errorMsg.style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>

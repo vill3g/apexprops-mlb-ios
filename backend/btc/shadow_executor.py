@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import time
+import threading
 from typing import Dict, Any
 
 from backend.btc.rl_agent import get_rl_agent
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 SHADOW_TRADES_FILE = os.path.join(DATA_DIR, "rl_shadow_trades.json")
 
+_shadow_file_lock = threading.Lock()
+
 def _build_state_vector(raw_features: dict) -> list:
     vec = []
     for k in FEATURE_KEYS:
@@ -20,6 +23,9 @@ def _build_state_vector(raw_features: dict) -> list:
         val = raw_features.get(k, default_val)
         try:
             val = float(val)
+            import math
+            if not math.isfinite(val):
+                val = default_val
         except (ValueError, TypeError):
             val = default_val
         vec.append(val)
@@ -36,8 +42,8 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
             return
 
         state = _build_state_vector(raw_features)
-        if len(state) != 60:
-            logger.error(f"[ShadowExecutor] State dim mismatch: got {len(state)}, expected 60")
+        if len(state) != len(FEATURE_KEYS):
+            logger.error(f"[ShadowExecutor] State dim mismatch: got {len(state)}, expected {len(FEATURE_KEYS)}")
             return
 
         rl_agent = get_rl_agent()
@@ -53,7 +59,7 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
         close_time = kalshi_market.get("close_time", "") if kalshi_market else ""
 
         # Use Kalshi prices if available
-        entry_price = kalshi_market.get("yes_ask", 50) / 100.0 if action == 1 else kalshi_market.get("no_ask", 50) / 100.0
+        entry_price = kalshi_market.get("yes_ask", 0.50) if action == 1 else kalshi_market.get("no_ask", 0.50)
 
         shadow_trade = {
             "id": f"shadow_{int(time.time())}",
@@ -71,63 +77,84 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
         }
 
         # Write to rl_shadow_trades.json
-        trades = []
-        if os.path.exists(SHADOW_TRADES_FILE):
-            with open(SHADOW_TRADES_FILE, 'r') as f:
-                try:
-                    trades = json.load(f)
-                except json.JSONDecodeError:
-                    trades = []
+        with _shadow_file_lock:
+            trades = []
+            if os.path.exists(SHADOW_TRADES_FILE):
+                with open(SHADOW_TRADES_FILE, 'r') as f:
+                    try:
+                        trades = json.load(f)
+                    except json.JSONDecodeError:
+                        trades = []
 
-
-        # Check for duplicates
-        is_dup = False
-        for t in trades:
-            if t.get("ticker") == ticker and t.get("status") == "OPEN":
-                is_dup = True
-                break
-        
-        if is_dup:
-            return
+            # Check for duplicates
+            is_dup = False
+            for t in trades:
+                if t.get("ticker") == ticker and t.get("status") == "OPEN":
+                    is_dup = True
+                    break
             
-        trades.append(shadow_trade)
+            if not is_dup:
+                trades.append(shadow_trade)
 
+                # Keep last 500
+                if len(trades) > 500:
+                    trades = trades[-500:]
 
-        # Keep last 500
-        if len(trades) > 500:
-            trades = trades[-500:]
+                with open(SHADOW_TRADES_FILE, 'w') as f:
+                    json.dump(trades, f, indent=2)
 
-        with open(SHADOW_TRADES_FILE, 'w') as f:
-            json.dump(trades, f, indent=2)
-
-        logger.info(f"[ShadowExecutor] RL Agent placed shadow trade: {direction} on {ticker} @ {entry_price}")
+        if not is_dup:
+            logger.info(f"[ShadowExecutor] RL Agent placed shadow trade: {direction} on {ticker} @ {entry_price}")
 
     except Exception as e:
         logger.error(f"[ShadowExecutor] Error in shadow loop: {e}")
 
-def update_shadow_settlements(kalshi_trader):
+def update_shadow_settlements(kalshi_trader, official_results=None):
     """
     Called by auto_executor.check_settlements().
     Checks Kalshi for resolution of OPEN shadow trades and calculates reward.
     """
     try:
-        if not os.path.exists(SHADOW_TRADES_FILE):
-            return
-
-        with open(SHADOW_TRADES_FILE, 'r') as f:
-            trades = json.load(f)
+        with _shadow_file_lock:
+            if not os.path.exists(SHADOW_TRADES_FILE):
+                return
+            with open(SHADOW_TRADES_FILE, 'r') as f:
+                trades = json.load(f)
 
         updated = False
         rl_agent = get_rl_agent()
+        
+        if official_results is None:
+            official_results = {}
+            
+        api_calls_this_cycle = 0
 
         for t in trades:
             if t.get("status") == "OPEN":
-                # Check Kalshi API for settlement
                 ticker = t.get("ticker")
-                res = kalshi_trader.get_market_result(ticker)
+                
+                # Fast fail: Don't check Kalshi if the contract hasn't even expired yet.
+                close_time_str = t.get("close_time", "")
+                if close_time_str:
+                    try:
+                        from datetime import datetime
+                        close_epoch = datetime.fromisoformat(close_time_str.replace("Z", "+00:00")).timestamp()
+                        if time.time() < close_epoch + 15:  # Give it 15s grace period
+                            continue
+                    except (TypeError, ValueError):
+                        pass
+
+                # Rate Limit Fix: Prevent Kalshi HTTP 429
+                if ticker not in official_results:
+                    if api_calls_this_cycle >= 1:
+                        continue  # Only do 1 fetch per cycle to slowly drain the backlog
+                    official_results[ticker] = kalshi_trader.get_market_result(ticker)
+                    api_calls_this_cycle += 1
+
+                res = official_results[ticker]
                 
                 # If market is closed/settled
-                if res and str(res.get("status", "")).upper() in ["SETTLED", "CLOSED"]:
+                if res and str(res.get("status", "")).upper() in ["SETTLED", "CLOSED", "FINALIZED"]:
                     official_result = str(res.get("result", "")).upper() # 'YES' or 'NO'
                     
                     if not official_result:
@@ -151,13 +178,25 @@ def update_shadow_settlements(kalshi_trader):
                     action = t.get("action")
                     if state is not None and action is not None:
                         reward = pnl * 10.0 # Scale reward for DQN
+                        
+                        # CHOP PENALTY:
+                        # Dynamically find vol_regime_percentile in FEATURE_KEYS.
+                        # If volatility is in the bottom 25th percentile, lightly penalize trading.
+                        try:
+                            vol_idx = FEATURE_KEYS.index("vol_regime_percentile")
+                            if len(state) > vol_idx and state[vol_idx] < 25.0:
+                                reward -= 0.5  # Fixed penalty for trading in chop
+                        except (ValueError, IndexError):
+                            pass
+                                
                         next_state = state # Terminal state approximation
                         rl_agent.memory.push(state, action, reward, next_state, done=True)
                         rl_agent.train_step()
 
         if updated:
-            with open(SHADOW_TRADES_FILE, 'w') as f:
-                json.dump(trades, f, indent=2)
+            with _shadow_file_lock:
+                with open(SHADOW_TRADES_FILE, 'w') as f:
+                    json.dump(trades, f, indent=2)
             rl_agent.save()
             logger.info("[ShadowExecutor] Updated RL shadow settlements and trained DQN.")
 

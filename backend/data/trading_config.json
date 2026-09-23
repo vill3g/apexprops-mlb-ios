@@ -2,7 +2,7 @@
   "enabled": true,
   "mode": "PAPER",
   "min_conviction": "GRADE A SETUP",
-  "max_contracts": 581,
+  "max_contracts": 819,
   "prediction_mode": false,
   "max_daily_risk": 200000.0,
   "max_daily_trades": 9999,
@@ -25,14 +25,14 @@
     "ignorePassTechnicalOnly": false,
     "tradingStyle": "AUTO",
     "oneShotAiStartTrade": false,
-    "xgbEstimators": 50,
-    "xgbMaxDepth": 3,
-    "xgbLearningRate": 0.11,
+    "xgbEstimators": 150,
+    "xgbMaxDepth": 5,
+    "xgbLearningRate": 0.05,
     "signalIsolation": "BLEND",
-    "stopLossMoveDollars": 20,
+    "stopLossMoveDollars": 10,
     "stopLossMaxMinutes": 13,
     "takeProfitEnabled": true,
-    "takeProfitPercent": 50,
+    "takeProfitPercent": 80,
     "useFinbertNLP": true
   }
 }

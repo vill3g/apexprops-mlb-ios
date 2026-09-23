@@ -1,0 +1,17 @@
+﻿Block length: 324
+Block content:
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'kalshi-blue': '#0052FF',
+            'kalshi-green': '#00ff88',
+            'kalshi-red': '#ff4444',
+            'kalshi-dark': '#0b0f19',
+            'kalshi-border': '#1e293b'
+          }
+        }
+      }
+    }
+  </script>

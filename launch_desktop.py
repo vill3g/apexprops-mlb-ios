@@ -11,13 +11,17 @@ import time
 import urllib.request
 import webbrowser
 import threading
+import ssl
 
 import secrets
 
 PORT = 8056
 BIND_HOST = "0.0.0.0"
-HEALTH_URL = f"http://127.0.0.1:{PORT}/api/health"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+USE_SSL = os.path.exists(os.path.join(APP_DIR, "key.pem")) and os.path.exists(os.path.join(APP_DIR, "cert.pem"))
+SCHEME = "https" if USE_SSL else "http"
+HEALTH_URL = f"{SCHEME}://127.0.0.1:{PORT}/api/health"
 
 # Check if optional APP_API_TOKEN is defined
 ACTIVE_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
@@ -30,12 +34,13 @@ if not ACTIVE_TOKEN:
         except Exception:
             pass
 
-LOCAL_URL = f"http://localhost:{PORT}/?token={ACTIVE_TOKEN}" if ACTIVE_TOKEN else f"http://localhost:{PORT}/"
+LOCAL_URL = f"{SCHEME}://localhost:{PORT}/?token={ACTIVE_TOKEN}" if ACTIVE_TOKEN else f"{SCHEME}://localhost:{PORT}/"
 
 def is_server_running() -> bool:
     try:
+        ctx = ssl._create_unverified_context() if USE_SSL else None
         req = urllib.request.Request(HEALTH_URL, headers={"User-Agent": "Desktop-Launcher"})
-        with urllib.request.urlopen(req, timeout=1.5) as resp:
+        with urllib.request.urlopen(req, timeout=1.5, context=ctx) as resp:
             return resp.status == 200
     except Exception:
         return False
@@ -61,13 +66,23 @@ def main():
         time.sleep(1.5)
         return
 
-    print(f"\n[+] Starting server on {BIND_HOST}:{PORT}...")
+    print(f"\n[+] Starting server on {BIND_HOST}:{PORT} (HTTPS)...")
     print(f"[+] Browser will launch automatically with local token handshake at {LOCAL_URL}")
     threading.Thread(target=open_browser, daemon=True).start()
 
-    import uvicorn
-    sys.path.insert(0, APP_DIR)
-    uvicorn.run("backend.main:app", host=BIND_HOST, port=PORT, reload=False, app_dir=APP_DIR)
+    import subprocess
+    cmd = [
+        sys.executable, "-m", "uvicorn", "backend.main:app",
+        "--host", BIND_HOST,
+        "--port", str(PORT),
+        "--no-access-log"
+    ]
+    if os.path.exists(os.path.join(APP_DIR, "key.pem")) and os.path.exists(os.path.join(APP_DIR, "cert.pem")):
+        cmd.extend([
+            "--ssl-keyfile", os.path.join(APP_DIR, "key.pem"),
+            "--ssl-certfile", os.path.join(APP_DIR, "cert.pem")
+        ])
+    subprocess.run(cmd, cwd=APP_DIR)
 
 if __name__ == "__main__":
     main()

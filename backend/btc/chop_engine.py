@@ -62,7 +62,7 @@ def evaluate_chop_contract(
         target_price=target_price,
         patterns=[],  # chart patterns (triangles/flags) are momentum signals; skip in chop
         kalshi_m=kalshi_m,
-        trading_style="SNIPER",
+        trading_style="CHOP",
     )
 
     prob = float(forecast.get("probability_percent", 50.0))

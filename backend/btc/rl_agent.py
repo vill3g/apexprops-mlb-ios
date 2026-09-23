@@ -41,8 +41,10 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
+from backend.btc.ml_engine import FEATURE_KEYS
+
 class RLAgent:
-    def __init__(self, state_dim=60, action_dim=3, lr=1e-3, gamma=0.99, epsilon_start=1.0, epsilon_end=0.01, epsilon_decay=0.995):
+    def __init__(self, state_dim=len(FEATURE_KEYS), action_dim=3, lr=1e-4, gamma=0.99, epsilon_start=1.0, epsilon_end=0.01, epsilon_decay=0.995):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
@@ -95,11 +97,17 @@ class RLAgent:
                 next_q_values = self.target_net(next_state).max(1)[0]
                 expected_state_action_values = reward + (self.gamma * next_q_values * (1 - done))
 
-            loss = F.mse_loss(state_action_values, expected_state_action_values)
+            loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
 
             self.optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), max_norm=1.0)
             self.optimizer.step()
+
+            # Periodically sync target network during continuous live trading
+            self.train_steps = getattr(self, "train_steps", 0) + 1
+            if self.train_steps % 50 == 0:
+                self.target_net.load_state_dict(self.policy_net.state_dict())
 
             # Decay epsilon
             self.epsilon = max(self.epsilon_end, self.epsilon * self.epsilon_decay)
@@ -128,6 +136,30 @@ class RLAgent:
                 self.optimizer.load_state_dict(checkpoint['optimizer'])
                 self.epsilon = checkpoint['epsilon']
                 logger.info(f"[RLAgent] Loaded pre-trained model from {self.model_path}. Epsilon: {self.epsilon:.3f}")
+            self.rehydrate_memory_from_disk()
+
+    def rehydrate_memory_from_disk(self):
+        shadow_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "rl_shadow_trades.json")
+        if os.path.exists(shadow_file):
+            try:
+                import json
+                with open(shadow_file, "r") as f:
+                    trades = json.load(f)
+                count = 0
+                for t in trades:
+                    if t.get("status") == "SETTLED":
+                        s = t.get("state_vector")
+                        a = t.get("action")
+                        pnl = float(t.get("pnl", 0.0))
+                        if s is not None and a is not None:
+                            reward = pnl * 10.0
+                            if len(s) > 33 and s[33] < 25.0:
+                                reward -= 0.5
+                            self.memory.push(s, a, reward, s, done=True)
+                            count += 1
+                logger.info(f"[RLAgent] Rehydrated {count} experiences into replay buffer from disk.")
+            except Exception as e:
+                logger.warning(f"[RLAgent] Failed to rehydrate replay buffer: {e}")
 
 # Singleton instance
 _RL_AGENT = RLAgent()

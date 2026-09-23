@@ -145,7 +145,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     macro_trend_1h = "NEUTRAL"
     macro_trend_4h = "NEUTRAL"
     try:
-        from backend.btc.data_fetcher import fetch_candles
+        from backend.engine.multi_asset_fetcher import fetch_asset_candles as fetch_candles
         from backend.btc.indicators import compute_ema
         df_1h = fetch_candles(asset, "1h", limit=50)
         df_4h = fetch_candles(asset, "4h", limit=50)
@@ -191,11 +191,11 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     # --- A. Trend & Moving Averages (Weight: up to +-30) ---
     # Macro Trend (EMA 200)
     if ind_summary.get("macro_bull") is True:
-        score += 10
-        bullish_reasons.append(f"Price above 200 EMA (${ind_summary['ema_200']:.1f}) - Macro Bullish (+10)")
+        score += 3
+        bullish_reasons.append(f"Price above 200 EMA (${ind_summary['ema_200']:.1f}) - Macro Bullish (+3)")
     elif ind_summary.get("macro_bull") is False:
-        score -= 10
-        bearish_reasons.append(f"Price below 200 EMA (${ind_summary['ema_200']:.1f}) - Macro Bearish (-10)")
+        score -= 3
+        bearish_reasons.append(f"Price below 200 EMA (${ind_summary['ema_200']:.1f}) - Macro Bearish (-3)")
 
     # EMA Ribbon (9 / 21 / 50)
     if ind_summary.get("bullish_ribbon"):
@@ -351,17 +351,17 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
 
     # MTF Macro Alignment
     if macro_trend_4h == "BULLISH" and macro_trend_1h == "BULLISH":
-        score += 15
-        bullish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BULLISH (+15)")
-    elif macro_trend_4h == "BEARISH" and macro_trend_1h == "BEARISH":
-        score -= 15
-        bearish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BEARISH (-15)")
-    elif macro_trend_4h == "BULLISH":
         score += 5
-        bullish_reasons.append("MTF Macro: 4H trend is BULLISH (+5)")
-    elif macro_trend_4h == "BEARISH":
+        bullish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BULLISH (+5)")
+    elif macro_trend_4h == "BEARISH" and macro_trend_1h == "BEARISH":
         score -= 5
-        bearish_reasons.append("MTF Macro: 4H trend is BEARISH (-5)")
+        bearish_reasons.append("MTF Alignment: 1H and 4H charts are heavily BEARISH (-5)")
+    elif macro_trend_4h == "BULLISH":
+        score += 2
+        bullish_reasons.append("MTF Macro: 4H trend is BULLISH (+2)")
+    elif macro_trend_4h == "BEARISH":
+        score -= 2
+        bearish_reasons.append("MTF Macro: 4H trend is BEARISH (-2)")
 
     # Volume Profile Point of Control (POC)
     if ind_summary.get("poc"):
@@ -591,7 +591,6 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     lower_count = 0
 
     # Target benchmark is current 15m candle start/open price
-    from zoneinfo import ZoneInfo
     now_dt = datetime.now(ZoneInfo("America/New_York"))
     curr_15m_start_min = (now_dt.minute // 15) * 15
     interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
@@ -1065,10 +1064,17 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
             "catalysts": ["Waiting for interval data"]
         }
 
-    # Evaluate the finalized candle at index -2 (or -1 if exactly at boundary)
-    c = df_ind.iloc[-2] if n >= 2 else df_ind.iloc[-1]
-    p = df_ind.iloc[-3] if n >= 3 else df_ind.iloc[-2]
-    p2 = df_ind.iloc[-4] if n >= 4 else df_ind.iloc[-3]
+    # For mid-candle styles (MOMENTUM_SURFER, AMBUSH, BLEND), evaluate the live active candle.
+    # For SNIPER (executed at rollover), evaluate the finalized candle at index -2.
+    if trading_style in ["MOMENTUM_SURFER", "AMBUSH", "BLEND"]:
+        c = df_ind.iloc[-1]
+        p = df_ind.iloc[-2] if n >= 2 else df_ind.iloc[-1]
+        p2 = df_ind.iloc[-3] if n >= 3 else df_ind.iloc[-2]
+    else:
+        c = df_ind.iloc[-2] if n >= 2 else df_ind.iloc[-1]
+        p = df_ind.iloc[-3] if n >= 3 else df_ind.iloc[-2]
+        p2 = df_ind.iloc[-4] if n >= 4 else df_ind.iloc[-3]
+        
     active_cand = df_ind.iloc[-1]
 
     target = target_price if target_price is not None else float(active_cand["open"])
@@ -1100,7 +1106,6 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
     is_strong_breakout = (curr_vol > avg_vol_20 * 1.8) and (abs(c_close - c_open) > atr * 0.75)
 
     # ML Temporal & Volume Ratio Features
-    from zoneinfo import ZoneInfo
     try:
         c_time = int(c.get("time", time.time()))
         dt_ny = datetime.fromtimestamp(c_time, ZoneInfo("America/New_York"))
@@ -1685,6 +1690,13 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         prob = 50
         catalysts = ["Model edge too weak. Sitting out."]
 
+    news_sentiment_val = 0.0
+    try:
+        from backend.btc.news_fetcher import get_news_sentiment_summary
+        news_sentiment_val = float(get_news_sentiment_summary().get("sentiment_score", 0.0))
+    except Exception:
+        news_sentiment_val = 0.0
+
     # Comprehensive Feature Vector for Ledger and Future Model Self-Training
     raw_features = {
         "rsi": float(rsi),
@@ -1698,7 +1710,7 @@ def evaluate_next_15m_contract(df_ind: pd.DataFrame, target_price: float = None,
         "cvd_value": cvd_val,
         "delta_to_target": delta_to_target,
         "heuristic_score": float(heuristic_score_for_training),
-        "news_sentiment_score": float(n_score) if "n_score" in locals() else 0.0,
+        "news_sentiment_score": news_sentiment_val,
         "fng_value": fng_value,
         "high_24h": float(df_ind["high"].max()) if len(df_ind) > 0 else c_close,
         "low_24h": float(df_ind["low"].min()) if len(df_ind) > 0 else c_close,

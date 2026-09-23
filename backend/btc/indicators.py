@@ -192,11 +192,12 @@ def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, window: int =
     tr = np.concatenate([[0.0], tr])
     
     def smooth(data, win):
-        res = np.zeros_like(data)
-        if len(data) > win:
-            res[win] = np.sum(data[1:win+1])
-            for i in range(win+1, len(data)):
-                res[i] = res[i-1] - (res[i-1]/win) + data[i]
+        s = pd.Series(data)
+        # Wilder's Smoothing is essentially an exponential moving average with alpha = 1/win
+        # We use adjust=False to closely match the recursive formula
+        res = s.ewm(alpha=1/win, adjust=False).mean().values
+        # To match the original logic where the first `win` values are zero:
+        res[:win] = 0.0
         return res
         
     atr = smooth(tr, window)
@@ -220,6 +221,9 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["roc_15m"] = df["close"].pct_change(1) * 100   # 1-candle = 15 minutes
     df["roc_1h"] = df["close"].pct_change(4) * 100    # 4 candles = 1 hour
     df["roc_4h"] = df["close"].pct_change(16) * 100   # 16 candles = 4 hours
+    
+    # ML Feature Optimization: Pre-compute sliding volume aggregate to avoid O(N*W) slicing in ML loop
+    df["volume_288_mean"] = df["volume"].rolling(288, min_periods=1).mean().shift(1).fillna(0)
 
     # Moving Averages
     df["ema_9"] = compute_ema(df["close"], 9)
@@ -431,38 +435,33 @@ def compute_cvd_acceleration(df: pd.DataFrame) -> pd.Series:
 
 def compute_trailing_poc(df: pd.DataFrame, window: int = 96) -> pd.Series:
     import numpy as np
-    pocs = np.zeros(len(df))
-    close_vals = df['close'].values
-    high_vals = df['high'].values
-    low_vals = df['low'].values
-    vol_vals = df['volume'].values
-    typ_price = (high_vals + low_vals + close_vals) / 3.0
+    # Only calculate for the most recent candle to save O(N) loop time!
+    pocs = df['close'].values.copy()
     
-    for i in range(len(df)):
-        if i < 10:
-            pocs[i] = close_vals[i]
-            continue
-            
-        start = max(0, i - window + 1)
-        sub_high = high_vals[start:i+1]
-        sub_low = low_vals[start:i+1]
-        sub_typ = typ_price[start:i+1]
-        sub_vol = vol_vals[start:i+1]
+    if len(df) < 10:
+        return pd.Series(pocs, index=df.index)
         
-        min_p = np.min(sub_low)
-        max_p = np.max(sub_high)
-        
-        if min_p == max_p:
-            pocs[i] = min_p
-            continue
-            
+    i = len(df) - 1
+    start = max(0, i - window + 1)
+    
+    sub_high = df['high'].values[start:i+1]
+    sub_low = df['low'].values[start:i+1]
+    sub_close = df['close'].values[start:i+1]
+    sub_vol = df['volume'].values[start:i+1]
+    sub_typ = (sub_high + sub_low + sub_close) / 3.0
+    
+    min_p = np.min(sub_low)
+    max_p = np.max(sub_high)
+    
+    if min_p == max_p:
+        pocs[-1] = min_p
+    else:
         bins = np.linspace(min_p, max_p, 50)
         idx = np.digitize(sub_typ, bins) - 1
         idx = np.clip(idx, 0, 48)
-        
         vol_profile = np.bincount(idx, weights=sub_vol, minlength=49)
         poc_idx = np.argmax(vol_profile)
-        pocs[i] = (bins[poc_idx] + bins[poc_idx+1]) / 2.0
+        pocs[-1] = (bins[poc_idx] + bins[poc_idx+1]) / 2.0
         
     return pd.Series(pocs, index=df.index) 
 

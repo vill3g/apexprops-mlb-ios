@@ -1,0 +1,74 @@
+﻿
+    const token = localStorage.getItem('saas_token');
+    if (!token) window.location.href = '/login.html';
+    
+    let currentMode = "PAPER";
+
+    function toggleSettings() {
+        const modal = document.getElementById('settings-modal');
+        const panel = document.getElementById('settings-panel');
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // small delay for animation
+            setTimeout(() => { panel.classList.remove('translate-y-full'); }, 10);
+        } else {
+            panel.classList.add('translate-y-full');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        }
+    }
+
+    
+    let aiEnabled = true;
+
+    async function toggleAI(enabled) {
+        try {
+            const res = await fetch('/api/auth/ai_toggle', {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ enabled: enabled })
+            });
+            if(res.ok) {
+                aiEnabled = enabled;
+                loadDashboard();
+            }
+        } catch(e) {}
+    }
+
+    async function setTradingMode(mode) {
+        try {
+            const res = await fetch('/api/auth/trade/config', {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ mode: mode })
+            });
+            if(res.ok) {
+                currentMode = mode;
+                updateModeUI();
+                loadDashboard(); // Refresh stats with new mode
+                alert(`Trading mode switched to ${mode}`);
+            } else {
+                const data = await res.json();
+                alert(data.detail || "Failed to switch mode");
+            }
+        } catch(e) {
+            alert("Network error updating mode");
+        }
+    }
+
+    function updateModeUI() {
+        const slider = document.getElementById('mode-slider');
+        const btnPaper = document.getElementById('btn-mode-paper');
+        const btnLive = document.getElementById('btn-mode-live');
+        const badge = document.getElementById('bal-mode-badge');
+        
+        if(currentMode === "LIVE") {
+            slider.style.transform = "translateX(100%)";
+            slider.className = "absolute top-1 bottom-1 w-1/2 bg-kalshi-red rounded-md transition-all shadow-sm";
+            btnLive.className = "flex-1 relative z-10 py-2 text-xs font-bold uppercase tracking-wider text-white";
+            btnPaper.className = "flex-1 relative z-10 py-2 text-xs font-bold uppercase tracking-wider text-gray-400";
+            badge.innerText = "LIVE";
+            badge.className = "px-1.5 py-0.5 rounded bg-kalshi-red text-white";
+        } else {
+            slider.style.transform = "translateX(0%)";
+            slider.className = "absolute top-

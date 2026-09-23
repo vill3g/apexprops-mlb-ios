@@ -112,10 +112,6 @@ class GodTierEnsemble:
 
     def update_params(self, class_weight="balanced", reg_c=0.7, xgb_estimators=None, xgb_max_depth=None, xgb_lr=None):
         """Allow live hyperparameter updates from config"""
-        scale_pos = 1.0
-        if class_weight == "balanced":
-            scale_pos = 2.0  # Simplified balance ratio
-        self.xgb.set_params(scale_pos_weight=scale_pos)
         self.meta_learner.set_params(C=reg_c, class_weight=class_weight)
         
         if xgb_estimators is not None:
@@ -135,6 +131,12 @@ class GodTierEnsemble:
         
         # Scale features
         X_scaled = self.scaler.fit_transform(X_np)
+        
+        # Dynamic scale_pos_weight for XGBoost to prevent YES bias
+        num_pos = np.sum(y_np == 1)
+        num_neg = np.sum(y_np == 0)
+        scale_pos = float(num_neg) / float(num_pos) if num_pos > 0 else 1.0
+        self.xgb.set_params(scale_pos_weight=scale_pos)
         
         # 1. Train XGBoost
         self.xgb.fit(X_np, y_np, sample_weight=sample_weight)
@@ -201,23 +203,10 @@ class GodTierEnsemble:
     def predict_proba_calibrated(self, X):
         preds = self.predict_proba(X)
         raw_p = preds[:, 1] if len(preds.shape) > 1 else preds
-        calibrator = getattr(self, "calibrator", None)
-        if calibrator is not None and getattr(calibrator, "is_fitted", False):
-            try:
-                return calibrator.predict(raw_p)
-            except Exception:
-                pass
         return raw_p
 
     def fit_calibration(self, X_holdout, y_holdout):
-        if X_holdout is None or len(X_holdout) < 20 or len(np.unique(y_holdout)) < 2:
-            return
-        try:
-            raw_p = self.predict_proba(X_holdout)[:, 1]
-            from backend.btc.ml_engine import PlattCalibrator
-            self.calibrator = PlattCalibrator(C=1.0).fit(raw_p, y_holdout)
-            if getattr(self.calibrator, "is_fitted", False):
-                logger.info(f"[GodTierEnsemble] Fitted holdout Platt calibration on {len(X_holdout)} samples.")
-        except Exception as e:
-            logger.warning(f"[GodTierEnsemble] Holdout calibration failed: {e}")
-            self.calibrator = None
+        # Meta-learner (LogisticRegression) is already natively calibrated.
+        # Secondary Platt scaling on small temporal holdouts causes severe directional bias.
+        self.calibrator = None
+        return

@@ -1,6 +1,19 @@
 
 
 
+// ── Guest Mode Detection ─────────────────────────────────────────────
+// If ?guest=<id> is in the URL, store the guest token for all API calls.
+;(function() {
+  const params = new URLSearchParams(window.location.search);
+  const guestId = params.get("guest");
+  if (guestId) {
+    window.guestToken = guestId;
+    // Keep the guest param in the URL (don't strip it)
+  } else {
+    window.guestToken = null;
+  }
+})();
+
 // --- DUMMY FUNCTIONS TO PREVENT REFERENCE ERRORS FROM DEAD CODE CLEANUP ---
 function addBtcLogEntry(){}
 function applyTargetPriceColor(){}
@@ -239,12 +252,15 @@ window.currentAsset = "BTC";
 
 
       // 3. Live Price
+      const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+      const decimals = window.currentAsset === 'USDJPY' ? 3 : (isFx ? 5 : 2);
+      const prefix = isFx ? '' : '$';
       const curPrice = Number(liveData?.price || lastBtcPrice || 0);
       const targetPrice = Number(window.cachedBtcTargetPrice || liveData?.target_price || 0);
       const livePriceEl = document.getElementById("iphone17LivePrice");
 
       if (livePriceEl && curPrice > 0) {
-        livePriceEl.innerText = `$${curPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        livePriceEl.innerText = `${prefix}${curPrice.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
         if (targetPrice > 0) {
           if (curPrice < targetPrice) {
             livePriceEl.style.color = "#ff6b35"; // Vibrant Kalshi orange when below target
@@ -257,7 +273,7 @@ window.currentAsset = "BTC";
       // 4. Target Price & Source
       const targetPriceEl = document.getElementById("iphone17TargetPrice");
       if (targetPriceEl && targetPrice > 0) {
-        targetPriceEl.innerText = `$${targetPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        targetPriceEl.innerText = `${prefix}${targetPrice.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
       }
 
       // Sync Top Nav Bar P/L and Audio
@@ -285,7 +301,7 @@ window.currentAsset = "BTC";
       const deskGrade = document.getElementById("btcPredConfidenceTag")?.innerText || "";
       const forecast = window.lockedContractForecast || window.cachedNextContractForecast;
 
-      let directionText = deskOutcome || (forecast?.direction ? (forecast.direction === "ABOVE" ? "▲ ABOVE" : (forecast.direction === "BELOW" ? "▼ BELOW" : "CHOP")) : "SCANNING");
+      let directionText = deskOutcome || (forecast?.direction ? (forecast.direction === "ABOVE" ? (isFx ? "▲ BUY / LONG" : "▲ ABOVE") : (forecast.direction === "BELOW" ? (isFx ? "▼ SELL / SHORT" : "▼ BELOW") : "CHOP")) : "SCANNING");
       let convictionPct = deskProb || (forecast?.probability_percent ? `${forecast.probability_percent}%` : "--%");
       let gradeBadge = deskGrade || forecast?.conviction_badge || (forecast?.conviction_grade ? forecast.conviction_grade.replace(" SETUP", "") : "AI MODEL");
 
@@ -441,8 +457,8 @@ window.currentAsset = "BTC";
     let _analysisPollTimer = null;
     function restartAnalysisPolling() {
       if (_analysisPollTimer) clearInterval(_analysisPollTimer);
-      const configuredSeconds = parseInt(document.getElementById("settingPollInterval")?.value) || 5;
-      const clampedSeconds = Math.min(15, Math.max(1, configuredSeconds));
+      const configuredSeconds = parseInt(document.getElementById("settingPollInterval")?.value) || 15;
+      const clampedSeconds = Math.min(60, Math.max(5, configuredSeconds));
       _analysisPollTimer = setInterval(() => {
           if (document.hidden) return;
           triggerBtcAnalysis();
@@ -1259,8 +1275,10 @@ window.currentAsset = "BTC";
 
     window.tvWidget = null;
     let currentTvInterval = null;
+    let currentTvAsset = null;
 
     function initTradingViewChart(tf = null) {
+      window.initTradingViewChart = initTradingViewChart;
       if (!tf) {
         try {
           const saved = localStorage.getItem("btcChartConfig");
@@ -1286,10 +1304,11 @@ window.currentAsset = "BTC";
       };
       const interval = tfMap[tf] || (["1","5","15","60","240","D"].includes(tf) ? tf : "15");
 
-      if (currentTvInterval === interval && window.tvWidget && container.querySelector("iframe")) {
+      if (currentTvInterval === interval && currentTvAsset === window.currentAsset && window.tvWidget && container.querySelector("iframe")) {
         return;
       }
       currentTvInterval = interval;
+      currentTvAsset = window.currentAsset;
 
       if (typeof TradingView === "undefined") {
         container.innerHTML = `
@@ -1323,7 +1342,14 @@ window.currentAsset = "BTC";
         }
 
         const isIphoneMode = document.body.classList.contains("is-iphone-portrait") || document.body.classList.contains("is-iphone-17-promax");
-        const symbolMap = { 'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'GOLD': 'KRAKEN:PAXGUSD' };
+        const symbolMap = { 
+          'BTC': 'BINANCE:BTCUSDT', 
+          'ETH': 'BINANCE:ETHUSDT', 
+          'GOLD': 'KRAKEN:PAXGUSD',
+          'EURUSD': 'OANDA:EURUSD',
+          'GBPUSD': 'OANDA:GBPUSD',
+          'USDJPY': 'OANDA:USDJPY'
+        };
         const assetSymbol = symbolMap[window.currentAsset] || "COINBASE:BTCUSD";
         window.tvWidget = new TradingView.widget({
           autosize: true,
@@ -1694,12 +1720,23 @@ window.currentAsset = "BTC";
       const probText = document.getElementById("btcPredProbText");
       const confTag = document.getElementById("btcPredConfidenceTag");
 
-      const isAbove = forecast.direction === "ABOVE" || forecast.direction === "YES";
-      const isBelow = forecast.direction === "BELOW" || forecast.direction === "NO";
-      const isPass = forecast.direction === "PASS";
+      // Normalize direction: backend can emit YES/NO, UI expects ABOVE/BELOW/PASS
+      let dir = forecast.direction;
+      if (dir === "YES") dir = "ABOVE";
+      else if (dir === "NO") dir = "BELOW";
+
+      const isAbove = dir === "ABOVE";
+      const isBelow = dir === "BELOW";
+      const isPass = !isAbove && !isBelow;
 
       if (outcomeText) {
-        const simpleText = isAbove ? "⬆ UP" : (isBelow ? "⬇ DOWN" : "⚪ PASS");
+        const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+        let simpleText;
+        if (isFx) {
+          simpleText = isAbove ? "▲ BUY / LONG" : (isBelow ? "▼ SELL / SHORT" : "⚪ HOLD");
+        } else {
+          simpleText = isAbove ? "⬆ UP" : (isBelow ? "⬇ DOWN" : "⚪ PASS");
+        }
         outcomeText.innerText = simpleText;
         if (isAbove) {
           outcomeText.className = "text-xl sm:text-2xl lg:text-[28px] whitespace-nowrap font-black tracking-tight text-emerald-400 font-mono leading-none";
@@ -1710,11 +1747,8 @@ window.currentAsset = "BTC";
         }
       }
 
-
       if (probText) probText.innerText = `${forecast.probability_percent}%`;
-      if (confTag) confTag.innerText = forecast.conviction_badge;
-
-
+      if (confTag) confTag.innerText = forecast.conviction_badge || forecast.conviction_grade || "--";
     }
 
     
@@ -1762,6 +1796,7 @@ window.currentAsset = "BTC";
       if (isFetchingKalshiDirect) return;
       isFetchingKalshiDirect = true;
       try {
+        const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
         // 1. Try backend endpoint first (normalizes payload and tags is_synthetic flag)
         try {
           const apiBase = getKalshiApiBase();
@@ -1770,8 +1805,19 @@ window.currentAsset = "BTC";
             const data = await res.json();
             if (data) {
               window.cachedKalshiData = data;
-              const isSynth = !!(data.is_synthetic || data.status === "synthetic" || data.source === "Kalshi Synthetic");
+              const isSynth = isFx ? false : !!(data.is_synthetic || data.status === "synthetic" || data.source === "Kalshi Synthetic");
               updateKalshiSyntheticBadges(isSynth);
+
+              if (isFx) {
+                if (data.target_price) {
+                  window.cachedBtcTargetPrice = data.target_price;
+                }
+                const btnProbAbove = getDomEl("btnProbAbove");
+                const btnProbBelow = getDomEl("btnProbBelow");
+                if (btnProbAbove && data.yes_prob != null) btnProbAbove.innerText = `${data.yes_prob}%`;
+                if (btnProbBelow && data.no_prob != null) btnProbBelow.innerText = `${data.no_prob}%`;
+                return;
+              }
 
               const kYes = getDomEl("btcKalshiYesProb");
               const kNo = getDomEl("btcKalshiNoProb");
@@ -1787,6 +1833,8 @@ window.currentAsset = "BTC";
             }
           }
         } catch (e) { console.warn('Fetch failed:', e); }
+
+        if (isFx) return; // Never query external Kalshi API for spot FX
 
         // 2. Direct public Kalshi API fallback (for standalone/mobile when local backend is unreachable).
         // Kalshi documented Trade API v2 host: https://external-api.kalshi.com.
@@ -2420,11 +2468,15 @@ window.currentAsset = "BTC";
       const bubble = document.getElementById("kalshiMLStatusBubble");
       if (bubble) {
         if (locked.direction === "pass" || locked.direction === "PASS") {
-          bubble.innerText = "PASS";
-          bubble.className = "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-600 whitespace-nowrap cursor-help";
+          bubble.innerText = "⚪ PASS";
+          bubble.className = "px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-600 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform";
         } else {
-          bubble.innerText = locked.direction === "ABOVE" ? "UP" : "DOWN";
-          bubble.className = locked.direction === "ABOVE" ? "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 whitespace-nowrap cursor-help" : "ml-1 px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/50 whitespace-nowrap cursor-help";
+          const prob = locked.probability_percent || 50;
+          const label = locked.direction === "ABOVE" ? `▲ UP · ${prob}%` : `▼ DOWN · ${prob}%`;
+          bubble.innerText = label;
+          bubble.className = locked.direction === "ABOVE"
+            ? "px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 animate-pulse whitespace-nowrap cursor-pointer hover:scale-105 transition-transform"
+            : "px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/50 animate-pulse whitespace-nowrap cursor-pointer hover:scale-105 transition-transform";
         }
       }
 
@@ -2436,9 +2488,12 @@ window.currentAsset = "BTC";
 
     // Client-side Live Display Updater (for Mobile, iPhone / Standalone)
     function updateClientBtcLive(price, stats = null) {
+      const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+      const decimals = window.currentAsset === 'USDJPY' ? 3 : (isFx ? 5 : 2);
+      const prefix = isFx ? '' : '$';
       const topPriceEl = document.getElementById("topBarLivePrice");
       if (topPriceEl && price > 0) {
-        topPriceEl.innerText = `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        topPriceEl.innerText = `${prefix}${price.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
         if (lastBtcPrice && price !== lastBtcPrice) {
           topPriceEl.classList.remove("price-flash-up", "price-flash-down");
           void topPriceEl.offsetWidth;
@@ -2473,7 +2528,7 @@ window.currentAsset = "BTC";
         const topTarget = document.getElementById("topBarTargetPrice");
         const topCard = document.getElementById("topBarTargetCard");
         if (topTarget && target && target > 0) {
-          topTarget.innerText = `$${target.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          topTarget.innerText = `${prefix}${target.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
           applyTargetPriceColor(topTarget, price, target);
         }
         if (topCard && target && target > 0 && price > 0) {
@@ -2481,7 +2536,7 @@ window.currentAsset = "BTC";
         }
         const topDelta = document.getElementById("topBarTargetDelta");
         if (topDelta && target && target > 0 && price > 0) {
-          topDelta.innerText = `${isAbove ? "+" : ""}$${delta.toFixed(1)}`;
+          topDelta.innerText = `${isAbove ? "+" : ""}${prefix}${delta.toFixed(isFx ? 4 : 1)}`;
           topDelta.className = "text-[7px] sm:text-[8px] font-mono font-bold " + (isAbove ? "text-emerald-400" : "text-red-400");
         }
 
@@ -2570,6 +2625,12 @@ window.currentAsset = "BTC";
 
       if (handledByServer) { _isPollingBtcLive = false; return; }
 
+      // Never fall back to Coinbase BTC when in Forex mode!
+      if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset)) {
+        _isPollingBtcLive = false;
+        return;
+      }
+
       // 3. Primary Mobile Client Fallback: Coinbase Exchange Ticker (CORS: *, 100% US-friendly, no geoblock)
       try {
         const cbPair = window.currentAsset === 'ETH' ? 'ETH-USD' : 'BTC-USD';
@@ -2656,9 +2717,14 @@ window.currentAsset = "BTC";
     }
 
     async function triggerBtcAnalysis() {
+      window.triggerBtcAnalysis = triggerBtcAnalysis;
       if (window._isAnalyzing) return;
       window._isAnalyzing = true;
 
+      const btn = document.getElementById("btnBtcRefresh");
+      const icon = document.getElementById("btcRefreshIcon");
+      if (btn) btn.disabled = true;
+      if (icon) icon.innerHTML = '<span class="inline-block animate-spin">&#x21bb;</span>';
 
       try {
         let analysisData = null;
@@ -2849,13 +2915,19 @@ window.currentAsset = "BTC";
         if (analysisData) {
           const forecastData = (analysisData.target_benchmark && analysisData.target_benchmark.next_contract_forecast) ? analysisData.target_benchmark.next_contract_forecast : null;
           if (forecastData && forecastData.direction) {
+            // Normalize direction: backend may emit YES/NO, UI expects ABOVE/BELOW
+            let fcDir = forecastData.direction;
+            if (fcDir === "YES") fcDir = "ABOVE";
+            else if (fcDir === "NO") fcDir = "BELOW";
+
             window.cachedNextContractForecast = {
-              direction: forecastData.direction,
-              recommendation: forecastData.recommendation || forecastData.direction,
+              direction: fcDir,
+              recommendation: forecastData.recommendation || fcDir,
               probability_percent: forecastData.probability_percent || Math.round((forecastData.ml_prob || 0.5) * 100),
               conviction_badge: forecastData.conviction_badge,
               conviction_grade: forecastData.conviction_grade,
               primary_edge: forecastData.primary_edge,
+              target_settlement_zone: forecastData.target_settlement_zone || "--",
               catalysts: forecastData.catalysts
             };
             applyNextContractForecastToUI(window.cachedNextContractForecast);
@@ -2953,13 +3025,19 @@ window.currentAsset = "BTC";
     async function authFetch(url, options = {}) {
       const opts = { ...options };
       opts.headers = getAuthHeaders(opts.headers || {});
-      const res = await fetch(url, opts);
-      if (res.status === 401) {
+      // Append guest token to URL when in guest mode
+      let finalUrl = url;
+      if (window.guestToken) {
+        const sep = url.includes('?') ? '&' : '?';
+        finalUrl = url + sep + 'guest=' + encodeURIComponent(window.guestToken);
+      }
+      const res = await fetch(finalUrl, opts);
+      if (res.status === 401 && !window.guestToken) {
         const entered = prompt("Enter Server API Token (APP_API_TOKEN) to unlock trading console:");
         if (entered) {
           localStorage.setItem("app_api_token", entered.trim());
           opts.headers = getAuthHeaders(options.headers || {});
-          return fetch(url, opts);
+          return fetch(finalUrl, opts);
         }
       }
       return res;
@@ -3053,25 +3131,55 @@ window.currentAsset = "BTC";
     }
 
     function changeKalshiContracts(delta) {
+      const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+      if (isFx) {
+        let current = parseFloat(document.getElementById("kalshiContractsInput").value) || 0.10;
+        let step = 0.05;
+        let next = Math.max(0.01, Math.round((current + (delta > 0 ? step : -step)) * 100) / 100);
+        const ctInput = document.getElementById("kalshiContractsInput");
+        if (ctInput) ctInput.value = next.toFixed(2);
+        updateKalshiContracts(next);
+        updateKalshiPayoutCalculator();
+        return;
+      }
       let current = parseInt(document.getElementById("kalshiContractsInput").value, 10) || 1;
       let next = current + delta;
       if (next < 1) next = 1;
       const ctInput = document.getElementById("kalshiContractsInput");
       if (ctInput) ctInput.value = next;
       updateKalshiContracts(next);
+      updateKalshiPayoutCalculator();
     }
 
     function setKalshiContractsPreset(ct) {
       updateKalshiContracts(ct);
       const input = document.getElementById("kalshiContractsInput");
       if (input) input.value = ct;
+      updateKalshiPayoutCalculator();
     }
 
     function updateKalshiPayoutCalculator() {
-      const input = document.getElementById("kalshiContractsInput");
-      const ct = input ? parseInt(input.value) || 1 : kalshiCurrentContracts;
+      const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
       const riskEl = document.getElementById("kalshiCalcRisk");
       const payoutEl = document.getElementById("kalshiCalcPayout");
+
+      if (isFx) {
+        const input = document.getElementById("kalshiContractsInput");
+        const lots = input ? (parseFloat(input.value) || 0.10) : 0.10;
+        const dollarPerPip = lots * 10.0; // $10 per pip on standard lot (0.10 lots = $1.00/pip)
+        const slPips = 15;
+        const tpPips = 45;
+        const riskDollar = slPips * dollarPerPip;
+        const rewardDollar = tpPips * dollarPerPip;
+        const rr = (tpPips / slPips).toFixed(1);
+
+        if (riskEl) riskEl.innerHTML = `${slPips} Pips <span class="text-slate-400">($${riskDollar.toFixed(2)})</span>`;
+        if (payoutEl) payoutEl.innerHTML = `TP: ${tpPips} Pips <strong class="text-emerald-400 font-bold">+$${rewardDollar.toFixed(2)} [1:${rr} R:R]</strong>`;
+        return;
+      }
+
+      const input = document.getElementById("kalshiContractsInput");
+      const ct = input ? parseInt(input.value) || 1 : kalshiCurrentContracts;
 
       const limitPrice = Math.min(0.99, kalshiCurrentPriceEst + 0.04);
       const totalRisk = ct * limitPrice;
@@ -3085,6 +3193,7 @@ window.currentAsset = "BTC";
 
     let _isPollingKalshiStatus = false;
     async function pollKalshiTradingStatus() {
+      if (document.hidden) return;
       if (_isPollingKalshiStatus) return;
       _isPollingKalshiStatus = true;
       try {
@@ -3253,7 +3362,14 @@ window.currentAsset = "BTC";
 
         // Active Market Ticker
         const tickerEl = document.getElementById("kalshiActiveTicker");
-        if (data.active_market) {
+        const isFxStatus = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+        if (isFxStatus) {
+          const pairFmt = `${window.currentAsset.slice(0, 3)}/${window.currentAsset.slice(3)}`;
+          if (tickerEl) tickerEl.innerText = `${pairFmt} · SPOT FX`;
+          if (typeof window.updateTradingUiForAsset === 'function') {
+            window.updateTradingUiForAsset(window.currentAsset);
+          }
+        } else if (data.active_market) {
           if (tickerEl) tickerEl.innerText = data.active_market.ticker || "KXBTC15M-ACTIVE";
           
           if (data.active_market.yes_bid != null) {
@@ -3303,7 +3419,7 @@ window.currentAsset = "BTC";
                 // Prefer server-annotated live_pnl on each trade
                 if (t.live_pnl != null) {
                   totalLivePnl += parseFloat(t.live_pnl);
-                } else {
+                } else if (activeMarket && t.ticker === activeMarket.ticker) {
                   const side = String(t.side || "YES").toUpperCase();
                   const entry = parseFloat(t.entry_price || 0);
                   const count = parseInt(t.count || 1);
@@ -3317,7 +3433,11 @@ window.currentAsset = "BTC";
             
             const livePnlLabel = document.querySelector("#topBarLivePnlContainer span:first-child");
             if (livePnlLabel) {
-              livePnlLabel.innerText = `P&L ($${(isNaN(totalOpenCost) ? 0 : totalOpenCost).toFixed(2)})`;
+              if (isFxStatus) {
+                livePnlLabel.innerText = "OPEN P&L";
+              } else {
+                livePnlLabel.innerText = `P&L ($${(isNaN(totalOpenCost) ? 0 : totalOpenCost).toFixed(2)})`;
+              }
             }
 
             livePnlText.innerText = `${totalLivePnl >= 0 ? "+" : ""}$${(isNaN(totalLivePnl) ? 0 : totalLivePnl).toFixed(2)}`;
@@ -3459,7 +3579,7 @@ window.currentAsset = "BTC";
                 pnlNum = parseFloat(t.live_pnl);
                 pnlText = pnlNum >= 0 ? `+$${(isNaN(pnlNum) ? 0 : pnlNum).toFixed(2)}` : `-$${(isNaN(Math.abs(pnlNum)) ? 0 : Math.abs(pnlNum)).toFixed(2)}`;
                 colorClass = pnlNum >= 0 ? "text-emerald-400 border-emerald-800/40 bg-emerald-950/30" : "text-red-400 border-red-800/40 bg-red-950/30";
-            } else if (activeMarket) {
+            } else if (activeMarket && t.ticker === activeMarket.ticker) {
                 // Fall back to client-side calc
                 const side = String(t.side || "YES").toUpperCase();
                 const entryCost = parseFloat(t.entry_price);
@@ -3507,18 +3627,31 @@ window.currentAsset = "BTC";
 
         // Trade type / direction label (mirrors the dedicated Trade List page)
         const sideStr = String(t.side || t.direction || "").toUpperCase();
-        const isUpDirection = sideStr.includes("UP") || sideStr.includes("ABOVE") || sideStr.includes("YES");
+        const isUpDirection = sideStr.includes("UP") || sideStr.includes("ABOVE") || sideStr.includes("YES") || sideStr.includes("BUY");
+        const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || String(t.ticker || "").includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
         const directionArrow = isUpDirection ? "▲" : "▼";
-        const directionLabel = isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)";
+        const directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
         const directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
+
+        let tradeSizeDisplay = "";
+        if (isFxTrade) {
+          const lotsStr = t.count || (t.lots ? `${t.lots} Lots` : '0.10 Lots');
+          const pipsStr = t.pips != null ? ` · ${t.pips >= 0 ? '+' : ''}${t.pips} pips` : '';
+          const entryStr = (parseFloat(t.entry_price || 0) || 0).toFixed(window.currentAsset === 'USDJPY' ? 3 : 5);
+          tradeSizeDisplay = `<span class="text-slate-400">(${lotsStr} @ ${entryStr}${pipsStr})</span>`;
+        } else {
+          tradeSizeDisplay = `
+            <span class="text-slate-400">(${t.count || 1}ct @ $${(parseFloat(t.entry_price || 0) || 0).toFixed(2)})</span>
+            <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
+          `;
+        }
 
         return `
           <div onclick="showTradeDetailsModal('${t.id}')" class="flex items-center justify-between p-1 rounded border ${colorClass} text-[9px] sm:text-[10px] font-mono mb-1 cursor-pointer hover:brightness-125 transition-all">
             <div class="flex flex-col gap-0.5">
               <div class="flex items-center gap-1 flex-wrap">
                 <span class="font-bold uppercase ${directionColor}">${directionArrow} ${directionLabel}</span>
-                <span class="text-slate-400">(${t.count || 1}ct @ $${(parseFloat(t.entry_price || 0) || 0).toFixed(2)})</span>
-                <span class="text-cyan-600 font-bold">Spent: $${((t.count || 1) * parseFloat(t.entry_price || 0)).toFixed(2)}</span>
+                ${tradeSizeDisplay}
                 ${pillsHtml}
               </div>
               <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` · Settled: ${settledAt}` : ""}</span>
@@ -3777,6 +3910,31 @@ window.currentAsset = "BTC";
     }
 
     async function triggerManualKalshiTrade(direction) {
+      const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
+      if (isFx) {
+        const side = (direction === "ABOVE" || direction === "BUY") ? "BUY" : "SELL";
+        const ctInput = document.getElementById("kalshiContractsInput");
+        const lots = ctInput ? (parseFloat(ctInput.value) || 0.10) : 0.10;
+        try {
+          const apiBase = getKalshiApiBase();
+          const res = await authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/manual?direction=${side}&lots=${lots}`, { method: "POST" });
+          const data = await res.json();
+          if (data.success) {
+            showAppToast(
+              `Spot ${side} Filled (${kalshiTradingMode})`,
+              `${data.trade ? data.trade.recommendation : side + ' ' + lots.toFixed(2) + ' Lots ' + window.currentAsset}`,
+              "success"
+            );
+            pollKalshiTradingStatus();
+          } else {
+            showAppToast("Order Failed", data.error || "Failed to execute spot trade", "error");
+          }
+        } catch(e) {
+          showAppToast("Request Failed", String(e), "error");
+        }
+        return;
+      }
+
       if (kalshiTradingMode === "LIVE") {
         const sideText = direction === "ABOVE" ? "YES" : (direction === "BELOW" ? "NO" : "100% AI PREDICTION");
         const sideColor = direction === "ABOVE" ? "text-emerald-400" : (direction === "BELOW" ? "text-red-400" : "text-cyan-400");
@@ -4577,6 +4735,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
 
         btcWs.onmessage = (event) => {
           try {
+            if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset)) return;
             const data = JSON.parse(event.data);
             if (data.type === "ticker" && data.product_id === (window.currentAsset === "ETH" ? "ETH-USD" : "BTC-USD")) {
               const p = parseFloat(data.price);
@@ -4590,6 +4749,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
                   _wsRafScheduled = true;
                   requestAnimationFrame(() => {
                     _wsRafScheduled = false;
+                    if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset)) return;
                     if (_pendingWsPrice !== null) {
                       const curP = _pendingWsPrice;
                       renderBtcHeroHud({ 
@@ -4616,6 +4776,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         };
         btcWs.onclose = () => { 
           btcWs = null; 
+          if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset)) return;
           const delay = Math.min(30000, 1000 * Math.pow(2, wsReconnectAttempts));
           wsReconnectAttempts++;
           setTimeout(initBtcWebsocket, delay); 
@@ -4748,6 +4909,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
 
     // Setup Global Price Ticker
     async function pollGlobalTicker() {
+      if (document.hidden) return;
       try {
         const assets = ["BTC", "ETH", "GOLD"];
         const apiBase = getKalshiApiBase();
@@ -4898,7 +5060,120 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
     };
 
 
+window.updateTradingUiForAsset = function(asset) {
+    if (!asset) asset = window.currentAsset || 'BTC';
+    const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(asset);
+    const pairFmt = isFx ? (asset.slice(0, 3) + '/' + asset.slice(3)) : asset;
+
+    // 1. Trader Deck Title
+    const deckTitle = document.getElementById("traderDeckTitle");
+    if (deckTitle) deckTitle.innerText = isFx ? "Forex Spot AI Console" : "Kalshi AI Console";
+
+    // 2. Active Market Ticker
+    const tickerEl = document.getElementById("kalshiActiveTicker");
+    if (tickerEl) tickerEl.innerText = isFx ? `${pairFmt} · SPOT FX` : `KX${asset}15M-ACTIVE`;
+
+    // 3. Top Bar Live Price Label
+    const livePriceLabel = document.getElementById("topBarLivePriceLabel");
+    if (livePriceLabel) livePriceLabel.innerText = `LIVE ${pairFmt}`;
+
+    // 4. Top Bar Target Price Label
+    const targetPriceLabel = document.getElementById("topBarTargetPriceLabel");
+    if (targetPriceLabel) targetPriceLabel.innerText = isFx ? "TARGET (TP)" : `${asset} 15M TARGET`;
+
+    // 5. Top Bar Countdown Card Label
+    const countdownLabel = document.getElementById("topBarCountdownCardLabel");
+    if (countdownLabel) countdownLabel.innerText = isFx ? "15M CANDLE" : "15M CLOSE";
+
+    // 6. Balance Icon
+    const balIcon = document.getElementById("topBarBalanceIcon");
+    if (balIcon) balIcon.innerText = isFx ? "🌐" : "₿";
+
+    // 7. Mobile / iPhone 17 Header Labels
+    const ipTargetLabel = document.getElementById("iphone17TargetLabel");
+    if (ipTargetLabel) ipTargetLabel.innerText = isFx ? "Take Profit (TP)" : "Target";
+    const ipIntervalTime = document.getElementById("iphone17IntervalTime");
+    if (ipIntervalTime && isFx) ipIntervalTime.innerText = "Spot FX · 15M Candle";
+
+    // 8. Conviction Pill
+    const convPill = document.getElementById("kalshiConvictionPill");
+    if (convPill) convPill.innerText = isFx ? "Spot FX · No Expiry" : "Min: A+, A & B+";
+
+    // 9. Sizing Controls
+    const sizeLabel = document.getElementById("traderSizeLabel");
+    const sizeWrap = document.getElementById("traderSizeInputWrap");
+    const spreadBadge = document.getElementById("traderSpreadBadge");
+    const ctInput = document.getElementById("kalshiContractsInput");
+    const unitsLabel = document.getElementById("traderUnitsLabel");
+
+    if (isFx) {
+        if (sizeLabel) sizeLabel.innerText = "Spread:";
+        if (sizeWrap) sizeWrap.classList.add("hidden");
+        if (spreadBadge) {
+            spreadBadge.classList.remove("hidden");
+            const spreadMap = { 'EURUSD': '0.2 Pips', 'GBPUSD': '0.4 Pips', 'USDJPY': '0.3 Pips', 'AUDUSD': '0.3 Pips' };
+            spreadBadge.innerText = spreadMap[asset] || '0.2 Pips';
+        }
+        if (ctInput) {
+            ctInput.step = "0.01";
+            ctInput.min = "0.01";
+            if (!ctInput.value || parseFloat(ctInput.value) >= 1.0) {
+                ctInput.value = "0.10";
+            }
+        }
+        if (unitsLabel) unitsLabel.innerText = "Lots";
+    } else {
+        if (sizeLabel) sizeLabel.innerText = "Size:";
+        if (sizeWrap) sizeWrap.classList.remove("hidden");
+        if (spreadBadge) spreadBadge.classList.add("hidden");
+        if (ctInput) {
+            ctInput.step = "1";
+            ctInput.min = "1";
+            if (!ctInput.value || parseFloat(ctInput.value) < 1.0) {
+                ctInput.value = "1";
+            }
+        }
+        if (unitsLabel) unitsLabel.innerText = "ct";
+    }
+
+    // 10. Execution Buttons
+    const btnTextAbove = document.getElementById("btnTextAbove");
+    const btnTextBelow = document.getElementById("btnTextBelow");
+    const btnProbAbove = document.getElementById("btnProbAbove");
+    const btnProbBelow = document.getElementById("btnProbBelow");
+
+    if (isFx) {
+        if (btnTextAbove) btnTextAbove.innerText = "BUY / LONG";
+        if (btnTextBelow) btnTextBelow.innerText = "SELL / SHORT";
+        if (btnProbAbove && (!btnProbAbove.innerText || btnProbAbove.innerText === "--%")) btnProbAbove.innerText = "TP Target";
+        if (btnProbBelow && (!btnProbBelow.innerText || btnProbBelow.innerText === "--%")) btnProbBelow.innerText = "SL Guard";
+    } else {
+        if (btnTextAbove) btnTextAbove.innerText = "Bid Up";
+        if (btnTextBelow) btnTextBelow.innerText = "Bid Down";
+    }
+
+    // 11. Reverse & Close Buttons
+    const btnReverseText = document.getElementById("btnReverseText");
+    const btnCloseText = document.getElementById("btnCloseText");
+    if (btnReverseText) btnReverseText.innerText = isFx ? "1-Click Reverse (Long ↔ Short)" : "1-Click Reverse";
+    if (btnCloseText) btnCloseText.innerText = isFx ? "Close Spot Position" : "Close Active Trade";
+
+    // 12. Synthetic Badges
+    if (isFx) {
+        const b1 = document.getElementById("kalshiSimulatedBadge");
+        const b2 = document.getElementById("topBarTargetSimBadge");
+        if (b1) b1.classList.add("hidden");
+        if (b2) b2.classList.add("hidden");
+    }
+
+    // 13. Update Risk/Reward Calculator
+    if (typeof updateKalshiPayoutCalculator === 'function') {
+        updateKalshiPayoutCalculator();
+    }
+};
+
 window.switchAsset = function(asset) {
+    if (asset === 'FOREX') asset = 'EURUSD';
     if (window.currentAsset === asset) return;
     window.currentAsset = asset;
     
@@ -4916,46 +5191,139 @@ window.switchAsset = function(asset) {
         if (asset === 'BTC') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-amber-500/50 bg-amber-500/20 text-amber-400 transition-all hover:bg-amber-500/30";
         if (asset === 'ETH') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-blue-500/50 bg-blue-500/20 text-blue-400 transition-all hover:bg-blue-500/30";
         if (asset === 'GOLD') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-yellow-500/50 bg-yellow-500/20 text-yellow-400 transition-all hover:bg-yellow-500/30";
+        if (asset === 'EURUSD' || asset === 'GBPUSD' || asset === 'USDJPY') activeTab.className = "asset-tab active rounded-full px-4 py-1.5 text-xs font-black border border-emerald-500/50 bg-emerald-500/20 text-emerald-400 transition-all hover:bg-emerald-500/30";
     }
     
+    // Sync modeToggleFx & modeToggleBtc
+    const btcBtn = document.getElementById('modeToggleBtc');
+    const fxBtn = document.getElementById('modeToggleFx');
+    const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(asset);
+    if (isFx) {
+        if (fxBtn) fxBtn.className = "px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md bg-cyan-900/50 text-cyan-300 border border-cyan-500/30";
+        if (btcBtn) btcBtn.className = "px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200";
+    } else if (asset === 'BTC') {
+        if (btcBtn) btcBtn.className = "px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md bg-cyan-900/50 text-cyan-300 border border-cyan-500/30";
+        if (fxBtn) fxBtn.className = "px-2 py-1 text-[9px] sm:text-[10px] font-bold rounded-md text-slate-400 hover:text-slate-200";
+    }
+
     const mobDropdown = document.getElementById('mobileAssetDropdown');
     if (mobDropdown) mobDropdown.value = asset;
     
-    // Update header
+    // Update all Spot / Contract UI elements
+    window.updateTradingUiForAsset(asset);
     
-    // Update live price and target labels
-    const livePriceLabel = document.getElementById('topBarLivePriceLabel');
-    if (livePriceLabel) livePriceLabel.innerText = 'LIVE ' + asset;
-    
-    const targetPriceLabel = document.getElementById('topBarTargetPriceLabel');
-    if (targetPriceLabel) targetPriceLabel.innerText = asset + ' 15M TARGET';
-    
-    
-    // Force a fast refresh of data
+    // Force clear cached prices immediately
     window.cachedBtcTargetPrice = null;
     window._cachedCbStats = null;
-    if (typeof fetchBtcKlinesDirect !== "undefined") fetchBtcKlinesDirect();
-    if (typeof fetchKalshiDirect !== "undefined") fetchKalshiDirect();
+    lastBtcPrice = null;
+    
+    // Reconnect / close websocket
+    if (typeof btcWs !== "undefined" && btcWs) {
+        btcWs.close();
+        btcWs = null;
+    }
+    if (typeof initBtcWebsocket !== "undefined" && !isFx) {
+        initBtcWebsocket();
+    }
+    
+    // Force TV widget reset
+    window.tvWidget = null;
+    window.currentTvAsset = null;
+    window.currentTvInterval = null;
+    const tvContainer = document.getElementById("tradingview_btc_chart");
+    if (tvContainer) tvContainer.innerHTML = "";
+    if (typeof initTradingViewChart !== "undefined") {
+        initTradingViewChart();
+    }
+
+    window._isAnalyzing = false;
     if (typeof triggerBtcAnalysis !== "undefined") triggerBtcAnalysis();
     if (typeof pollBtcLive1s !== "undefined") {
         _isPollingBtcLive = false;
         pollBtcLive1s();
     }
-    
-    // Reconnect websocket
-    if (typeof btcWs !== "undefined" && btcWs) {
-        btcWs.close();
+    if (typeof pollKalshiTradingStatus !== "undefined") {
+        _isPollingKalshiStatus = false;
+        pollKalshiTradingStatus();
     }
-    if (typeof initBtcWebsocket !== "undefined") {
-        initBtcWebsocket();
+    if (typeof fetchKalshiDirect !== "undefined") {
+        isFetchingKalshiDirect = false;
+        fetchKalshiDirect();
     }
-    
-    // Update TV widget
-
-    window.tvWidget = null;
-    if (typeof initTradingViewChart !== "undefined") initTradingViewChart();
 };
 
-    // Wire up manual trade size input to dynamically save to backend
-    document.addEventListener("DOMContentLoaded", () => {
-    });
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof window.updateTradingUiForAsset === 'function') {
+        window.updateTradingUiForAsset(window.currentAsset || 'BTC');
+    }
+});
+
+// ── Guest Mode UI ────────────────────────────────────────────────────
+;(function initGuestModeUI() {
+  if (!window.guestToken) return;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // 1. Add a "Guest Mode" badge
+    const badge = document.createElement("div");
+    badge.id = "guestModeBadge";
+    badge.innerHTML = `<span style="font-size: 14px;">👤</span> Guest Mode`;
+    document.body.appendChild(badge);
+
+    // 2. Hide owner-only controls and style the badge responsively
+    const guestCSS = document.createElement("style");
+    guestCSS.textContent = `
+      #guestModeBadge {
+        position: fixed;
+        z-index: 9999;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: white; 
+        border-radius: 20px;
+        font-weight: 600; 
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 12px rgba(99,102,241,0.4);
+        display: flex; 
+        align-items: center; 
+        gap: 6px;
+        transition: all 0.3s ease;
+      }
+      
+      /* Desktop */
+      @media (min-width: 768px) {
+        #guestModeBadge {
+          top: 12px; 
+          right: 16px;
+          padding: 6px 14px; 
+          font-size: 12px; 
+        }
+      }
+      
+      /* Mobile */
+      @media (max-width: 767px) {
+        #guestModeBadge {
+          bottom: 24px; 
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 5px 12px;
+          font-size: 11px;
+          /* Avoid overlapping iOS safe areas */
+          margin-bottom: env(safe-area-inset-bottom);
+        }
+      }
+
+      /* Hide LIVE mode toggle button for guests */
+      [data-mode-toggle="LIVE"], .live-mode-btn, .mode-toggle-live { display: none !important; }
+      /* Hide scalp engine section for guests */
+      #scalpSection, .scalp-panel, [data-section="scalp"] { display: none !important; }
+      /* Mark guest mode visually */
+      .mode-indicator { color: #8b5cf6 !important; }
+    `;
+    document.head.appendChild(guestCSS);
+
+    // 3. Override the mode display to always show PAPER
+    const modeEl = document.getElementById("tradingModeDisplay") || document.getElementById("currentMode");
+    if (modeEl) {
+      modeEl.textContent = "PAPER (Guest)";
+      modeEl.style.color = "#8b5cf6";
+    }
+  });
+})();

@@ -164,6 +164,133 @@ class AutoExecutor:
         except Exception as e:
             logger.error(f"[AutoExecutor] Error saving config: {e}")
 
+    
+    def _broadcast_trade_to_users(self, ticker: str, side: str, limit_price_dollars: float, pred_info: dict = None):
+        
+        try:
+            from backend.database.models import get_all_active_users
+            from backend.auth.security import decrypt_kalshi_key
+            from backend.btc.kalshi_trader import KalshiTrader
+            import concurrent.futures
+            import json
+            import os
+            from datetime import datetime, timezone
+            
+            users = get_all_active_users()
+            if not users:
+                return
+                
+            logger.info(f"[SaaS Broadcast] Broadcasting {side} on {ticker} to {len(users)} active users.")
+            
+            def execute_for_user(user):
+                try:
+                    if not user.get('ai_enabled', 1): return
+                    user_mode = user.get('trading_mode', 'PAPER')
+                    
+                    import uuid
+                    import pytz
+                    import os
+                    import json
+                    from datetime import datetime
+                    
+                    est_tz = pytz.timezone('US/Eastern')
+                    now_est = datetime.now(est_tz).strftime('%Y-%m-%d %I:%M:%S %p ET')
+                    today_str = datetime.now(est_tz).strftime('%Y-%m-%d')
+                    
+                    # Check Daily Limits
+                    user_hist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'users', str(user['id']), 'trades_history.json')
+                    history = []
+                    if os.path.exists(user_hist_path):
+                        try:
+                            with open(user_hist_path, 'r') as f:
+                                history = json.load(f)
+                        except: pass
+                    
+                    today_trades = [t for t in history if t.get("mode", "PAPER") == user_mode and str(t.get("timestamp", "")).startswith(today_str)]
+                    max_trades = int(user.get("max_daily_trades", 10))
+                    if len(today_trades) >= max_trades:
+                        logger.info(f"[SaaS Broadcast] User {user['username']} skipped: Max daily trades reached ({max_trades})")
+                        return
+                        
+                    max_risk = float(user.get("max_daily_risk", 50.0))
+                    today_pnl = sum(float(t.get("pnl", 0.0)) for t in today_trades if t.get("status") in ["CLOSED", "SETTLED"])
+                    today_open_cost = sum(float(t.get("entry_price", 0.0)) * int(t.get("count", 0)) for t in today_trades if t.get("status") == "OPEN")
+                    effective_risk = today_pnl - today_open_cost
+                    if effective_risk <= -abs(max_risk):
+                        logger.info(f"[SaaS Broadcast] User {user['username']} skipped: Max daily risk reached (${max_risk})")
+                        return
+                    
+                    filled_price = limit_price_dollars
+                    contracts = 0
+                    trade_id = str(uuid.uuid4())
+                    
+                    if user_mode == 'LIVE':
+                        if not user.get('kalshi_key_id') or not user.get('kalshi_priv_key_encrypted'): return
+                        priv_key = decrypt_kalshi_key(user['kalshi_priv_key_encrypted'])
+                        if not priv_key: return
+                        kt = KalshiTrader(key_id=user['kalshi_key_id'], private_key_pem=priv_key)
+                        if not kt.is_authenticated(): return
+                        bal_res = kt.get_balance()
+                        if not bal_res.get('success'): return
+                        avail_bal = float(bal_res.get('balance_dollars', 0.0))
+                        if avail_bal < 1.0: return
+                        risk_amount = float(user.get("trade_size_dollars", 50.0))
+                        contracts = max(1, int(risk_amount / max(0.01, limit_price_dollars)))
+                        res = kt.place_order(
+                            ticker=ticker, side=side, count=contracts, 
+                            limit_price_dollars=limit_price_dollars, dry_run=False, slippage_buffer_dollars=0.04
+                        )
+                        if not res.get('success'): return
+                        filled_price = res.get('filled_price', limit_price_dollars)
+                        trade_id = res.get('client_order_id', trade_id)
+                    else:
+                        from backend.database.models import update_user_paper_balance
+                        avail_bal = float(user.get('paper_balance', 500.0))
+                        if avail_bal < 1.0: return
+                        risk_amount = float(user.get("trade_size_dollars", 50.0))
+                        contracts = max(1, int(risk_amount / max(0.01, limit_price_dollars)))
+                        cost = contracts * filled_price
+                        update_user_paper_balance(user['id'], avail_bal - cost)
+
+                    logger.info(f'[SaaS Broadcast] Successfully traded for User {user["username"]} ({contracts} contracts in {user_mode})')
+                    
+                    from backend.database.models import get_user_lock
+                    with get_user_lock(user['id']):
+                        # Create history if it doesn't exist
+                        hist = []
+                        if os.path.exists(user_hist_path):
+                            try:
+                                with open(user_hist_path, 'r') as f:
+                                    hist = json.load(f)
+                            except: pass
+                        
+                        trade_record = {
+                            "id": trade_id,
+                            "timestamp": now_est,
+                            "ticker": ticker,
+                            "direction": side.upper(),
+                            "side": side.upper(),
+                            "prediction_direction": side.upper(),
+                            "probability_percent": pred_info.get('prob', 50) if pred_info else 50,
+                            "entry_price": filled_price,
+                            "count": contracts,
+                            "status": "OPEN",
+                            "mode": user_mode,
+                            "pnl": 0.0,
+                            "reason": "AI_SIGNAL"
+                        }
+                        hist.append(trade_record)
+                        with open(user_hist_path, 'w') as f:
+                            json.dump(hist, f, indent=4)
+                except Exception as e:
+                    logger.error(f'[SaaS Broadcast] Error executing for user {user.get("username")}: {e}')
+                    
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                executor.map(execute_for_user, users)
+        except Exception as e:
+            logger.error(f"[SaaS Broadcast] Critical error during broadcast: {e}")
+
+
     def get_trades_history(self) -> List[Dict[str, Any]]:
         import copy
         with _history_lock:
@@ -402,27 +529,45 @@ class AutoExecutor:
         open_pnl_dollars = 0.0
         annotated_open_trades = []
         if active_market and open_trades:
+            am_ticker = active_market.get("ticker")
             am_yes_bid = float(active_market.get("yes_bid") or 0.0)
             am_no_bid  = float(active_market.get("no_bid")  or 0.0)
             for t in open_trades:
-                t_copy = copy.copy(t)  # shallow copy is enough — we only add top-level keys
+                t_copy = copy.copy(t)  # shallow copy is enough
                 side = str(t_copy.get("side", "YES")).upper()
                 entry = float(t_copy.get("entry_price", 0.5))
                 count = int(t_copy.get("count", 1))
-                current_bid = am_yes_bid if side == "YES" else am_no_bid
+                
+                # Only use live market data if the trade belongs to the current active market.
+                # If it's an older expired trade awaiting settlement, fallback to its max_seen_bid or entry.
+                if t_copy.get("ticker") == am_ticker:
+                    current_bid = am_yes_bid if side == "YES" else am_no_bid
+                else:
+                    current_bid = float(t_copy.get("max_seen_bid", entry))
+                
                 live_pnl = round((current_bid - entry) * count, 4) if current_bid > 0 else 0.0
                 t_copy["live_pnl"] = live_pnl
                 t_copy["current_bid"] = current_bid
                 open_pnl_dollars += live_pnl
                 annotated_open_trades.append(t_copy)
         else:
-            annotated_open_trades = list(open_trades)
+            for t in open_trades:
+                t_copy = copy.copy(t)
+                side = str(t_copy.get("side", "YES")).upper()
+                entry = float(t_copy.get("entry_price", 0.5))
+                count = int(t_copy.get("count", 1))
+                current_bid = float(t_copy.get("max_seen_bid", entry))
+                live_pnl = round((current_bid - entry) * count, 4)
+                t_copy["live_pnl"] = live_pnl
+                t_copy["current_bid"] = current_bid
+                open_pnl_dollars += live_pnl
+                annotated_open_trades.append(t_copy)
 
         # Paper Trading Balance Logic
         if self.mode == "PAPER":
             try:
                 from backend.btc.paper_balance import load_balance
-                bal_dollars = load_balance()
+                bal_dollars = load_balance(guest_id=getattr(self, '_guest_id', None))
             except ImportError:
                 paper_start = 500.0
                 realized_pnl = sum(float(t.get("pnl", 0.0)) for t in trades if t.get("mode", "PAPER").upper() == "PAPER" and t.get("status") in ["SETTLED", "CLOSED"])
@@ -471,7 +616,10 @@ class AutoExecutor:
             "open_trades_count": len(annotated_open_trades),
             "open_trades": annotated_open_trades,
             "open_pnl_dollars": round(open_pnl_dollars, 4),   # live unrealized P&L
-            "recent_trades": mode_trades[-15:][::-1],  # latest 15 trades of current mode first
+            "recent_trades": [
+                next((a for a in annotated_open_trades if a.get("id") == t.get("id")), t)
+                for t in mode_trades[-15:][::-1]
+            ],  # latest 15 trades of current mode first
             "active_market": active_market,
             "prediction_accuracy": prediction_accuracy,
         }
@@ -639,29 +787,22 @@ class AutoExecutor:
 
     def check_settlements(self, trades: Optional[List[Dict[str, Any]]] = None):
         """
-        Settle completed Kalshi trades from Kalshi's own YES/NO result.
-
-        A candle close is not Kalshi's settlement authority, so it is only kept
-        as a legacy fallback for non-Kalshi records that have a valid strike.
+        Settle completed Kalshi trades from Kalshi's own YES/NO result, for both Master and SaaS users.
         """
         now_ts = time.time()
         if (now_ts - getattr(self, "_last_settlement_check_ts", 0.0)) < 3.0:
             return
         self._last_settlement_check_ts = now_ts
 
-        with _history_lock:
-            if trades is None:
-                trades = self.get_trades_history()
-
+        official_results: Dict[str, Dict[str, Any]] = {}
+        
+        def _settle_list(trades_list, user_id=None):
             modified = False
             newly_settled_count = 0
             settle_candles_df = None
-            official_results: Dict[str, Dict[str, Any]] = {}
-
-            for t in trades:
+            for t in trades_list:
                 if t.get("status") != "OPEN":
                     continue
-
                 close_epoch = t.get("close_epoch", 0)
                 close_time_str = t.get("interval_close_time") or ""
                 if not close_epoch and close_time_str:
@@ -686,24 +827,16 @@ class AutoExecutor:
                         is_win = side == official_result
                         market = official.get("market") or {}
                         settle_price = market.get("settlement_value") or market.get("settlement_value_dollars")
-                        try:
-                            settle_price = float(settle_price)
-                        except (TypeError, ValueError):
-                            settle_price = None
+                        try: settle_price = float(settle_price)
+                        except: settle_price = None
 
                         t["status"] = "SETTLED"
                         t["result"] = "WIN" if is_win else "LOSS"
                         t["official_result"] = official_result
                         t["settlement_source"] = "kalshi_official"
-                        t["prediction_correct"] = (not is_win if t.get("is_reverse") else is_win) if t.get("prediction_kind") == "AUTO" else None
-                        if not is_win:
-                            try:
-                                from backend.btc.loss_analyzer import loss_analyzer
-                                t["loss_analysis"] = loss_analyzer.diagnose_loss(t)
-                            except Exception as ele:
-                                logger.warning(f"[AutoExecutor] Loss diagnosis error for {t.get('ticker', t.get('id'))}: {ele}")
                         if settle_price is not None and settle_price > 0:
                             t["settle_price"] = settle_price
+                            
                         prior_realized_pnl = float(t.get("realized_pnl", 0.0))
                         settlement_pnl = round(((1.0 - entry_price) * count) if is_win else (-entry_price * count), 4)
                         t["pnl"] = round(prior_realized_pnl + settlement_pnl, 4)
@@ -713,29 +846,38 @@ class AutoExecutor:
                         newly_settled_count += 1
 
                         if t.get("mode", self.mode).upper() == "PAPER":
-                            try:
-                                from backend.btc.paper_balance import update_balance
-                                update_balance(float(count) if is_win else 0.0)
-                            except Exception as ep:
-                                logger.info(f"Failed to update paper balance: {ep}")
+                            if user_id:
+                                try:
+                                    from backend.database.models import get_all_active_users, update_user_paper_balance
+                                    if is_win:
+                                        users = get_all_active_users() or []
+                                        u = next((x for x in users if x['id'] == user_id), None)
+                                        if u:
+                                            bal = float(u.get('paper_balance', 500.0))
+                                            update_user_paper_balance(user_id, bal + float(count))
+                                except Exception as ep:
+                                    logger.info(f"Failed to update SaaS paper balance for user {user_id}: {ep}")
+                            else:
+                                try:
+                                    from backend.btc.paper_balance import update_balance
+                                    update_balance(float(count) if is_win else 0.0, guest_id=getattr(self, '_guest_id', None))
+                                except Exception as ep:
+                                    logger.info(f"Failed to update master paper balance: {ep}")
                         continue
-
-                    # Auto predictions and Kalshi tickers wait for official result, unless it's a synthetic paper trade or past fallback window
+                        
+                    # Legacy fallback
                     if (t.get("prediction_kind") == "AUTO" or ticker.startswith("KX")) and not ticker.endswith("_SYNTH"):
                         if now_ts <= float(close_epoch) + 600:
                             continue
 
                     strike = float(t.get("strike", 0.0) or 0.0)
-                    if strike <= 0:
-                        continue
+                    if strike <= 0: continue
                     if settle_candles_df is None:
                         try:
+                            from backend.engine.multi_asset_fetcher import fetch_asset_candles as fetch_candles
                             settle_candles_df = fetch_candles(self.asset, timeframe="15m", limit=5)
-                        except Exception as ce:
-                            logger.debug(f"[AutoExecutor] Legacy settlement data unavailable for {ticker}: {ce}")
-                            settle_candles_df = None
-                    if settle_candles_df is None or len(settle_candles_df) < 2:
-                        continue
+                        except: settle_candles_df = None
+                    if settle_candles_df is None or len(settle_candles_df) < 2: continue
                     settle_price = float(settle_candles_df.iloc[-2]["close"])
                     side = str(t.get("side", "")).upper()
                     entry_price = float(t.get("entry_price", 0.50))
@@ -751,32 +893,53 @@ class AutoExecutor:
                     newly_settled_count += 1
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error checking settlement for trade {t.get('id')}: {e}")
+            return modified, newly_settled_count
 
+        with _history_lock:
+            if trades is None:
+                trades = self.get_trades_history()
+
+            modified, newly_settled = _settle_list(trades, user_id=None)
             if modified:
                 try:
                     self._save_trades_history(trades)
-                    self._settled_since_drift_check += newly_settled_count
+                    self._settled_since_drift_check += newly_settled
                     if self._settled_since_drift_check >= 50:
                         self._settled_since_drift_check = 0
+                        try: self.check_live_calibration_drift()
+                        except Exception as cde: logger.warning(f"[AutoExecutor] Scheduled calibration drift check failed: {cde}")
                         try:
-                            self.check_live_calibration_drift()
-                        except Exception as cde:
-                            logger.warning(f"[AutoExecutor] Scheduled calibration drift check failed: {cde}")
-
-                    # Trigger background retrain asynchronously in a daemon thread so it never blocks API requests
-                    try:
-                        from backend.btc.ml_engine import get_ml_engine
-                        ml_eng = get_ml_engine()
-                        threading.Thread(target=ml_eng.train, daemon=True, name="MLRetrainThread").start()
-                    except Exception as e:
-                        logger.warning(f"[AutoExecutor] Post-settlement ML retrain launch failed: {e}")
+                            from backend.btc.ml_engine import get_ml_engine
+                            ml_eng = get_ml_engine()
+                            threading.Thread(target=ml_eng.train, daemon=True, name="MLRetrainThread").start()
+                        except Exception as e:
+                            logger.warning(f"[AutoExecutor] Post-settlement ML retrain launch failed: {e}")
                 except Exception as e:
                     logger.error(f"[AutoExecutor] Error saving trades in check_settlements: {e}")
+
+            # SaaS users settling
+            try:
+                import os, json
+                from backend.database.models import get_all_active_users, get_user_lock
+                saas_users = get_all_active_users() or []
+                for u in saas_users:
+                    u_id = u['id']
+                    u_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'users', str(u_id), 'trades_history.json')
+                    if os.path.exists(u_path):
+                        with get_user_lock(u_id):
+                            with open(u_path, 'r') as f:
+                                u_hist = json.load(f)
+                            u_mod, _ = _settle_list(u_hist, user_id=u_id)
+                            if u_mod:
+                                with open(u_path, 'w') as f:
+                                    json.dump(u_hist, f, indent=4)
+            except Exception as e:
+                logger.error(f"[AutoExecutor] Error settling SaaS trades: {e}")
 
         # Hook: RL Shadow Sandbox settlements
         try:
             from backend.btc.shadow_executor import update_shadow_settlements
-            update_shadow_settlements(kalshi_trader)
+            update_shadow_settlements(kalshi_trader, official_results)
         except Exception as e:
             logger.error(f"[ShadowExecutor Hook] Error: {e}")
 
@@ -1207,6 +1370,9 @@ class AutoExecutor:
             )
 
             if order_res.get("success", False):
+                # SaaS Broadcast
+                # SaaS broadcasting is now handled concurrently by evaluate_and_execute_saas_users()
+
                 # Finding 9: Verify order response ticker matches current_interval_id
                 res_ticker = order_res.get("ticker") or (order_res.get("order") or {}).get("ticker")
                 if res_ticker and str(res_ticker).strip() != str(current_interval_id).strip():
@@ -1224,7 +1390,7 @@ class AutoExecutor:
                 if self.mode == "PAPER":
                     try:
                         from backend.btc.paper_balance import update_balance
-                        update_balance(-fill_cost)
+                        update_balance(-fill_cost, guest_id=getattr(self, '_guest_id', None))
                     except Exception as e:
                         logger.error(f"Paper deduction error: {e}")
                 elif self.mode == "LIVE":
@@ -1328,6 +1494,233 @@ class AutoExecutor:
             if lock_held:
                 self._rollover_lock.release()
 
+
+    def evaluate_and_execute_saas_users(self) -> None:
+        '''
+        Isolated multi-tenant orchestrator for SaaS users.
+        Runs concurrently alongside the Master bot.
+        '''
+        if self.asset.upper() != "BTC":
+            return
+            
+        if not self._rollover_lock.acquire(blocking=False):
+            return
+        
+        lock_held = True
+        try:
+            from backend.engine.multi_asset_fetcher import is_market_open, get_candle_countdown, fetch_asset_candles as fetch_candles
+            from backend.database.models import get_all_active_users, update_user_paper_balance
+            from backend.btc.kalshi_trader import kalshi_trader, KalshiTrader
+            from backend.auth.security import decrypt_kalshi_key
+            import uuid
+            import json
+            import pytz
+            from datetime import datetime
+            import pandas as pd
+            from backend.btc.indicators import add_all_indicators
+            
+            if not is_market_open(self.asset):
+                return
+                
+            countdown_info = get_candle_countdown(timeframe="15m")
+            sec_left = countdown_info.get("seconds_left", 900)
+            sec_elapsed = 900 - sec_left
+            
+            if sec_left < 30:
+                return
+                
+            active_m = kalshi_trader.get_active_15m_market(series_ticker=f"KX{self.asset}15M", allow_synthetic=True, min_seconds_left=45)
+            if not active_m: return
+            
+            current_interval_id = active_m.get("ticker") or active_m.get("event_ticker", "")
+            if not current_interval_id: return
+            
+            try:
+                strike = float(active_m.get("strike_price") or 0.0)
+            except: strike = 0.0
+            if strike <= 0: return
+            
+            users = get_all_active_users() or []
+            active_users = [u for u in users if u.get('ai_enabled', 1)]
+            if not active_users: return
+            
+            # 1. Filter out users who have ALREADY traded this interval
+            users_to_trade = []
+            for u in active_users:
+                user_hist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'users', str(u['id']), 'trades_history.json')
+                has_traded = False
+                if os.path.exists(user_hist_path):
+                    try:
+                        with open(user_hist_path, 'r') as f:
+                            hist = json.load(f)
+                        if any(t.get("ticker") == current_interval_id for t in hist):
+                            has_traded = True
+                    except: pass
+                if not has_traded:
+                    users_to_trade.append(u)
+                    
+            if not users_to_trade:
+                return
+                
+            # 2. Group by configurations
+            required_evals = set()
+            for u in users_to_trade:
+                u_style = str(u.get('trading_style', 'AUTO')).upper()
+                u_source = str(u.get('signal_source', 'ML_ENSEMBLE')).upper()
+                required_evals.add((u_style, u_source))
+                
+            df_base = fetch_candles(self.asset, timeframe="15m", limit=1000)
+            df_ind_base = add_all_indicators(df_base)
+            
+            eval_results = {}
+            for req_style, req_source in required_evals:
+                try:
+                    effective_style = req_style
+                    if effective_style == "AUTO":
+                        curr = df_ind_base.iloc[-1] if len(df_ind_base) > 0 else None
+                        if curr is not None:
+                            vr_raw = curr.get("vol_ratio", 1.0)
+                            vol_ratio = float(vr_raw) if pd.notna(vr_raw) else 1.0
+                            bb_raw = curr.get("bb_bandwidth", 1.0)
+                            bb_width = float(bb_raw) if pd.notna(bb_raw) else 1.0
+                            adx = float(curr.get("adx", 20.0))
+                            if (vol_ratio > 1.5 and adx > 25.0):
+                                effective_style = "MOMENTUM_SURFER"
+                            elif vol_ratio < 0.85 and bb_width < 0.015 and adx < 20.0:
+                                effective_style = "CHOP"
+                            elif vol_ratio > 1.1:
+                                effective_style = "AMBUSH"
+                            else:
+                                effective_style = "SNIPER"
+                        else:
+                            effective_style = "SNIPER"
+                            
+                    if effective_style == "MOMENTUM_SURFER":
+                        df_target = fetch_candles(self.asset, timeframe="1m", limit=1000)
+                        df_ind_target = add_all_indicators(df_target)
+                    else:
+                        df_ind_target = df_ind_base
+                        
+                    patterns = []
+                    if effective_style != "MOMENTUM_SURFER":
+                        try:
+                            from backend.btc.pattern_detector import detect_candlestick_patterns
+                            patterns = detect_candlestick_patterns(df_ind_target)
+                        except: pass
+                        
+                    if effective_style == "CHOP":
+                        from backend.btc.chop_engine import evaluate_chop_contract
+                        forecast = evaluate_chop_contract(df_ind_target, target_price=strike, kalshi_m=active_m)
+                    else:
+                        from backend.btc.analyzer import evaluate_next_15m_contract
+                        forecast = evaluate_next_15m_contract(
+                            df_ind_target, target_price=strike, patterns=patterns, kalshi_m=active_m, trading_style=effective_style
+                        )
+                        
+                    if req_source == "TECHNICAL_ONLY":
+                        forecast["conviction_grade"] = "TECHNICAL_ONLY"
+                        if forecast.get("probability_percent", 50) > 50:
+                            forecast["probability_percent"] = 75.0
+                            
+                    eval_results[(req_style, req_source)] = (effective_style, forecast)
+                except Exception as e:
+                    logger.error(f"[SaaS Eval] Error evaluating {req_style}/{req_source}: {e}")
+                    eval_results[(req_style, req_source)] = (req_style, None)
+                    
+            # 3. Route to users
+            for user in users_to_trade:
+                u_style = str(user.get('trading_style', 'AUTO')).upper()
+                u_source = str(user.get('signal_source', 'ML_ENSEMBLE')).upper()
+                
+                eff_style, forecast = eval_results.get((u_style, u_source), (u_style, None))
+                if not forecast: continue
+                
+                direction = forecast.get("direction", "PASS")
+                conf = forecast.get("probability_percent", 50.0)
+                
+                min_conf = 60.0
+                if eff_style == "MOMENTUM_SURFER":
+                    min_conf = 60.0 if sec_elapsed <= 60 else 75.0
+                    conf = max(conf, 100.0 - conf)
+                    
+                dir_clean = str(direction).upper().strip()
+                if dir_clean in ["ABOVE", "UP", "YES", "BUY YES", "BID YES", "STRONG BULLISH (UP)", "BULLISH (UP)"]:
+                    side = "yes"
+                elif dir_clean in ["BELOW", "DOWN", "NO", "BUY NO", "BID NO", "STRONG BEARISH (DOWN)", "BEARISH (DOWN)"]:
+                    side = "no"
+                else:
+                    continue
+                    
+                if conf < min_conf:
+                    continue
+                market_price = float(active_m.get(f"{side}_ask", 0.50))
+                user_mode = user.get('trading_mode', 'PAPER')
+                trade_id = str(uuid.uuid4())
+                filled_price = market_price
+                contracts = 0
+                
+                try:
+                    if user_mode == 'LIVE':
+                        if not user.get('kalshi_key_id') or not user.get('kalshi_priv_key_encrypted'): continue
+                        priv_key = decrypt_kalshi_key(user['kalshi_priv_key_encrypted'])
+                        if not priv_key: continue
+                        kt = KalshiTrader(key_id=user['kalshi_key_id'], private_key_pem=priv_key)
+                        if not kt.is_authenticated(): continue
+                        bal_res = kt.get_balance()
+                        if not bal_res.get('success'): continue
+                        avail_bal = float(bal_res.get('balance_dollars', 0.0))
+                        if avail_bal < 1.0: continue
+                        risk_amount = float(user.get("trade_size_dollars", 50.0))
+                        contracts = max(1, int(risk_amount / max(0.01, market_price)))
+                        res = kt.place_order(ticker=current_interval_id, side=side, count=contracts, limit_price_dollars=market_price, dry_run=False, slippage_buffer_dollars=0.04)
+                        if not res.get('success'): continue
+                        filled_price = res.get('filled_price', market_price)
+                        trade_id = res.get('client_order_id', trade_id)
+                    else:
+                        avail_bal = float(user.get('paper_balance', 500.0))
+                        if avail_bal < 1.0: continue
+                        risk_amount = float(user.get("trade_size_dollars", 50.0))
+                        contracts = max(1, int(risk_amount / max(0.01, market_price)))
+                        cost = contracts * filled_price
+                        update_user_paper_balance(user['id'], avail_bal - cost)
+
+                    logger.info(f'[SaaS Multitenant] Traded {contracts} {side.upper()} for User {user["username"]} ({user_mode}) via {eff_style}')
+                    
+                    est_tz = pytz.timezone('US/Eastern')
+                    now_est = datetime.now(est_tz).strftime('%Y-%m-%d %I:%M:%S %p ET')
+                    user_hist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'users', str(user['id']), 'trades_history.json')
+                    hist = []
+                    if os.path.exists(user_hist_path):
+                        try:
+                            with open(user_hist_path, 'r') as f:
+                                hist = json.load(f)
+                        except: pass
+                    hist.append({
+                        "id": trade_id,
+                        "timestamp": now_est,
+                        "ticker": current_interval_id,
+                        "direction": side.upper(),
+                        "side": side.upper(),
+                        "prediction_direction": side.upper(),
+                        "probability_percent": conf,
+                        "entry_price": filled_price,
+                        "count": contracts,
+                        "status": "OPEN",
+                        "mode": user_mode,
+                        "reason": f"AI_COPY ({eff_style})"
+                    })
+                    with open(user_hist_path, 'w') as f:
+                        json.dump(hist, f, indent=4)
+                except Exception as e:
+                    logger.error(f"[SaaS Multitenant] Error executing for user {user.get('username')}: {e}")
+                    
+        finally:
+            if lock_held:
+                try:
+                    self._rollover_lock.release()
+                except Exception:
+                    pass
+
     def execute_manual_trade(self, direction: str) -> Dict[str, Any]:
         self._load_config()
         """
@@ -1420,6 +1813,9 @@ class AutoExecutor:
         )
 
         if order_res.get("success", False):
+            # SaaS Broadcast
+            self._broadcast_trade_to_users(active_m.get("ticker", ""), side, market_price, {})
+
             # H1 & H2: Record actual fill metrics and fix paper balance cost key
             fill_price = float(order_res.get("filled_price", market_price))
             fill_count = float(order_res.get("count", contracts_to_buy))
@@ -1428,7 +1824,7 @@ class AutoExecutor:
             if self.mode == "PAPER":
                 try:
                     from backend.btc.paper_balance import update_balance
-                    update_balance(-fill_cost)
+                    update_balance(-fill_cost, guest_id=getattr(self, '_guest_id', None))
                 except Exception as e:
                     logger.error(f"Paper deduction error: {e}")
             elif self.mode == "LIVE":
@@ -1573,7 +1969,7 @@ class AutoExecutor:
         if mode == "PAPER":
             try:
                 from backend.btc.paper_balance import update_balance
-                update_balance(exit_price * filled_count)
+                update_balance(exit_price * filled_count, guest_id=getattr(self, '_guest_id', None))
             except Exception as ep:
                 logger.info(f"Failed to update paper balance: {ep}")
 
@@ -1754,7 +2150,7 @@ class AutoExecutor:
             minutes_elapsed = time_elapsed_sec / 60.0
             minutes_remaining = time_remaining_sec / 60.0
 
-            if take_profit_enabled and minutes_remaining >= 1.0:
+            if minutes_remaining >= 1.0:
                 ticker = trade.get("ticker")
                 bid_price = 0.0
                 if ticker and not ticker.endswith("_SYNTH") and self.mode == "LIVE":
@@ -1802,7 +2198,7 @@ class AutoExecutor:
                         max_seen_profit_pct = ((max_seen_bid - entry_price) / entry_price) * 100.0
 
                         # 1. Hard Take-Profit Check
-                        if profit_pct >= take_profit_percent:
+                        if take_profit_enabled and profit_pct >= take_profit_percent:
                             logger.info(
                                 f"[AutoExecutor] TAKE-PROFIT TRIGGERED for {trade_id} ({side}): "
                                 f"Current bid ${bid_price:.2f} is up {profit_pct:.1f}% from entry ${entry_price:.2f} "
@@ -1815,13 +2211,13 @@ class AutoExecutor:
                                 continue
 
                         # 2. Dynamic Trailing Profit Stop (Locks in gains if they drop from peak)
-                        # If the trade was ever up >35% (e.g. $100+ on a $250 size), activate a tight 12% trailing floor
-                        if max_seen_profit_pct >= 35.0:
-                            # We trail the max seen bid by 12 cents or 12%, whichever tightens first
-                            trail_threshold = max(max_seen_bid - 0.12, max_seen_bid * 0.88)
+                        # If the trade was ever up >35% (e.g. $100+ on a $250 size), activate a tight 6% trailing floor
+                        if take_profit_enabled and max_seen_profit_pct >= 35.0:
+                            # We trail the max seen bid by 6 cents or 6%, whichever tightens first
+                            trail_threshold = max(max_seen_bid - 0.06, max_seen_bid * 0.94)
                             
                             # Ensure we don't accidentally trail into a loss
-                            trail_threshold = max(trail_threshold, entry_price * 1.10) # Minimum 10% profit secured
+                            trail_threshold = max(trail_threshold, entry_price * 1.06) # Minimum 6% profit secured
 
                             if bid_price <= trail_threshold:
                                 logger.info(
@@ -2009,6 +2405,9 @@ class AutoExecutor:
                 dry_run=dry_run
             )
             if order_res.get("success"):
+                # SaaS Broadcast
+                self._broadcast_trade_to_users(ticker, opposite_side.lower(), opposite_ask, {})
+
                 fill_price = float(order_res.get("filled_price", opposite_ask))
                 fill_cost = round(fill_price * count, 4)
                 reversal_record = {
@@ -2055,7 +2454,7 @@ class AutoExecutor:
                 if trade_mode == "PAPER":
                     try:
                         from backend.btc.paper_balance import update_balance
-                        update_balance(-fill_cost)
+                        update_balance(-fill_cost, guest_id=getattr(self, '_guest_id', None))
                     except Exception as ep:
                         logger.warning(f"Failed to deduct paper balance for reversal: {ep}")
 
@@ -2189,6 +2588,9 @@ class AutoExecutor:
             )
 
             if order_res.get("success"):
+                # SaaS Broadcast
+                self._broadcast_trade_to_users(ticker, side, market_price, {})
+
                 fill_price = float(order_res.get("filled_price", market_price))
                 fill_cost = round(fill_price * contracts_to_buy, 4)
                 reentry_record = {
@@ -2237,7 +2639,7 @@ class AutoExecutor:
                 if trade_mode == "PAPER":
                     try:
                         from backend.btc.paper_balance import update_balance
-                        update_balance(-fill_cost)
+                        update_balance(-fill_cost, guest_id=getattr(self, '_guest_id', None))
                     except Exception as ep:
                         logger.warning(f"Failed to deduct paper balance for re-entry: {ep}")
 
@@ -2253,7 +2655,57 @@ class AutoExecutor:
 
 # Global singleton instance
 _executors = {}
-def get_auto_executor(asset: str = "BTC") -> AutoExecutor:
-    if asset not in _executors:
-        _executors[asset] = AutoExecutor(asset)
-    return _executors[asset]
+# Guest executor instances: keyed by "GUEST:<guest_id>:<asset>"
+_guest_executors = {}
+
+def get_auto_executor(asset: str = "BTC", guest_id: str = None) -> AutoExecutor:
+    """Return a singleton AutoExecutor for the given asset.
+    When guest_id is provided, returns a guest-specific executor with
+    isolated data paths and PAPER-only mode.
+    """
+    if not guest_id:
+        if asset not in _executors:
+            _executors[asset] = AutoExecutor(asset)
+        return _executors[asset]
+
+    key = f"GUEST:{guest_id}:{asset}"
+    if key not in _guest_executors:
+        from backend.guest_manager import get_guest_data_dir
+        guest_dir = get_guest_data_dir(guest_id)
+        os.makedirs(guest_dir, exist_ok=True)
+        executor = AutoExecutor.__new__(AutoExecutor)
+        # Manually initialize to avoid connecting to shared SQLite trade_db
+        executor.asset = asset
+        executor.enabled = False
+        executor.mode = "PAPER"
+        executor.min_conviction = "GRADE A SETUP"
+        executor.max_contracts = 10
+        executor.prediction_mode = False
+        executor.max_daily_risk = 500.0
+        executor.max_daily_trades = 50
+        executor.last_traded_interval = None
+        executor.last_check_time = 0.0
+        executor.ai_settings = {}
+        executor._rollover_lock = threading.Lock()
+        executor._cached_trades = []
+        executor._cached_trades_mtime = 0.0
+        executor._settled_since_drift_check = 0
+        # Guest-specific paths
+        executor._config_file = os.path.join(guest_dir, "trading_config.json")
+        executor._history_file = os.path.join(guest_dir, "trades_history.json")
+        executor._is_guest = True
+        executor._guest_id = guest_id
+        # Disable shared SQLite DB for guests — they use JSON only
+        executor.trade_db = None
+        # Force paper mode and load guest config
+        executor._load_config()
+        executor.mode = "PAPER"
+        _guest_executors[key] = executor
+    return _guest_executors[key]
+
+
+def _evict_guest_executor(guest_id: str):
+    """Remove cached guest executors when a guest is deleted."""
+    keys_to_remove = [k for k in _guest_executors if k.startswith(f"GUEST:{guest_id}:")]
+    for k in keys_to_remove:
+        _guest_executors.pop(k, None)

@@ -10,8 +10,8 @@ echo it ever crashes or disconnects.
 echo.
 
 :loop
-echo [%time%] Starting server...
-call .venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8056
+echo [%time%] Starting server (HTTP)...
+call .venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8056 --no-access-log
 echo.
 echo [%time%] CRITICAL: Server stopped or crashed!
 echo Restarting automatically in 5 seconds...

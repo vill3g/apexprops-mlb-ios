@@ -1,11 +1,17 @@
-import os, re
-an_path = 'backend/btc/analyzer.py'
-with open(an_path, 'r', encoding='utf-8') as f:
-    text = f.read()
+import re
+with open('static/saas_dashboard.html', 'r') as f:
+    html = f.read()
 
-text = re.sub(r'grade = "GRADE B SETUP"(\s+badge = ".*?\((6[34])%\)")', r'grade = "GRADE B+ SETUP"\1', text)
-text = re.sub(r'3-STAR B \((6[34])%\)', r'3-STAR B+ (\1%)', text)
+html = re.sub(
+    r'alert\(`Failed: \$\{(.+?)\}`\);',
+    r'let _err = \1; if (typeof _err === "object") _err = JSON.stringify(_err); alert(`Failed: ${_err}`);',
+    html
+)
+html = re.sub(
+    r'alert\(`Failed to save keys: \$\{(.+?)\}`\);',
+    r'let _err = \1; if (typeof _err === "object") _err = JSON.stringify(_err); alert(`Failed to save keys: ${_err}`);',
+    html
+)
 
-with open(an_path, 'w', encoding='utf-8') as f:
-    f.write(text)
-print("Regex patch applied.")
+with open('static/saas_dashboard.html', 'w') as f:
+    f.write(html)

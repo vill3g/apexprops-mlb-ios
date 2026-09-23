@@ -1,3 +1,12 @@
+import sys
+import asyncio
+
+if sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    except Exception:
+        pass
+
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -6,7 +15,7 @@ FastAPI Application for ApexProps MLB & International Baseball Engine.
 Serves REST API and hosts the graphical user interface.
 """
 
-from fastapi import FastAPI, Request, Query, Header, HTTPException, Depends
+from fastapi import FastAPI, Request, Query, Header, HTTPException, Depends, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -30,7 +39,11 @@ class ScalpConfigUpdate(BaseModel):
 class DirectionEnum(str, Enum):
     ABOVE = "ABOVE"
     BELOW = "BELOW"
+    BUY = "BUY"
+    SELL = "SELL"
     AI_START = "AI_START"
+    YES = "YES"
+    NO = "NO"
 import os
 import time
 import math
@@ -64,6 +77,28 @@ app = FastAPI(
     description="Real-time Bitcoin 15-Minute Pattern & Confluence Analyzer."
 )
 
+from backend.database.models import init_db
+init_db()
+from backend.auth.routes import router as auth_router
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+def _setup_socket_exception_handler():
+    """Silently catch benign client drops on Windows (e.g. mobile lock screen, Wi-Fi handoff)."""
+    try:
+        loop = asyncio.get_running_loop()
+        def _silent_network_disconnect_handler(loop, context):
+            exc = context.get("exception")
+            if isinstance(exc, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+                return
+            if isinstance(exc, OSError) and getattr(exc, "winerror", None) in (64, 121, 10053, 10054):
+                return
+            loop.default_exception_handler(context)
+        loop.set_exception_handler(_silent_network_disconnect_handler)
+        logger.info("[Startup] Windows socket disconnect handler installed.")
+    except Exception as e:
+        logger.warning(f"[Startup] Could not set loop exception handler: {e}")
 
 @app.on_event("startup")
 def _start_liquidation_feed():
@@ -100,12 +135,65 @@ app.add_middleware(
 # If APP_API_TOKEN is empty/unset, authentication is bypassed for seamless local desktop/LAN use.
 API_TOKEN = os.environ.get("APP_API_TOKEN", "").strip()
 
-def require_auth(x_api_token: Optional[str] = Header(None, alias="X-API-Token")):
-    """Shared-secret authentication dependency for sensitive trading and scalp routes."""
+def require_auth(
+    request: Request,
+    x_api_token: Optional[str] = Header(None, alias="X-API-Token")
+):
+    """Shared-secret or JWT authentication dependency."""
+    # 1. Try SaaS JWT
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        try:
+            from backend.auth.security import decode_jwt_token
+            payload = decode_jwt_token(token)
+            if payload:
+                request.state.user_id = payload.get("user_id")
+                return
+        except Exception:
+            pass
+            
+    # 2. Try Master API Token
     if not API_TOKEN:
         return
     if not x_api_token or not hmac.compare_digest(x_api_token, API_TOKEN):
         raise HTTPException(status_code=401, detail="Invalid or missing X-API-Token header.")
+
+# ── Guest Session Middleware ──────────────────────────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+from backend.guest_manager import is_valid_guest
+
+class GuestMiddleware(BaseHTTPMiddleware):
+    """Extract guest_id from ?guest= query parameter and store on request.state."""
+    async def dispatch(self, request: Request, call_next):
+        from urllib.parse import parse_qs
+        qs = parse_qs(request.url.query)
+        guest_id = (qs.get("guest") or [None])[0]
+        if guest_id:
+            if not is_valid_guest(guest_id):
+                return JSONResponse({"error": "Invalid guest token"}, status_code=401)
+            request.state.guest_id = guest_id
+        else:
+            request.state.guest_id = None
+        response = await call_next(request)
+        return response
+
+app.add_middleware(GuestMiddleware)
+
+def _get_guest_id(request: Request) -> Optional[str]:
+    """Helper to extract guest_id from request.state (set by middleware or JWT auth)."""
+    # First check if the JWT auth set a user_id
+    user_id = getattr(request.state, "user_id", None)
+    if user_id:
+        return str(user_id)
+    # Fallback to the ?guest= query parameter middleware
+    return getattr(request.state, "guest_id", None)
+
+def require_owner(request: Request):
+    """Dependency that blocks guest users from owner-only operations."""
+    guest_id = _get_guest_id(request)
+    if guest_id:
+        raise HTTPException(status_code=403, detail="This operation is not available in guest mode.")
 
 
 # Initialize singletons
@@ -449,6 +537,58 @@ def sanitize_btc_json(val):
 @app.get("/api/engine/{asset}/analyze")
 def api_btc_analyze(asset: str, timeframe: str = "15m"):
     """Returns comprehensive directional analysis, score, and trade setup for selected timeframe."""
+    from backend.forex.auto_executor import ACTIVE_PAIRS
+    if asset in ACTIVE_PAIRS:
+        from backend.forex.analyzer import analyze_forex_pair
+        analysis = analyze_forex_pair(asset, timeframe)
+        # Adapt keys to match UI expectations
+        price = analysis.get("price", 1.0)
+        signal = analysis.get("signal", "HOLD")
+        tp = analysis.get("tp") or price
+        sl = analysis.get("sl") or price
+        dir_ui = "ABOVE" if signal == "BUY" else ("BELOW" if signal == "SELL" else "HOLD")
+        bias = "UP" if signal == "BUY" else ("DOWN" if signal == "SELL" else "NEUTRAL")
+        prob_pct = int(analysis.get("ml_probability", 0.5) * 100)
+
+        forex_dict = {
+            "price": price,
+            "direction": dir_ui,
+            "primary_bias": bias,
+            "predicted_probability": analysis.get("ml_probability", 0.5),
+            "confidence_percent": prob_pct,
+            "confluence_score": 75 if signal in ["BUY", "SELL"] else 50,
+            "conviction_grade": "A" if signal in ["BUY", "SELL"] else "NEUTRAL",
+            "catalysts": analysis.get("reasons", []),
+            "reasons_bullish": analysis.get("reasons", []) if signal == "BUY" else [],
+            "reasons_bearish": analysis.get("reasons", []) if signal == "SELL" else [],
+            "trade_setup": {
+                "entry_price": price,
+                "entry_zone": price,
+                "stop_loss": sl,
+                "take_profit_1": tp
+            },
+            "ticker": {"price": price},
+            "indicators": analysis.get("indicators", {}),
+            "market_structure": {},
+            "target_benchmark": {
+                "current_price": price,
+                "target_price": tp,
+                "distance_pct": round(((price - tp) / tp) * 100, 4) if tp else 0.0,
+                "time_remaining_str": "FOREX",
+                "next_contract_forecast": {
+                    "direction": dir_ui,
+                    "recommendation": f"Session: {analysis.get('session', 'N/A')} ({signal})",
+                    "probability_percent": prob_pct,
+                    "conviction_badge": "ML GATE",
+                    "conviction_grade": "A",
+                    "primary_edge": f"SMC / {analysis.get('session', 'N/A')}",
+                    "target_settlement_zone": f"SL: {sl:.5f} | TP: {tp:.5f}",
+                    "catalysts": analysis.get("reasons", [])
+                }
+            }
+        }
+        return JSONResponse(sanitize_btc_json(forex_dict))
+
     try:
         _, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
         return JSONResponse(sanitize_btc_json(analysis))
@@ -510,6 +650,42 @@ def api_btc_live(asset: str):
     Autonomous rollover execution is handled in a dedicated background worker.
     """
     try:
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.data_fetcher import get_forex_ticker
+            from backend.btc.data_fetcher import get_candle_countdown
+            from backend.forex.analyzer import analyze_forex_pair
+            
+            ticker = get_forex_ticker(asset.upper())
+            curr_price = float(ticker.get("price", 1.0))
+            analysis = analyze_forex_pair(asset.upper(), "15m")
+            tp = float(analysis.get("tp") or curr_price)
+            delta = round(curr_price - tp, 5)
+            delta_pct = round((delta / tp) * 100, 4) if tp else 0.0
+            cd = get_candle_countdown("15m")
+            
+            data = {
+                "price": curr_price,
+                "target_price": tp,
+                "target_source": f"Forex {analysis.get('session', 'NY')}",
+                "delta": delta,
+                "delta_pct": delta_pct,
+                "status": "ABOVE" if delta >= 0 else "BELOW",
+                "seconds_left": cd["seconds_left"],
+                "formatted_countdown": cd["formatted"],
+                "last_5_targets": [tp],
+                "streak_summary": f"Forex AI {analysis.get('signal', 'HOLD')}",
+                "volume_24h": float(ticker.get("volume_24h", 0)),
+                "kalshi": {
+                    "is_synthetic": False,
+                    "source": "Forex Spot Engine",
+                    "yes_prob": int(analysis.get("ml_probability", 0.5) * 100),
+                    "no_prob": 100 - int(analysis.get("ml_probability", 0.5) * 100),
+                    "volume_24h": 0
+                }
+            }
+            return JSONResponse(sanitize_btc_json(data))
+
         data = get_live_15m_target_data(asset.upper())
         return JSONResponse(sanitize_btc_json(data))
     except Exception as e:
@@ -531,7 +707,11 @@ def api_btc_live(asset: str):
 def api_btc_ticker(asset: str):
     """Returns live 24h ticker info."""
     try:
-        ticker = get_asset_ticker(asset)
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.data_fetcher import get_forex_ticker
+            return JSONResponse(sanitize_btc_json(get_forex_ticker(asset.upper())))
+        ticker = get_asset_ticker(asset.upper())
         return JSONResponse(sanitize_btc_json(ticker))
     except Exception as e:
         static_backup = os.path.join(STATIC_DIR, "data", "btc_ticker.json")
@@ -550,18 +730,48 @@ def api_btc_countdown(asset: str, timeframe: str = "15m"):
         return JSONResponse(sanitize_btc_json(get_candle_countdown(timeframe=timeframe)))
     except Exception as e:
         logger.error(f"Error in countdown: {e}")
-        return JSONResponse({"formatted": "--:--", "seconds_left": 0})
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.get("/api/engine/{asset}/kalshi")
 def api_btc_kalshi(asset: str):
     """Returns active Kalshi 15M target strike and market odds."""
     try:
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.data_fetcher import get_forex_ticker
+            from backend.forex.analyzer import analyze_forex_pair
+            ticker = get_forex_ticker(asset.upper())
+            p = float(ticker.get("price", 1.0))
+            analysis = analyze_forex_pair(asset.upper(), "15m")
+            tp = float(analysis.get("tp") or p)
+            sl = float(analysis.get("sl") or p)
+            ml_p = float(analysis.get("ml_probability", 0.5))
+            buy_prob = int(round(ml_p * 100))
+            sell_prob = 100 - buy_prob
+            pair_fmt = f"{asset.upper()[:3]}/{asset.upper()[3:]}"
+            return JSONResponse({
+                "status": "active",
+                "ticker": f"{pair_fmt} · SPOT FX",
+                "target_price": tp,
+                "entry_price": p,
+                "sl_price": sl,
+                "tp_price": tp,
+                "yes_prob": buy_prob,
+                "no_prob": sell_prob,
+                "is_synthetic": False,
+                "source": "Forex Spot Engine"
+            })
         from backend.btc.kalshi_client import get_kalshi_15m_market
         data = get_kalshi_15m_market(series_ticker=f"KX{asset.upper()}15M")
         if not data:
             return JSONResponse({"status": "unavailable", "target_price": None, "is_synthetic": True})
         data = dict(data)
         data["is_synthetic"] = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
+        try:
+            _, analysis = get_cached_btc_analysis(asset=asset, timeframe="15m")
+            data["ml_reasoning"] = sanitize_btc_json(analysis)
+        except:
+            pass
         return JSONResponse(data)
     except Exception as e:
         return JSONResponse({"error": str(e), "target_price": None, "is_synthetic": True}, status_code=500)
@@ -618,26 +828,153 @@ def api_btc_kalshi_orderbook(asset: str):
 # =====================================================================
 
 @app.get("/api/engine/{asset}/trade/status", dependencies=[Depends(require_auth)])
-def api_btc_trade_status(asset: str):
-    """Returns full status of the Kalshi automated trading engine."""
+def api_btc_trade_status(asset: str, request: Request):
+    """Returns full status of the automated trading engine."""
     try:
-        status = get_auto_executor(asset).get_status()
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.auto_executor import _is_running
+            from backend.forex.paper_trader import get_balance, get_open_positions, get_trade_history, calculate_pip_value
+            from backend.forex.data_fetcher import get_forex_ticker
+            
+            balance = get_balance()
+            open_pos = get_open_positions()
+            history = get_trade_history()
+            
+            ticker = get_forex_ticker(asset.upper())
+            curr_price = float(ticker.get("price", 1.0))
+            pip_decimal = 0.01 if "JPY" in asset.upper() else 0.0001
+            
+            open_pnl = 0.0
+            annotated_open = []
+            for p in open_pos:
+                pos = dict(p)
+                entry = float(pos.get("entry_price", curr_price))
+                size = int(pos.get("size", 10000))
+                pips = ((curr_price - entry) if pos.get("side") == "BUY" else (entry - curr_price)) / pip_decimal
+                pip_val = calculate_pip_value(pos.get("pair", asset.upper()), size, curr_price)
+                live_pnl = round(pips * (pip_val / pip_decimal) * pip_decimal, 2)
+                pos["live_pnl"] = live_pnl
+                pos["pips"] = round(pips, 1)
+                pos["current_price"] = curr_price
+                pos["mode"] = "PAPER"
+                open_pnl += live_pnl
+                annotated_open.append(pos)
+                
+            wins = sum(1 for t in history if float(t.get("realized_pnl", 0)) > 0)
+            losses = sum(1 for t in history if float(t.get("realized_pnl", 0)) < 0)
+            total_closed = len(history)
+            win_rate = round((wins / total_closed) * 100, 1) if total_closed > 0 else 0.0
+            total_pnl = round(sum(float(t.get("realized_pnl", 0)) for t in history), 2)
+            
+            formatted_trades = []
+            for t in annotated_open:
+                formatted_trades.append({
+                    "id": t.get("id"),
+                    "mode": "PAPER",
+                    "ticker": f"{t.get('pair')} SPOT",
+                    "recommendation": f"{t.get('side')} {(t.get('size', 10000)/100000):.2f} Lots",
+                    "side": t.get("side"),
+                    "status": "OPEN",
+                    "result": "OPEN",
+                    "entry_price": t.get("entry_price"),
+                    "count": f"{(t.get('size', 10000)/100000):.2f} Lots",
+                    "lots": round(t.get('size', 10000)/100000, 2),
+                    "pnl": t.get("live_pnl", 0.0),
+                    "live_pnl": t.get("live_pnl", 0.0),
+                    "pips": t.get("pips", 0.0),
+                    "created_at": t.get("opened_at", "")
+                })
+            for t in history[:10]:
+                is_win = float(t.get("realized_pnl", 0)) > 0
+                formatted_trades.append({
+                    "id": t.get("id"),
+                    "mode": "PAPER",
+                    "ticker": f"{t.get('pair')} SPOT",
+                    "recommendation": f"{t.get('side')} {(t.get('size', 10000)/100000):.2f} Lots",
+                    "side": t.get("side"),
+                    "status": "CLOSED",
+                    "result": "WIN" if is_win else "LOSS",
+                    "entry_price": t.get("entry_price"),
+                    "count": f"{(t.get('size', 10000)/100000):.2f} Lots",
+                    "lots": round(t.get('size', 10000)/100000, 2),
+                    "pnl": t.get("realized_pnl", 0.0),
+                    "live_pnl": t.get("realized_pnl", 0.0),
+                    "created_at": t.get("closed_at", "")
+                })
+
+            pair_fmt = f"{asset.upper()[:3]}/{asset.upper()[3:]}"
+            return JSONResponse({
+                "enabled": _is_running,
+                "mode": "PAPER",
+                "asset": asset.upper(),
+                "balance_dollars": balance,
+                "balance": balance,
+                "equity": round(balance + open_pnl, 2),
+                "open_pnl_dollars": round(open_pnl, 2),
+                "total_pnl_dollars": total_pnl,
+                "win_rate_pct": win_rate,
+                "wins": wins,
+                "losses": losses,
+                "trades_count": total_closed,
+                "open_trades": annotated_open,
+                "recent_trades": formatted_trades,
+                "active_market": {
+                    "ticker": f"{pair_fmt} · SPOT FX",
+                    "yes_bid": 1.0,
+                    "no_bid": 1.0
+                },
+                "market_type": "SPOT"
+            })
+
+        guest_id = _get_guest_id(request)
+        status = get_auto_executor(asset, guest_id=guest_id).get_status()
+        if guest_id:
+            status["is_guest"] = True
+            status["mode"] = "PAPER"
         return JSONResponse(sanitize_btc_json(status))
     except Exception as e:
         return JSONResponse({"error": str(e), "enabled": False, "mode": "PAPER"}, status_code=500)
 
 @app.post("/api/engine/{asset}/trade/toggle", dependencies=[Depends(require_auth)])
-def api_btc_trade_toggle(asset: str, enabled: bool = Query(...)):
+def api_btc_trade_toggle(asset: str, enabled: bool = Query(...), request: Request = None):
     """Toggle auto-trading execution ON or OFF."""
     try:
-        res = get_auto_executor(asset).set_enabled(enabled)
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.auto_executor import start_forex_executor, stop_forex_executor
+            if enabled:
+                start_forex_executor()
+            else:
+                stop_forex_executor()
+            return JSONResponse({"status": "ok", "enabled": enabled})
+
+        guest_id = _get_guest_id(request) if request else None
+        user_id = getattr(request.state, "user_id", None) if request else None
+        
+        # Determine the target ID (SaaS user or Guest)
+        target_id = user_id if user_id else guest_id
+        
+        res = get_auto_executor(asset, guest_id=target_id).set_enabled(enabled)
+        
+        if target_id:
+            from backend.database.models import update_user_ai_enabled
+            update_user_ai_enabled(target_id, enabled)
+            
         return JSONResponse(res)
     except Exception as e:
         return JSONResponse({"success": False, "error": f"Toggle error: {str(e)}"}, status_code=500)
 
 @app.post("/api/engine/{asset}/trade/mode", dependencies=[Depends(require_auth)])
-def api_btc_trade_mode(asset: str, mode: str = Query(...)):
+def api_btc_trade_mode(asset: str, mode: str = Query(...), request: Request = None):
     """Switch trading mode between PAPER (simulation) and LIVE (real money)."""
+    guest_id = _get_guest_id(request) if request else None
+
+    if guest_id:
+        if str(mode).upper() == "LIVE":
+            raise HTTPException(status_code=403, detail="Guest users cannot switch to LIVE trading mode.")
+        res = get_auto_executor(asset, guest_id=guest_id).set_mode("PAPER")
+        return JSONResponse(res)
     # FIX #7: The previous guard `not API_TOKEN` was dead code — require_auth already
     # blocks the request with HTTP 401 when APP_API_TOKEN is empty.
     # Replace with a meaningful check: LIVE mode also requires Kalshi credentials.
@@ -652,67 +989,83 @@ def api_btc_trade_mode(asset: str, mode: str = Query(...)):
     return JSONResponse(res)
 
 @app.post("/api/engine/{asset}/trade/prediction_mode", dependencies=[Depends(require_auth)])
-def api_btc_trade_prediction_mode(asset: str, enabled: bool = Query(...)):
+def api_btc_trade_prediction_mode(asset: str, enabled: bool = Query(...), request: Request = None):
     """Toggle prediction mode ON or OFF."""
-    get_auto_executor(asset).prediction_mode = enabled
-    get_auto_executor(asset)._save_config()
+    guest_id = _get_guest_id(request) if request else None
+
+    get_auto_executor(asset, guest_id=guest_id).prediction_mode = enabled
+    get_auto_executor(asset, guest_id=guest_id)._save_config()
     return JSONResponse({"status": "ok", "prediction_mode": enabled})
 
 @app.post("/api/engine/{asset}/trade/threshold", dependencies=[Depends(require_auth)])
-def api_btc_trade_threshold(asset: str, threshold: str = Query(...)):
+def api_btc_trade_threshold(asset: str, threshold: str = Query(...), request: Request = None):
     """Set minimum conviction threshold (e.g. 'A+' or 'A')."""
-    res = get_auto_executor(asset).set_conviction_threshold(threshold)
+    guest_id = _get_guest_id(request) if request else None
+
+    res = get_auto_executor(asset, guest_id=guest_id).set_conviction_threshold(threshold)
     return JSONResponse(res)
 
 @app.post("/api/engine/{asset}/trade/contracts", dependencies=[Depends(require_auth)])
-def api_btc_trade_contracts(asset: str, count: int = Query(...)):
+def api_btc_trade_contracts(asset: str, count: int = Query(...), request: Request = None):
     """Set number of contracts per trade."""
-    res = get_auto_executor(asset).set_max_contracts(count)
-    return JSONResponse(res)
+    guest_id = _get_guest_id(request) if request else None
+
+    res = get_auto_executor(asset, guest_id=guest_id).set_max_contracts(count)
 
 
 @app.get("/api/engine/{asset}/trade/config", dependencies=[Depends(require_auth)])
-def api_btc_trade_config_get(asset: str):
+def api_btc_trade_config_get(asset: str, request: Request = None):
     """Retrieve the full current configuration from the server (source of truth)."""
-    ex = get_auto_executor(asset)
+    guest_id = _get_guest_id(request) if request else None
+
+    ex = get_auto_executor(asset, guest_id=guest_id)
     return JSONResponse({
-        "mode": ex.mode,
+        "mode": "PAPER" if guest_id else ex.mode,
         "prediction_mode": ex.prediction_mode,
         "max_daily_risk": ex.max_daily_risk,
         "max_daily_trades": ex.max_daily_trades,
         "min_conviction": ex.min_conviction,
         "max_contracts": ex.max_contracts,
         "enabled": ex.enabled,
-        "ai_settings": ex.ai_settings
+        "ai_settings": ex.ai_settings,
+        "is_guest": bool(guest_id),
     })
 
 @app.get("/api/engine/{asset}/trade/ai_settings", dependencies=[Depends(require_auth)])
-def api_btc_trade_ai_settings_get(asset: str):
+def api_btc_trade_ai_settings_get(asset: str, request: Request = None):
     """Retrieve the current AI settings from the server (source of truth)."""
-    return JSONResponse(get_auto_executor(asset).ai_settings)
+    guest_id = _get_guest_id(request) if request else None
+
+    return JSONResponse(get_auto_executor(asset, guest_id=guest_id).ai_settings)
+
+def _retrain_ml_engines(data: dict):
+    from backend.btc.ml_engine import get_ml_engine
+    style = data.get("tradingStyle", "SNIPER")
+    # Update settings for all active engine styles
+    for st in ["SNIPER", "MOMENTUM_SURFER", "AMBUSH", "CHOP"]:
+        eng = get_ml_engine(trading_style=st)
+        eng.apply_settings(data)
+        
+        # Force retraining using historical candles in the background
+        try:
+            from backend.btc.data_fetcher import fetch_15m_candles_history
+            from backend.btc.indicators import add_all_indicators
+            hist_df = fetch_15m_candles_history(days=60)
+            if hist_df is not None and not hist_df.empty:
+                df_ind = add_all_indicators(hist_df)
+                eng.self_train_on_historical_market(df_ind)
+        except Exception as e:
+            pass
 
 @app.post("/api/engine/{asset}/trade/ai_settings", dependencies=[Depends(require_auth)])
-async def api_btc_trade_ai_settings(asset: str, request: Request):
+async def api_btc_trade_ai_settings(asset: str, request: Request, background_tasks: BackgroundTasks):
     try:
+        guest_id = _get_guest_id(request)
         data = await request.json()
-        res = get_auto_executor(asset).set_ai_settings(data)
-        from backend.btc.ml_engine import get_ml_engine
-        style = data.get("tradingStyle", "SNIPER")
-        # Update settings for all active engine styles
-        for st in ["SNIPER", "MOMENTUM_SURFER", "AMBUSH", "CHOP"]:
-            eng = get_ml_engine(trading_style=st)
-            eng.apply_settings(data)
-            
-            # Force immediate synchronous retraining using historical candles
-            try:
-                from backend.btc.data_fetcher import fetch_15m_candles_history
-                from backend.btc.indicators import add_all_indicators
-                hist_df = fetch_15m_candles_history(days=60)
-                if hist_df is not None and not hist_df.empty:
-                    df_ind = add_all_indicators(hist_df)
-                    eng.self_train_on_historical_market(df_ind)
-            except Exception as e:
-                pass
+        res = get_auto_executor(asset, guest_id=guest_id).set_ai_settings(data)
+        if not guest_id:
+            # Only retrain ML engines for owner, not guests
+            background_tasks.add_task(_retrain_ml_engines, data)
         return JSONResponse({"status": "ok", "settings": data})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)})
@@ -720,26 +1073,78 @@ async def api_btc_trade_ai_settings(asset: str, request: Request):
 @app.post("/api/engine/{asset}/trade/risk_limits", dependencies=[Depends(require_auth)])
 def api_btc_trade_risk_limits(asset: str, 
     max_daily_risk: Optional[float] = Query(None),
-    max_daily_trades: Optional[int] = Query(None)
+    max_daily_trades: Optional[int] = Query(None),
+    request: Request = None
 ):
     """Set maximum daily risk ($) and maximum daily trades."""
-    res = get_auto_executor(asset).set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
+    guest_id = _get_guest_id(request) if request else None
+
+    res = get_auto_executor(asset, guest_id=guest_id).set_risk_limits(max_daily_risk=max_daily_risk, max_daily_trades=max_daily_trades)
     return JSONResponse(res)
 
 @app.post("/api/engine/{asset}/trade/manual", dependencies=[Depends(require_auth)])
-def api_btc_trade_manual(asset: str, direction: DirectionEnum = Query(...)):
-    """1-Click manual execution for ABOVE (Yes) or BELOW (No)."""
+def api_btc_trade_manual(asset: str, direction: DirectionEnum = Query(...), lots: Optional[float] = Query(None), request: Request = None):
+    """1-Click manual execution for Spot BUY/SELL or Binary ABOVE/BELOW."""
     try:
-        res = get_auto_executor(asset).execute_manual_trade(direction.value)
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.paper_trader import open_position
+            from backend.forex.data_fetcher import get_forex_ticker
+            from backend.forex.analyzer import analyze_forex_pair
+            
+            side = "BUY" if direction.value in ["BUY", "ABOVE"] else "SELL"
+            ticker = get_forex_ticker(asset.upper())
+            curr_price = float(ticker.get("price", 1.0))
+            analysis = analyze_forex_pair(asset.upper(), "15m")
+            sl = analysis.get("sl")
+            tp = analysis.get("tp")
+            size_units = int(round(lots * 100_000)) if lots and lots > 0 else 10000
+            lots_fmt = size_units / 100_000
+            pos = open_position(asset.upper(), side, size_units, curr_price, sl, tp)
+            return JSONResponse({
+                "success": True,
+                "trade": {
+                    "recommendation": f"{side} {lots_fmt:.2f} Lots {asset.upper()}",
+                    "side": side,
+                    "price": curr_price,
+                    "sl": sl,
+                    "tp": tp,
+                    "lots": lots_fmt
+                }
+            })
+
+        guest_id = _get_guest_id(request) if request else None
+
+        res = get_auto_executor(asset, guest_id=guest_id).execute_manual_trade(direction.value)
         return JSONResponse(sanitize_btc_json(res))
     except Exception as e:
         return JSONResponse({"success": False, "error": f"Manual trade error: {str(e)}"}, status_code=500)
 
 @app.post("/api/engine/{asset}/trade/reverse", dependencies=[Depends(require_auth)])
-def api_btc_trade_reverse(asset: str):
+def api_btc_trade_reverse(asset: str, request: Request = None):
     """1-Click manual reverse of open position."""
     try:
-        executor = get_auto_executor(asset)
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.paper_trader import get_open_positions, close_position, open_position
+            from backend.forex.data_fetcher import get_forex_ticker
+            from backend.forex.analyzer import analyze_forex_pair
+            ticker = get_forex_ticker(asset.upper())
+            curr_price = float(ticker.get("price", 1.0))
+            open_pos = [p for p in get_open_positions() if p["pair"] == asset.upper()]
+            if not open_pos:
+                return JSONResponse({"success": False, "error": f"No open positions for {asset.upper()} to reverse."})
+            last_pos = open_pos[-1]
+            old_side = last_pos["side"]
+            new_side = "SELL" if old_side == "BUY" else "BUY"
+            close_position(last_pos["id"], curr_price, "REVERSE")
+            analysis = analyze_forex_pair(asset.upper(), "15m")
+            new_pos = open_position(asset.upper(), new_side, last_pos.get("size", 10000), curr_price, analysis.get("sl"), analysis.get("tp"))
+            return JSONResponse({"success": True, "trade": new_pos})
+
+        guest_id = _get_guest_id(request) if request else None
+
+        executor = get_auto_executor(asset, guest_id=guest_id)
         trades = executor.get_trades_history()
         open_trades = [t for t in trades if t.get("status") == "OPEN"]
         if not open_trades:
@@ -762,18 +1167,67 @@ def api_btc_trade_reverse(asset: str):
         return JSONResponse({"success": False, "error": f"Server Error: {str(e)}"})
 
 @app.post("/api/engine/{asset}/trade/close", dependencies=[Depends(require_auth)])
-def api_btc_trade_close(asset: str):
+def api_btc_trade_close(asset: str, request: Request = None):
     """1-Click manual close of all open trades."""
     try:
-        res = get_auto_executor(asset).close_open_trades()
+        from backend.forex.auto_executor import ACTIVE_PAIRS
+        if asset.upper() in ACTIVE_PAIRS:
+            from backend.forex.paper_trader import get_open_positions, close_position
+            from backend.forex.data_fetcher import get_forex_ticker
+            ticker = get_forex_ticker(asset.upper())
+            curr_price = float(ticker.get("price", 1.0))
+            open_pos = [p for p in get_open_positions() if p["pair"] == asset.upper()]
+            closed = []
+            for p in open_pos:
+                c = close_position(p["id"], curr_price, "MANUAL_CLOSE")
+                if c: closed.append(c)
+            return JSONResponse({"success": True, "closed_count": len(closed)})
+
+        guest_id = _get_guest_id(request) if request else None
+
+        res = get_auto_executor(asset, guest_id=guest_id).close_open_trades()
         return JSONResponse(sanitize_btc_json(res))
     except Exception as e:
         return JSONResponse({"success": False, "error": f"Close trade error: {str(e)}"}, status_code=500)
 
 @app.get("/api/engine/{asset}/trade/history", dependencies=[Depends(require_auth)])
-def api_btc_trade_history(asset: str, mode: Optional[str] = None):
+def api_btc_trade_history(asset: str, mode: Optional[str] = None, request: Request = None):
     """Returns list of all historical trades and P&L results."""
-    history = get_auto_executor(asset).get_trades_history()
+    from backend.forex.auto_executor import ACTIVE_PAIRS
+    if asset.upper() in ACTIVE_PAIRS:
+        from backend.forex.paper_trader import get_trade_history
+        history = get_trade_history()
+        pair_trades = [t for t in history if t.get("pair") == asset.upper()]
+        res = []
+        for t in pair_trades:
+            is_win = float(t.get("realized_pnl", 0)) > 0
+            size_units = int(t.get("size", 10000))
+            lots = size_units / 100000
+            res.append({
+                "id": t.get("id"),
+                "ticker": f"{t.get('pair')} SPOT",
+                "side": t.get("side"),
+                "direction": t.get("side"),
+                "count": f"{lots:.2f} Lots",
+                "entry_price": t.get("entry_price"),
+                "exit_price": t.get("close_price"),
+                "pnl": t.get("realized_pnl", 0.0),
+                "result": "WIN" if is_win else "LOSS",
+                "status": "CLOSED",
+                "mode": "PAPER",
+                "timestamp": t.get("opened_at"),
+                "settled_at": t.get("closed_at"),
+                "exit_reason": t.get("close_reason", "MANUAL"),
+                "recommendation": f"{t.get('side')} {lots:.2f} Lots {t.get('pair')}",
+                "conviction_grade": "FOREX AI",
+                "conviction_badge": "SPOT FX",
+                "catalysts": [f"SL: {t.get('sl', 'N/A')}", f"TP: {t.get('tp', 'N/A')}"]
+            })
+        return JSONResponse(res)
+
+    guest_id = _get_guest_id(request) if request else None
+
+    history = get_auto_executor(asset, guest_id=guest_id).get_trades_history()
     if mode:
         history = [t for t in history if t.get("mode") == mode.upper()]
     return JSONResponse(sanitize_btc_json(history[::-1]))
@@ -784,46 +1238,54 @@ def api_btc_calibration_drift(asset: str, min_samples: int = 40, window: int = 1
     return JSONResponse(sanitize_btc_json(res))
 
 @app.get("/api/engine/{asset}/mode", dependencies=[Depends(require_auth)])
-def api_btc_mode(asset: str):
+def api_btc_mode(asset: str, request: Request = None):
+    guest_id = _get_guest_id(request) if request else None
+
+    if guest_id:
+        return JSONResponse({"mode": "PAPER"})
     return JSONResponse({"mode": get_auto_executor(asset).mode})
 
 @app.get("/api/engine/{asset}/paper/balance", dependencies=[Depends(require_auth)])
-def api_btc_paper_balance(asset: str):
+def api_btc_paper_balance(asset: str, request: Request = None):
     from backend.btc.paper_balance import load_balance
-    return JSONResponse({"balance": load_balance()})
+    guest_id = _get_guest_id(request) if request else None
+
+    return JSONResponse({"balance": load_balance(guest_id=guest_id)})
 
 @app.post("/api/engine/{asset}/paper/balance/reset", dependencies=[Depends(require_auth)])
-def api_btc_paper_balance_reset(asset: str):
+def api_btc_paper_balance_reset(asset: str, request: Request = None):
     from backend.btc.paper_balance import reset_balance
-    new_bal = reset_balance()
+    guest_id = _get_guest_id(request) if request else None
+
+    new_bal = reset_balance(guest_id=guest_id)
     return JSONResponse({"balance": new_bal})
 
 # ── Scalp Engine Endpoints ────────────────────────────────────────────
 from backend.btc.scalp_engine import get_scalp_engine
 
-@app.post("/api/engine/{asset}/scalp/start", dependencies=[Depends(require_auth)])
+@app.post("/api/engine/{asset}/scalp/start", dependencies=[Depends(require_auth), Depends(require_owner)])
 def api_btc_scalp_start(asset: str):
     """Start the scalp engine background monitor."""
     get_scalp_engine(asset).start()
     return JSONResponse({"status": "scalp engine started"})
 
-@app.post("/api/engine/{asset}/scalp/stop", dependencies=[Depends(require_auth)])
+@app.post("/api/engine/{asset}/scalp/stop", dependencies=[Depends(require_auth), Depends(require_owner)])
 def api_btc_scalp_stop(asset: str):
     """Stop the scalp engine background monitor."""
     get_scalp_engine(asset).stop()
     return JSONResponse({"status": "scalp engine stopped"})
 
-@app.get("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth)])
+@app.get("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth), Depends(require_owner)])
 def api_btc_scalp_config(asset: str):
     """Get current scalp engine configuration."""
     return JSONResponse(get_scalp_engine(asset).load_config())
 
-@app.get("/api/engine/{asset}/scalp/status", dependencies=[Depends(require_auth)])
+@app.get("/api/engine/{asset}/scalp/status", dependencies=[Depends(require_auth), Depends(require_owner)])
 def api_btc_scalp_status(asset: str):
     """Get current scalp engine runtime status and monitored positions."""
     return JSONResponse(get_scalp_engine(asset).get_status())
 
-@app.patch("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth)])
+@app.patch("/api/engine/{asset}/scalp/config", dependencies=[Depends(require_auth), Depends(require_owner)])
 async def api_btc_scalp_config_update(asset: str, config: ScalpConfigUpdate):
     """Update scalp engine configuration with validated input."""
     body = config.model_dump(exclude_none=True)
@@ -832,15 +1294,88 @@ async def api_btc_scalp_config_update(asset: str, config: ScalpConfigUpdate):
     get_scalp_engine(asset).save_config(body)
     return JSONResponse({"status": "config updated", "config": get_scalp_engine(asset).load_config()})
 
+# ── Guest Admin Endpoints ─────────────────────────────────────────────
+
+@app.post("/api/admin/guests/create", dependencies=[Depends(require_auth), Depends(require_owner)])
+async def api_admin_guest_create(request: Request):
+    """Create a new guest session. Returns the guest_id and shareable URL."""
+    from backend.guest_manager import create_guest
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    label = body.get("label", "")
+    guest = create_guest(label=label)
+    # Build a shareable URL
+    host = request.headers.get("host", "localhost:8056")
+    scheme = "https" if "https" in str(request.url) else "http"
+    guest["guest_url"] = f"{scheme}://{host}/?guest={guest['guest_id']}"
+    return JSONResponse(guest)
+
+@app.get("/api/admin/guests", dependencies=[Depends(require_auth), Depends(require_owner)])
+def api_admin_guest_list():
+    """List all guest sessions with balance and trade stats."""
+    from backend.guest_manager import list_guests
+    return JSONResponse({"guests": list_guests()})
+
+@app.delete("/api/admin/guests/{guest_id}", dependencies=[Depends(require_auth), Depends(require_owner)])
+def api_admin_guest_delete(guest_id: str):
+    """Delete a guest and all their data."""
+    from backend.guest_manager import delete_guest
+    success = delete_guest(guest_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Guest not found")
+    return JSONResponse({"status": "deleted", "guest_id": guest_id})
+
+# ── Guest Identity Endpoint ───────────────────────────────────────────
+
+@app.get("/api/guest/me")
+def api_guest_me(request: Request):
+    """Returns the current guest identity, or null if not a guest."""
+    guest_id = _get_guest_id(request)
+    if not guest_id:
+        return JSONResponse({"is_guest": False})
+    from backend.guest_manager import _load_registry
+    registry = _load_registry()
+    meta = registry.get(guest_id, {})
+    return JSONResponse({
+        "is_guest": True,
+        "guest_id": guest_id,
+        "label": meta.get("label", ""),
+    })
+
 @app.get("/api/engine/{asset}/candles")
 def api_btc_candles(asset: str, timeframe: str = "15m"):
     """
     Returns formatted candlestick data + indicators + pattern markers + volume series
     for TradingView Lightweight Charts for the selected timeframe.
     """
+    from backend.forex.auto_executor import ACTIVE_PAIRS
+    
     try:
-        df, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
-        df_ind = add_all_indicators(df)
+        is_fx = asset in ACTIVE_PAIRS
+        prec = 5 if is_fx else 2
+
+        if is_fx:
+            from backend.forex.data_fetcher import fetch_forex_candles
+            from backend.btc.indicators import add_all_indicators
+            from backend.forex.analyzer import analyze_forex_pair
+            df = fetch_forex_candles(asset, timeframe)
+            df_ind = add_all_indicators(df)
+            fx_analysis = analyze_forex_pair(asset, timeframe)
+            analysis = {
+                "trade_setup": {
+                    "entry_price": fx_analysis.get("price"),
+                    "stop_loss": fx_analysis.get("sl"),
+                    "take_profit_1": fx_analysis.get("tp")
+                },
+                "target_benchmark": {
+                    "target_price": fx_analysis.get("tp") or fx_analysis.get("price")
+                }
+            }
+        else:
+            df, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
+            df_ind = add_all_indicators(df)
 
         candles = []
         ema9_data = []
@@ -853,20 +1388,20 @@ def api_btc_candles(asset: str, timeframe: str = "15m"):
             t = int(row["time"])
             candles.append({
                 "time": t,
-                "open": round(float(row["open"]), 2),
-                "high": round(float(row["high"]), 2),
-                "low": round(float(row["low"]), 2),
-                "close": round(float(row["close"]), 2),
+                "open": round(float(row["open"]), prec),
+                "high": round(float(row["high"]), prec),
+                "low": round(float(row["low"]), prec),
+                "close": round(float(row["close"]), prec),
             })
 
             if not pd.isna(row.get("ema_9", None)):
-                ema9_data.append({"time": t, "value": round(float(row["ema_9"]), 2)})
+                ema9_data.append({"time": t, "value": round(float(row["ema_9"]), prec)})
             if not pd.isna(row.get("ema_21", None)):
-                ema21_data.append({"time": t, "value": round(float(row["ema_21"]), 2)})
+                ema21_data.append({"time": t, "value": round(float(row["ema_21"]), prec)})
             if not pd.isna(row.get("ema_50", None)):
-                ema50_data.append({"time": t, "value": round(float(row["ema_50"]), 2)})
+                ema50_data.append({"time": t, "value": round(float(row["ema_50"]), prec)})
             if not pd.isna(row.get("ema_200", None)):
-                ema200_data.append({"time": t, "value": round(float(row["ema_200"]), 2)})
+                ema200_data.append({"time": t, "value": round(float(row["ema_200"]), prec)})
 
         for j in range(max(0, len(df_ind) - 20), len(df_ind)):
             sub = df_ind.iloc[: j + 1]
@@ -882,7 +1417,12 @@ def api_btc_candles(asset: str, timeframe: str = "15m"):
                     "text": p["name"],
                 })
 
-        ticker = get_asset_ticker(asset)
+        if asset in ACTIVE_PAIRS:
+            from backend.forex.data_fetcher import get_forex_ticker
+            ticker = get_forex_ticker(asset)
+        else:
+            ticker = get_asset_ticker(asset)
+            
         volume_series = format_volume_series(df_ind)
         target_benchmark = analysis.get("target_benchmark", {})
 
@@ -925,11 +1465,21 @@ def _auto_trader_background_loop():
             _last_autotrader_heartbeat = time.time()
             for asset in ["BTC", "ETH", "GOLD"]:
                 try:
-                    get_auto_executor(asset).check_and_execute_rollover()
-                except Exception:
-                    pass
+                    ae = get_auto_executor(asset)
+                    ae.check_and_execute_rollover()
+                    ae.evaluate_and_execute_saas_users()
+                except Exception as e:
+                    import traceback
+                    logger.error(f"[AutoTrader Loop] Exception for {asset}: {e}")
+                    traceback.print_exc()
             settle_tick += 1
             if settle_tick % 5 == 0:  # Fires every 10s (5 ticks * 2s)
+                try:
+                    from backend.saas_settler import settle_saas_trades, process_auto_force_trades
+                    settle_saas_trades()
+                    process_auto_force_trades()
+                except Exception as e:
+                    logger.error(f"[SaaSSettler] execution error: {e}")
                 for asset in ["BTC", "ETH", "GOLD"]:
                     try:
                         get_auto_executor(asset).check_settlements()
@@ -972,6 +1522,33 @@ def _watchdog_monitor_loop():
         except Exception as e:
             logger.error(f"[AutoTrader Watchdog] Error: {e}")
 
+# =====================================================================
+# FOREX ROUTES & INTEGRATION
+# =====================================================================
+from backend.forex.auto_executor import start_forex_executor, get_forex_status
+from backend.forex.paper_trader import get_balance as get_forex_balance, get_open_positions as get_forex_positions, get_trade_history as get_forex_history
+from backend.forex.analyzer import analyze_forex_pair
+from backend.forex.data_fetcher import get_forex_ticker
+
+@app.get("/api/forex/trade/status")
+def api_forex_status():
+    return JSONResponse({
+        "status": get_forex_status(),
+        "balance": get_forex_balance(),
+        "positions": get_forex_positions(),
+        "history": get_forex_history()
+    })
+
+@app.get("/api/forex/analysis/{pair}")
+def api_forex_analysis(pair: str):
+    ticker = get_forex_ticker(pair)
+    analysis = analyze_forex_pair(pair)
+    return JSONResponse({
+        "pair": pair,
+        "ticker": ticker,
+        "analysis": analysis
+    })
+
 @app.on_event("startup")
 def start_background_tasks():
     global _autotrader_thread
@@ -980,6 +1557,9 @@ def start_background_tasks():
     t2 = threading.Thread(target=_watchdog_monitor_loop, daemon=True, name="AutoTraderWatchdog")
     t2.start()
     logger.info("[AutoTrader] Background thread & watchdog monitor started.")
+    
+    # Start Forex Engine
+    start_forex_executor()
 
 # Mount static directory and route index
 
@@ -997,20 +1577,12 @@ def get_ui_version():
 
 @app.api_route("/", methods=["GET", "HEAD"])
 def serve_index():
-    index_path = os.path.join(STATIC_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(
-            index_path,
-            headers={
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0"
-            }
-        )
-    return {"message": "ApexProps Backend Running. Frontend index.html not found."}
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/login.html")
 
 @app.api_route("/trades", methods=["GET", "HEAD"])
 @app.api_route("/trade-list", methods=["GET", "HEAD"])
+@app.api_route("/trades.html", methods=["GET", "HEAD"])
 def serve_trades():
     trades_path = os.path.join(STATIC_DIR, "trades.html")
     if os.path.exists(trades_path):
@@ -1024,3 +1596,13 @@ def serve_trades():
         )
     return {"message": "Trade list page not found."}
 
+
+
+@app.get("/login.html")
+def get_login():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "static", "login.html"))
+
+@app.get("/saas_dashboard.html")
+@app.get("/saas_dashboard")
+def get_saas_dashboard():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "..", "static", "saas_dashboard.html"))
