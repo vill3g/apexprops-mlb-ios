@@ -433,5 +433,19 @@
         "mode": "PAPER",
         "reason": "STOP_LOSS (-16.3%)",
         "pnl": -8.640000000000002
+    },
+    {
+        "id": "d2b35279-b727-4fcc-83d7-ef909fdc8131",
+        "timestamp": "2026-09-23 03:45:01 PM ET",
+        "ticker": "KXBTC15M-26SEP231600-00",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 64,
+        "entry_price": 0.44,
+        "count": 113,
+        "status": "OPEN",
+        "mode": "PAPER",
+        "reason": "AI_COPY (SNIPER)"
     }
 ]
