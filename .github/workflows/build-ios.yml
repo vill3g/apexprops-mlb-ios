@@ -1,0 +1,47 @@
+
+name: Build iOS Sideload IPA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Add iOS Platform
+        run: npx cap add ios
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Build iOS App (Unsigned for Sideloading)
+        run: |
+          cd ios/App
+          # We build an unsigned payload because Sideloadly/AltStore signs it on the users machine
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
+          
+          # Package the .app into a Payload folder to create an .ipa
+          mkdir -p Payload
+          mv build/Release-iphoneos/App.app Payload/
+          zip -r ../../ShadowTrade.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShadowTrade-iOS
+          path: ShadowTrade.ipa
+

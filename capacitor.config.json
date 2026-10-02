@@ -1,21 +1,14 @@
+
 {
-  "appId": "com.btc15m.app",
-  "appName": "Kalshi_AiTrader",
+  "appId": "com.vill3.kalshitrader",
+  "appName": "ShadowTrade",
   "webDir": "static",
   "bundledWebRuntime": false,
-  "ios": {
-    "contentInset": "always"
-  },
   "server": {
-    "androidScheme": "https",
-    "iosScheme": "https",
-    "allowNavigation": [
-      "*.tradingview.com",
-      "*.tradingview-widget.com",
-      "s3.tradingview.com",
-      "s.tradingview.com",
-      "*.coinbase.com",
-      "*.binance.com"
-    ]
+    "cleartext": true
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": true
   }
 }

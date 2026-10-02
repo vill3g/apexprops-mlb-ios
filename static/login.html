@@ -1,6 +1,44 @@
 <!DOCTYPE html>
 <html lang="en" class="dark" style="background-color: #000000; color-scheme: dark;">
 <head>
+
+    <!-- AUTO-DETECT API BACKEND -->
+    <script>
+        window.API_BASE_URL = "";
+        
+        (async function initApiBackend() {
+            const isApp = window.location.protocol === "file:" || window.location.protocol.includes("capacitor");
+            if (!isApp && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.startsWith("192.168.")) {
+                return; 
+            }
+
+            const localUrl = "http://192.168.1.194:8058";
+            const remoteUrl = "https://moneyprinter.ngrok.app";
+            const originalFetch = window.fetch;
+            
+            try {
+                const controller = new AbortController();
+                const id = setTimeout(() => controller.abort(), 1200);
+                const res = await originalFetch(localUrl + "/api/health", { signal: controller.signal, mode: "no-cors" }).catch(e => null);
+                clearTimeout(id);
+                if (res) {
+                    window.API_BASE_URL = localUrl;
+                } else {
+                    throw new Error("Local ping failed");
+                }
+            } catch (e) {
+                window.API_BASE_URL = remoteUrl;
+            }
+            
+            window.fetch = async function() {
+                let [resource, config] = arguments;
+                if (typeof resource === "string" && resource.startsWith("/api/")) {
+                    resource = window.API_BASE_URL + resource;
+                }
+                return originalFetch(resource, config);
+            };
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
