@@ -1,0 +1,13 @@
+{
+  "trained_at": 1790547486.489707,
+  "episodes_train": 22450,
+  "episodes_test": 3962,
+  "test_trades": 3962,
+  "max_entry_seconds": 240,
+  "enabled": true,
+  "test_net_per_traded_market": -0.03328790572185765,
+  "test_ci95": [
+    -0.04472599996775619,
+    -0.02265358210354619
+  ]
+}

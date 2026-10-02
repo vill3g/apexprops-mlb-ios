@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#070b14] text-slate-100 antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#070b14">
+    <title>Kalshi Admin Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* iOS Safe Area Support */
+        .pt-safe { padding-top: max(env(safe-area-inset-top), 14px); }
+        .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        /* Hide scrollbars for clean native look */
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Smooth iOS Switch */
+        .ios-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .ios-switch input { opacity: 0; width: 0; height: 0; }
+        .ios-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #334155;
+            transition: .25s ease-in-out;
+            border-radius: 24px;
+        }
+        .ios-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        input:checked + .ios-slider {
+            background-color: #06b6d4;
+        }
+        input:checked + .ios-slider:before {
+            transform: translateX(20px);
+        }
+        input:disabled + .ios-slider {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-[#070b14] text-slate-100 select-none">
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-sm"></div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="mainView" class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- HEADER (iOS Style) -->
+        <header class="pt-safe px-4 pb-3 bg-[#0c1222]/90 backdrop-blur-md border-b border-slate-800/80 shrink-0 z-30">
+            <div class="flex items-center justify-between">
+                <!-- Back to SaaS Dashboard -->
+                <a href="/saas_dashboard.html" class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white active:scale-95 transition-all py-1 px-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                    <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Title & Admin Badge -->
+                <div class="text-center">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <span class="text-indigo-400 font-bold text-sm tracking-wide">ADMIN CONSOLE</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    </div>
+                    <div id="adminUserGreeting" class="text-[10px] text-slate-400 font-mono">Authenticated</div>
+                </div>
+
+                <!-- Refresh Button -->
+                <button onclick="refreshData()" class="p-1.5 text-slate-400 hover:text-white active:rotate-180 transition-all duration-300 rounded-lg bg-slate-800/60 border border-slate-700/60" title="Refresh">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- SCROLLABLE CONTENT BODY -->
+        <main class="flex-1 overflow-y-auto px-3.5 py-3 space-y-3.5 pb-safe">
+
+            <!-- MASTER ENGINE CONTROL BANNER -->
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/20 rounded-2xl p-3.5 shadow-lg relative overflow-hidden">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div id="masterStatusPulse" class="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"></div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase font-mono tracking-wider font-semibold">Master Trading Engine</div>
+                            <div id="masterStatusLabel" class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span>ONLINE</span>
+                                <span id="broadcastBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">BROADCASTING</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Master Killswitch / Resume Button -->
+                    <button id="masterKillBtn" onclick="toggleMasterTrading()" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 4.243a9 9 0 01-2.829-2.829m0 0L3 21m2.829-2.829L3 15.364m2.829 2.829a9 9 0 010-12.728m0 0l2.829 2.829"/></svg>
+                        <span id="masterKillBtnText">KILL ALL</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI STATS CARDS -->
+            <div class="grid grid-cols-2 gap-2 text-center">
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Total Users</div>
+                    <div id="kpiTotalUsers" class="text-lg font-bold font-mono text-white mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Active AI Bots</div>
+                    <div id="kpiActiveAi" class="text-lg font-bold font-mono text-cyan-400 mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Live Trading</div>
+                    <div id="kpiLiveTrading" class="text-lg font-bold font-mono text-amber-400 mt-0.5">--</div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Total P&L</div>
+                    <div id="kpiTotalPnl" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">$0.00</div>
+                </div>
+            </div>
+
+            <!-- SEGMENTED NAVIGATION TABS (Users vs Tickets) -->
+            <div class="flex p-1 bg-slate-900/90 border border-slate-800 rounded-xl">
+                <button id="tabBtnUsers" onclick="switchTab('users')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span>Users</span>
+                    <span id="tabCountUsers" class="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 text-indigo-200 font-mono">0</span>
+                </button>
+                <button id="tabBtnTickets" onclick="switchTab('tickets')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                    <span>Support Tickets</span>
+                    <span id="tabCountTickets" class="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500/20 text-rose-300 font-mono">0</span>
+                </button>
+            </div>
+
+            <!-- USERS TAB VIEW -->
+            <div id="viewUsers" class="space-y-3">
+                <!-- Search & Filters -->
+                <div class="space-y-2">
+                    <div class="relative">
+                        <input type="text" id="userSearchInput" oninput="applyUserFilters()" placeholder="Search username, ID..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors">
+                        <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+
+                    <!-- Filter Pills -->
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] font-medium">
+                        <button onclick="setUserFilter('ALL')" id="fltAll" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold shrink-0">All</button>
+                        <button onclick="setUserFilter('LIVE')" id="fltLive" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white shrink-0">Live Only</button>
+                        <button onclick="setUserFilter('PAPER')" id="fltPaper" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white shrink-0">Paper Only</button>
+                        <button onclick="setUserFilter('AI_ON')" id="fltAiOn" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white shrink-0">AI Active</button>
+                        <button onclick="setUserFilter('AI_OFF')" id="fltAiOff" class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white shrink-0">AI Paused</button>
+                    </div>
+                </div>
+
+                <!-- Users Card List -->
+                <div id="usersListContainer" class="space-y-2.5">
+                    <div class="text-center py-10 text-slate-500 text-xs font-mono">Loading user list...</div>
+                </div>
+            </div>
+
+            <!-- TICKETS TAB VIEW (Hidden by default) -->
+            <div id="viewTickets" class="space-y-3 hidden">
+                <div class="flex items-center gap-1.5 text-[11px]">
+                    <button onclick="setTicketFilter('ALL')" id="tktFltAll" class="px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold">All</button>
+                    <button onclick="setTicketFilter('OPEN')" id="tktFltOpen" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-300">Open</button>
+                    <button onclick="setTicketFilter('RESOLVED')" id="tktFltResolved" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-300">Resolved</button>
+                </div>
+
+                <div id="ticketsListContainer" class="space-y-2.5">
+                    <div class="text-center py-10 text-slate-500 text-xs font-mono">Loading tickets...</div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FULLSCREEN USER EDITOR SLIDE-OVER SHEET -->
+    <div id="userEditorSheet" class="fixed inset-0 z-50 bg-[#070b14] flex flex-col h-full overflow-hidden transform translate-x-full transition-transform duration-300 ease-out">
+        
+        <!-- Sheet Header -->
+        <header class="pt-safe px-4 pb-3 bg-[#0c1222] border-b border-slate-800 flex items-center justify-between shrink-0">
+            <button onclick="closeUserEditor()" class="flex items-center gap-1 text-xs font-semibold text-slate-300 active:scale-95 py-1 px-2 rounded-lg bg-slate-800/80 border border-slate-700">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                <span>Users</span>
+            </button>
+            <div class="text-center">
+                <div id="editorUsername" class="text-sm font-bold text-white tracking-wide">--</div>
+                <div id="editorUserSubtitle" class="text-[10px] text-slate-400 font-mono">User #--</div>
+            </div>
+            <button onclick="saveUserConfig()" id="editorSaveBtn" class="px-3 py-1 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white active:scale-95 transition-all shadow-sm">
+                Save
+            </button>
+        </header>
+
+        <!-- Sheet Body -->
+        <div class="flex-1 overflow-y-auto px-4 py-3 space-y-4 pb-safe">
+            
+            <!-- User Summary Box -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3 grid grid-cols-3 gap-2 text-center text-xs font-mono">
+                <div>
+                    <div class="text-[9px] text-slate-400 uppercase font-sans">Trading Mode</div>
+                    <div id="edStatMode" class="text-white font-bold mt-0.5">--</div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-slate-400 uppercase font-sans">Net P&L</div>
+                    <div id="edStatPnl" class="text-emerald-400 font-bold mt-0.5">$0.00</div>
+                </div>
+                <div>
+                    <div class="text-[9px] text-slate-400 uppercase font-sans">Win Rate</div>
+                    <div id="edStatWinRate" class="text-indigo-300 font-bold mt-0.5">0%</div>
+                </div>
+            </div>
+
+            <!-- Section: Primary Autonomous Toggles -->
+            <div class="space-y-2">
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">Execution Controls</div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl divide-y divide-slate-800/80">
+                    
+                    <!-- AI Auto-Trader -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">AI Auto-Trader</div>
+                            <div class="text-[10px] text-slate-400">Autonomous trade execution on signals</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_ai_enabled">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Auto Force Trade -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-amber-300">Continuous Force Trade</div>
+                            <div class="text-[10px] text-slate-400">Bypasses PASS on every candle</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_auto_force_trade">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Ignore Pass Technical -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Ignore Technical PASS</div>
+                            <div class="text-[10px] text-slate-400">Takes ML signal even if chart passes</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_ignore_pass_technical">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Edge Gate -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Edge Gate Filter</div>
+                            <div class="text-[10px] text-slate-400">Rejects trades with < 2¢ positive edge</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_edge_gate_enabled">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Trailing Stop -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Trailing Stop Loss</div>
+                            <div class="text-[10px] text-slate-400">Protects floating profits automatically</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_trailing_stop_enabled">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Second Entry Averaging -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Second Entry Averaging</div>
+                            <div class="text-[10px] text-slate-400">Adds position on favorable pullback</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_second_entry_enabled">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Kelly Criterion Sizing -->
+                    <div class="flex items-center justify-between p-3">
+                        <div>
+                            <div class="text-xs font-bold text-white">Kelly Criterion Sizing</div>
+                            <div class="text-[10px] text-slate-400">Scale position based on ML probability (Default: OFF)</div>
+                        </div>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="ed_use_kelly_criterion">
+                            <span class="ios-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Trading Strategy & Styles -->
+            <div class="space-y-2">
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">Strategy & Sizing</div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                    
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Trading Style</label>
+                        <select id="ed_trading_style" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <option value="AUTO">AUTO (Adaptive Market Regime)</option>
+                            <option value="SNIPER">SNIPER (High Confluence)</option>
+                            <option value="MOMENTUM_SURFER">MOMENTUM_SURFER (1M Flow)</option>
+                            <option value="AMBUSH">AMBUSH (Exhaustion Reversal)</option>
+                            <option value="CHOP">CHOP (Band Reversion)</option>
+                            <option value="CAPITAL_GUARD">CAPITAL_GUARD (Capital Protection)</option>
+                            <option value="PREDICTION">PREDICTION (AI Probability)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Signal Source</label>
+                        <select id="ed_signal_source" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <option value="BLEND">BLEND (Chart + ML Confluence)</option>
+                            <option value="AI_ONLY">AI_ONLY (Pure Machine Learning)</option>
+                            <option value="CHART_ONLY">CHART_ONLY (Pure Technicals)</option>
+                            <option value="RL_DQN">RL_DQN (Deep Q-Network Agent)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Trade Size ($)</label>
+                            <input type="number" id="ed_trade_size_dollars" step="1" min="1" max="250" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Max Daily Risk ($)</label>
+                            <input type="number" id="ed_max_daily_risk" step="5" min="10" max="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Take Profit (%)</label>
+                            <input type="number" id="ed_take_profit_pct" step="5" min="5" max="500" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Stop Loss (%)</label>
+                            <input type="number" id="ed_stop_loss_pct" step="5" min="5" max="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Actions & Audit -->
+            <div class="space-y-2">
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">Account Actions</div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2.5">
+                    
+                    <!-- View User Trades -->
+                    <button onclick="openUserTradesModal()" class="w-full py-2.5 px-3 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 flex items-center justify-center gap-2 active:scale-98 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <span>Audit User Recent Trades</span>
+                    </button>
+
+                    <!-- Reset Balance -->
+                    <button onclick="resetUserBalanceAction()" class="w-full py-2.5 px-3 rounded-lg text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center gap-2 active:scale-98 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Reset Paper Balance ($500)</span>
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- TRADES AUDIT MODAL -->
+    <div id="tradesModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex-col justify-end">
+        <div class="bg-[#0c1222] border-t border-slate-700 rounded-t-2xl max-h-[85vh] flex flex-col overflow-hidden pb-safe">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <div id="tradesModalTitle" class="text-xs font-bold text-white">Trade History</div>
+                    <div id="tradesModalSubtitle" class="text-[10px] text-slate-400 font-mono">--</div>
+                </div>
+                <button onclick="closeTradesModal()" class="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="tradesModalContainer" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <!-- Trades items rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TICKET DETAIL MODAL -->
+    <div id="ticketModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex-col justify-end">
+        <div class="bg-[#0c1222] border-t border-slate-700 rounded-t-2xl max-h-[85vh] flex flex-col overflow-hidden pb-safe">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <div id="ticketModalTitle" class="text-xs font-bold text-white">Ticket Details</div>
+                    <div id="ticketModalUser" class="text-[10px] text-slate-400 font-mono">--</div>
+                </div>
+                <button onclick="closeTicketModal()" class="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                    <div class="text-[10px] text-slate-400 font-mono uppercase font-bold mb-1">Issue Description</div>
+                    <div id="ticketModalIssue" class="text-xs text-slate-200 leading-relaxed break-words whitespace-pre-wrap">--</div>
+                </div>
+
+                <!-- AI Diagnosis Box -->
+                <div class="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <div class="text-[10px] text-indigo-300 font-mono uppercase font-bold flex items-center gap-1.5">
+                            <span>🤖</span> AI Dev Bot Diagnosis
+                        </div>
+                        <button id="btnRunDiagnosis" onclick="runTicketDiagnosis()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-500 active:scale-95 transition-all">
+                            Run Analysis
+                        </button>
+                    </div>
+                    <div id="ticketModalAiDiagnosis" class="text-[11px] text-indigo-200 leading-relaxed font-mono">
+                        No AI analysis run yet.
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2 pt-2">
+                    <button id="ticketResolveBtn" onclick="toggleTicketResolve()" class="flex-1 py-2.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 active:scale-95 transition-all text-center">
+                        Resolve Ticket
+                    </button>
+                    <button onclick="deleteTicketAction()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 active:scale-95 transition-all text-center">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE ADMIN JAVASCRIPT LOGIC -->
+    <script>
+        // --- State Management ---
+        let allUsers = [];
+        let allTickets = [];
+        let selectedUser = null;
+        let selectedTicket = null;
+        let activeTab = 'users';
+        let currentFilter = 'ALL';
+        let currentTicketFilter = 'ALL';
+        let masterTradingActive = true;
+
+        // --- Authentication Helper ---
+        function getAuthToken() {
+            const token = localStorage.getItem('saas_token') || localStorage.getItem('kalshi_token');
+            if (token) return token;
+            // Check cookie
+            const m = document.cookie.match(/(?:^|;\s*)saas_token=([^;]+)/);
+            return m ? m[1] : '';
+        }
+
+        function getAuthHeaders(extra = {}) {
+            const token = getAuthToken();
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json',
+                ...extra
+            };
+        }
+
+        // --- Toast System ---
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-500 text-white border-emerald-400',
+                error: 'bg-rose-500 text-white border-rose-400',
+                info: 'bg-slate-800 text-white border-slate-700'
+            };
+            el.className = `px-3.5 py-2 rounded-xl text-xs font-semibold shadow-2xl border transition-all duration-300 transform -translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => { el.classList.remove('-translate-y-2', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Tab Switching ---
+        function switchTab(tab) {
+            activeTab = tab;
+            const btnUsers = document.getElementById('tabBtnUsers');
+            const btnTickets = document.getElementById('tabBtnTickets');
+            const viewUsers = document.getElementById('viewUsers');
+            const viewTickets = document.getElementById('viewTickets');
+
+            if (tab === 'users') {
+                btnUsers.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+                btnTickets.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white";
+                viewUsers.classList.remove('hidden');
+                viewTickets.classList.add('hidden');
+            } else {
+                btnTickets.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+                btnUsers.className = "flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white";
+                viewTickets.classList.remove('hidden');
+                viewUsers.classList.add('hidden');
+            }
+        }
+
+        // --- Master Trading Toggle ---
+        async function fetchMasterStatus() {
+            try {
+                const res = await fetch('/api/trader/status', { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    masterTradingActive = data.is_running !== false && data.enabled !== false;
+                    updateMasterUI();
+                }
+            } catch(e) { console.warn('Could not fetch master status', e); }
+        }
+
+        function updateMasterUI() {
+            const pulse = document.getElementById('masterStatusPulse');
+            const label = document.getElementById('masterStatusLabel');
+            const btn = document.getElementById('masterKillBtn');
+            const btnText = document.getElementById('masterKillBtnText');
+
+            if (masterTradingActive) {
+                pulse.className = "w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]";
+                label.innerHTML = `<span>ONLINE</span> <span id="broadcastBadge" class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">BROADCASTING</span>`;
+                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30";
+                btnText.textContent = "KILL ALL";
+            } else {
+                pulse.className = "w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]";
+                label.innerHTML = `<span class="text-rose-400">STOPPED / PAUSED</span>`;
+                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30";
+                btnText.textContent = "RESUME";
+            }
+        }
+
+        async function toggleMasterTrading() {
+            const newTarget = !masterTradingActive;
+            const confirmMsg = newTarget ? "Resume Master AI Trading?" : "KILL ALL MASTER TRADING GLOBALLY?";
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const res = await fetch('/api/trader/enabled', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ enabled: newTarget })
+                });
+                if (res.ok) {
+                    masterTradingActive = newTarget;
+                    updateMasterUI();
+                    showToast(newTarget ? "Master Trading Resumed" : "All Master Trading Killed", newTarget ? "success" : "error");
+                } else {
+                    showToast("Failed to update Master state", "error");
+                }
+            } catch(e) {
+                showToast("Connection error updating Master", "error");
+            }
+        }
+
+        // --- Fetch & Render Users ---
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/admin/users', { headers: getAuthHeaders() });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        showToast("Admin session expired. Please sign in again.", "error");
+                        setTimeout(() => window.location.href = '/login.html', 1500);
+                        return;
+                    }
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                const data = await res.json();
+                allUsers = data.users || [];
+                renderUsersKPI();
+                applyUserFilters();
+            } catch(e) {
+                console.error(e);
+                document.getElementById('usersListContainer').innerHTML = `
+                    <div class="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-center">
+                        <div class="text-rose-400 font-bold text-xs mb-1">Failed to load users</div>
+                        <div class="text-slate-400 text-[10px] font-mono">${e.message}</div>
+                        <button onclick="fetchUsers()" class="mt-2.5 px-3 py-1 bg-slate-800 text-white rounded text-xs">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderUsersKPI() {
+            const total = allUsers.length;
+            const activeAi = allUsers.filter(u => u.ai_enabled && u.is_active).length;
+            const liveUsers = allUsers.filter(u => u.trading_mode === 'LIVE').length;
+            const totalPnl = allUsers.reduce((sum, u) => sum + (parseFloat(u.net_pnl) || 0), 0);
+
+            document.getElementById('kpiTotalUsers').textContent = total;
+            document.getElementById('kpiActiveAi').textContent = activeAi;
+            document.getElementById('kpiLiveTrading').textContent = liveUsers;
+            document.getElementById('tabCountUsers').textContent = total;
+
+            const pnlEl = document.getElementById('kpiTotalPnl');
+            pnlEl.textContent = (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toFixed(2);
+            pnlEl.className = `text-lg font-bold font-mono mt-0.5 ${totalPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+        }
+
+        function setUserFilter(flt) {
+            currentFilter = flt;
+            ['All', 'Live', 'Paper', 'AiOn', 'AiOff'].forEach(k => {
+                const el = document.getElementById('flt' + k);
+                if (el) el.className = "px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white shrink-0";
+            });
+            const activeEl = {
+                'ALL': 'fltAll',
+                'LIVE': 'fltLive',
+                'PAPER': 'fltPaper',
+                'AI_ON': 'fltAiOn',
+                'AI_OFF': 'fltAiOff'
+            }[flt];
+            if (activeEl && document.getElementById(activeEl)) {
+                document.getElementById(activeEl).className = "px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold shrink-0";
+            }
+            applyUserFilters();
+        }
+
+        function applyUserFilters() {
+            const query = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+            const filtered = allUsers.filter(u => {
+                if (query) {
+                    const matchName = (u.username || '').toLowerCase().includes(query);
+                    const matchId = String(u.id).includes(query);
+                    if (!matchName && !matchId) return false;
+                }
+                if (currentFilter === 'LIVE' && u.trading_mode !== 'LIVE') return false;
+                if (currentFilter === 'PAPER' && u.trading_mode !== 'PAPER') return false;
+                if (currentFilter === 'AI_ON' && !u.ai_enabled) return false;
+                if (currentFilter === 'AI_OFF' && u.ai_enabled) return false;
+                return true;
+            });
+            renderUserCards(filtered);
+        }
+
+        function renderUserCards(users) {
+            const container = document.getElementById('usersListContainer');
+            if (!users.length) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs font-mono">No users matching filter</div>`;
+                return;
+            }
+
+            container.innerHTML = users.map(u => {
+                const isLive = u.trading_mode === 'LIVE';
+                const pnl = parseFloat(u.net_pnl) || 0;
+                const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                const pnlFormatted = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+                const balFormatted = isLive 
+                    ? (u.kalshi_balance !== null ? `$${parseFloat(u.kalshi_balance).toFixed(2)}` : 'No Keys')
+                    : `$${parseFloat(u.paper_balance || 500).toFixed(2)}`;
+                const initial = (u.username || '?').charAt(0).toUpperCase();
+
+                return `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3 shadow-md active:border-slate-700 transition-all">
+                        <!-- Top Row: Avatar, Username, Badges -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center font-bold text-white text-xs">
+                                    ${initial}
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-bold text-white text-sm">${u.username}</span>
+                                        ${u.role === 'admin' ? '<span class="text-[9px] px-1.5 py-0.2 bg-indigo-500/20 text-indigo-300 rounded font-mono font-bold">ADMIN</span>' : ''}
+                                    </div>
+                                    <div class="text-[10px] text-slate-500 font-mono">ID #${u.id} • ${u.trading_style || 'AUTO'}</div>
+                                </div>
+                            </div>
+
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold font-mono ${isLive ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700'}">
+                                ${isLive ? 'LIVE' : 'PAPER'}
+                            </span>
+                        </div>
+
+                        <!-- Mid Row: Metrics Grid -->
+                        <div class="grid grid-cols-3 gap-2 py-1.5 px-2 bg-slate-950/60 rounded-xl border border-slate-800/80 text-center font-mono text-xs">
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-sans">Net P&L</div>
+                                <div class="font-bold ${pnlColor}">${pnlFormatted}</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-sans">Win Rate</div>
+                                <div class="font-bold text-indigo-300">${u.win_rate || 0}%</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] text-slate-400 font-sans">Balance</div>
+                                <div class="font-bold text-slate-200">${balFormatted}</div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Row: Quick AI Toggle & Manage Button -->
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex items-center gap-2">
+                                <label class="ios-switch">
+                                    <input type="checkbox" ${u.ai_enabled ? 'checked' : ''} onchange="toggleUserAiQuick(${u.id}, this.checked)">
+                                    <span class="ios-slider"></span>
+                                </label>
+                                <span class="text-[10px] font-mono font-bold ${u.ai_enabled ? 'text-cyan-400' : 'text-slate-500'}">
+                                    ${u.ai_enabled ? 'AI RUNNING' : 'AI PAUSED'}
+                                </span>
+                            </div>
+
+                            <button onclick="openUserEditor(${u.id})" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-indigo-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center gap-1 transition-all">
+                                <span>Settings</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Quick AI Toggle ---
+        async function toggleUserAiQuick(userId, newState) {
+            try {
+                const res = await fetch(`/api/admin/users/${userId}/toggle_ai`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ enabled: newState })
+                });
+                if (res.ok) {
+                    showToast(`User #${userId} AI ${newState ? 'Enabled' : 'Paused'}`, "success");
+                    const user = allUsers.find(u => u.id === userId);
+                    if (user) user.ai_enabled = newState;
+                    renderUsersKPI();
+                    applyUserFilters();
+                } else {
+                    showToast("Failed to toggle AI", "error");
+                    applyUserFilters(); // revert checkbox
+                }
+            } catch(e) {
+                showToast("Connection error", "error");
+                applyUserFilters();
+            }
+        }
+
+        // --- User Editor Sheet ---
+        function openUserEditor(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (!user) return;
+            selectedUser = user;
+
+            document.getElementById('editorUsername').textContent = user.username;
+            document.getElementById('editorUserSubtitle').textContent = `User #${user.id} • ${user.role.toUpperCase()}`;
+
+            // Stat pills
+            document.getElementById('edStatMode').textContent = user.trading_mode;
+            const pnl = parseFloat(user.net_pnl) || 0;
+            const pnlEl = document.getElementById('edStatPnl');
+            pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+            pnlEl.className = `font-bold mt-0.5 ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            document.getElementById('edStatWinRate').textContent = `${user.win_rate || 0}%`;
+
+            // Inputs
+            document.getElementById('ed_ai_enabled').checked = !!user.ai_enabled;
+            document.getElementById('ed_auto_force_trade').checked = !!user.auto_force_trade;
+            document.getElementById('ed_ignore_pass_technical').checked = !!user.ignore_pass_technical;
+            document.getElementById('ed_edge_gate_enabled').checked = user.edge_gate_enabled !== false;
+            document.getElementById('ed_trailing_stop_enabled').checked = !!user.trailing_stop_enabled;
+            document.getElementById('ed_second_entry_enabled').checked = !!user.second_entry_enabled;
+            document.getElementById('ed_use_kelly_criterion').checked = !!user.use_kelly_criterion;
+
+            document.getElementById('ed_trading_style').value = user.trading_style || 'AUTO';
+            document.getElementById('ed_signal_source').value = user.signal_source || 'BLEND';
+            document.getElementById('ed_trade_size_dollars').value = user.trade_size_dollars || 5;
+            document.getElementById('ed_max_daily_risk').value = user.max_daily_risk || 50;
+            document.getElementById('ed_take_profit_pct').value = user.take_profit_pct || 50;
+            document.getElementById('ed_stop_loss_pct').value = user.stop_loss_pct || 50;
+
+            const sheet = document.getElementById('userEditorSheet');
+            sheet.classList.remove('translate-x-full');
+        }
+
+        function closeUserEditor() {
+            const sheet = document.getElementById('userEditorSheet');
+            sheet.classList.add('translate-x-full');
+            selectedUser = null;
+        }
+
+        async function saveUserConfig() {
+            if (!selectedUser) return;
+            const btn = document.getElementById('editorSaveBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
+                ai_enabled: document.getElementById('ed_ai_enabled').checked,
+                auto_force_trade: document.getElementById('ed_auto_force_trade').checked,
+                ignore_pass_technical: document.getElementById('ed_ignore_pass_technical').checked,
+                edge_gate_enabled: document.getElementById('ed_edge_gate_enabled').checked,
+                trailing_stop_enabled: document.getElementById('ed_trailing_stop_enabled').checked,
+                second_entry_enabled: document.getElementById('ed_second_entry_enabled').checked,
+                use_kelly_criterion: document.getElementById('ed_use_kelly_criterion').checked,
+                trading_style: document.getElementById('ed_trading_style').value,
+                signal_source: document.getElementById('ed_signal_source').value,
+                trade_size_dollars: parseFloat(document.getElementById('ed_trade_size_dollars').value) || 5,
+                max_daily_risk: parseFloat(document.getElementById('ed_max_daily_risk').value) || 50,
+                take_profit_pct: parseFloat(document.getElementById('ed_take_profit_pct').value) || 50,
+                stop_loss_pct: parseFloat(document.getElementById('ed_stop_loss_pct').value) || 50,
+            };
+
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUser.id}/config`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    showToast("User settings saved successfully", "success");
+                    Object.assign(selectedUser, payload);
+                    renderUsersKPI();
+                    applyUserFilters();
+                    closeUserEditor();
+                } else {
+                    const err = await res.json();
+                    showToast(err.detail || "Failed to save settings", "error");
+                }
+            } catch(e) {
+                showToast("Connection error while saving", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save';
+            }
+        }
+
+        async function resetUserBalanceAction() {
+            if (!selectedUser) return;
+            if (!confirm(`Reset paper balance for ${selectedUser.username} to $500?`)) return;
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUser.id}/reset_balance`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ balance: 500.0 })
+                });
+                if (res.ok) {
+                    showToast("Paper balance reset to $500", "success");
+                    selectedUser.paper_balance = 500.0;
+                    applyUserFilters();
+                } else {
+                    showToast("Failed to reset balance", "error");
+                }
+            } catch(e) {
+                showToast("Connection error", "error");
+            }
+        }
+
+        // --- Trades Audit Modal ---
+        async function openUserTradesModal() {
+            if (!selectedUser) return;
+            const modal = document.getElementById('tradesModal');
+            const title = document.getElementById('tradesModalTitle');
+            const sub = document.getElementById('tradesModalSubtitle');
+            const container = document.getElementById('tradesModalContainer');
+
+            title.textContent = `Recent Trades: ${selectedUser.username}`;
+            sub.textContent = `User #${selectedUser.id} • ${selectedUser.trading_mode}`;
+            container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs font-mono">Fetching execution history...</div>`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            try {
+                const res = await fetch(`/api/admin/users/${selectedUser.id}/trades`, { headers: getAuthHeaders() });
+                if (!res.ok) throw new Error("Failed to load trades");
+                const data = await res.json();
+                const trades = data.trades || [];
+
+                if (!trades.length) {
+                    container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs font-mono">No trades on record</div>`;
+                    return;
+                }
+
+                container.innerHTML = trades.slice(0, 30).map(t => {
+                    const pnl = parseFloat(t.pnl) || 0;
+                    const pnlColor = pnl > 0 ? 'text-emerald-400' : (pnl < 0 ? 'text-rose-400' : 'text-slate-400');
+                    const side = (t.side || 'YES').toUpperCase();
+                    const status = (t.status || 'CLOSED').toUpperCase();
+                    const isWin = pnl > 0;
+
+                    return `
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5 text-xs font-mono">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-white font-sans text-xs">${t.ticker || 'BTC-15M'}</span>
+                                <span class="font-bold ${pnlColor}">${(pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2)}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[10px] text-slate-400">
+                                <div>
+                                    <span class="px-1.5 py-0.2 rounded font-bold ${side === 'YES' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${side}</span>
+                                    <span>${t.trading_style || 'AUTO'}</span>
+                                </div>
+                                <span>${t.timestamp || '--'}</span>
+                            </div>
+                            <div class="text-[9px] text-slate-500 truncate">Reason: ${t.exit_reason || t.reason || 'AUTO_SETTLED'}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) {
+                container.innerHTML = `<div class="text-center py-8 text-rose-400 text-xs font-mono">Failed to load trades: ${e.message}</div>`;
+            }
+        }
+
+        function closeTradesModal() {
+            const modal = document.getElementById('tradesModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- Fetch & Render Tickets ---
+        async function fetchTickets() {
+            try {
+                const res = await fetch('/api/admin/tickets', { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    allTickets = data.tickets || [];
+                    document.getElementById('tabCountTickets').textContent = allTickets.filter(t => t.status !== 'RESOLVED').length;
+                    renderTicketCards();
+                }
+            } catch(e) { console.warn('Tickets fetch failed', e); }
+        }
+
+        function setTicketFilter(flt) {
+            currentTicketFilter = flt;
+            ['All', 'Open', 'Resolved'].forEach(k => {
+                const el = document.getElementById('tktFlt' + k);
+                if (el) el.className = "px-3 py-1 rounded-lg bg-slate-800 text-slate-300";
+            });
+            const activeEl = { 'ALL': 'tktFltAll', 'OPEN': 'tktFltOpen', 'RESOLVED': 'tktFltResolved' }[flt];
+            if (activeEl && document.getElementById(activeEl)) {
+                document.getElementById(activeEl).className = "px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold";
+            }
+            renderTicketCards();
+        }
+
+        function renderTicketCards() {
+            const container = document.getElementById('ticketsListContainer');
+            const filtered = allTickets.filter(t => {
+                if (currentTicketFilter === 'OPEN' && t.status === 'RESOLVED') return false;
+                if (currentTicketFilter === 'RESOLVED' && t.status !== 'RESOLVED') return false;
+                return true;
+            });
+
+            if (!filtered.length) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs font-mono">No support tickets found</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => {
+                const isResolved = t.status === 'RESOLVED';
+                return `
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 shadow-md">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-white">${t.username || 'User #' + t.user_id}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">#${t.id}</span>
+                            </div>
+                            <span class="text-[9px] px-2 py-0.5 rounded font-bold font-mono ${isResolved ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
+                                ${t.status || 'OPEN'}
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-300 line-clamp-2 leading-relaxed">${t.issue_text || ''}</div>
+                        ${t.bot_recommendation ? '<div class="text-[10px] text-indigo-300 font-mono bg-indigo-950/40 p-2 rounded-lg border border-indigo-500/20 line-clamp-2">🤖 ' + t.bot_recommendation + '</div>' : ''}
+                        <button onclick="openTicketModal(${t.id})" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-98 text-indigo-300 text-xs font-bold rounded-xl border border-slate-700 transition-all text-center">
+                            Review & Diagnose
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openTicketModal(ticketId) {
+            const ticket = allTickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            selectedTicket = ticket;
+
+            document.getElementById('ticketModalTitle').textContent = `Ticket #${ticket.id}`;
+            document.getElementById('ticketModalUser').textContent = `By ${ticket.username || 'User #' + ticket.user_id} • ${ticket.created_at || ''}`;
+            document.getElementById('ticketModalIssue').textContent = ticket.issue_text || '';
+            document.getElementById('ticketModalAiDiagnosis').textContent = ticket.bot_recommendation || 'No AI analysis run yet. Tap "Run Analysis" above.';
+
+            const resBtn = document.getElementById('ticketResolveBtn');
+            if (ticket.status === 'RESOLVED') {
+                resBtn.textContent = 'Reopen Ticket';
+                resBtn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 active:scale-95 transition-all text-center";
+            } else {
+                resBtn.textContent = 'Resolve Ticket';
+                resBtn.className = "flex-1 py-2.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 active:scale-95 transition-all text-center";
+            }
+
+            const modal = document.getElementById('ticketModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeTicketModal() {
+            const modal = document.getElementById('ticketModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            selectedTicket = null;
+        }
+
+        async function runTicketDiagnosis() {
+            if (!selectedTicket) return;
+            const btn = document.getElementById('btnRunDiagnosis');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+
+            try {
+                const res = await fetch(`/api/admin/tickets/${selectedTicket.id}/analyze`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    selectedTicket.bot_recommendation = data.recommendation;
+                    document.getElementById('ticketModalAiDiagnosis').textContent = data.recommendation;
+                    showToast("AI Bot diagnosis complete", "success");
+                    renderTicketCards();
+                } else {
+                    showToast("Diagnosis error", "error");
+                }
+            } catch(e) {
+                showToast("Connection error", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Analysis';
+            }
+        }
+
+        async function toggleTicketResolve() {
+            if (!selectedTicket) return;
+            const isResolved = selectedTicket.status === 'RESOLVED';
+            const endpoint = isResolved 
+                ? `/api/admin/tickets/${selectedTicket.id}/reopen`
+                : `/api/admin/tickets/${selectedTicket.id}/approve`;
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+                if (res.ok) {
+                    selectedTicket.status = isResolved ? 'OPEN' : 'RESOLVED';
+                    showToast(isResolved ? "Ticket Reopened" : "Ticket Resolved", "success");
+                    closeTicketModal();
+                    renderTicketCards();
+                } else {
+                    showToast("Failed to update ticket", "error");
+                }
+            } catch(e) {
+                showToast("Connection error", "error");
+            }
+        }
+
+        async function deleteTicketAction() {
+            if (!selectedTicket) return;
+            if (!confirm(`Delete Ticket #${selectedTicket.id}?`)) return;
+            try {
+                const res = await fetch(`/api/admin/tickets/${selectedTicket.id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                if (res.ok) {
+                    showToast("Ticket deleted", "success");
+                    allTickets = allTickets.filter(t => t.id !== selectedTicket.id);
+                    closeTicketModal();
+                    renderTicketCards();
+                } else {
+                    showToast("Failed to delete ticket", "error");
+                }
+            } catch(e) {
+                showToast("Connection error", "error");
+            }
+        }
+
+        // --- Overall Data Refresh ---
+        async function refreshData() {
+            await Promise.all([fetchMasterStatus(), fetchUsers(), fetchTickets()]);
+        }
+
+        // --- Init on DOM Ready ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.username) {
+                    document.getElementById('adminUserGreeting').textContent = `@${payload.username} (Admin)`;
+                }
+            } catch(e) {}
+
+            refreshData();
+        });
+    </script>
+</body>
+</html>

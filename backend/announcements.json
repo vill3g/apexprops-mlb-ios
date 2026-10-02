@@ -1,0 +1,86 @@
+{
+  "_help": "What's New popup and bell. Add the newest update FIRST with a new unique id; every user sees it once when they next open the app, and the bell stays in the header for 7 days. Fields: id, date (YYYY-MM-DD), title, items [{icon, title, text}]. Changes are picked up without a restart.",
+  "updates": [
+    {
+      "id": "2026-09-29-major-upgrades",
+      "date": "2026-09-29",
+      "badge": "MAJOR RELEASE v3.0",
+      "title": "Major AI Engine & Platform Upgrades",
+      "summary": "AI Take-Profit Re-Entry, Selective Kelly Sizing, Mobile Admin, and Confluence Enhancements are now live!",
+      "items": [
+        {
+          "icon": "⚡",
+          "title": "AI Take-Profit & Instant Bot Re-Entry",
+          "text": "Clicking 'Take Profit' now secures your gains as an AI Take-Profit, preserving AI badges and instantly unlocking the bot so it can re-enter on subsequent pullbacks and new signals."
+        },
+        {
+          "icon": "📐",
+          "title": "Selective Kelly EV Position Sizing",
+          "text": "Auto Kelly sizing is now completely optional! We added a dedicated toggle in Settings → Sizing & Limits. Keep it OFF for strict, predictable contract limits, or turn it ON for algorithmic EV sizing."
+        },
+        {
+          "icon": "📱",
+          "title": "Mobile-First Admin Console",
+          "text": "Completely redesigned admin console optimized for mobile devices (including iPhone 17 Pro Max) with sticky KPI chips, bottom sheets, and instant user management."
+        },
+        {
+          "icon": "🛡️",
+          "title": "Enhanced Confluence & Chop Defense",
+          "text": "Refined weighted confluence engine incorporating CVD volume velocity and ADX volatility to prevent chop bleed and eliminate false breakout entries."
+        },
+        {
+          "icon": "🤖",
+          "title": "Adaptive Market Regimes (Auto 2.0)",
+          "text": "Intelligent regime switching automatically routes entries between Momentum Surfer, Ambush, and Capital Guard based on live market conditions."
+        },
+        {
+          "icon": "🔄",
+          "title": "Tactical Multi-Entry DCA",
+          "text": "Automated 2nd and 3rd entry dip accumulation when favorable contract pricing occurs with 4+ minutes remaining on the contract."
+        },
+        {
+          "icon": "📊",
+          "title": "Sub-Second Execution & Visual Inspection",
+          "text": "Real-time strike countdown timers, sub-second order fills, and an interactive trade breakdown modal for inspecting execution metrics."
+        }
+      ]
+    },
+    {
+      "id": "2026-09-27-upgrades",
+      "date": "2026-09-27",
+      "title": "Smarter, safer auto-trading",
+      "items": [
+        {
+          "icon": "🧠",
+          "title": "AI panel shows YOUR signal",
+          "text": "AI Intelligence now uses your own trading style and signal source, and tells you exactly what the bot will do next: buy, hold or pass, and why."
+        },
+        {
+          "icon": "💲",
+          "title": "New EDGE reading",
+          "text": "EDGE shows how much cheaper a contract is than the model thinks it's worth, after Kalshi's fee. Green means the price is in your favour."
+        },
+        {
+          "icon": "🛡️",
+          "title": "Edge Guard (on by default)",
+          "text": "The bot now skips trades that are overpriced after fees. Adjust it in Settings → Confidence Filters, where you can also set a minimum edge."
+        },
+        {
+          "icon": "📏",
+          "title": "Daily limits now enforced",
+          "text": "Your Max Daily Trades and Max Daily Risk settings now stop the bot for the rest of the day once reached."
+        },
+        {
+          "icon": "📊",
+          "title": "Real strategy stats",
+          "text": "Strategy Performance in Settings shows each strategy's actual win rate over the last 30 days, not estimates."
+        },
+        {
+          "icon": "📈",
+          "title": "Faster chart + live trades",
+          "text": "A lighter, faster price chart with bubbles showing trades happening on Kalshi in real time."
+        }
+      ]
+    }
+  ]
+}

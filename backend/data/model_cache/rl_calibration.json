@@ -1,0 +1,23 @@
+{
+  "a": 0.049858286245351435,
+  "b": -0.03728193349679313,
+  "method": "platt(Q_yes - Q_no)",
+  "base_rate": 0.4894350172290488,
+  "minutes_remaining": 14.5,
+  "n": 15381,
+  "window": "2026-02-24 to 2026-08-03 (UTC)",
+  "p_yes_range_1_99pct": [
+    0.4683,
+    0.5179
+  ],
+  "holdout": {
+    "n": 4615,
+    "log_loss_model": 0.69238,
+    "log_loss_base_rate": 0.69271,
+    "auc": 0.5169,
+    "skill_vs_base_rate": 0.00033
+  },
+  "model_train_steps": 323,
+  "model_mtime": 1790938819.3579838,
+  "fitted_at": 1790939754.2222567
+}

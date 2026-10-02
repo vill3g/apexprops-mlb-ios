@@ -1,0 +1,148 @@
+<div id="adminUserModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-6xl h-[90vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl relative">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950">
+            <div class="flex items-center gap-3">
+                <h2 class="text-white font-bold text-base md:text-lg flex items-center gap-2">
+                    <span class="text-indigo-400">🛡️</span> Admin Console
+                </h2>
+                <!-- Navigation Tabs -->
+                <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                    <button id="adminNavBtnUsers" onclick="window.switchAdminSection('users')" class="px-3 py-1 font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-1.5 cursor-pointer">
+                        <span>👥</span> Users
+                        <span id="headerUserCountBadge" class="bg-indigo-950/80 text-indigo-200 px-1.5 py-0.5 rounded-full text-[10px] font-mono">
+                            <span id="headerUserCount">0</span>
+                        </span>
+                    </button>
+                    <button id="adminNavBtnTickets" onclick="window.switchAdminSection('tickets')" class="px-3 py-1 font-bold rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer">
+                        <span>🎫</span> Support Tickets
+                        <span id="headerTicketBadge" class="bg-rose-900/80 text-rose-300 px-1.5 py-0.5 rounded-full text-[10px] font-mono">
+                            <span id="headerTicketCount">0</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            <button type="button" onclick="window.closeAdminUserPanel()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg p-1.5 transition-colors cursor-pointer" title="Close Panel">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- USERS SECTION CONTAINER -->
+        <div id="adminSectionUsers" class="flex-1 flex flex-col overflow-hidden">
+            <!-- Global Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 p-3 bg-slate-900/50 border-b border-slate-800 text-center">
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Total Users</div>
+                    <div id="adminTotalUsersCount" class="text-white font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Active AI Bots</div>
+                    <div id="adminActiveAiCount" class="text-cyan-400 font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Live Trading</div>
+                    <div id="adminLiveTradingCount" class="text-rose-400 font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Total P&L</div>
+                    <div id="adminTotalPnlSum" class="text-emerald-400 font-mono font-bold text-sm">$0.00</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Live Balances</div>
+                    <div id="adminTotalKalshiBal" class="text-amber-400 font-mono font-bold text-sm">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Main Content Split -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Left Sidebar (User List) -->
+                <div id="adminTabUsers" class="w-full lg:w-1/3 border-r border-slate-800 flex flex-col h-full bg-slate-950">
+                    <!-- Search & Filters -->
+                    <div class="p-3 border-b border-slate-800 space-y-2">
+                        <input type="text" placeholder="Search username, ID..." oninput="window.setFilterSearch(this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500">
+                        <div class="flex gap-2">
+                            <select onchange="window.setFilterMode(this.value)" class="flex-1 bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-xs">
+                                <option value="ALL">All Modes</option>
+                                <option value="PAPER">Paper</option>
+                                <option value="LIVE">Live</option>
+                            </select>
+                            <select onchange="window.setFilterAi(this.value)" class="flex-1 bg-slate-900 border border-slate-700 text-white rounded px-2 py-1 text-xs">
+                                <option value="ALL">All AI State</option>
+                                <option value="ON">AI Active</option>
+                                <option value="OFF">AI Paused</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- User List Container -->
+                    <div id="adminUserListContainer" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+                </div>
+
+                <!-- Right Sidebar (Detail Panel) -->
+                <div id="adminTabSettings" class="hidden lg:flex w-full lg:w-2/3 flex-col h-full bg-slate-900 relative">
+                    <!-- Inner HTML is populated by admin_users.js into adminUserDetailPanel -->
+                    <div id="adminUserDetailPanel" class="flex-1 overflow-y-auto p-4">
+                        <div class="flex h-full items-center justify-center text-slate-500 font-mono text-sm">
+                            Select a user to view settings
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TICKETS SECTION CONTAINER -->
+        <div id="adminSectionTickets" class="flex-1 flex flex-col overflow-hidden hidden">
+            <!-- Ticket Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 bg-slate-900/50 border-b border-slate-800 text-center">
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Total Tickets</div>
+                    <div id="adminTotalTicketsCount" class="text-white font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Open Tickets</div>
+                    <div id="adminOpenTicketsCount" class="text-amber-400 font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Resolved</div>
+                    <div id="adminResolvedTicketsCount" class="text-emerald-400 font-mono font-bold text-sm">0</div>
+                </div>
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">AI Diagnosed</div>
+                    <div id="adminAiAnalyzedCount" class="text-cyan-400 font-mono font-bold text-sm">0</div>
+                </div>
+            </div>
+
+            <!-- Tickets Main Split -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Left Sidebar: Ticket List -->
+                <div id="adminTabTicketList" class="w-full lg:w-1/3 border-r border-slate-800 flex flex-col h-full bg-slate-950">
+                    <!-- Ticket Search & Filters -->
+                    <div class="p-3 border-b border-slate-800 space-y-2">
+                        <div class="relative">
+                            <input type="text" id="adminTicketSearchInput" placeholder="Search ticket issue, user..." oninput="window.setTicketSearch(this.value)" class="w-full bg-slate-900 border border-slate-700 text-white rounded px-3 py-1.5 text-sm pl-8 focus:outline-none focus:border-indigo-500">
+                            <svg class="w-4 h-4 text-slate-500 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                        <div class="flex gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs">
+                            <button id="ticketFilterBtnAll" onclick="window.setTicketFilterStatus('ALL')" class="flex-1 py-1 text-center font-bold rounded bg-indigo-600 text-white shadow-sm transition-all cursor-pointer">All</button>
+                            <button id="ticketFilterBtnOpen" onclick="window.setTicketFilterStatus('OPEN')" class="flex-1 py-1 text-center font-bold rounded text-slate-400 hover:text-white transition-all cursor-pointer">Open</button>
+                            <button id="ticketFilterBtnResolved" onclick="window.setTicketFilterStatus('RESOLVED')" class="flex-1 py-1 text-center font-bold rounded text-slate-400 hover:text-white transition-all cursor-pointer">Resolved</button>
+                        </div>
+                    </div>
+                    <!-- Ticket Cards List -->
+                    <div id="adminTicketListContainer" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+                </div>
+
+                <!-- Right Sidebar: Ticket Detail Panel -->
+                <div id="adminTabTicketDetail" class="hidden lg:flex w-full lg:w-2/3 flex-col h-full bg-slate-900 relative">
+                    <div id="adminTicketDetailPanel" class="flex-1 overflow-y-auto p-4">
+                        <div class="flex h-full items-center justify-center text-slate-500 font-mono text-sm">
+                            Select a ticket to review issue and AI bot diagnosis
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Count (for responsive) -->

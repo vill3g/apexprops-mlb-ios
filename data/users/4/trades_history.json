@@ -1,0 +1,177 @@
+[
+    {
+        "id": "5f8d7f15-2485-4c2c-b998-df582d2ffe8e",
+        "timestamp": "2026-09-25 06:45:14 PM ET",
+        "ticker": "KXBTC15M-26SEP251900-00",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 89,
+        "entry_price": 0.52,
+        "count": 3,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "Bearish Liquidity Sweep: Rejected 4-bar high ($84,085)",
+            "Overhead Capping complete: Buyers trapped on spike",
+            "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (98.3%), blended confidence 89.4%"
+        ]
+    },
+    {
+        "id": "d6ef4aab-83ce-4bc2-bbe4-bf6fe48404aa",
+        "timestamp": "2026-09-25 07:00:10 PM ET",
+        "ticker": "KXBTC15M-26SEP251915-15",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 89,
+        "entry_price": 0.49,
+        "count": 3,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "Bearish Liquidity Sweep: Rejected 4-bar high ($84,118)",
+            "Overhead Capping complete: Buyers trapped on spike",
+            "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (99.0%), blended confidence 89.8%"
+        ]
+    },
+    {
+        "id": "11258044-9f5c-4c8e-81e2-a728fe8216c6",
+        "timestamp": "2026-09-25 07:15:09 PM ET",
+        "ticker": "KXBTC15M-26SEP251930-30",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 99.11,
+        "entry_price": 0.45,
+        "count": 4,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\uded1 Strict BLEND Isolation: ML Model generated a signal, but Chart Technicals are neutral. Passing to enforce 100% agreement."
+        ]
+    },
+    {
+        "id": "7f30057f-04e4-4bc7-9dda-70846f40c38f",
+        "timestamp": "2026-09-25 07:30:04 PM ET",
+        "ticker": "KXBTC15M-26SEP251945-45",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 62,
+        "entry_price": 0.54,
+        "count": 3,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "Lower Bollinger Absorption: Long lower wick hammer (98% of range)",
+            "Oversold Spring: RSI at 31.1 reclaimed off band floor",
+            "\ud83e\udde0 ML Confirmation: Model agrees with BID YES (ABOVE TARGET) (53.0%), blended confidence 63.0%"
+        ]
+    },
+    {
+        "id": "92bf82f0-f774-41b6-99b0-f6a7ed6dd3a7",
+        "timestamp": "2026-09-25 07:45:10 PM ET",
+        "ticker": "KXBTC15M-26SEP252000-00",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 99.3,
+        "entry_price": 0.5,
+        "count": 3,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\uded1 Strict BLEND Isolation: ML Model generated a signal, but Chart Technicals are neutral. Passing to enforce 100% agreement."
+        ]
+    },
+    {
+        "id": "79d543ae-415f-4a2b-88fe-f3651b476644",
+        "timestamp": "2026-09-25 08:01:42 PM ET",
+        "ticker": "KXBTC15M-26SEP252015-15",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 89.96,
+        "entry_price": 0.62,
+        "count": 1,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\uded1 Strict BLEND Isolation: ML Model generated a signal, but Chart Technicals are neutral. Passing to enforce 100% agreement."
+        ]
+    },
+    {
+        "id": "87e46041-f2bb-40ca-866d-6691103b1943",
+        "timestamp": "2026-09-25 08:15:07 PM ET",
+        "ticker": "KXBTC15M-26SEP252030-30",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 98.5,
+        "entry_price": 0.56,
+        "count": 2,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\uded1 Strict BLEND Isolation: ML Model generated a signal, but Chart Technicals are neutral. Passing to enforce 100% agreement."
+        ]
+    },
+    {
+        "id": "c595e74f-b14d-42eb-9d18-bb466e040c8d",
+        "timestamp": "2026-09-25 08:31:13 PM ET",
+        "ticker": "KXBTC15M-26SEP252045-45",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 81,
+        "entry_price": 0.44,
+        "count": 1,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "Dual Red Dip: Consecutive bearish closes approaching oversold rebound",
+            "\ud83e\udde0 ML Confirmation: Model agrees with BID YES (ABOVE TARGET) (94.6%), blended confidence 82.0%"
+        ]
+    }
+]

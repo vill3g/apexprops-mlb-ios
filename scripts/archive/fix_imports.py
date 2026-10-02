@@ -1,0 +1,1 @@
+s = open('backend/btc/auto_executor.py', 'r', encoding='utf-8').read(); open('backend/btc/auto_executor.py', 'w', encoding='utf-8').write(s.replace('import math', 'import math\nimport pandas as pd', 1))

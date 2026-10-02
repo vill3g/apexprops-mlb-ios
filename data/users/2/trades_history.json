@@ -1,0 +1,25 @@
+[
+    {
+        "id": "789d9f2b-f030-4c84-9c61-ab21b9ed8cfa",
+        "timestamp": "2026-09-25 08:35:20 PM ET",
+        "ticker": "KXBTC15M-26SEP252045-45",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 51.0,
+        "entry_price": 0.13,
+        "count": 253,
+        "status": "OPEN",
+        "mode": "PAPER",
+        "pnl": 0.0,
+        "reason": "AI_COPY (SNIPER)",
+        "trading_style": "SNIPER",
+        "signal_source": "TECHNICAL_ONLY",
+        "model_choice": "LSTM",
+        "catalysts": [
+            "\u26d4 Negative EV Block: ML Prob (64.0%) <= Kalshi Ask (88c) + 5% Edge.",
+            "Dual Red Trend Alignment: Bearish continuation with 1H Macro",
+            "\ud83d\udcca Signal Isolation: 100% Chart Setup active, ignoring ML model."
+        ]
+    }
+]

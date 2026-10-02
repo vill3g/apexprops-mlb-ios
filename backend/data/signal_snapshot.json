@@ -1,0 +1,105 @@
+{
+  "updated": 1790945843.107449,
+  "results": {
+    "AUTO|AUTO": {
+      "ts": 1790945843.107449,
+      "asset": "GOLD",
+      "ticker": "KXGOLD15M-26OCT020900-00",
+      "strike": 4209.94,
+      "sec_left": 157,
+      "effective_style": "AMBUSH",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": null,
+      "conviction_grade": "",
+      "pre_gate_direction": "",
+      "pre_gate_prob": null,
+      "pre_gate_grade": "",
+      "catalysts": [
+        "Dead zone filter: Price pinned near strike with low volatility."
+      ],
+      "chart": {
+        "open": 4210.78,
+        "close": 4212.04,
+        "ema9": 4194.091746337713,
+        "ema21": 4189.676985806177,
+        "flow": 0.444
+      }
+    },
+    "AUTO|BLEND": {
+      "ts": 1790945843.107449,
+      "asset": "GOLD",
+      "ticker": "KXGOLD15M-26OCT020900-00",
+      "strike": 4209.94,
+      "sec_left": 157,
+      "effective_style": "AMBUSH",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": null,
+      "conviction_grade": "",
+      "pre_gate_direction": "",
+      "pre_gate_prob": null,
+      "pre_gate_grade": "",
+      "catalysts": [
+        "Dead zone filter: Price pinned near strike with low volatility."
+      ],
+      "chart": {
+        "open": 4210.78,
+        "close": 4212.04,
+        "ema9": 4194.091746337713,
+        "ema21": 4189.676985806177,
+        "flow": 0.444
+      }
+    },
+    "AUTO|ML_ENSEMBLE": {
+      "ts": 1790945843.107449,
+      "asset": "GOLD",
+      "ticker": "KXGOLD15M-26OCT020900-00",
+      "strike": 4209.94,
+      "sec_left": 157,
+      "effective_style": "AMBUSH",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": null,
+      "conviction_grade": "",
+      "pre_gate_direction": "",
+      "pre_gate_prob": null,
+      "pre_gate_grade": "",
+      "catalysts": [
+        "Dead zone filter: Price pinned near strike with low volatility."
+      ],
+      "chart": {
+        "open": 4210.78,
+        "close": 4212.04,
+        "ema9": 4194.091746337713,
+        "ema21": 4189.676985806177,
+        "flow": 0.444
+      }
+    },
+    "AUTO|RL_DQN": {
+      "ts": 1790945843.107449,
+      "asset": "GOLD",
+      "ticker": "KXGOLD15M-26OCT020900-00",
+      "strike": 4209.94,
+      "sec_left": 157,
+      "effective_style": "AMBUSH",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": null,
+      "conviction_grade": "",
+      "pre_gate_direction": "",
+      "pre_gate_prob": null,
+      "pre_gate_grade": "",
+      "catalysts": [
+        "Dead zone filter: Price pinned near strike with low volatility."
+      ],
+      "chart": {
+        "open": 4210.78,
+        "close": 4212.04,
+        "ema9": 4194.091746337713,
+        "ema21": 4189.676985806177,
+        "flow": 0.444
+      }
+    }
+  }
+}

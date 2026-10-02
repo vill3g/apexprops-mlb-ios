@@ -1,0 +1,77 @@
+{
+  "enabled": false,
+  "threshold": 0.01,
+  "max_entry_seconds": 180,
+  "entry_offsets": [
+    60,
+    120,
+    180
+  ],
+  "trained_at": 1790939686.019832,
+  "periods": {
+    "train_end": "2026-07-08",
+    "val_end": "2026-08-20",
+    "test_end": "2026-10-02"
+  },
+  "validation": {
+    "trades": 1171,
+    "net_per_contract": 0.01864672281810418,
+    "total_net_per_1_contract_bets": 21.835312419999994,
+    "win_rate": 0.627668659265585,
+    "ci95_net_per_contract": [
+      -0.007044349304654143,
+      0.04510019628095642
+    ]
+  },
+  "test": {
+    "trades": 1201,
+    "net_per_contract": 0.020039020874271434,
+    "total_net_per_1_contract_bets": 24.066864069999994,
+    "win_rate": 0.6128226477935054,
+    "ci95_net_per_contract": [
+      -0.0074123448266028395,
+      0.04530458668734388
+    ]
+  },
+  "n_samples": 80077,
+  "feature_names": [
+    "rsi",
+    "bb_pos",
+    "bb_width",
+    "ema9_rel",
+    "ema21_rel",
+    "close_vs_ema50",
+    "atr_pct",
+    "vwap_rel",
+    "delta_to_target",
+    "upper_wick",
+    "lower_wick",
+    "body",
+    "range_24h_pos",
+    "range_24h_pct",
+    "vol_ratio",
+    "vol_regime",
+    "roc_15m",
+    "roc_1h",
+    "roc_4h",
+    "hour_sin",
+    "hour_cos",
+    "weekend",
+    "ret_lag1",
+    "rsi_lag1",
+    "ret_lag2",
+    "rsi_lag2",
+    "ret_lag3",
+    "rsi_lag3",
+    "ret_lag4",
+    "rsi_lag4",
+    "yes_ask",
+    "yes_bid",
+    "mid",
+    "spread",
+    "mid_logit",
+    "mid_dist",
+    "elapsed_min"
+  ],
+  "n_nets": 5
+}

@@ -1,0 +1,107 @@
+[
+    {
+        "id": "f67ccb14-a52d-4a53-b2ab-e0482ffbdde1",
+        "timestamp": "2026-09-25 07:25:24 PM ET",
+        "ticker": "KXBTC15M-26SEP251930-30",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 86,
+        "entry_price": 0.8,
+        "count": 14,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (AUTO)",
+        "trading_style": "AUTO",
+        "signal_source": "RL_DQN",
+        "model_choice": "RL_DQN",
+        "catalysts": [
+            "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 86.8%"
+        ]
+    },
+    {
+        "id": "147e77a9-b843-46e1-aba4-2a781c6ed980",
+        "timestamp": "2026-09-25 07:30:29 PM ET",
+        "ticker": "KXBTC15M-26SEP251945-45",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 86,
+        "entry_price": 0.56,
+        "count": 2,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (AUTO)",
+        "trading_style": "AUTO",
+        "signal_source": "RL_DQN",
+        "model_choice": "RL_DQN",
+        "catalysts": [
+            "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 86.8%"
+        ]
+    },
+    {
+        "id": "019a6777-6a72-44a8-a6e0-42bdb63346ef",
+        "timestamp": "2026-09-25 07:45:10 PM ET",
+        "ticker": "KXBTC15M-26SEP252000-00",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 86,
+        "entry_price": 0.5,
+        "count": 4,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (AUTO)",
+        "trading_style": "AUTO",
+        "signal_source": "RL_DQN",
+        "model_choice": "RL_DQN",
+        "catalysts": [
+            "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 86.7%"
+        ]
+    },
+    {
+        "id": "4b189078-9e3c-4591-a5d2-66d60861bdc5",
+        "timestamp": "2026-09-25 08:25:07 PM ET",
+        "ticker": "KXBTC15M-26SEP252030-30",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 74,
+        "entry_price": 0.75,
+        "count": 3,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (AUTO)",
+        "trading_style": "AUTO",
+        "signal_source": "RL_DQN",
+        "model_choice": "RL_DQN",
+        "catalysts": [
+            "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 74.9%"
+        ]
+    },
+    {
+        "id": "a9b7d1e5-8c50-43da-bf97-0090e412e8e6",
+        "timestamp": "2026-09-25 08:34:56 PM ET",
+        "ticker": "KXBTC15M-26SEP252045-45",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 69,
+        "entry_price": 0.13,
+        "count": 21,
+        "status": "OPEN",
+        "mode": "LIVE",
+        "pnl": 0.0,
+        "reason": "AI_COPY (AUTO)",
+        "trading_style": "AUTO",
+        "signal_source": "RL_DQN",
+        "model_choice": "RL_DQN",
+        "catalysts": [
+            "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 69.5%"
+        ]
+    }
+]
