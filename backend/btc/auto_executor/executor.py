@@ -163,7 +163,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                             if "stopLossMaxMinutes" not in self.ai_settings:
                                 self.ai_settings["stopLossMaxMinutes"] = 8.0
                             if "positionReversal" not in self.ai_settings:
-                                self.ai_settings["positionReversal"] = False
+                                self.ai_settings["positionReversal"] = True
                             if "reversalMaxPriceCents" not in self.ai_settings:
                                 self.ai_settings["reversalMaxPriceCents"] = 65.0
                             if "reversalMinMinutesLeft" not in self.ai_settings:
