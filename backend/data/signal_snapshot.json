@@ -1,104 +1,108 @@
 {
-  "updated": 1790946134.1078002,
+  "updated": 1790947182.4113975,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1790945982.9267216,
+      "ts": 1790947182.4113975,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020900-00",
-      "strike": 4209.94,
-      "sec_left": 18,
-      "effective_style": "AMBUSH",
+      "ticker": "KXGOLD15M-26OCT020930-30",
+      "strike": 4196.12,
+      "sec_left": 619,
+      "effective_style": "SNIPER",
       "direction": "PASS",
-      "probability_percent": 50.0,
-      "ml_prob": null,
-      "conviction_grade": "",
-      "pre_gate_direction": "",
-      "pre_gate_prob": null,
-      "pre_gate_grade": "",
+      "probability_percent": 50,
+      "ml_prob": 0.3942,
+      "conviction_grade": "PASS / POOR RISK REWARD",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 60.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "Dead zone filter: Price pinned near strike with low volatility."
+        "\u00c3\u00a2\u00e2\u20ac\u00ba\u00e2\u20ac\u009d Negative EV Block: ML Prob (60.0%) <= Kalshi Ask (77c) + 5% Edge.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (60.0%).",
+        "Primary Driver: God-Tier PyTorch Ensemble predicts DOWN (60% Edge). ML Reasoning: Prediction driven primarily by Ema 21, Rsi Lag 1, Volume 15M Ratio Lag 1."
       ],
       "chart": {
-        "open": 4210.78,
-        "close": 4217.21,
-        "ema9": 4195.125746337712,
-        "ema21": 4190.146985806177,
-        "flow": 0.579
+        "open": 4196.81,
+        "close": 4191.23,
+        "ema9": 4194.627277656136,
+        "ema21": 4190.801889096015,
+        "flow": -0.368
       }
     },
     "AUTO|BLEND": {
-      "ts": 1790946134.1078002,
+      "ts": 1790947182.4113975,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020915-15",
-      "strike": 4217.79,
-      "sec_left": 767,
+      "ticker": "KXGOLD15M-26OCT020930-30",
+      "strike": 4196.12,
+      "sec_left": 619,
       "effective_style": "SNIPER",
       "direction": "PASS",
-      "probability_percent": 50.0,
-      "ml_prob": null,
-      "conviction_grade": "",
-      "pre_gate_direction": "",
-      "pre_gate_prob": null,
-      "pre_gate_grade": "",
+      "probability_percent": 50,
+      "ml_prob": 0.3942,
+      "conviction_grade": "PASS / POOR RISK REWARD",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 60.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "Dead zone filter: Price pinned near strike with low volatility."
+        "\u00c3\u00a2\u00e2\u20ac\u00ba\u00e2\u20ac\u009d Negative EV Block: ML Prob (60.0%) <= Kalshi Ask (77c) + 5% Edge.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (60.0%).",
+        "Primary Driver: God-Tier PyTorch Ensemble predicts DOWN (60% Edge). ML Reasoning: Prediction driven primarily by Ema 21, Rsi Lag 1, Volume 15M Ratio Lag 1."
       ],
       "chart": {
-        "open": 4220.07,
-        "close": 4223.52,
-        "ema9": 4200.80459707017,
-        "ema21": 4193.180896187434,
-        "flow": 0.552
+        "open": 4196.81,
+        "close": 4191.23,
+        "ema9": 4194.627277656136,
+        "ema21": 4190.801889096015,
+        "flow": -0.368
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1790946134.1078002,
+      "ts": 1790947182.4113975,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020915-15",
-      "strike": 4217.79,
-      "sec_left": 767,
+      "ticker": "KXGOLD15M-26OCT020930-30",
+      "strike": 4196.12,
+      "sec_left": 619,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50.0,
-      "ml_prob": null,
-      "conviction_grade": "",
-      "pre_gate_direction": "",
-      "pre_gate_prob": null,
-      "pre_gate_grade": "",
+      "direction": "NO",
+      "probability_percent": 60,
+      "ml_prob": 0.3942,
+      "conviction_grade": "GRADE B SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 60.58,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "Dead zone filter: Price pinned near strike with low volatility."
+        "\u00c3\u00b0\u00c5\u00b8\u00c2\u00a7\u00c2\u00a0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 60.6%"
       ],
       "chart": {
-        "open": 4220.07,
-        "close": 4223.52,
-        "ema9": 4200.80459707017,
-        "ema21": 4193.180896187434,
-        "flow": 0.552
+        "open": 4196.81,
+        "close": 4191.23,
+        "ema9": 4194.627277656136,
+        "ema21": 4190.801889096015,
+        "flow": -0.368
       }
     },
     "AUTO|RL_DQN": {
-      "ts": 1790946134.1078002,
+      "ts": 1790947182.4113975,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020915-15",
-      "strike": 4217.79,
-      "sec_left": 767,
+      "ticker": "KXGOLD15M-26OCT020930-30",
+      "strike": 4196.12,
+      "sec_left": 619,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50.0,
-      "ml_prob": null,
-      "conviction_grade": "",
-      "pre_gate_direction": "",
-      "pre_gate_prob": null,
-      "pre_gate_grade": "",
+      "direction": "NO",
+      "probability_percent": 50,
+      "ml_prob": 0.4995,
+      "conviction_grade": "GRADE B SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 50.05,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "Dead zone filter: Price pinned near strike with low volatility."
+        "\u00c3\u00b0\u00c5\u00b8\u00c2\u00a7\u00c2\u00a0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 50.0%"
       ],
       "chart": {
-        "open": 4220.07,
-        "close": 4223.52,
-        "ema9": 4200.80459707017,
-        "ema21": 4193.180896187434,
-        "flow": 0.552
+        "open": 4196.81,
+        "close": 4191.23,
+        "ema9": 4194.627277656136,
+        "ema21": 4190.801889096015,
+        "flow": -0.368
       }
     }
   }
