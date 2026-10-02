@@ -2572,5 +2572,34 @@
         "exit_reason": "STOP_LOSS (-61.8%)",
         "exit_price": 0.072,
         "settled_at": 1790945545.5084229
+    },
+    {
+        "id": "57fef374-d366-40da-baa3-302def82e3bf",
+        "timestamp": "2026-10-02 09:01:36 AM ET",
+        "ticker": "KXBTC15M-26OCT020915-15",
+        "direction": "NO",
+        "side": "NO",
+        "prediction_direction": "NO",
+        "probability_percent": 51,
+        "entry_price": 0.39,
+        "count": 5,
+        "requested_count": 5,
+        "status": "OPEN",
+        "mode": "PAPER",
+        "pnl": 0.0,
+        "reason": "AI_COPY (MOMENTUM_SURFER)",
+        "is_second_entry": false,
+        "is_third_entry": false,
+        "is_profit_reentry": false,
+        "reentry_index": 1,
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "RL_DQN",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\u00c3\u00b0\u00c5\u00b8\u00c2\u00a7\u00c2\u00a0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 51.4%"
+        ],
+        "strike": 86822.4,
+        "market_snapshot": "{\"price\": 86835.29, \"target\": 86822.4, \"confidence\": 51, \"conviction_grade\": \"GRADE B SETUP\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 56.0314472705535, \"bb_upper\": 86936.1148056044, \"bb_lower\": 86451.6291943956, \"ema_9\": 86773.81478498172, \"ema_21\": 86727.36092057089, \"ema_50\": 86657.90603622758, \"atr\": 112.38514103108537, \"price_vs_vwap\": 415.6010268362443, \"cvd_value\": 112.6046033326979, \"delta_to_target\": -0.02464801710157077, \"heuristic_score\": 0.0, \"news_sentiment_score\": 0.0, \"fng_value\": 72.0, \"high_24h\": 87249.05, \"low_24h\": 85740.27, \"volume_24h\": 712.07223239, \"orderbook_imbalance\": 5.8, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 0.0, \"hour_of_day\": 8.0, \"volume_15m_ratio\": 0.08258539389632151, \"upper_wick_ratio\": 0.0, \"lower_wick_ratio\": 0.17036065573777362, \"body_to_range\": 0.8296393442622264, \"range_24h_pos\": 0.703038216307213, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 13.4, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": -0.07282626940009473, \"roc_1h\": 0.06489156514557504, \"roc_4h\": 0.267739503717368, \"cvd_divergence\": 1.001952680577453, \"vol_regime_percentile\": 0.7291666666666666, \"bb_percent_b_lag_4\": 0.5726674288652477, \"rsi_lag_4\": 0.5448053437537221, \"volume_15m_ratio_lag_4\": 2.98178407205699, \"roc_15m_lag_4\": 0.08437841961632664, \"cvd_divergence_lag_4\": 0.8049367099897667, \"bb_percent_b_lag_3\": 0.577901250094574, \"rsi_lag_3\": 0.5461370825043872, \"volume_15m_ratio_lag_3\": 1.2554255418621694, \"roc_15m_lag_3\": 0.0028821031882841908, \"cvd_divergence_lag_3\": 0.8420431194143545, \"bb_percent_b_lag_2\": 0.6624499954785469, \"rsi_lag_2\": 0.569483880200294, \"volume_15m_ratio_lag_2\": 0.7151162173910568, \"roc_15m_lag_2\": 0.04960533039997106, \"cvd_divergence_lag_2\": 0.8868732612049266, \"bb_percent_b_lag_1\": 0.7784576015531633, \"rsi_lag_1\": 0.6034019251254282, \"volume_15m_ratio_lag_1\": 1.2596875738260298, \"roc_15m_lag_1\": 0.07654306933213562, \"cvd_divergence_lag_1\": 0.9394291673188955, \"bb_percent_b_lag_0\": 0.8200839332922547, \"rsi_lag_0\": 0.6084478709179283, \"volume_15m_ratio_lag_0\": 2.201838105550969, \"roc_15m_lag_0\": 0.01161717393649564, \"cvd_divergence_lag_0\": 0.9804615693740465}}",
+        "min_seen_bid": 0.32
     }
 ]

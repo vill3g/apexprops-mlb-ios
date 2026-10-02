@@ -1,12 +1,12 @@
 {
-  "updated": 1790945843.107449,
+  "updated": 1790946134.1078002,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1790945843.107449,
+      "ts": 1790945982.9267216,
       "asset": "GOLD",
       "ticker": "KXGOLD15M-26OCT020900-00",
       "strike": 4209.94,
-      "sec_left": 157,
+      "sec_left": 18,
       "effective_style": "AMBUSH",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -20,19 +20,19 @@
       ],
       "chart": {
         "open": 4210.78,
-        "close": 4212.04,
-        "ema9": 4194.091746337713,
-        "ema21": 4189.676985806177,
-        "flow": 0.444
+        "close": 4217.21,
+        "ema9": 4195.125746337712,
+        "ema21": 4190.146985806177,
+        "flow": 0.579
       }
     },
     "AUTO|BLEND": {
-      "ts": 1790945843.107449,
+      "ts": 1790946134.1078002,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020900-00",
-      "strike": 4209.94,
-      "sec_left": 157,
-      "effective_style": "AMBUSH",
+      "ticker": "KXGOLD15M-26OCT020915-15",
+      "strike": 4217.79,
+      "sec_left": 767,
+      "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50.0,
       "ml_prob": null,
@@ -44,20 +44,20 @@
         "Dead zone filter: Price pinned near strike with low volatility."
       ],
       "chart": {
-        "open": 4210.78,
-        "close": 4212.04,
-        "ema9": 4194.091746337713,
-        "ema21": 4189.676985806177,
-        "flow": 0.444
+        "open": 4220.07,
+        "close": 4223.52,
+        "ema9": 4200.80459707017,
+        "ema21": 4193.180896187434,
+        "flow": 0.552
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1790945843.107449,
+      "ts": 1790946134.1078002,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020900-00",
-      "strike": 4209.94,
-      "sec_left": 157,
-      "effective_style": "AMBUSH",
+      "ticker": "KXGOLD15M-26OCT020915-15",
+      "strike": 4217.79,
+      "sec_left": 767,
+      "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50.0,
       "ml_prob": null,
@@ -69,20 +69,20 @@
         "Dead zone filter: Price pinned near strike with low volatility."
       ],
       "chart": {
-        "open": 4210.78,
-        "close": 4212.04,
-        "ema9": 4194.091746337713,
-        "ema21": 4189.676985806177,
-        "flow": 0.444
+        "open": 4220.07,
+        "close": 4223.52,
+        "ema9": 4200.80459707017,
+        "ema21": 4193.180896187434,
+        "flow": 0.552
       }
     },
     "AUTO|RL_DQN": {
-      "ts": 1790945843.107449,
+      "ts": 1790946134.1078002,
       "asset": "GOLD",
-      "ticker": "KXGOLD15M-26OCT020900-00",
-      "strike": 4209.94,
-      "sec_left": 157,
-      "effective_style": "AMBUSH",
+      "ticker": "KXGOLD15M-26OCT020915-15",
+      "strike": 4217.79,
+      "sec_left": 767,
+      "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50.0,
       "ml_prob": null,
@@ -94,11 +94,11 @@
         "Dead zone filter: Price pinned near strike with low volatility."
       ],
       "chart": {
-        "open": 4210.78,
-        "close": 4212.04,
-        "ema9": 4194.091746337713,
-        "ema21": 4189.676985806177,
-        "flow": 0.444
+        "open": 4220.07,
+        "close": 4223.52,
+        "ema9": 4200.80459707017,
+        "ema21": 4193.180896187434,
+        "flow": 0.552
       }
     }
   }

@@ -104,14 +104,19 @@
     "slippage_cents": 0.01,
     "slippage_buffer_used": 0.04,
     "mode": "PAPER",
-    "status": "OPEN",
-    "result": "PENDING",
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "result": "LOSS",
+    "pnl": -0.55,
     "catalysts": [
       "Upper Bollinger Rejection: Heavy upper wick pin (38% of range)",
       "Overbought Exhaustion: RSI at 65.7 rejected off band ceiling",
       "\u00f0\u0178\u00a7\u00a0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (50.3%), blended confidence 61.4%",
       "\u00c3\u00b0\u00c5\u00b8\u00e2\u20ac\u0153\u00cb\u2020 Pattern Watch: the 8:00 ET close has resolved YES 40% of the time historically (25 samples)."
-    ]
+    ],
+    "official_result": "YES",
+    "settlement_source": "kalshi_official",
+    "settle_price": 1.0,
+    "settlement_pnl": -0.55,
+    "settled_at": "2026-10-02 09:01:34 AM ET"
   }
 ]
