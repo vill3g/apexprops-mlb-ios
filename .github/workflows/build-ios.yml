@@ -3,7 +3,7 @@ name: Build iOS Sideload IPA
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "kalshi-ai-trader" ]
   workflow_dispatch:
 
 jobs:
