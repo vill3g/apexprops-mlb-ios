@@ -1,12 +1,12 @@
 {
-  "updated": 1790951267.3348086,
+  "updated": 1790951285.9750574,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1790951267.3348086,
+      "ts": 1790951285.9750574,
       "asset": "GOLD",
       "ticker": "KXGOLD15M-26OCT021030-30",
       "strike": 4188.92,
-      "sec_left": 133,
+      "sec_left": 115,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -20,18 +20,18 @@
       ],
       "chart": {
         "open": 4190.31,
-        "close": 4179.91,
-        "ema9": 4189.789896127954,
-        "ema21": 4189.586413065187,
-        "flow": 0.085
+        "close": 4178.6,
+        "ema9": 4189.527896127955,
+        "ema21": 4189.467322156096,
+        "flow": 0.072
       }
     },
     "AUTO|RL_DQN": {
-      "ts": 1790951267.3348086,
+      "ts": 1790951285.9750574,
       "asset": "GOLD",
       "ticker": "KXGOLD15M-26OCT021030-30",
       "strike": 4188.92,
-      "sec_left": 133,
+      "sec_left": 115,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -45,18 +45,18 @@
       ],
       "chart": {
         "open": 4190.31,
-        "close": 4179.91,
-        "ema9": 4189.789896127954,
-        "ema21": 4189.586413065187,
-        "flow": 0.085
+        "close": 4178.6,
+        "ema9": 4189.527896127955,
+        "ema21": 4189.467322156096,
+        "flow": 0.072
       }
     },
     "AUTO|BLEND": {
-      "ts": 1790951267.3348086,
+      "ts": 1790951285.9750574,
       "asset": "GOLD",
       "ticker": "KXGOLD15M-26OCT021030-30",
       "strike": 4188.92,
-      "sec_left": 133,
+      "sec_left": 115,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -70,18 +70,18 @@
       ],
       "chart": {
         "open": 4190.31,
-        "close": 4179.91,
-        "ema9": 4189.789896127954,
-        "ema21": 4189.586413065187,
-        "flow": 0.085
+        "close": 4178.6,
+        "ema9": 4189.527896127955,
+        "ema21": 4189.467322156096,
+        "flow": 0.072
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1790951267.3348086,
+      "ts": 1790951285.9750574,
       "asset": "GOLD",
       "ticker": "KXGOLD15M-26OCT021030-30",
       "strike": 4188.92,
-      "sec_left": 133,
+      "sec_left": 115,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -95,10 +95,10 @@
       ],
       "chart": {
         "open": 4190.31,
-        "close": 4179.91,
-        "ema9": 4189.789896127954,
-        "ema21": 4189.586413065187,
-        "flow": 0.085
+        "close": 4178.6,
+        "ema9": 4189.527896127955,
+        "ema21": 4189.467322156096,
+        "flow": 0.072
       }
     }
   }
