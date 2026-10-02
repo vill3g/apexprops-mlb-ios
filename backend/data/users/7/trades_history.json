@@ -12542,9 +12542,9 @@
         "entry_price": 0.56,
         "count": 40,
         "requested_count": 40,
-        "status": "OPEN",
+        "status": "CLOSED",
         "mode": "PAPER",
-        "pnl": 0.0,
+        "pnl": 2.68,
         "reason": "AI_COPY (SNIPER)",
         "is_second_entry": false,
         "is_third_entry": false,
@@ -12561,7 +12561,11 @@
         ],
         "strike": 4196.12,
         "market_snapshot": "{\"price\": 4195.81, \"target\": 4196.12, \"confidence\": 60.519999999999996, \"conviction_grade\": \"PASS / POOR RISK REWARD\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 54.059916296977114, \"bb_upper\": 4208.409154887001, \"bb_lower\": 4168.367845112999, \"ema_9\": 4195.47659707017, \"ema_21\": 4190.759078005616, \"ema_50\": 4186.821231693374, \"atr\": 10.076636845624463, \"price_vs_vwap\": 9.559368398106017, \"cvd_value\": -19.93705239966721, \"delta_to_target\": 0.018111970105721912, \"heuristic_score\": 0.0, \"news_sentiment_score\": 0.0, \"fng_value\": 72.0, \"high_24h\": 4224.35, \"low_24h\": 4124.73, \"volume_24h\": 726.48149588, \"orderbook_imbalance\": 0.97, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 0.0, \"hour_of_day\": 9.0, \"volume_15m_ratio\": 8.69270279710756, \"upper_wick_ratio\": 0.1337317893163986, \"lower_wick_ratio\": 0.0, \"body_to_range\": 0.8662682106836014, \"range_24h_pos\": 0.7242521582011641, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 14.883333333333333, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": -0.025495129715402687, \"roc_1h\": 0.23914186057623077, \"roc_4h\": 0.15778668958275066, \"cvd_divergence\": -1.978540352272481, \"vol_regime_percentile\": 1.0, \"bb_percent_b_lag_4\": 0.1431587254934406, \"rsi_lag_4\": 0.4425049463115024, \"volume_15m_ratio_lag_4\": 0.2104641321010125, \"roc_15m_lag_4\": -0.20036395072814406, \"cvd_divergence_lag_4\": -3.223174470349464, \"bb_percent_b_lag_3\": 0.5095543133894662, \"rsi_lag_3\": 0.5059381850159427, \"volume_15m_ratio_lag_3\": 0.9213444795562394, \"roc_15m_lag_3\": 0.16295803531476416, \"cvd_divergence_lag_3\": -2.5140580901111753, \"bb_percent_b_lag_2\": 1.3091550478991587, \"rsi_lag_2\": 0.657272387554433, \"volume_15m_ratio_lag_2\": 6.497290918191874, \"roc_15m_lag_2\": 0.5862678579960701, \"cvd_divergence_lag_2\": 0.5317146873171105, \"bb_percent_b_lag_1\": 1.231313581926208, \"rsi_lag_1\": 0.6862465673703403, \"volume_15m_ratio_lag_1\": 6.006122700952725, \"roc_15m_lag_1\": 0.16316972026011456, \"cvd_divergence_lag_1\": 2.10791569759451, \"bb_percent_b_lag_0\": 0.7120684874677462, \"rsi_lag_0\": 0.5405991629697712, \"volume_15m_ratio_lag_0\": 8.69270279710756, \"roc_15m_lag_0\": -0.48207227052956547, \"cvd_divergence_lag_0\": -1.8200094377258766}}",
-        "min_seen_bid": 0.56
+        "min_seen_bid": 0.56,
+        "exit_reason": "TAKE_PROFIT",
+        "exit_price": 0.66,
+        "settled_at": 1790947254.5106761,
+        "is_manual": false
     },
     {
         "id": "ee219eae-c3dc-49c0-b2a5-b863ec1f23ee",
