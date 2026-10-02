@@ -4,10 +4,11 @@ Fetches live scores, current innings, venue, official standings, and team stats
 from Yahoo Japan Sports Navi and official team badges from TheSportsDB.
 """
 
-import urllib.request
-import re
 import logging
-from typing import List, Dict, Any
+import re
+import urllib.request
+from typing import Any, Dict, List
+
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger("npb_client")

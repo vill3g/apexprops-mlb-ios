@@ -1,9 +1,10 @@
 import asyncio
-import websockets
 import json
 import logging
 import threading
 import time
+
+import websockets
 
 logger = logging.getLogger(__name__)
 

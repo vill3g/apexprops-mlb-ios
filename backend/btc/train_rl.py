@@ -1,8 +1,10 @@
-import os
 import json
 import logging
+import os
+
+from backend.btc.ml_engine import (FEATURE_KEYS, NEUTRAL_FEATURE_DEFAULTS,
+                                   normalize_features)
 from backend.btc.rl_agent import get_rl_agent
-from backend.btc.ml_engine import FEATURE_KEYS, NEUTRAL_FEATURE_DEFAULTS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -11,10 +13,11 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 HISTORY_FILE = os.path.join(DATA_DIR, "trades_history.json")
 
 def _build_state_vector(raw_features: dict) -> list:
+    norm_features = normalize_features(raw_features) if raw_features else {}
     vec = []
     for k in FEATURE_KEYS:
         default_val = NEUTRAL_FEATURE_DEFAULTS.get(k, 0.0)
-        val = raw_features.get(k, default_val)
+        val = norm_features.get(k, default_val)
         try:
             val = float(val)
         except (ValueError, TypeError):

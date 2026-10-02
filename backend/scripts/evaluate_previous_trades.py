@@ -2,19 +2,19 @@
 backend/scripts/evaluate_previous_trades.py
 Backtest all historical trades against the currently retrained, Platt-calibrated ML model.
 """
-import os
-import sys
 import json
 import math
+import os
+import sys
+
 import numpy as np
-from collections import defaultdict
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+from backend.btc.ml_engine import get_ml_engine
 from backend.btc.trade_db import get_trade_db
-from backend.btc.ml_engine import get_ml_engine, FEATURE_KEYS, NEUTRAL_FEATURE_DEFAULTS
 
 
 def evaluate():

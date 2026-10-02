@@ -4,15 +4,14 @@ Cross-verifies player identities, positions, matchups, and authentic game logs
 using both the official MLB Stats API (statsapi.mlb.com) and ESPN Sports API.
 """
 
-import json
-import os
-import time
-import urllib.request
-import urllib.parse
 import datetime
+import json
 import logging
-from typing import List, Dict, Any, Optional
+import os
+import urllib.parse
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +296,7 @@ class VerifiedMLBClient:
 
     def _generate_realistic_batter_fallback(self, name: str, opp: str, avg: float, existing: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         import hashlib
-        needed = 10 - len(existing)
+        10 - len(existing)
         seed_int = int(hashlib.md5(name.encode()).hexdigest()[:6], 16)
         dates = ["Sep 8", "Sep 7", "Sep 6", "Sep 5", "Sep 4", "Sep 3", "Sep 2", "Sep 1", "Aug 31", "Aug 30"]
         opponents = [f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}"]
@@ -329,7 +328,7 @@ class VerifiedMLBClient:
 
     def _generate_realistic_pitcher_fallback(self, name: str, opp: str, era: float, k_line: float, proj_k: float, existing: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         import hashlib
-        needed = 10 - len(existing)
+        10 - len(existing)
         seed_int = int(hashlib.md5(name.encode()).hexdigest()[:6], 16)
         dates = ["Sep 8", "Sep 2", "Aug 27", "Aug 21", "Aug 15", "Aug 9", "Aug 3", "Jul 28", "Jul 22", "Jul 16"]
         opponents = [f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}", f"vs {opp}", f"@ {opp}"]

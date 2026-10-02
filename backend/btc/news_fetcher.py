@@ -4,17 +4,17 @@ Fetches real-time crypto news, computes NLP sentiment scores,
 and correlates historical news catalysts with 15m BTC price impact.
 """
 
-import time
 import json
 import logging
-import re
+import os
+import threading
+import time
+from typing import Any, Dict, List, Optional
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-from typing import Dict, Any, List, Optional
-import os
 
-import threading
 try:
     from transformers import pipeline
 except ImportError:
@@ -261,9 +261,6 @@ def correlate_news_with_price_action(df_candles: Any, news_list: Optional[List[D
             
     return score
 
-import threading
-import time
-
 _bg_thread_started = False
 
 def _background_news_updater():
@@ -273,7 +270,7 @@ def _background_news_updater():
             global _NEWS_CACHE_TIME
             _NEWS_CACHE_TIME = 0.0
             fetch_crypto_news()
-        except Exception as e:
+        except Exception:
             pass
         time.sleep(115) # Refresh every ~2 minutes
 

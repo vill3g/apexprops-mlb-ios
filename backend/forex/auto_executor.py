@@ -1,12 +1,13 @@
-import time
 import logging
 import threading
 from typing import Optional
 
-from backend.forex.data_fetcher import is_forex_market_open, get_forex_ticker
 from backend.forex.analyzer import analyze_forex_pair
-from backend.forex.paper_trader import open_position, evaluate_stops_and_limits, get_open_positions, get_balance, calculate_pip_value
+from backend.forex.data_fetcher import get_forex_ticker, is_forex_market_open
 from backend.forex.news_calendar import is_safe_to_trade
+from backend.forex.paper_trader import (calculate_pip_value,
+                                        evaluate_stops_and_limits, get_balance,
+                                        get_open_positions, open_position)
 
 logger = logging.getLogger(__name__)
 

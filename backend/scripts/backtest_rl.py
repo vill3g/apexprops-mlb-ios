@@ -1,29 +1,31 @@
-import os
-import sys
 import json
 import logging
-import torch
-import numpy as np
-import pandas as pd
-from zoneinfo import ZoneInfo
+import os
+import sys
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+import numpy as np
+import torch
 
 REPO_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, REPO_DIR)
 
-from backend.btc.rl_agent import get_rl_agent
-from backend.btc.ml_engine import FEATURE_KEYS, NEUTRAL_FEATURE_DEFAULTS, build_feature_row
-from backend.btc.indicators import add_all_indicators
 from backend.btc.data_fetcher import fetch_15m_candles_history
+from backend.btc.indicators import add_all_indicators
+from backend.btc.ml_engine import (FEATURE_KEYS, NEUTRAL_FEATURE_DEFAULTS,
+                                   build_feature_row, normalize_features)
+from backend.btc.rl_agent import get_rl_agent
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 def build_vector_from_dict(d: dict) -> list:
+    norm_d = normalize_features(d) if d else {}
     vec = []
     for k in FEATURE_KEYS:
         default_val = NEUTRAL_FEATURE_DEFAULTS.get(k, 0.0)
-        val = d.get(k, default_val)
+        val = norm_d.get(k, default_val)
         try:
             val = float(val)
             if not np.isfinite(val):
@@ -63,7 +65,6 @@ def evaluate_rl_agent():
 
     # Replay on completed trades
     total_replayed = 0
-    rl_agreed_trades = 0
     rl_pass_count = 0
     rl_active_trades = 0
     rl_wins = 0
@@ -194,8 +195,10 @@ def evaluate_rl_agent():
                 pass
 
         # Volatility regime
-        vol_pct = raw_feat.get("vol_regime_percentile", 50.0)
-        is_high_vol = vol_pct >= 50.0
+        vol_pct = float(raw_feat.get("vol_regime_percentile", 0.5))
+        if vol_pct > 1.0:
+            vol_pct = vol_pct / 100.0
+        is_high_vol = vol_pct >= 0.50
 
         if action == 0:
             market_pass += 1
@@ -234,14 +237,19 @@ def evaluate_rl_agent():
     h_vol_wr = (high_vol_wins / high_vol_trades * 100) if high_vol_trades > 0 else 0
     l_vol_wr = (low_vol_wins / low_vol_trades * 100) if low_vol_trades > 0 else 0
 
+    gross_profit = market_wins * 0.48
+    gross_loss = market_losses * 0.52
+    profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else 0.0
+
     print(f"Total 15m Intervals Evaluated:   {total_candles}")
     print(f"RL PASS Rate (Filtered Out):     {market_pass} ({market_pass/total_candles*100:.1f}%)")
     print(f"Total Trades Taken:              {market_trades}")
     print(f"Wins:                            {market_wins}")
     print(f"Losses:                          {market_losses}")
     print(f"Overall Walk-Forward Win Rate:   {m_wr:.2f}%")
+    print(f"Profit Factor:                   {profit_factor:.2f}")
     print(f"Simulated Profit/Loss:           ${market_pnl_cents/100:.2f}")
-    print(f"\nBreakdown by Market Regime:")
+    print("\nBreakdown by Market Regime:")
     print(f"  Day Session (07:00-23:59 ET):  {day_wr:.1f}% ({day_wins}/{day_trades})")
     print(f"  Night Session (00:00-06:59 ET):{night_wr:.1f}% ({night_wins}/{night_trades})")
     print(f"  High Volatility Regimes:       {h_vol_wr:.1f}% ({high_vol_wins}/{high_vol_trades})")

@@ -4,12 +4,13 @@ Fetches official live DraftKings sports odds and MLB player props.
 Includes persistent disk + memory caching to conserve API quota.
 """
 
-import os
-import time
 import json
 import logging
+import os
+import time
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("the_odds_client")
 
@@ -125,7 +126,6 @@ class TheOddsClient:
                     home_ml = -120
                     away_ml = 100
                     spread = -1.5
-                    spread_home_odds = -110
                     over_under = 8.5
                     over_odds = -110
                     under_odds = -110
@@ -144,9 +144,9 @@ class TheOddsClient:
                                 for o in outcomes:
                                     if o.get("name") == home:
                                         spread = o.get("point", -1.5)
-                                        spread_home_odds = o.get("price", -110)
+                                        o.get("price", -110)
                                     elif o.get("name") == away:
-                                        spread_away_odds = o.get("price", -110)
+                                        o.get("price", -110)
                             elif m_key == "totals":
                                 for o in outcomes:
                                     if o.get("name") == "Over":

@@ -29,11 +29,11 @@ to run in LIVE mode.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
-from backend.btc.analyzer import evaluate_next_15m_contract
+from backend.btc.analyzer.contract_eval import evaluate_next_15m_contract
 
 logger = logging.getLogger(__name__)
 

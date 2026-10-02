@@ -7,13 +7,14 @@ NOTE (Basis Risk): TA indicators and ML inference consume spot BTC-USD feeds (pr
 Kalshi KXBTC15M contracts settle against the CF Benchmarks BRTI index. See README.md Safety Notice.
 """
 
+import logging
+import os
 import time
 from datetime import datetime, timezone
-import requests
-import pandas as pd
+
 import numpy as np
-import os
-import logging
+import pandas as pd
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
@@ -177,7 +178,11 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     return df
 
 
+
+_historical_15m_cache = None
+
 def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
+
     """
     Fetch OHLCV candles for any timeframe (1m, 5m, 15m, 1h, 4h, 1d)
     with resilient multi-exchange fallback.
@@ -200,23 +205,25 @@ def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
             min_required = min(limit, 10)
             if df is not None and len(df) >= min_required:
                 import os
+
                 import pandas as pd
                 if timeframe.lower() == "15m":
+                    global _historical_15m_cache
                     hist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "historical_candles_btc_15m.csv")
                     if os.path.exists(hist_path):
                         try:
-                            df_hist = pd.read_csv(hist_path)
-                            # Combine and drop duplicates based on 'time'
-                            df_combined = pd.concat([df_hist, df], ignore_index=True)
+                            if _historical_15m_cache is None:
+                                _historical_15m_cache = pd.read_csv(hist_path)
+                            
+                            df_combined = pd.concat([_historical_15m_cache, df], ignore_index=True)
                             df_combined.drop_duplicates(subset=["time"], keep="last", inplace=True)
                             df_combined.sort_values("time", inplace=True)
                             
-                            # Trim to 20,000 candles to keep memory sane
                             if len(df_combined) > 20000:
                                 df_combined = df_combined.tail(20000)
-                                
-                            df_combined.reset_index(drop=True, inplace=True)
-                            df = df_combined
+                            
+                            _historical_15m_cache = df_combined.copy() # update cache
+                            df = df_combined.tail(limit).reset_index(drop=True)
                         except Exception as hist_err:
                             pass # Just fall back to standard df if history file fails
                             
@@ -580,15 +587,15 @@ def _save_ticker_cache(result: dict, now: float):
 def get_btc_ticker() -> dict:
     """
     Get live 24h ticker info. Primary source: Coinbase.
-    Cached for 0.75s to support high-frequency polling.
+    Cached for 2.0s to support high-frequency polling.
     Falls back to Binance.US, then to this app's own recent candle data, if Coinbase is unavailable.
     """
     now = time.time()
     with _ticker_lock:
-        if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 0.75):
+        if _ticker_cache["data"] and (now - _ticker_cache["timestamp"] < 0.95):
             return _ticker_cache["data"]
         # Temporary lock extension to prevent concurrent stampede
-        _ticker_cache["timestamp"] = now + 1.0
+        _ticker_cache["timestamp"] = now + 0.4
 
     # Original Coinbase logic (fastest endpoint)
     try:
@@ -649,11 +656,18 @@ def get_btc_ticker() -> dict:
         logger.debug(f"Data source fallback: {e}")
 
     # Fallback to candles
+
     with _ticker_lock:
         if _ticker_cache["data"]:
             return _ticker_cache["data"]
-    candles = fetch_candles(timeframe="15m", limit=2)
+    try:
+        candles = fetch_candles(timeframe="15m", limit=2)
+    except Exception as e:
+        logger.warning(f"Ticker fallback fetch failed: {e}")
+        return {"price": 0.0, "open_24h": 0.0, "high_24h": 0.0, "low_24h": 0.0, "volume_24h": 0.0, "change_24h": 0.0, "source": "NoData"}
+
     if candles is None or len(candles) == 0:
+
         return {"price": 0.0, "open_24h": 0.0, "high_24h": 0.0, "low_24h": 0.0, "volume_24h": 0.0, "change_24h": 0.0, "source": "NoData"}
     last_close = float(candles.iloc[-1]["close"])
     prev_close = float(candles.iloc[-2]["close"]) if len(candles) >= 2 else last_close
@@ -743,7 +757,7 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
         if asset not in _live_target_result_cache:
             _live_target_result_cache[asset] = {"timestamp": 0.0, "data": None}
             
-        if _live_target_result_cache[asset]["data"] and (now - _live_target_result_cache[asset]["timestamp"] < 0.8):
+        if _live_target_result_cache[asset]["data"] and (now - _live_target_result_cache[asset]["timestamp"] < 0.95):
             # Update countdown on the fly
             cached = dict(_live_target_result_cache[asset]["data"])
             cd = get_candle_countdown("15m")

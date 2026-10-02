@@ -7,10 +7,12 @@ Last 10 Games W/L records, Head-to-Head (H2H) season series, and provides
 full official league standings tables and historical match results.
 """
 
-from typing import List, Dict, Any
-from backend.data.npb_client import NPBClient
-from backend.data.kbo_client import KBOClient
+from typing import Any, Dict, List
+
 from backend.data.international_h2h import get_full_h2h_history
+from backend.data.kbo_client import KBOClient
+from backend.data.npb_client import NPBClient
+
 
 class InternationalBaseballModel:
     def __init__(self):

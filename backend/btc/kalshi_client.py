@@ -1,11 +1,13 @@
 import logging
+
 logger = logging.getLogger(__name__)
 """
 Kalshi Crypto Event Contracts Client
 Pulls live 15-minute Bitcoin price targets and market-implied odds from Kalshi's CFTC-regulated KXBTC15M series.
 """
-import time
 import threading
+import time
+
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
@@ -20,8 +22,19 @@ _session.mount("http://", _adapter)
 _kalshi_cache = {}
 _kalshi_cache_times = {}
 _kalshi_cache_lock = threading.Lock()  # FIX #8: protects module-level cache globals from concurrent writes
-CACHE_TTL_SEC = 8.0  # 8-second cache to maintain high responsiveness without rate limiting
+CACHE_TTL_SEC = 0.95  # 0.95-second cache to deliver real-time odds without hitting rate limits (prevents 1000ms polling aliasing)
 
+
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+import requests.exceptions
+
+@retry(wait=wait_exponential(multiplier=1, min=1, max=10), stop=stop_after_attempt(4), retry=retry_if_exception_type((requests.exceptions.RequestException, ValueError)))
+def _safe_get(*args, **kwargs):
+    resp = _session.get(*args, **kwargs)
+    if resp.status_code in [429, 502, 503, 504]:
+        logger.warning(f"Kalshi API returned {resp.status_code}, retrying...")
+        raise requests.exceptions.RequestException(f"Retryable status {resp.status_code}")
+    return resp
 
 def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool = True, **kwargs):
     """
@@ -52,7 +65,7 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
             if status_param:
                 params["status"] = status_param
             try:
-                resp = _session.get(
+                resp = _safe_get(
                     KALSHI_API_URL,
                     params=params,
                     headers={"Accept": "application/json", "User-Agent": "ApexProps-Kalshi-Client/1.0"},
@@ -64,8 +77,8 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
                     if m_list:
                         markets = m_list
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ignored exception: {e}")
 
         active_m = None
         if markets:
@@ -77,7 +90,7 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
                 if ct_str:
                     try:
                         ct = datetime.datetime.fromisoformat(ct_str.replace("Z", "+00:00"))
-                        if ct > now_utc - datetime.timedelta(seconds=15):
+                        if ct > now_utc - datetime.timedelta(seconds=15) and ct < now_utc + datetime.timedelta(minutes=30):
                             valid_m.append((ct, m))
                     except Exception as e:
                         logger.debug(f"close_time parse error: {e}")
@@ -103,7 +116,7 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
                     "yes_ask_size": 0,
                     "orderbook_imbalance": 0.0,
                     "market_bias": "NEUTRAL",
-                    "ticker": "KXBTC15M_SYNTH",
+                    "ticker": f"{series_ticker}_SYNTH",
                     "close_time": "",
                     "status": "synthetic",
                     "volume_24h": 0.0,
@@ -181,4 +194,71 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
 
     with _kalshi_cache_lock:
         return _kalshi_cache.get(series_ticker) or {}
+
+
+
+# ── Live trade feed (public, no login) ─────────────────────────────────────
+_trades_cache = {}
+_trades_lock = threading.Lock()
+TRADES_CACHE_TTL_SEC = 1.5   # every dashboard polls this; one Kalshi call per 1.5 s per market
+
+
+def get_recent_trades(ticker: str, limit: int = 50) -> list:
+    """Most recent public trades on one Kalshi market, newest first, as
+    [{"id", "side": "yes"|"no", "count", "price", "dollars", "ts"}].
+    `dollars` is what the buyer paid (contracts x their side's price)."""
+    if not ticker:
+        return []
+    now = time.time()
+    with _trades_lock:
+        hit = _trades_cache.get(ticker)
+        if hit and now - hit[0] < TRADES_CACHE_TTL_SEC:
+            return hit[1]
+    trades = []
+    try:
+        resp = _safe_get(
+            KALSHI_API_URL + "/trades",
+            params={"ticker": ticker, "limit": max(1, min(int(limit), 200))},
+            timeout=4,
+        )
+        if resp.status_code == 200:
+            for t in resp.json().get("trades", []) or []:
+                side = str(t.get("taker_outcome_side") or t.get("taker_side") or "").lower()
+                if side not in ("yes", "no"):
+                    continue
+                try:
+                    count = float(t.get("count_fp") or t.get("count") or 0)
+                    price = float(t.get(f"{side}_price_dollars") or 0) or float(t.get(f"{side}_price") or 0) / 100.0
+                except (TypeError, ValueError):
+                    continue
+                if count <= 0 or price <= 0:
+                    continue
+                created = str(t.get("created_time") or "")
+                try:
+                    from datetime import datetime
+                    ts = datetime.fromisoformat(created.replace("Z", "+00:00")).timestamp()
+                except ValueError:
+                    ts = now
+                trades.append({
+                    "id": str(t.get("trade_id") or f"{created}-{count}-{price}"),
+                    "side": side,
+                    "count": round(count, 2),
+                    "price": round(price, 4),
+                    "dollars": round(count * price, 2),
+                    "ts": ts,
+                })
+        else:
+            logger.debug(f"[KalshiTrades] HTTP {resp.status_code} for {ticker}")
+    except (requests.exceptions.RequestException, ValueError) as e:
+        logger.debug(f"[KalshiTrades] fetch failed for {ticker}: {e}")
+        with _trades_lock:
+            hit = _trades_cache.get(ticker)
+        return hit[1] if hit else []
+    with _trades_lock:
+        _trades_cache[ticker] = (now, trades)
+        if len(_trades_cache) > 20:   # keep only recent markets
+            for k in sorted(_trades_cache, key=lambda k: _trades_cache[k][0])[:-10]:
+                _trades_cache.pop(k, None)
+    return trades
+
 

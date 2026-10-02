@@ -1,19 +1,18 @@
+import json
 import os
 import sys
-import json
-import optuna
+
 import numpy as np
-import pandas as pd
+import optuna
 from sklearn.metrics import accuracy_score
-import logging
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 # Add backend to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from backend.btc.ml_ensemble import GodTierEnsemble
 from backend.btc.ml_engine import FEATURE_KEYS
+from backend.btc.ml_ensemble import GodTierEnsemble
 
 TRADES_FILE = os.path.join(os.path.dirname(__file__), '../data/trades_history.json')
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), '../data/trading_config.json')

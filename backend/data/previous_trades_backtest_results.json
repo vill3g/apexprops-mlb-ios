@@ -1,79 +1,72 @@
 {
-  "total_evaluated_trades": 192,
-  "model_wins": 139,
-  "model_losses": 53,
-  "model_win_rate_pct": 72.4,
-  "hist_win_rate_pct": 51.04,
-  "win_rate_delta": 21.35,
-  "model_total_pnl": -63.41,
-  "hist_total_pnl": -6.69,
-  "pnl_delta": -56.72,
-  "profit_factor": 0.96,
-  "brier_score": 0.1964,
-  "log_loss": 0.6088,
+  "total_evaluated_trades": 578,
+  "model_wins": 420,
+  "model_losses": 158,
+  "model_win_rate_pct": 72.66,
+  "hist_win_rate_pct": 49.13,
+  "win_rate_delta": 23.53,
+  "model_total_pnl": 54198.13,
+  "hist_total_pnl": -604.09,
+  "pnl_delta": 54802.22,
+  "profit_factor": 2.65,
+  "brier_score": 0.212,
+  "log_loss": 0.6155,
   "high_conviction": {
     "threshold": ">= 60%",
-    "count": 178,
-    "wins": 134,
-    "win_rate_pct": 75.28,
-    "pnl": 155.88
+    "count": 214,
+    "wins": 180,
+    "win_rate_pct": 84.11,
+    "pnl": 30245.76
   },
   "lower_conviction": {
     "threshold": "< 60%",
-    "count": 14,
-    "wins": 5,
-    "win_rate_pct": 35.71,
-    "pnl": -219.29
+    "count": 364,
+    "wins": 240,
+    "win_rate_pct": 65.93,
+    "pnl": 23952.37
   },
   "calibration_buckets": [
     {
       "range": "0-40%",
-      "count": 94,
-      "predicted_prob": "12.4%",
-      "actual_rate": "25.5%",
-      "calibration_gap": "13.2%"
+      "count": 192,
+      "predicted_prob": "35.9%",
+      "actual_rate": "16.7%",
+      "calibration_gap": "19.2%"
     },
     {
       "range": "40-45%",
-      "count": 3,
-      "predicted_prob": "42.8%",
-      "actual_rate": "66.7%",
-      "calibration_gap": "23.9%"
+      "count": 91,
+      "predicted_prob": "42.6%",
+      "actual_rate": "39.6%",
+      "calibration_gap": "3.1%"
     },
     {
       "range": "45-50%",
-      "count": 3,
-      "predicted_prob": "48.4%",
-      "actual_rate": "66.7%",
-      "calibration_gap": "18.3%"
+      "count": 103,
+      "predicted_prob": "47.6%",
+      "actual_rate": "57.3%",
+      "calibration_gap": "9.6%"
     },
     {
       "range": "50-55%",
-      "count": 4,
-      "predicted_prob": "52.7%",
-      "actual_rate": "25.0%",
-      "calibration_gap": "27.7%"
+      "count": 121,
+      "predicted_prob": "52.2%",
+      "actual_rate": "77.7%",
+      "calibration_gap": "25.5%"
     },
     {
       "range": "55-60%",
-      "count": 4,
-      "predicted_prob": "57.8%",
-      "actual_rate": "50.0%",
-      "calibration_gap": "7.8%"
+      "count": 49,
+      "predicted_prob": "57.0%",
+      "actual_rate": "95.9%",
+      "calibration_gap": "38.9%"
     },
     {
       "range": "60-70%",
-      "count": 14,
-      "predicted_prob": "66.5%",
-      "actual_rate": "50.0%",
-      "calibration_gap": "16.5%"
-    },
-    {
-      "range": "70-100%",
-      "count": 70,
-      "predicted_prob": "85.8%",
-      "actual_rate": "81.4%",
-      "calibration_gap": "4.3%"
+      "count": 22,
+      "predicted_prob": "61.6%",
+      "actual_rate": "90.9%",
+      "calibration_gap": "29.3%"
     }
   ]
 }

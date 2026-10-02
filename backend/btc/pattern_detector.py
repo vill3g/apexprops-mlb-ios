@@ -1,4 +1,5 @@
 import logging
+
 logger = logging.getLogger(__name__)
 """
 Candlestick Pattern & Market Structure Detector for 15-Minute Bitcoin Candles.
@@ -6,7 +7,6 @@ Detects single/multi-candle patterns, swing pivots, Market Structure (BOS, CHoCH
 Support/Resistance clusters, and Double Tops/Bottoms.
 """
 
-import numpy as np
 import pandas as pd
 
 
@@ -36,7 +36,7 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
     curr_lower_wick = min(curr["close"], curr["open"]) - curr["low"]
 
     prev_body = abs(prev["close"] - prev["open"])
-    prev_range = prev["high"] - prev["low"] + 1e-10
+    prev["high"] - prev["low"] + 1e-10
     prev_is_green = prev["close"] >= prev["open"]
 
     prev2_body = abs(prev2["close"] - prev2["open"])
@@ -275,14 +275,21 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
         l_peak = max(w_highs[3:6])
         head = max(w_highs[6:9])
         r_peak = max(w_highs[9:12])
-        if head > l_peak and head > r_peak and abs(l_peak - r_peak) / (head + 1e-6) < 0.006:
-            patterns.append({
-                "name": "Head and Shoulders Top",
-                "type": "BEARISH",
-                "strength": 3,
-                "description": f"Classic 3-peak bearish reversal: Head at ${head:,.0f}, Shoulders near ${r_peak:,.0f}. Downward breakdown confirmed.",
-                "candle_index": n - 1
-            })
+        head_prominence = (head - max(l_peak, r_peak)) / (head + 1e-6)
+        shoulder_symmetry = abs(l_peak - r_peak) / (head + 1e-6)
+        
+        # Requires: prominent head (>=0.12%), symmetric shoulders (<0.5%), and true neckline breakdown
+        if head > l_peak and head > r_peak and head_prominence >= 0.0012 and shoulder_symmetry < 0.005:
+            neckline = min(min(w_lows[4:7]), min(w_lows[7:10]))
+            curr_close = w_closes[-1]
+            if curr_close < neckline:  # True breakdown confirmation below neckline
+                patterns.append({
+                    "name": "Head and Shoulders Top",
+                    "type": "BEARISH",
+                    "strength": 3,
+                    "description": f"Classic 3-peak bearish reversal: Head at ${head:,.0f}, Neckline at ${neckline:,.0f} breached by close at ${curr_close:,.0f}.",
+                    "candle_index": n - 1
+                })
 
         # D. Bear Flag (Descending Continuation)
         drop = (w_closes[3] - w_closes[6]) / (w_closes[3] + 1e-6)
@@ -438,7 +445,7 @@ def analyze_market_structure(df: pd.DataFrame) -> dict:
     - Double Top / Double Bottom formations
     """
     swing_highs, swing_lows = find_swing_points(df, window=2)
-    n = len(df)
+    len(df)
     curr_price = float(df.iloc[-1]["close"])
 
     structure = {
@@ -482,8 +489,8 @@ def analyze_market_structure(df: pd.DataFrame) -> dict:
 
     # Break of Structure (BOS) on latest candle
     last_close = float(df.iloc[-1]["close"])
-    last_high = float(df.iloc[-1]["high"])
-    last_low = float(df.iloc[-1]["low"])
+    float(df.iloc[-1]["high"])
+    float(df.iloc[-1]["low"])
 
     if last_close > sh_latest["price"]:
         structure["bos"] = {
@@ -494,7 +501,7 @@ def analyze_market_structure(df: pd.DataFrame) -> dict:
         if structure["trend_bias"] == "BEARISH":
             structure["choch"] = {
                 "type": "BULLISH_CHOCH",
-                "description": f"Change of Character: First break above swing high in downtrend"
+                "description": "Change of Character: First break above swing high in downtrend"
             }
     elif last_close < sl_latest["price"]:
         structure["bos"] = {
@@ -505,7 +512,7 @@ def analyze_market_structure(df: pd.DataFrame) -> dict:
         if structure["trend_bias"] == "BULLISH":
             structure["choch"] = {
                 "type": "BEARISH_CHOCH",
-                "description": f"Change of Character: First break below swing low in uptrend"
+                "description": "Change of Character: First break below swing low in uptrend"
             }
 
     # Double Top / Double Bottom detection

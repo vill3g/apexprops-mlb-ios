@@ -36,11 +36,11 @@ class TestForceTradeOnPass(unittest.TestCase):
         self.executor.check_risk_budget = MagicMock(return_value=None)
 
     @patch("backend.btc.ml_engine.get_ml_engine")
-    @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
-    @patch("backend.btc.auto_executor.fetch_candles")
-    @patch("backend.btc.auto_executor.add_all_indicators")
-    @patch("backend.btc.auto_executor.get_candle_countdown")
+    @patch("backend.btc.auto_executor.executor.kalshi_trader")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.fetch_candles")
+    @patch("backend.btc.auto_executor.executor.add_all_indicators")
+    @patch("backend.btc.auto_executor.executor.get_candle_countdown")
     def test_force_trade_overrides_pass_with_pre_gate_bearish(self, mock_countdown, mock_indicators, mock_candles, mock_eval, mock_kalshi, mock_ml):
         mock_ml.return_value = MagicMock(is_trained=True)
         mock_countdown.return_value = {"seconds_left": 860}  # sec_elapsed = 40 (inside sniper window)
@@ -89,11 +89,11 @@ class TestForceTradeOnPass(unittest.TestCase):
         self.assertEqual(saved_trades[0].get("probability_percent"), 72)
 
     @patch("backend.btc.ml_engine.get_ml_engine")
-    @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
-    @patch("backend.btc.auto_executor.fetch_candles")
-    @patch("backend.btc.auto_executor.add_all_indicators")
-    @patch("backend.btc.auto_executor.get_candle_countdown")
+    @patch("backend.btc.auto_executor.executor.kalshi_trader")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.fetch_candles")
+    @patch("backend.btc.auto_executor.executor.add_all_indicators")
+    @patch("backend.btc.auto_executor.executor.get_candle_countdown")
     def test_reverse_on_cvd_divergence(self, mock_countdown, mock_indicators, mock_candles, mock_eval, mock_kalshi, mock_ml):
         mock_ml.return_value = MagicMock(is_trained=True)
         mock_countdown.return_value = {"seconds_left": 860}
@@ -141,11 +141,11 @@ class TestForceTradeOnPass(unittest.TestCase):
         self.assertEqual(saved_trades[0].get("probability_percent"), 68)
 
     @patch("backend.btc.ml_engine.get_ml_engine")
-    @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
-    @patch("backend.btc.auto_executor.fetch_candles")
-    @patch("backend.btc.auto_executor.add_all_indicators")
-    @patch("backend.btc.auto_executor.get_candle_countdown")
+    @patch("backend.btc.auto_executor.executor.kalshi_trader")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.fetch_candles")
+    @patch("backend.btc.auto_executor.executor.add_all_indicators")
+    @patch("backend.btc.auto_executor.executor.get_candle_countdown")
     def test_pin_risk_still_blocks_even_with_ignore_pass(self, mock_countdown, mock_indicators, mock_candles, mock_eval, mock_kalshi, mock_ml):
         mock_ml.return_value = MagicMock(is_trained=True)
         mock_countdown.return_value = {"seconds_left": 860}
@@ -173,11 +173,11 @@ class TestForceTradeOnPass(unittest.TestCase):
         self.executor._save_trades_history.assert_not_called()
 
     @patch("backend.btc.ml_engine.get_ml_engine")
-    @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
-    @patch("backend.btc.auto_executor.fetch_candles")
-    @patch("backend.btc.auto_executor.add_all_indicators")
-    @patch("backend.btc.auto_executor.get_candle_countdown")
+    @patch("backend.btc.auto_executor.executor.kalshi_trader")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.fetch_candles")
+    @patch("backend.btc.auto_executor.executor.add_all_indicators")
+    @patch("backend.btc.auto_executor.executor.get_candle_countdown")
     def test_force_trade_uses_raw_ml_prob_when_overridden_by_vwap(self, mock_countdown, mock_indicators, mock_candles, mock_eval, mock_kalshi, mock_ml):
         mock_ml.return_value = MagicMock(is_trained=True)
         mock_countdown.return_value = {"seconds_left": 860}

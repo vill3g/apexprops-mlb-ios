@@ -1,113 +1,56 @@
 import re
 
-with open("static/saas_dashboard.html", "r", encoding="utf-8") as f:
-    html = f.read()
+js_path = "static/js/dashboard.js"
+with open(js_path, "r", encoding="utf-8") as f:
+    js = f.read()
 
-idx_start = html.find("const container = document.getElementById('tradesContainer');")
-idx_end = html.find("container.innerHTML = htmlString;", idx_start)
-idx_end = html.find("}", idx_end) + 1
+# 1. Update _executeSaveUserConfig
+pattern1 = r"(const tp = parseFloat\(document\.getElementById\('take-profit-pct'\)\?\.value\) \|\| 50\.0;)"
+replace1 = r"\1\n                const tpEnabled = document.getElementById('take-profit-enabled')?.checked ?? true;"
+js = re.sub(pattern1, replace1, js)
 
-if idx_start != -1 and idx_end != -1:
-    bt = chr(96)
-    new_js = f'''const container = document.getElementById('tradesContainer');
-                    const recent = (s.recent_trades || []).slice(0, 15);
-                    if (recent.length === 0) {{
-                        container.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 font-mono bg-[#131b2c] rounded-xl border border-kalshi-border">No recent trades found</div>';
-                    }} else {{
-                        let htmlString = '';
-                        recent.forEach(t => {{
-                            const isWin = (t.status || "").toUpperCase().includes("WIN") || parseFloat(t.pnl_dollars || 0) > 0;
-                            const isLoss = (t.status || "").toUpperCase().includes("LOSS") || parseFloat(t.pnl_dollars || 0) < 0;
-                            
-                            let borderClass = "border-l-2 border-l-kalshi-blue";
-                            let statusBadge = '<span class="text-[9px] font-bold text-kalshi-blue">OPEN</span>';
-                            
-                            if (t.status === 'OPEN') {{
-                                statusBadge = {bt}
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-[9px] font-bold text-yellow-400 animate-pulse">OPEN</span>
-                                        <button onclick="closeTrade('${{t.id}}')" class="px-1.5 py-0.5 bg-red-600/20 text-red-500 rounded text-[8px] font-bold border border-red-500/30 transition-colors">CLOSE</button>
-                                    </div>
-                                {bt};
-                            }} else if (isWin) {{
-                                borderClass = "border-l-2 border-l-emerald-500";
-                                statusBadge = '<span class="text-[9px] font-bold text-emerald-400">WIN</span>';
-                            }} else if (isLoss) {{
-                                borderClass = "border-l-2 border-l-red-500";
-                                statusBadge = '<span class="text-[9px] font-bold text-red-400">LOSS</span>';
-                            }} else {{
-                                borderClass = "border-l-2 border-l-gray-500";
-                                statusBadge = '<span class="text-[9px] font-bold text-gray-400">CLOSED</span>';
-                            }}
+pattern1_payload = r"(take_profit_pct: tp,)"
+replace1_payload = r"\1\n                    take_profit_enabled: tpEnabled,"
+js = re.sub(pattern1_payload, replace1_payload, js)
 
-                            const pnlVal = parseFloat(t.pnl_dollars || 0);
-                            const pnlColor = pnlVal > 0 ? "text-emerald-400" : (pnlVal < 0 ? "text-red-400" : "text-gray-400");
-                            const pnlStr = pnlVal > 0 ? "+$" + pnlVal.toFixed(2) : (pnlVal < 0 ? "-$" + Math.abs(pnlVal).toFixed(2) : "$0.00");
+# 2. Update populate payload loop (updateDashboard)
+pattern2 = r"(if\(document\.getElementById\('take-profit-pct'\) && document\.activeElement\.id !== 'take-profit-pct'\) \{\s*document\.getElementById\('take-profit-pct'\)\.value = s\.take_profit_pct !== undefined \? s\.take_profit_pct : 50;\s*\})"
+replace2 = r"\1\n                    const tpEnabledToggle = document.getElementById('take-profit-enabled');\n                    if(tpEnabledToggle && s.take_profit_enabled !== undefined && document.activeElement.id !== 'take-profit-enabled') {\n                        tpEnabledToggle.checked = s.take_profit_enabled;\n                        toggleTakeProfitPctVisibility();\n                    }"
+js = re.sub(pattern2, replace2, js)
 
-                            const dir = String(t.side || "").toUpperCase();
-                            const dirColor = dir === "YES" ? "text-kalshi-green" : "text-kalshi-red";
+# 3. Update create profile (payload creation)
+pattern3 = r"(take_profit_pct: parseFloat\(document\.getElementById\('take-profit-pct'\)\?\.value\) \|\| 50\.0,)"
+replace3 = r"\1\n        take_profit_enabled: document.getElementById('take-profit-enabled')?.checked ?? true,"
+js = re.sub(pattern3, replace3, js)
 
-                            let badges = [];
-                            const mode = String(t.mode || "PAPER").toUpperCase();
-                            if (mode === "LIVE") {{
-                                badges.push('<span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-500/20 text-red-300 border border-red-500/40">LIVE</span>');
-                            }} else {{
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">PAPER</span>');
-                            }}
+# 4. Update load profile
+pattern4 = r"(if \(payload\.take_profit_pct\) document\.getElementById\('take-profit-pct'\)\.value = payload\.take_profit_pct;)"
+replace4 = r"\1\n        if (payload.take_profit_enabled !== undefined) {\n            document.getElementById('take-profit-enabled').checked = payload.take_profit_enabled;\n            toggleTakeProfitPctVisibility();\n        }"
+js = re.sub(pattern4, replace4, js)
 
-                            const exitReason = String(t.exit_reason || t.reason || "").toUpperCase();
-                            const isManual = t.is_manual === true || exitReason === "MANUAL" || exitReason === "MANUAL_CLOSE";
+# 5. Add toggleTakeProfitPctVisibility function
+func = """
+function toggleTakeProfitPctVisibility() {
+    const isEnabled = document.getElementById('take-profit-enabled')?.checked;
+    const row = document.getElementById('take-profit-pct-row');
+    if(row) {
+        if(isEnabled) {
+            row.style.height = row.scrollHeight + "px";
+            row.style.opacity = "1";
+            row.style.marginTop = "0.75rem";
+            row.style.pointerEvents = "auto";
+        } else {
+            row.style.height = "0px";
+            row.style.opacity = "0";
+            row.style.marginTop = "0px";
+            row.style.pointerEvents = "none";
+        }
+    }
+}
+window.toggleTakeProfitPctVisibility = toggleTakeProfitPctVisibility;
+"""
+js += func
 
-                            if (isManual) {{
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35">MANUAL</span>');
-                            }} else {{
-                                const styleStr = t.trading_style ? String(t.trading_style).replace(/_/g, ' ') : "AUTO";
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-blue-500/20 text-blue-300 border border-blue-500/35">' + styleStr + '</span>');
-                            }}
-                            
-                            if (t.is_profit_reentry) {{
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/35">2ND ENTRY</span>');
-                            }}
-                            if (t.is_reversal || t.is_reverse) {{
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-400 border border-purple-500/35">REVERSAL</span>');
-                            }}
-
-                            if (exitReason && exitReason !== 'KALSHI_POSITION_RECONCILED' && exitReason !== 'AI_SIGNAL' && exitReason !== 'SETTLEMENT' && !isManual) {{
-                                let exitStr = exitReason.replace(/_/g, ' ');
-                                let exitColor = 'bg-slate-500/20 text-slate-400 border-slate-500/35';
-                                if (exitStr.includes('PROFIT') || exitStr.includes('TP')) exitColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/35';
-                                else if (exitStr.includes('STOP LOSS') || exitStr.includes('STOP_LOSS') || exitStr.includes('SL') || exitStr.includes('STOP')) exitColor = 'bg-red-500/20 text-red-400 border-red-500/35';
-                                badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase border ' + exitColor + '">' + exitStr + '</span>');
-                            }}
-
-                            htmlString += {bt}
-                                <div class="bg-[#131b2c] rounded-xl p-2.5 shadow-sm border border-kalshi-border ${{borderClass}} flex flex-col gap-1.5 mb-2">
-                                    <div class="flex justify-between items-center">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[10px] font-bold text-white">${{t.strike ? 'Strike ' + t.strike : 'BTC'}}</span>
-                                            <span class="text-[10px] font-black ${{dirColor}}">${{dir}}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            ${{statusBadge}}
-                                            <span class="text-[11px] font-mono font-bold ${{pnlColor}}">${{pnlStr}}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-between items-center text-[9px] text-gray-500">
-                                        <span>${{t.time || "Unknown Time"}}</span>
-                                        <span>${{t.count || 0}} Cont. @ $${{(t.entry_price || 0).toFixed(2)}}</span>
-                                    </div>
-                                    <div class="flex flex-wrap gap-1 mt-0.5">
-                                        ${{badges.join('')}}
-                                    </div>
-                                </div>
-                            {bt};
-                        }});
-                        container.innerHTML = htmlString;
-                    }}'''
-
-    html = html[:idx_start] + new_js + html[idx_end:]
-    with open("static/saas_dashboard.html", "w", encoding="utf-8") as f:
-        f.write(html)
-    print("Success")
-else:
-    print("Failed to find indices")
+with open(js_path, "w", encoding="utf-8") as f:
+    f.write(js)
+print("Updated dashboard.js for take profit toggle!")

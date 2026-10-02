@@ -36,6 +36,8 @@
     "useFinbertNLP": true,
     "dynamicStopLoss": true,
     "positionReversal": false,
-    "slippageBufferDollars": 0.04
+    "slippageBufferDollars": 0.04,
+    "useKellyCriterion": false,
+    "use_kelly_criterion": false
   }
 }

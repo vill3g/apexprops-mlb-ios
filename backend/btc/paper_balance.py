@@ -1,13 +1,14 @@
 import json
-import os
-import threading
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 from backend.btc.io_utils import atomic_json_write
+# Cross-process: the web server and the worker both credit/debit this file (audit H4).
+from backend.btc.proc_lock import ReentrantProcessLock
 
-_lock = threading.RLock()
+_lock = ReentrantProcessLock("paper_balance")
 BALANCE_PATH = os.path.join(os.path.dirname(__file__), "paper_balance.json")
 _cached_balance: float = 500.0
 _cached_balance_mtime: float = 0.0
@@ -20,6 +21,19 @@ def _get_guest_balance_path(guest_id: str) -> str:
     """Return the paper_balance.json path for a guest."""
     from backend.guest_manager import get_guest_data_dir
     return os.path.join(get_guest_data_dir(guest_id), "paper_balance.json")
+
+
+def _read_balance_file(path: str, default: float) -> float:
+    """The balance as it is on disk right now. Used for read-modify-write so a credit made
+    by the other process a moment ago is never overwritten by a cached value."""
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return float(json.load(f).get("balance", default))
+    except Exception as e:
+        logger.error(f"Failed to read paper balance file {path}: {e}")
+        return None
 
 
 def load_balance(guest_id: str = None) -> float:
@@ -57,6 +71,7 @@ def _load_guest_balance(guest_id: str) -> float:
                 data = json.load(f)
                 bal = float(data.get("balance", 1000.0))
                 _guest_caches[guest_id] = (bal, mtime)
+                if len(_guest_caches) > 1000: _guest_caches.clear()
                 return bal
         except Exception as e:
             logger.error(f"Failed to load guest balance for {guest_id}: {e}")
@@ -69,7 +84,9 @@ def update_balance(delta: float, guest_id: str = None) -> float:
     if guest_id:
         return _update_guest_balance(delta, guest_id)
     with _lock:
-        current = load_balance()
+        current = _read_balance_file(BALANCE_PATH, 500.0)  # fresh from disk, never the cache
+        if current is None:
+            current = load_balance()
         new_balance = round(current + delta, 4)
         atomic_json_write(BALANCE_PATH, {"balance": new_balance})
         _cached_balance = new_balance
@@ -80,11 +97,14 @@ def update_balance(delta: float, guest_id: str = None) -> float:
 def _update_guest_balance(delta: float, guest_id: str) -> float:
     path = _get_guest_balance_path(guest_id)
     with _lock:
-        current = _load_guest_balance(guest_id)
+        current = _read_balance_file(path, 1000.0)  # fresh from disk, never the cache
+        if current is None:
+            current = _load_guest_balance(guest_id)
         new_balance = round(current + delta, 4)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         atomic_json_write(path, {"balance": new_balance})
         _guest_caches[guest_id] = (new_balance, os.path.getmtime(path))
+        if len(_guest_caches) > 1000: _guest_caches.clear()
         return new_balance
 
 
@@ -105,4 +125,5 @@ def _reset_guest_balance(guest_id: str) -> float:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         atomic_json_write(path, {"balance": 1000.0})
         _guest_caches[guest_id] = (1000.0, os.path.getmtime(path))
+        if len(_guest_caches) > 1000: _guest_caches.clear()
         return 1000.0

@@ -1,10 +1,10 @@
-import os
-import json
 import logging
+import os
+
 import pandas as pd
-import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
+
 from backend.btc.indicators import add_all_indicators
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def load_or_train_xgb_model(pair: str = "EURUSD", force_retrain: bool = False):
         
     logger.info("Training new Forex XGBoost Model...")
     from backend.forex.data_fetcher import fetch_forex_candles
-    
+
     # yfinance max period for 15m is 60d
     df = fetch_forex_candles(pair, "15m", limit=60 * 24 * 4) # approx 60 days
     if df.empty or len(df) < 500:
@@ -46,7 +46,6 @@ def load_or_train_xgb_model(pair: str = "EURUSD", force_retrain: bool = False):
     df["datetime"] = pd.to_datetime(df["time"], unit="s", utc=True)
     
     # Get EST hour
-    import pytz
     df["hour_of_day"] = df["datetime"].dt.tz_convert("America/New_York").dt.hour
     
     df = df.dropna(subset=FEATURES).copy()
@@ -95,6 +94,7 @@ def predict_forex_probability(summary: dict) -> float:
     # Construct feature vector matching training
     try:
         from datetime import datetime
+
         import pytz
         now_est = datetime.now(pytz.timezone("America/New_York"))
         

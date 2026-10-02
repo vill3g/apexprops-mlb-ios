@@ -1,4 +1,5 @@
 import logging
+
 logger = logging.getLogger(__name__)
 """
 Technical Indicators & Momentum Calculations for 15-Minute Bitcoin Analysis.
@@ -84,32 +85,29 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
     divergences = []
     if df is None or len(df) == 0:
         return divergences
-    df = df.reset_index(drop=True)
     n = len(df)
     if n < lookback + 5:
         return divergences
 
-    # Inspect the last few candles (indices n-1, n-2) against previous swing points in lookback
-    curr_idx = n - 1
-    curr_low = df.loc[curr_idx, "low"]
-    curr_high = df.loc[curr_idx, "high"]
-    curr_rsi = df.loc[curr_idx, "rsi"]
-
-    start_idx = max(0, curr_idx - lookback)
+    # Inspect the last few candles against previous swing points in lookback
+    curr_low = df["low"].iloc[-1]
+    curr_high = df["high"].iloc[-1]
+    curr_rsi = df["rsi"].iloc[-1]
 
     # Search for regular Bullish Divergence:
     # Find minimum price in lookback (excluding the latest 2 candles)
-    prev_low_slice = df.loc[start_idx : curr_idx - 3, "low"]
+    prev_low_slice = df["low"].iloc[-lookback : -2]
     if not prev_low_slice.empty:
-        prev_low_idx = prev_low_slice.idxmin()
-        prev_low = df.loc[prev_low_idx, "low"]
-        prev_rsi = df.loc[prev_low_idx, "rsi"]
+        prev_low_idx = prev_low_slice.argmin()
+        prev_low = prev_low_slice.iloc[prev_low_idx]
+        prev_rsi = df["rsi"].iloc[-lookback : -2].iloc[prev_low_idx]
 
-        if curr_low < prev_low and curr_rsi > prev_rsi and curr_rsi < 45 and prev_rsi < 45 and (curr_idx - prev_low_idx) >= 3:
+        if curr_low < prev_low and curr_rsi > prev_rsi and curr_rsi < 45 and prev_rsi < 45 and (n - 1 - (n - lookback + prev_low_idx)) >= 3:
+            curr_idx = n - 1
             divergences.append({
                 "type": "BULLISH_RSI_DIVERGENCE",
                 "curr_idx": curr_idx,
-                "prev_idx": int(prev_low_idx),
+                "prev_idx": int(n - lookback + prev_low_idx),
                 "price_low_curr": curr_low,
                 "price_low_prev": prev_low,
                 "rsi_curr": round(curr_rsi, 2),
@@ -117,18 +115,20 @@ def detect_rsi_divergences(df: pd.DataFrame, lookback: int = 25) -> list[dict]:
                 "description": f"Price made Lower Low ({curr_low:.1f} < {prev_low:.1f}) but RSI made Higher Low ({curr_rsi:.1f} > {prev_rsi:.1f})"
             })
 
+    curr_idx = n - 1
+    
     # Search for regular Bearish Divergence:
-    prev_high_slice = df.loc[start_idx : curr_idx - 3, "high"]
+    prev_high_slice = df["high"].iloc[-lookback : -2]
     if not prev_high_slice.empty:
-        prev_high_idx = prev_high_slice.idxmax()
-        prev_high = df.loc[prev_high_idx, "high"]
-        prev_rsi = df.loc[prev_high_idx, "rsi"]
+        prev_high_idx = prev_high_slice.argmax()
+        prev_high = prev_high_slice.iloc[prev_high_idx]
+        prev_rsi = df["rsi"].iloc[-lookback : -2].iloc[prev_high_idx]
 
-        if curr_high > prev_high and curr_rsi < prev_rsi and curr_rsi > 55 and prev_rsi > 55 and (curr_idx - prev_high_idx) >= 3:
+        if curr_high > prev_high and curr_rsi < prev_rsi and curr_rsi > 55 and prev_rsi > 55 and (n - 1 - (n - lookback + prev_high_idx)) >= 3:
             divergences.append({
                 "type": "BEARISH_RSI_DIVERGENCE",
                 "curr_idx": curr_idx,
-                "prev_idx": int(prev_high_idx),
+                "prev_idx": int(n - lookback + prev_high_idx),
                 "price_high_curr": curr_high,
                 "price_high_prev": prev_high,
                 "rsi_curr": round(curr_rsi, 2),
@@ -195,7 +195,7 @@ def compute_adx(high: pd.Series, low: pd.Series, close: pd.Series, window: int =
         s = pd.Series(data)
         # Wilder's Smoothing is essentially an exponential moving average with alpha = 1/win
         # We use adjust=False to closely match the recursive formula
-        res = s.ewm(alpha=1/win, adjust=False).mean().values
+        res = s.ewm(alpha=1/win, adjust=False).mean().to_numpy(copy=True)
         # To match the original logic where the first `win` values are zero:
         res[:win] = 0.0
         return res
@@ -213,7 +213,10 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Append all technical indicators to the DataFrame.
     """
-    df = df.copy()
+    # Modifies df inplace instead of copying
+    if "adx" in df.columns and hasattr(df, "_cached_len") and df._cached_len == len(df):
+        if hasattr(df, "_cached_close") and abs(df._cached_close - df["close"].iloc[-1]) < 1e-9:
+            return df
 
     df["adx"] = compute_adx(df["high"], df["low"], df["close"], 14)
 
@@ -266,8 +269,30 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df["cvd"] = compute_cvd_proxy(df)
     df["cvd_acceleration"] = compute_cvd_acceleration(df)
     
+    
+    # --- Institutional Volume Spread Analysis (VSA) ---
+    # High volume but small body indicates limit order absorption (effort vs result)
+    range_hl = (df["high"] - df["low"]).replace(0, 1e-9)
+    body = (df["close"] - df["open"]).abs()
+    body_ratio = body / range_hl
+    # vsa_absorption = high volume ratio * small body ratio
+    df["vsa_absorption"] = df.get("vol_ratio", 1.0) * (1.0 - body_ratio)
+
+    # --- Swing Failure Pattern (Liquidity Swipes) ---
+    # Detects if price wicked past a 20-candle high/low but closed inside
+    rolling_high = df["high"].shift(1).rolling(20).max()
+    rolling_low = df["low"].shift(1).rolling(20).min()
+    
+    sfp_bullish = ((df["low"] < rolling_low) & (df["close"] > rolling_low)).astype(float)
+    sfp_bearish = ((df["high"] > rolling_high) & (df["close"] < rolling_high)).astype(float)
+    df["sfp_score"] = sfp_bullish - sfp_bearish
+
     # Point of Control (POC)
     df["poc"] = compute_trailing_poc(df)
+
+    if len(df) > 0:
+        df._cached_len = len(df)
+        df._cached_close = df["close"].iloc[-1]
 
     return df
 
@@ -435,6 +460,7 @@ def compute_cvd_acceleration(df: pd.DataFrame) -> pd.Series:
 
 def compute_trailing_poc(df: pd.DataFrame, window: int = 96) -> pd.Series:
     import numpy as np
+
     # Only calculate for the most recent candle to save O(N) loop time!
     pocs = df['close'].values.copy()
     

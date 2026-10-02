@@ -14,8 +14,8 @@ Provides unified functions for:
 
 import logging
 from datetime import datetime
+from typing import Any, Dict, List
 from zoneinfo import ZoneInfo
-from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger("btc_trend_boxes")
 

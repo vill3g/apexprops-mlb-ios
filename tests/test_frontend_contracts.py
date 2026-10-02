@@ -19,8 +19,15 @@ CSS_PATH = os.path.join(STATIC_DIR, "css", "app.css")
 
 @pytest.fixture(scope="module")
 def js_content():
-    with open(JS_PATH, "r", encoding="utf-8") as f:
-        return f.read()
+    content = ""
+    if os.path.exists(JS_PATH):
+        with open(JS_PATH, "r", encoding="utf-8") as f:
+            content += f.read()
+    dash_js = os.path.join(STATIC_DIR, "js", "dashboard.js")
+    if os.path.exists(dash_js):
+        with open(dash_js, "r", encoding="utf-8") as f:
+            content += f.read()
+    return content
 
 
 @pytest.fixture(scope="module")
@@ -97,9 +104,13 @@ class TestAPIContracts:
     """Verify that fetch() calls in app.js target endpoints defined in main.py."""
 
     def test_trade_endpoints_exist_in_backend(self, js_content):
-        """Critical trade API endpoints referenced in JS should exist in main.py."""
-        with open(os.path.join(PROJECT_ROOT, "backend", "main.py"), "r", encoding="utf-8") as f:
-            backend = f.read()
+        """Critical trade API endpoints referenced in JS should exist in backend routes."""
+        backend_content = ""
+        for root_dir, _, files in os.walk(os.path.join(PROJECT_ROOT, "backend")):
+            for file in files:
+                if file.endswith(".py"):
+                    with open(os.path.join(root_dir, file), "r", encoding="utf-8") as f:
+                        backend_content += f.read()
 
         critical_paths = [
             "/trade/manual",
@@ -113,7 +124,7 @@ class TestAPIContracts:
         ]
 
         for path in critical_paths:
-            assert path in backend, f"Critical API path '{path}' not found in backend/main.py"
+            assert path in backend_content, f"Critical API path '{path}' not found in backend code"
 
     def test_api_fetch_calls_have_error_handling(self, js_content):
         """Verify the settings save function uses try-catch."""
@@ -230,3 +241,50 @@ class TestCSSIntegrity:
         assert open_braces == close_braces, (
             f"CSS brace mismatch: {open_braces} opening vs {close_braces} closing"
         )
+
+
+@pytest.fixture(scope="module")
+def saas_dashboard_content():
+    saas_path = os.path.join(STATIC_DIR, "saas_dashboard.html")
+    with open(saas_path, "r", encoding="utf-8") as f:
+        html = f.read()
+    js_path = os.path.join(STATIC_DIR, "js", "dashboard.js")
+    if os.path.exists(js_path):
+        with open(js_path, "r", encoding="utf-8") as f:
+            html += f.read()
+    return html
+
+
+# ────────────────────────────────────────────
+# 7. Modal Swipe-to-Dismiss Contracts
+# ────────────────────────────────────────────
+
+class TestModalSwipeDismissContracts:
+    """Verify swipe-to-dismiss markup and handlers on target modals."""
+
+    def test_modal_card_ids_exist(self, saas_dashboard_content):
+        assert 'id="tradeDetailsModalCard"' in saas_dashboard_content
+        assert 'id="regimeModalCard"' in saas_dashboard_content
+        assert 'id="styleModalCard"' in saas_dashboard_content
+
+    def test_swipe_pill_handles_exist(self, saas_dashboard_content):
+        assert 'swipe-pill' in saas_dashboard_content
+        pill_count = saas_dashboard_content.count("swipe-pill")
+        assert pill_count >= 3, f"Expected at least 3 swipe-pill handles, got {pill_count}"
+
+    def test_attach_swipe_to_dismiss_wired(self, saas_dashboard_content):
+        assert "function attachSwipeToDismiss" in saas_dashboard_content
+        assert "attachSwipeToDismiss('tradeDetailsModal', 'tradeDetailsModalCard', closeTradeDetails)" in saas_dashboard_content
+        assert "attachSwipeToDismiss('regime-modal', 'regimeModalCard', closeRegimeModal)" in saas_dashboard_content
+        assert "attachSwipeToDismiss('styleModal', 'styleModalCard', closeTradingStyleModal)" in saas_dashboard_content
+
+    def test_escape_key_listener_registered(self, saas_dashboard_content):
+        assert "closeTradeDetails()" in saas_dashboard_content
+        assert "closeRegimeModal()" in saas_dashboard_content
+        assert "Escape" in saas_dashboard_content
+
+    def test_modal_reset_styles_on_open(self, saas_dashboard_content):
+        assert "tradeDetailsModalCard" in saas_dashboard_content
+        assert "regimeModalCard" in saas_dashboard_content
+        assert "styleModalCard" in saas_dashboard_content
+

@@ -1,11 +1,9 @@
-import time
-from datetime import datetime
-import pandas as pd
 import logging
-from backend.btc.data_fetcher import (
-    _fetch_from_kraken, _fetch_from_binance_us, _fetch_from_coinbase, _fetch_from_yfinance,
-    TIMEFRAMES, get_candle_countdown, _HTTP_SESSION
-)
+from datetime import datetime
+
+import pandas as pd
+
+from backend.btc.data_fetcher import _HTTP_SESSION, TIMEFRAMES
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +141,12 @@ def fetch_asset_candles(asset: str = "BTC", timeframe: str = "15m", limit: int =
     raise RuntimeError(f"All providers failed for {asset} {tf}. Last error: {last_err}")
 
 
+import time
+import threading
+
+_multi_ticker_cache = {}
+_multi_ticker_lock = threading.Lock()
+
 def get_asset_ticker(asset: str) -> dict:
     asset = asset.upper()
     if asset == "BTC":
@@ -151,11 +155,25 @@ def get_asset_ticker(asset: str) -> dict:
     if asset in ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]:
         from backend.forex.data_fetcher import get_forex_ticker
         return get_forex_ticker(asset)
+
+    now = time.time()
+    with _multi_ticker_lock:
+        cached = _multi_ticker_cache.get(asset)
+        if cached and cached["data"] and (now - cached["timestamp"] < 0.95):
+            return cached["data"]
+        if asset not in _multi_ticker_cache:
+            _multi_ticker_cache[asset] = {"timestamp": 0.0, "data": None}
+        # Prevent stampede
+        _multi_ticker_cache[asset]["timestamp"] = now + 5.0
+
     df_1m = fetch_asset_candles(asset, "1m", limit=1)
     df_1d = fetch_asset_candles(asset, "1d", limit=2)
     
     if df_1d.empty or len(df_1d) < 1:
-        return {"price": 0, "change_24h": 0, "high_24h": 0, "low_24h": 0, "volume_24h": 0}
+        res = {"price": 0, "change_24h": 0, "high_24h": 0, "low_24h": 0, "volume_24h": 0}
+        with _multi_ticker_lock:
+            _multi_ticker_cache[asset] = {"timestamp": time.time(), "data": res}
+        return res
         
     latest_1d = df_1d.iloc[-1]
     curr_price = float(df_1m.iloc[-1]["close"]) if not df_1m.empty else float(latest_1d["close"])
@@ -164,15 +182,20 @@ def get_asset_ticker(asset: str) -> dict:
     vol = float(latest_1d["volume"])
     prev_close = float(df_1d.iloc[-2]["close"]) if len(df_1d) > 1 else float(latest_1d["close"])
     change = ((curr_price - prev_close) / prev_close * 100) if prev_close else 0.0
-    return {
+    res = {
         "price": curr_price,
         "change_24h": round(change, 2),
         "high_24h": round(high, 2),
         "low_24h": round(low, 2),
         "volume_24h": round(vol, 2)
     }
+    with _multi_ticker_lock:
+        _multi_ticker_cache[asset] = {"timestamp": time.time(), "data": res}
+    return res
 
 import pytz
+
+
 def is_market_open(asset: str) -> bool:
     asset = asset.upper()
     if asset in ["BTC", "ETH"]:

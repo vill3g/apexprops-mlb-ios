@@ -38,12 +38,8 @@ logger = logging.getLogger("Watchdog")
 def run_server():
     cmd = [
         PYTHON_EXE,
-        "-m", "uvicorn",
-        "backend.main:app",
-        "--host", "0.0.0.0",
-        "--port", "8056",
-        "--app-dir", APP_DIR,
-        "--no-access-log"
+        "launch_desktop.py",
+        "--no-browser"
     ]
     
     flags = 0
@@ -63,6 +59,62 @@ def run_server():
     )
     return proc
 
+NGROK_DOMAIN = os.environ.get("NGROK_DOMAIN", "moneyprinter.ngrok.app")
+APP_PORT = 8058  # keep in sync with PORT in launch_desktop.py
+
+
+import psutil
+
+def _ngrok_processes():
+    """(pid, command line) of ngrok processes serving this app's domain."""
+    procs = []
+    try:
+        for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+            if p.info['name'] == 'ngrok.exe':
+                cmdline = ' '.join(p.info['cmdline'] or [])
+                if NGROK_DOMAIN in cmdline:
+                    procs.append((p.info['pid'], cmdline))
+    except Exception as e:
+        logger.warning(f"Error checking ngrok processes with psutil: {e}")
+    return procs
+
+
+def _ngrok_running() -> bool:
+    """True if this app's tunnel is up AND points at the current port. A tunnel left
+    over from before a port change is stopped so a correct one can start."""
+    ok = False
+    for pid, cmdline in _ngrok_processes():
+        if f" {APP_PORT} " in f" {cmdline} ":
+            ok = True
+        else:
+            logger.warning("[Watchdog] ngrok (pid %s) points at the wrong port; stopping it: %s", pid, cmdline)
+            subprocess.call(["taskkill", "/F", "/PID", str(pid)],
+                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000))
+    return ok
+
+
+def ensure_ngrok():
+    """Start the ngrok tunnel if it is not running (the authtoken comes from ngrok's own config)."""
+    try:
+        if _ngrok_running():
+            return
+        logger.info("[Watchdog] Starting ngrok tunnel %s -> port %s...", NGROK_DOMAIN, APP_PORT)
+        subprocess.Popen(
+            ["ngrok", "http", str(APP_PORT), f"--url={NGROK_DOMAIN}"],
+            cwd=APP_DIR,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
+            close_fds=True
+        )
+    except Exception as e:
+        logger.warning("[Watchdog] Could not start ngrok tunnel: %s", e)
+
+
+def _ngrok_monitor():
+    while True:
+        ensure_ngrok()
+        time.sleep(60)
+
+
 def _acquire_watchdog_lock():
     import ctypes
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "KalshiAITraderWatchdogLock")
@@ -81,13 +133,9 @@ def main():
     logger.info("  Auto-Reboot on Crash Enabled")
     logger.info("==================================================")
 
-    # Start Cloudflare Remote Tunnel in background
-    try:
-        from remote_tunnel import start_tunnel_in_background
-        start_tunnel_in_background()
-        logger.info("[Watchdog] Cloudflare Remote Access tunnel initiated.")
-    except Exception as e:
-        logger.warning("[Watchdog] Could not start remote tunnel: %s", e)
+    # Keep the ngrok tunnel up: checked now and every 60 s (restarted if it died)
+    import threading
+    threading.Thread(target=_ngrok_monitor, daemon=True, name="NgrokMonitor").start()
 
     restart_count = 0
 

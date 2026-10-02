@@ -1,3 +1,5 @@
+# CPU-only PyTorch wheels ("+cpu") are only on PyTorch's own index:
+--extra-index-url https://download.pytorch.org/whl/cpu
 # Pinned exact versions for deploy reproducibility (this app autonomously
 # places real-money trades on Kalshi — do not switch back to >= ranges).
 # Bump deliberately, one dependency at a time, with a full PAPER-mode
@@ -16,3 +18,14 @@ websockets==13.1
 yfinance==1.7.0
 torch==2.14.0+cpu
 optuna==5.0.0
+# Imported by the app but previously missing (a fresh install/deploy crashed on import).
+# Versions match the working local .venv.
+bcrypt==5.0.0
+PyJWT==2.14.0
+python-dotenv==1.2.3
+pytz==2026.3.post1
+python-multipart==0.0.32
+pillow==12.3.0
+pillow-heif>=0.22  # HEIC/HEIF (iPhone) profile pictures
+qrcode==8.2
+pyngrok==8.1.2

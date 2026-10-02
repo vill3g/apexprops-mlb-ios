@@ -1,10 +1,11 @@
-import requests
-import xml.etree.ElementTree as ET
-import time
-from datetime import datetime, timedelta
-import pytz
 import logging
 import threading
+import time
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+import pytz
+import requests
 
 logger = logging.getLogger(__name__)
 

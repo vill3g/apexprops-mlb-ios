@@ -15,7 +15,7 @@ import ssl
 
 import secrets
 
-PORT = 8056
+PORT = 8058
 BIND_HOST = "0.0.0.0"
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -60,19 +60,27 @@ def main():
 
     if is_server_running():
         print(f"\n[+] Server is already active on port {PORT}!")
-        print(f"[+] Opening authenticated dashboard in browser: {LOCAL_URL}")
+        if "--no-browser" in sys.argv:
+            # Started by the watchdog while another copy is serving: wait before handing
+            # back, so the watchdog doesn't spin in a fast restart loop.
+            time.sleep(60)
+            return
+        print(f"[+] Opening dashboard in browser: {SCHEME}://localhost:{PORT}/")
         webbrowser.open(LOCAL_URL)
         print("[+] Done.")
         time.sleep(1.5)
         return
 
-    print(f"\n[+] Starting server on {BIND_HOST}:{PORT} (HTTPS)...")
-    print(f"[+] Browser will launch automatically with local token handshake at {LOCAL_URL}")
-    threading.Thread(target=open_browser, daemon=True).start()
+    no_browser = "--no-browser" in sys.argv
+    print(f"\n[+] Starting server on {BIND_HOST}:{PORT} ({SCHEME.upper()})...")
+    if not no_browser:
+        print(f"[+] Browser will launch automatically at {SCHEME}://localhost:{PORT}/")
+        threading.Thread(target=open_browser, daemon=True).start()
 
     import subprocess
+    venv_python = os.path.join(APP_DIR, ".venv", "Scripts", "python.exe")
     cmd = [
-        sys.executable, "-m", "uvicorn", "backend.main:app",
+        venv_python, "-m", "uvicorn", "backend.main:app",
         "--host", BIND_HOST,
         "--port", str(PORT),
         "--no-access-log"
@@ -82,7 +90,43 @@ def main():
             "--ssl-keyfile", os.path.join(APP_DIR, "key.pem"),
             "--ssl-certfile", os.path.join(APP_DIR, "cert.pem")
         ])
-    subprocess.run(cmd, cwd=APP_DIR)
+    # Launch the background worker (places and settles trades) and restart it if it
+    # ever exits while the web server is running. worker.py refuses to run twice, so a
+    # duplicate simply exits and is retried later.
+    worker_cmd = [venv_python, "backend/worker.py"]
+    stop_event = threading.Event()
+    worker_state = {"proc": None}
+
+    def supervise_worker():
+        delay = 5.0
+        while not stop_event.is_set():
+            started = time.time()
+            proc = subprocess.Popen(worker_cmd, cwd=APP_DIR)
+            worker_state["proc"] = proc
+            while proc.poll() is None and not stop_event.is_set():
+                time.sleep(1.0)
+            if stop_event.is_set():
+                break
+            delay = 5.0 if time.time() - started > 60 else min(delay * 2, 120.0)
+            print(f"[!] Worker exited with code {proc.returncode}; restarting in {delay:.0f}s")
+            stop_event.wait(delay)
+
+    threading.Thread(target=supervise_worker, daemon=True, name="WorkerSupervisor").start()
+
+    # Launch uvicorn
+    try:
+        subprocess.run(cmd, cwd=APP_DIR)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop_event.set()
+        proc = worker_state["proc"]
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                proc.kill()
 
 if __name__ == "__main__":
     main()

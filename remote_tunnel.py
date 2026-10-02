@@ -9,6 +9,12 @@ from pyngrok import ngrok, conf
 
 logger = logging.getLogger(__name__)
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+except ImportError:
+    pass
+
 DESKTOP_DIR = os.path.join(os.path.expanduser("~"), "Desktop")
 URL_FILE = os.path.join(DESKTOP_DIR, "REMOTE_ACCESS_URL.txt")
 TOKEN_FILE = os.path.join(os.path.dirname(__file__), ".local_token")
@@ -41,9 +47,8 @@ def generate_qr_and_shortcuts(tunnel_url: str, token: str):
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         
-        static_assets = os.path.join(os.path.dirname(__file__), "static", "assets")
-        os.makedirs(static_assets, exist_ok=True)
-        img.save(os.path.join(static_assets, "server_qr.png"))
+        # The QR encodes the master token, so it must never be written under static/
+        # (everything there is publicly downloadable). Desktop copy only.
         img.save(os.path.join(DESKTOP_DIR, "REMOTE_ACCESS_QR.png"))
         
         with open(URL_FILE, "w", encoding="utf-8") as f:
@@ -64,11 +69,14 @@ def generate_qr_and_shortcuts(tunnel_url: str, token: str):
 
 def run_tunnel():
     try:
-        # User's provided permanent auth token
-        conf.get_default().auth_token = "3JhyBfP9ni38Xo5aAMpHnsEshOO_2CuYDLLwz4rY3oBz8stsg"
+        # The ngrok authtoken is never stored in code. Use NGROK_AUTHTOKEN from .env if set;
+        # otherwise ngrok uses the token saved by `ngrok config add-authtoken <token>`.
+        ngrok_token = os.environ.get("NGROK_AUTHTOKEN", "").strip()
+        if ngrok_token:
+            conf.get_default().auth_token = ngrok_token
         
-        # Connect ngrok to local port 8056
-        http_tunnel = ngrok.connect(8056)
+        # Connect ngrok to local port 8058 using permanent custom domain
+        http_tunnel = ngrok.connect(8058, domain="moneyprinter.ngrok.app")
         public_url = http_tunnel.public_url
         
         token = get_auth_token()

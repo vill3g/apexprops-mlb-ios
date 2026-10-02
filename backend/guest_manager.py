@@ -5,14 +5,14 @@ Each guest gets an isolated paper trading sandbox with their own balance,
 trades history, and trading config.
 """
 
-import os
 import json
-import uuid
-import shutil
 import logging
+import os
+import shutil
 import threading
-from typing import Dict, List, Optional
+import uuid
 from datetime import datetime, timezone
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +97,10 @@ def is_valid_guest(guest_id: str) -> bool:
     """Check if a guest ID is valid and exists."""
     if not guest_id or not isinstance(guest_id, str):
         return False
+    # If the guest_id is purely digits, it's a SaaS user from the SQLite database
+    if str(guest_id).isdigit():
+        user_dir = os.path.join(DATA_DIR, "users", str(guest_id))
+        return os.path.exists(user_dir)
     # Sanitize: only allow alphanumeric + hyphens
     if not all(c.isalnum() or c == '-' for c in guest_id):
         return False
@@ -201,7 +205,7 @@ def delete_guest(guest_id: str) -> bool:
 
     # Evict any cached executor for this guest
     try:
-        from backend.btc.auto_executor import _evict_guest_executor
+        from backend.core.registry import _evict_guest_executor
         _evict_guest_executor(guest_id)
     except Exception:
         pass

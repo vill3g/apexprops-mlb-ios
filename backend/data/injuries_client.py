@@ -6,13 +6,13 @@ injured athletes are never displayed in props, lineups, or starting rotations.
 """
 
 import json
-import os
-import time
-import urllib.request
-import re
-import unicodedata
 import logging
-from typing import Dict, Any, Optional, List
+import os
+import re
+import time
+import unicodedata
+import urllib.request
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

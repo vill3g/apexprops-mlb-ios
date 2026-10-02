@@ -1,8 +1,9 @@
 import logging
+
 logger = logging.getLogger(__name__)
-import os
 import json
-from typing import Optional, Dict, Any
+import os
+from typing import Any, Dict
 
 REGISTRY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'player_photos_registry.json')
 

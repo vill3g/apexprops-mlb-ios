@@ -1,43 +1,18 @@
-import sys
 
-try:
-    with open('backend/btc/analyzer.py', 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+import re
+with open("static/saas_dashboard.html", "r", encoding="utf-8") as f:
+    content = f.read()
 
-    start_idx = -1
-    end_idx = -1
+bad_str = """toast.className = \fex items-center gap-3 w-full max-w-sm p-3.5 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl border \\ transition-all duration-500 ease-out translate-y-[-150%] opacity-0\\;"""
+good_str = "toast.className = `flex items-center gap-3 w-full max-w-sm p-3.5 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl border ${bg} transition-all duration-500 ease-out translate-y-[-150%] opacity-0`;"
 
-    for i, line in enumerate(lines):
-        if 'if ml_prob_for_pred_dir < 50.0 and disagreement >=' in line:
-            start_idx = i
-            break
+content = content.replace("toast.className = \fex", "toast.className = `flex")
+content = content.replace("backdrop-blur-xl border \\ transition-all", "backdrop-blur-xl border ${bg} transition-all")
+content = content.replace("opacity-0\\;", "opacity-0`;")
+content = content.replace("toast.innerHTML = \\", "toast.innerHTML = `")
+content = content.replace("</div>\\;", "</div>`;")
+content = content.replace("??", "?") # Emojis were broken
 
-    if start_idx != -1:
-        for i in range(start_idx + 1, len(lines)):
-            if '        else:' in lines[i] and 'ML Confirmation:' in lines[i+2]:
-                end_idx = i
-                break
+with open("static/saas_dashboard.html", "w", encoding="utf-8") as f:
+    f.write(content)
 
-    if end_idx == -1 and start_idx != -1:
-        for i in range(start_idx + 1, len(lines)):
-            if '        else:' in lines[i] and 'ML Confirmation' in lines[i+2]:
-                end_idx = i
-                break
-
-    if start_idx != -1 and end_idx != -1:
-        new_block = [
-            '        if ml_prob_for_pred_dir < 50.0 and disagreement >= THRESHOLDS["model_conflict_threshold"]:\n',
-            '            catalysts.append(f"⚠️ Model Conflict: Chart setup favors {pred} ({prob}%) but ML model disagrees ({ml_prob_for_pred_dir:.1f}% for this side) - confidence capped")\n',
-            '            blended_prob = min(blended_prob, THRESHOLDS["model_conflict_cap"])\n',
-            '            if "GRADE A+" in grade:\n',
-            '                grade = "GRADE A SETUP"\n'
-        ]
-        new_lines = lines[:start_idx] + new_block + lines[end_idx:]
-        with open('backend/btc/analyzer.py', 'w', encoding='utf-8') as f:
-            f.writelines(new_lines)
-        print("Fixed!")
-    else:
-        print(f"Failed to find indices: {start_idx}, {end_idx}")
-
-except Exception as e:
-    print(f"Error: {e}")

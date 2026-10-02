@@ -290,12 +290,12 @@ if __name__ == "__main__":
     unittest.main()
 
 import unittest
-from backend.btc.auto_executor import get_auto_executor
+from backend.core.registry import get_auto_executor
 auto_executor = get_auto_executor('BTC')
 
 import unittest
 from unittest.mock import patch, MagicMock
-from backend.btc.auto_executor import get_auto_executor
+from backend.core.registry import get_auto_executor
 auto_executor = get_auto_executor('BTC')
 import pandas as pd
 import time

@@ -11,12 +11,13 @@ Metrics produced:
 - 10-bucket probability calibration table
 """
 
+import argparse
+import json
+import logging
+import math
 import os
 import sys
-import json
-import math
-import argparse
-import logging
+
 import numpy as np
 import pandas as pd
 
@@ -27,9 +28,10 @@ REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from backend.btc.ml_engine import XGBoostModel, build_feature_row, FEATURE_KEYS
-from backend.btc.indicators import add_all_indicators
 from backend.btc.data_fetcher import fetch_15m_candles_history
+from backend.btc.indicators import add_all_indicators
+from backend.btc.ml_engine import (FEATURE_KEYS, XGBoostModel,
+                                   build_feature_row, normalize_features)
 
 
 def run_walkforward_backtest(
@@ -66,6 +68,7 @@ def run_walkforward_backtest(
 
     for i in range(warmup, n_rows):
         feat_dict = build_feature_row(df_ind, i)
+        feat_dict = normalize_features(feat_dict)
         vec = []
         for k in FEATURE_KEYS:
             val = feat_dict.get(k, 0.0)
@@ -240,6 +243,7 @@ def run_model_hyperparam_search(
 
     for i in range(warmup, n_rows):
         feat_dict = build_feature_row(df_ind, i)
+        feat_dict = normalize_features(feat_dict)
         vec = []
         for k in FEATURE_KEYS:
             val = feat_dict.get(k, 0.0)
@@ -357,20 +361,20 @@ def main():
 
     window_sizes = [int(w.strip()) for w in args.windows.split(",") if w.strip()]
 
-    print(f"\n=======================================================")
-    print(f" BTC 15M WALK-FORWARD BACKTEST & CALIBRATION HARNESS")
+    print("\n=======================================================")
+    print(" BTC 15M WALK-FORWARD BACKTEST & CALIBRATION HARNESS")
     print(f" Historical Horizon: {args.days} Days | Windows: {window_sizes}")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
 
-    print(f"[*] Fetching deep historical 15m candles from Binance.US (or cache)...")
+    print("[*] Fetching deep historical 15m candles from Binance.US (or cache)...")
     df_raw = fetch_15m_candles_history(days=args.days)
     print(f"[OK] Retrieved {len(df_raw)} candles covering {args.days} days.")
 
-    print(f"[*] Computing multi-timeframe indicators (EMAs, RSI, VWAP, ATR, CVD)...")
+    print("[*] Computing multi-timeframe indicators (EMAs, RSI, VWAP, ATR, CVD)...")
     df_ind = add_all_indicators(df_raw)
-    print(f"[OK] Indicators computed successfully.")
+    print("[OK] Indicators computed successfully.")
 
-    print(f"[*] Executing walk-forward evaluation loop...")
+    print("[*] Executing walk-forward evaluation loop...")
     results = run_walkforward_backtest(df_ind, window_sizes=window_sizes, step=1, retrain_every=48)
 
     if not results:

@@ -4,9 +4,9 @@ Connects strictly and exclusively to The Odds API (the-odds-api.com) for officia
 moneylines, spreads, totals, and authentic player prop lines.
 """
 
-import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, Optional
+
 from backend.data.the_odds_client import TheOddsClient
 
 logger = logging.getLogger("odds_api_client")

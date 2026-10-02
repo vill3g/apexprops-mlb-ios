@@ -4,11 +4,13 @@ Calculates expected strikeouts and Over/Under win probabilities for starting pit
 Provides both Top 5 Daily Highest Probability Picks and Full Slate Screener.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from backend.data.draftkings_client import DraftKingsClient
-from backend.data.verified_mlb_client import VerifiedMLBClient
 from backend.data.injuries_client import InjuriesClient
 from backend.data.player_photos import photo_resolver
+from backend.data.verified_mlb_client import VerifiedMLBClient
+
 
 class PitcherKModel:
     def __init__(self):

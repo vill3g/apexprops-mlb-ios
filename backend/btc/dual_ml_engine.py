@@ -1,9 +1,8 @@
-import os
-import json
 import logging
 import threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
 from backend.btc.ml_engine import MLEngine
 
 logger = logging.getLogger(__name__)
@@ -16,6 +15,7 @@ class DualMLEngine:
         self.day_engine = MLEngine(data_dir, trading_style=trading_style, asset=asset)
         self.night_engine = MLEngine(data_dir, trading_style=trading_style, asset=asset)
         self._lock = threading.Lock()
+        self._last_trained_mtime = 0.0
         
     def _is_night_time(self):
         ny_time = datetime.now(ZoneInfo("America/New_York"))
@@ -23,11 +23,21 @@ class DualMLEngine:
 
     @property
     def is_trained(self):
-        if not getattr(self, "_auto_train_attempted", False):
-            return False
         if self._is_night_time():
             return self.night_engine.is_trained or self.day_engine.is_trained
         return self.day_engine.is_trained
+
+    @property
+    def last_trained_mtime(self):
+        return max(
+            getattr(self.day_engine, "last_trained_mtime", 0.0),
+            getattr(self.night_engine, "last_trained_mtime", 0.0),
+            getattr(self, "_last_trained_mtime", 0.0)
+        )
+
+    @last_trained_mtime.setter
+    def last_trained_mtime(self, val):
+        self._last_trained_mtime = float(val)
 
     @property
     def feature_keys(self):
@@ -46,16 +56,19 @@ class DualMLEngine:
 
     def train(self, force=False):
         # We need to pass the filter to MLEngine
+        import time
         with self._lock:
             self.day_engine.train(force=force, time_filter="day")
             self.night_engine.train(force=force, time_filter="night")
+            self._last_trained_mtime = time.time()
 
     def self_train_on_historical_market(self, df_ind):
+        import time
         with self._lock:
             self._auto_train_attempted = True
-            # Always run self_train so it can check its internal last_train_sample_count
             n_day = self.day_engine.self_train_on_historical_market(df_ind, time_filter="day")
             n_night = self.night_engine.self_train_on_historical_market(df_ind, time_filter="night")
+            self._last_trained_mtime = time.time()
             return (n_day or 0) + (n_night or 0)
 
 

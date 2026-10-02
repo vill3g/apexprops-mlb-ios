@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,6 @@ class LossAnalyzer:
             return default
 
         rsi   = _first_not_none(raw_features.get("rsi"),       indicators.get("rsi"),       default=50.0)
-        bb_upper = _first_not_none(raw_features.get("bb_upper"), indicators.get("bb_upper"), default=0.0)
-        bb_lower = _first_not_none(raw_features.get("bb_lower"), indicators.get("bb_lower"), default=0.0)
         atr   = _first_not_none(raw_features.get("atr"),       indicators.get("atr"),       default=0.0)
         cvd   = _first_not_none(raw_features.get("cvd_value"), indicators.get("cvd"),       default=0.0)
         delta = _first_not_none(raw_features.get("delta_to_target"),                        default=0.0)

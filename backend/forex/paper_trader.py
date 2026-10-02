@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 import threading
-import logging
 import uuid
-from typing import List, Dict, Optional
 from datetime import datetime
+from typing import List, Optional
+
 import pytz
 
 logger = logging.getLogger(__name__)
@@ -142,7 +143,6 @@ def evaluate_stops_and_limits(pair: str, current_price: float):
     with _lock:
         state = _load_state()
         positions = state.get("positions", [])
-        modified = False
         
         to_close = []
         for pos in positions:

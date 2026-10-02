@@ -1,107 +1,573 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark" style="background-color: #000000; color-scheme: dark;">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalshi AI Trader - Copilot Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+    <title id="page-title">Kalshi AI Trader - Copilot Login</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+    <link rel="alternate icon" href="/static/assets/app_icon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
     <style>
+        html {
+            background-color: #000000 !important;
+            color-scheme: dark;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
+            background-color: #0b0f19;
             color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
         }
         .container {
-            background: #1e1e1e;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            background: #151d2f;
+            padding: 2.2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
             width: 100%;
             max-width: 400px;
+            box-sizing: border-box;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .container.admin-active {
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 0.5rem;
+        }
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+        }
+        .brand-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #f8fafc;
+        }
+        .badge {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            font-weight: 900;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            background: rgba(0, 255, 136, 0.15);
+            color: #00ff88;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            margin-left: 4px;
+        }
+        .badge.admin-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.3);
         }
         h2 {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin: 0.25rem 0 0.5rem 0;
             color: #00ff88;
+            font-size: 1.4rem;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+        h2.admin-theme {
+            color: #38bdf8;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 1rem;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background: #2a2a2a;
+            padding: 11px 12px;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            background: #0b1220;
             color: white;
             box-sizing: border-box;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        button {
+        input:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15);
+        }
+        .admin-active input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+        button.primary-btn {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             background: #00ff88;
-            color: #121212;
+            color: #0b1220;
             border: none;
-            border-radius: 4px;
-            font-weight: bold;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.95rem;
             cursor: pointer;
+            margin-top: 0.5rem;
             margin-bottom: 1rem;
+            transition: transform 0.1s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
         }
-        button:hover {
+        button.primary-btn:hover {
             background: #00cc6a;
+            box-shadow: 0 6px 16px rgba(0, 255, 136, 0.3);
+        }
+        button.primary-btn:active {
+            transform: scale(0.98);
+        }
+        button.primary-btn.admin-theme {
+            background: #0284c7;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+        }
+        button.primary-btn.admin-theme:hover {
+            background: #0369a1;
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
         }
         .toggle {
             text-align: center;
-            font-size: 0.9rem;
-            color: #aaa;
+            font-size: 0.85rem;
+            color: #94a3b8;
             cursor: pointer;
+            transition: color 0.2s;
         }
         .toggle:hover {
-            color: #fff;
+            color: #f1f5f9;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.25rem 0 0.85rem 0;
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #1e293b;
+        }
+        .divider span {
+            padding: 0 10px;
+        }
+        .admin-switch-btn {
+            width: 100%;
+            padding: 10px;
+            background: #101c30;
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .admin-switch-btn:hover {
+            background: #192a48;
+            border-color: #38bdf8;
+            color: #7dd3fc;
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+        }
+        .admin-switch-btn:active {
+            transform: scale(0.98);
+        }
+        .admin-switch-btn.back-copilot {
+            background: #0f241a;
+            color: #00ff88;
+            border-color: rgba(0, 255, 136, 0.35);
+        }
+        .admin-switch-btn.back-copilot:hover {
+            background: #143525;
+            border-color: #00ff88;
+            color: #a7f3d0;
+            box-shadow: 0 0 14px rgba(0, 255, 136, 0.25);
         }
         .error {
-            color: #ff4444;
-            font-size: 0.9rem;
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
             margin-bottom: 1rem;
             text-align: center;
             display: none;
+        }
+        .admin-info-note {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            color: #93c5fd;
+            margin-bottom: 1rem;
+            text-align: center;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
 
 <div class="container" id="auth-box">
+    <div class="brand-header">
+        <img src="/static/assets/favicon.svg" alt="Kalshi AI Logo" class="brand-logo" onerror="this.style.display='none'">
+        <div class="brand-name">Kalshi AI Trader</div>
+        <span class="badge" id="mode-badge">Copilot</span>
+    </div>
+
     <h2 id="form-title">Login</h2>
+    <div class="subtitle" id="form-subtitle">Enter your credentials to access your trading dashboard</div>
+    
     <div id="error-msg" class="error"></div>
     
-    <input type="text" id="username" placeholder="Username" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <input type="text" id="invite-code" placeholder="Invite Code (KALSHI2026)" style="display: none;">
+    <div id="admin-notice" class="admin-info-note" style="display: none;">
+        Enter your Admin credentials or the Master API Token (APP_API_TOKEN) to access the system control room.
+    </div>
+
+    <div class="input-group" id="username-group">
+        <label class="input-label" id="username-label" for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter username" autocomplete="username" required>
+    </div>
+
+    <div class="input-group" id="password-group">
+        <label class="input-label" id="password-label" for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+    </div>
+
+    <div class="input-group" id="invite-code-group" style="display: none;">
+        <label class="input-label" for="invite-code">Invite Code</label>
+        <input type="text" id="invite-code" placeholder="Invite Code (KALSHI2026)">
+    </div>
+
+    <div id="admin-token-section" style="display: none;">
+        <div class="divider">
+            <span>OR MASTER PASSKEY</span>
+        </div>
+        <div class="input-group">
+            <label class="input-label" for="admin-token">Master API Token</label>
+            <input type="password" id="admin-token" placeholder="APP_API_TOKEN (e.g. kalshi_secure_1234)">
+        </div>
+    </div>
     
-    <button id="submit-btn" onclick="submitAuth()">Login</button>
-    <div class="toggle" onclick="toggleMode()" id="toggle-text">Need an account? Register</div>
+    <button id="submit-btn" class="primary-btn" onclick="submitAuth()">Login</button>
+    
+    <div id="user-toggle-row">
+        <div class="toggle" onclick="toggleMode()" id="toggle-text">Need an account? Register</div>
+    </div>
+
+    <!-- Admin Switch Action -->
+    <div class="divider" id="switch-divider">
+        <span id="divider-text">PORTAL ACCESS</span>
+    </div>
+    <button id="switch-admin-btn" type="button" class="admin-switch-btn" onclick="toggleAdminMode()">
+        <span id="switch-icon">🛡️</span> <span id="switch-text">Switch to Admin Login</span>
+    </button>
 </div>
 
 <script>
+// Session token migration: when the server re-issues a login token, store it.
+(function () {
+  if (window.__tokenRefreshInstalled || !window.fetch) return;
+  window.__tokenRefreshInstalled = true;
+  const origFetch = window.fetch;
+  window.fetch = async function () {
+    const res = await origFetch.apply(this, arguments);
+    try {
+      const t = res.headers && res.headers.get('X-Refreshed-Token');
+      if (t) {
+        localStorage.setItem('saas_token', t);
+        document.cookie = `saas_token=${t}; path=/; max-age=7776000; SameSite=Lax`;
+      }
+    } catch (e) {}
+    return res;
+  };
+})();
+</script>
+<script>
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    function setTokenCookie(tokenVal) {
+        if (!tokenVal) return;
+        document.cookie = `saas_token=${tokenVal}; path=/; max-age=7776000; SameSite=Lax`;
+    }
+
     let isLogin = true;
+    let isAdminMode = false;
+
+    // Instant auto-resume session check (runs immediately)
+    (function checkExistingSession() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceAdmin = urlParams.get('mode') === 'admin' || urlParams.get('admin') !== null;
+        
+        // Check for Master API Token (Admin fallback) FIRST
+        const masterAdminToken = localStorage.getItem('admin_api_token') || localStorage.getItem('app_api_token');
+        if (masterAdminToken) {
+            window.location.replace('/admin');
+            return;
+        }
+
+        // If user explicitly navigated to admin login and we didn't auto-redirect above, 
+        // stay on the login page (don't forward to normal user dashboard).
+        if (forceAdmin) {
+            return;
+        }
+
+        const storedToken = localStorage.getItem('saas_token') || getCookie('saas_token');
+        if (!storedToken) return;
+
+        try {
+            const parts = storedToken.split('.');
+            if (parts.length === 3) {
+                const payload = JSON.parse(atob(parts[1]));
+                // If not expired, auto-redirect to dashboard immediately
+                if (!payload.exp || (payload.exp * 1000) > Date.now()) {
+                    setTokenCookie(storedToken);
+                    if (!localStorage.getItem('saas_token')) {
+                        localStorage.setItem('saas_token', storedToken);
+                    }
+                    
+                    if (localStorage.getItem('is_admin_session') === 'true') {
+                        window.location.replace('/admin');
+                    } else {
+                        window.location.replace('/saas_dashboard.html');
+                    }
+                    return;
+                }
+            }
+        } catch (e) {}
+
+        // Stale or invalid token
+        localStorage.removeItem('saas_token');
+        localStorage.removeItem('saas_username');
+        localStorage.removeItem('is_admin_session');
+        document.cookie = 'saas_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    })();
+
+    // Initialize mode from URL parameter if present (?mode=admin)
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'admin' || urlParams.get('admin') !== null) {
+            setAdminMode(true);
+        }
+    });
 
     function toggleMode() {
+        if (isAdminMode) return;
         isLogin = !isLogin;
         document.getElementById('form-title').innerText = isLogin ? 'Login' : 'Register';
+        document.getElementById('form-subtitle').innerText = isLogin 
+            ? 'Enter your credentials to access your trading dashboard' 
+            : 'Create your trader copilot account with an invite code';
         document.getElementById('submit-btn').innerText = isLogin ? 'Login' : 'Register';
         document.getElementById('toggle-text').innerText = isLogin ? 'Need an account? Register' : 'Already have an account? Login';
-        document.getElementById('invite-code').style.display = isLogin ? 'none' : 'block';
+        document.getElementById('invite-code-group').style.display = isLogin ? 'none' : 'block';
         document.getElementById('error-msg').style.display = 'none';
     }
 
-    async function submitAuth() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const inviteCode = document.getElementById('invite-code').value;
-        const errorMsg = document.getElementById('error-msg');
+    function toggleAdminMode() {
+        setAdminMode(!isAdminMode);
+    }
 
+    function setAdminMode(active) {
+        isAdminMode = active;
+        const authBox = document.getElementById('auth-box');
+        const formTitle = document.getElementById('form-title');
+        const formSubtitle = document.getElementById('form-subtitle');
+        const modeBadge = document.getElementById('mode-badge');
+        const submitBtn = document.getElementById('submit-btn');
+        const switchBtn = document.getElementById('switch-admin-btn');
+        const switchIcon = document.getElementById('switch-icon');
+        const switchText = document.getElementById('switch-text');
+        const userToggleRow = document.getElementById('user-toggle-row');
+        const adminNotice = document.getElementById('admin-notice');
+        const adminTokenSec = document.getElementById('admin-token-section');
+        const inviteGroup = document.getElementById('invite-code-group');
+        const errorMsg = document.getElementById('error-msg');
+        const pageTitle = document.getElementById('page-title');
+
+        errorMsg.style.display = 'none';
+        inviteGroup.style.display = 'none';
+
+        if (isAdminMode) {
+            authBox.classList.add('admin-active');
+            formTitle.classList.add('admin-theme');
+            submitBtn.classList.add('admin-theme');
+            switchBtn.classList.add('back-copilot');
+
+            pageTitle.innerText = "Kalshi AI Trader - Admin Login";
+            formTitle.innerText = "🛡️ Admin Login";
+            formSubtitle.innerText = "System Admin & Engine Management Control";
+            modeBadge.innerText = "Admin";
+            modeBadge.className = "badge admin-badge";
+            submitBtn.innerText = "Access Admin Console";
+            
+            switchIcon.innerText = "←";
+            switchText.innerText = "Switch to Copilot Login";
+            
+            userToggleRow.style.display = 'none';
+            adminNotice.style.display = 'block';
+            adminTokenSec.style.display = 'block';
+
+            // Update URL query string cleanly without reload
+            try {
+                const url = new URL(window.location);
+                url.searchParams.set('mode', 'admin');
+                window.history.replaceState({}, '', url);
+            } catch (e) {}
+        } else {
+            authBox.classList.remove('admin-active');
+            formTitle.classList.remove('admin-theme');
+            submitBtn.classList.remove('admin-theme');
+            switchBtn.classList.remove('back-copilot');
+
+            isLogin = true;
+            pageTitle.innerText = "Kalshi AI Trader - Copilot Login";
+            formTitle.innerText = "Login";
+            formSubtitle.innerText = "Enter your credentials to access your trading dashboard";
+            modeBadge.innerText = "Copilot";
+            modeBadge.className = "badge";
+            submitBtn.innerText = "Login";
+            document.getElementById('toggle-text').innerText = "Need an account? Register";
+
+            switchIcon.innerText = "🛡️";
+            switchText.innerText = "Switch to Admin Login";
+
+            userToggleRow.style.display = 'block';
+            adminNotice.style.display = 'none';
+            adminTokenSec.style.display = 'none';
+
+            // Clean URL query string
+            try {
+                const url = new URL(window.location);
+                url.searchParams.delete('mode');
+                url.searchParams.delete('admin');
+                window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : ''));
+            } catch (e) {}
+        }
+    }
+
+    async function submitAuth() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const inviteCode = document.getElementById('invite-code').value.trim();
+        const adminToken = document.getElementById('admin-token').value.trim();
+        const errorMsg = document.getElementById('error-msg');
+        errorMsg.style.display = 'none';
+
+        // -------------------------------------------------------------
+        // ADMIN LOGIN FLOW
+        // -------------------------------------------------------------
+        if (isAdminMode) {
+            // Case 1: Master API Token provided
+            if (adminToken) {
+                try {
+                    const verifyRes = await fetch('/api/admin/verify', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Token': adminToken
+                        }
+                    });
+
+                    if (verifyRes.ok) {
+                        localStorage.setItem('app_api_token', adminToken);
+                        localStorage.setItem('admin_api_token', adminToken);
+                        window.location.href = '/admin';
+                        return;
+                    } else {
+                        const errData = await verifyRes.json().catch(() => ({}));
+                        errorMsg.innerText = errData.detail || "Invalid Master API Token.";
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                } catch (e) {
+                    errorMsg.innerText = "Network error connecting to Admin verification service.";
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+            }
+
+            // Case 2: Admin Username & Password provided
+            if (!username || !password) {
+                errorMsg.innerText = "Please enter Admin credentials or Master API Token.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    localStorage.setItem('saas_token', data.token);
+                    localStorage.setItem('saas_username', data.username);
+                    localStorage.setItem('is_admin_session', 'true');
+                    setTokenCookie(data.token);
+                    window.location.href = '/admin';
+                } else {
+                    errorMsg.innerText = data.detail || "Admin authentication failed.";
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = "Network error. Server might be down.";
+                errorMsg.style.display = 'block';
+            }
+            return;
+        }
+
+        // -------------------------------------------------------------
+        // COPILOT / USER LOGIN FLOW
+        // -------------------------------------------------------------
         if (!username || !password) {
             errorMsg.innerText = "Please fill out all fields.";
             errorMsg.style.display = 'block';
@@ -122,6 +588,7 @@
             if (res.ok && data.success) {
                 localStorage.setItem('saas_token', data.token);
                 localStorage.setItem('saas_username', data.username);
+                setTokenCookie(data.token);
                 window.location.href = '/saas_dashboard.html';
             } else {
                 errorMsg.innerText = data.detail || "Authentication failed.";
@@ -132,6 +599,13 @@
             errorMsg.style.display = 'block';
         }
     }
+
+    // Allow Enter key to trigger submitAuth
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            submitAuth();
+        }
+    });
 </script>
 
 </body>

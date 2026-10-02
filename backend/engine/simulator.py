@@ -4,8 +4,9 @@ Simulates plate appearances, correlated scoring events, and computes win probabi
 against sportsbook prop lines (1.5, 2.5).
 """
 
+from typing import Any, Dict
+
 import numpy as np
-from typing import Dict, Any, List, Tuple
 
 # Baseline PA expected values by batting order position (1-9)
 BASE_PA_BY_ORDER = {

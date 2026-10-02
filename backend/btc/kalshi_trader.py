@@ -5,18 +5,21 @@ market discovery for KXBTC15M contracts, and live/paper order execution.
 """
 
 import logging
+
 logger = logging.getLogger(__name__)
-import os
-import time
-import json
-import uuid
 import base64
+import json
+import os
 import threading
-import requests
-from urllib.parse import quote
-from typing import Optional, Dict, Any, Tuple
+import time
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import uuid
 from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
+
+import requests
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
@@ -25,12 +28,38 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 BASE_URL = "https://external-api.kalshi.com"
 CREDENTIALS_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "kalshi_credentials.json")
 
+# Paper-fill realism knobs. Kalshi's public market endpoint only ever exposes top-of-book
+# yes/no bid & ask - no order-book depth ladder - so there is no way to simulate a paper fill
+# against a *real* depth snapshot. These constants instead approximate "how thin is a KXBTC15M/
+# KXETH15M market usually" so a paper order behaves like a real one would: it can be too big
+# for the book, and by the time a real order would land, the price has usually drifted a hair.
+PAPER_LATENCY_TAX_DOLLARS = 0.01   # stands in for adverse price drift during a live order's network round-trip
+PAPER_MIN_SIM_DEPTH = 8            # thinnest plausible top-of-book size on these markets
+PAPER_MAX_SIM_DEPTH = 60           # thickest plausible top-of-book size on these markets
+PAPER_NO_FILL_CHANCE = 0.03        # occasional fully-missed IOC, same as a live order can suffer
+
+
+def _simulated_book_depth(ticker: str, side: str) -> int:
+    """A deterministic-but-varying stand-in for real order-book depth, since Kalshi's market
+    endpoint doesn't expose one. Deterministic per (ticker, side, current minute) so repeated
+    calls within the same trading decision don't jitter, but different markets/minutes do.
+    Occasionally returns 0 to model a fully-missed IOC fill, same risk a live order carries."""
+    import hashlib
+    bucket = int(time.time() // 60)
+    h = hashlib.sha256(f"{ticker}|{side}|{bucket}".encode()).hexdigest()
+    roll = int(h[:8], 16) / 0xFFFFFFFF
+    if roll < PAPER_NO_FILL_CHANCE:
+        return 0
+    span = PAPER_MAX_SIM_DEPTH - PAPER_MIN_SIM_DEPTH
+    return PAPER_MIN_SIM_DEPTH + int(((roll - PAPER_NO_FILL_CHANCE) / (1.0 - PAPER_NO_FILL_CHANCE)) * span)
+
 
 class KalshiTrader:
     def __init__(self, key_id: Optional[str] = None, private_key_pem: Optional[str] = None):
         self.key_id = key_id or os.environ.get("KALSHI_KEY_ID")
         self.private_key_pem = private_key_pem or os.environ.get("KALSHI_PRIVATE_KEY")
         self._private_key_obj = None
+        self._order_submit_lock = threading.Lock()
 
         if not self.key_id or not self.private_key_pem:
             self._load_from_credentials_file()
@@ -112,9 +141,10 @@ class KalshiTrader:
             resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
             if resp.status_code == 200:
                 data = resp.json()
-                dollars = float(data.get("balance_dollars", 0.0))
+                dollars = float(data.get("balance_dollars", int(data.get("balance", 0)) / 100.0))
                 cents = int(data.get("balance", 0))
-                port_val = float(data.get("portfolio_value", 0.0))
+                # Kalshi returns portfolio_value in cents
+                port_val = float(data.get("portfolio_value", 0.0)) / 100.0
                 res = {
                     "success": True,
                     "balance_dollars": dollars,
@@ -141,7 +171,134 @@ class KalshiTrader:
                 "balance_cents": 0
             }
 
-    def get_active_15m_market(self, series_ticker: str = "KXBTC15M", allow_synthetic: bool = True, force_refresh: bool = False, min_seconds_left: int = 0) -> Optional[Dict[str, Any]]:
+    def get_exchange_breakdown(self, force_refresh: bool = False) -> Dict[str, Any]:
+        """
+        Retrieves per-exchange shard balance breakdown (e.g. Exchange 0 vs Exchange 2).
+        """
+        bal_res = self.get_balance(force_refresh=force_refresh)
+        if not bal_res.get("success"):
+            return {
+                "success": False,
+                "error": bal_res.get("error", "Failed to fetch balance"),
+                "total_balance": 0.0,
+                "exchanges": []
+            }
+
+        raw = bal_res.get("raw", {})
+        breakdown = raw.get("balance_breakdown", [])
+
+        exchanges = []
+        exchange_names = {
+            0: "Exchange 0 (Main / Cash)",
+            1: "Exchange 1 (Rates / Yields)",
+            2: "Exchange 2 (Crypto 15M & Commodities)",
+            3: "Exchange 3 (Specialty)"
+        }
+        for b_item in breakdown:
+            idx = b_item.get("exchange_index")
+            try:
+                bal = float(b_item.get("balance", 0.0))
+            except (ValueError, TypeError):
+                bal = 0.0
+            exchanges.append({
+                "exchange_index": idx,
+                "name": exchange_names.get(idx, f"Exchange {idx}"),
+                "balance": round(bal, 4)
+            })
+
+        return {
+            "success": True,
+            "total_balance": bal_res.get("balance_dollars", 0.0),
+            "exchanges": exchanges
+        }
+
+    def transfer_between_exchanges(
+        self,
+        source_exchange: int = 0,
+        destination_exchange: int = 2,
+        amount_dollars: float = 0.0
+    ) -> Dict[str, Any]:
+        """
+        Transfers funds between Kalshi exchange matching engine shards 
+        (e.g., Shard 0 main balance to Shard 2 crypto trading engine).
+        Amount is converted to centicents (1 dollar = 10,000 centicents).
+        """
+        try:
+            amt = round(float(amount_dollars), 2)
+            if amt <= 0:
+                return {"success": False, "error": "Transfer amount must be greater than $0.00."}
+        except (ValueError, TypeError):
+            return {"success": False, "error": "Invalid transfer amount."}
+
+        # Verify source exchange balance
+        bal_res = self.get_exchange_breakdown(force_refresh=True)
+        if not bal_res.get("success"):
+            return {"success": False, "error": bal_res.get("error", "Could not verify exchange balances before transfer.")}
+
+        source_bal = 0.0
+        for ex in bal_res.get("exchanges", []):
+            if ex.get("exchange_index") == source_exchange:
+                source_bal = float(ex.get("balance", 0.0))
+                break
+
+        if source_bal < amt:
+            return {
+                "success": False,
+                "error": f"Insufficient funds in Exchange {source_exchange}: ${source_bal:.2f} available, but requested ${amt:.2f}."
+            }
+
+        amount_centicents = int(round(amt * 10000))
+        path = "/trade-api/v2/portfolio/intra_exchange_instance_transfer"
+        payload = {
+            "source": "event_contract",
+            "destination": "event_contract",
+            "source_exchange_shard": int(source_exchange),
+            "destination_exchange_shard": int(destination_exchange),
+            "amount": amount_centicents
+        }
+
+        try:
+            headers = self._sign_headers("POST", path)
+            resp = self.session.post(f"{BASE_URL}{path}", json=payload, headers=headers, timeout=10.0)
+            if resp.status_code != 200:
+                err_msg = resp.text
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", {}).get("message", err_msg)
+                except Exception as e:
+                    logger.debug(f"Ignored exception: {e}")
+                return {"success": False, "error": f"Kalshi transfer rejected (HTTP {resp.status_code}): {err_msg}"}
+
+            data = resp.json()
+            transfer_id = data.get("transfer_id", str(uuid.uuid4()))
+
+            # Invalidate balance cache so fresh balances are immediately reported
+            with self._lock:
+                self._cached_balance = None
+                self._cached_balance_time = 0.0
+
+            fresh_res = self.get_exchange_breakdown(force_refresh=True)
+            logger.info(f"[KalshiTrader] Transferred ${amt:.2f} from Exchange {source_exchange} to Exchange {destination_exchange} (Transfer ID: {transfer_id})")
+
+            return {
+                "success": True,
+                "transfer_id": transfer_id,
+                "amount_dollars": amt,
+                "source_exchange": source_exchange,
+                "destination_exchange": destination_exchange,
+                "exchanges": fresh_res.get("exchanges", [])
+            }
+        except Exception as e:
+            logger.error(f"[KalshiTrader] Transfer exception: {e}")
+            return {"success": False, "error": f"Transfer failed: {str(e)}"}
+
+    def get_active_15m_market(
+        self,
+        series_ticker: str = "KXBTC15M",
+        allow_synthetic: bool = True,
+        force_refresh: bool = False,
+        min_seconds_left: int = 45
+    ) -> Optional[Dict[str, Any]]:
         """
         Finds the active KXBTC15M market (cached for 2.5s for ultra-low latency real-time feeds).
         """
@@ -208,7 +365,8 @@ class KalshiTrader:
                 # If the authenticated API returned all zeros, fallback to public client
                 if yes_bid == 0.0 and yes_ask == 0.0:
                     try:
-                        from backend.btc.kalshi_client import get_kalshi_15m_market
+                        from backend.btc.kalshi_client import \
+                            get_kalshi_15m_market
                         pub = get_kalshi_15m_market()
                         if pub:
                             yes_bid    = float(pub.get("yes_bid")  or yes_bid)
@@ -263,8 +421,8 @@ class KalshiTrader:
                 
                 if pub_strike <= 0.0:
                     pub_strike = float(get_asset_ticker(series_ticker.replace("KX", "").replace("15M", "")).get("price", 0.0))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Ignored exception: {e}")
             return {
                 "ticker": f"{series_ticker}_SYNTH",
                 "title": f"Synthetic {series_ticker} 15M",
@@ -281,6 +439,7 @@ class KalshiTrader:
             }
         return None
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, min=1, max=5), retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)))
     def get_market_result(self, ticker: str) -> Dict[str, Any]:
         """Return Kalshi's official result for one exact market ticker."""
         clean_ticker = str(ticker or "").strip()
@@ -311,6 +470,7 @@ class KalshiTrader:
         except Exception as e:
             return {"success": False, "result": "", "error": str(e)}
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, min=1, max=5), retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)))
     def get_market_quote(self, ticker: str) -> Dict[str, Any]:
         """Return executable YES/NO bid prices for one exact open market."""
         clean_ticker = str(ticker or "").strip()
@@ -387,19 +547,37 @@ class KalshiTrader:
                 exit_price = 0.0
 
         if dry_run:
+            source = "kalshi_public_bid" if quote_data.get("success") else "simulated_dynamic_quote"
             if not (0.0 < exit_price < 1.0):
                 if estimated_exit_price is not None and 0.0 < estimated_exit_price < 1.0:
-                    exit_price = round(float(estimated_exit_price), 4)
+                    exit_price = float(estimated_exit_price)
                 else:
                     exit_price = 0.50
+            # Same small latency tax as the entry side, and rounded to whole cents - a real bid
+            # can never be crossed at a fractional-cent price the way the synthetic fallback quote
+            # above can produce.
+            from backend.btc.fees import kalshi_order_fee
+            exit_price = round(max(0.01, exit_price - PAPER_LATENCY_TAX_DOLLARS), 2)
+
+            sim_depth = _simulated_book_depth(ticker, f"exit_{side}")
+            filled_count = min(requested_count, sim_depth) if sim_depth > 0 else requested_count
+            # A missed exit isn't modeled as "stuck open forever" (unlike a missed entry, which
+            # simply never happened) - a real stop/take-profit exit that fails to fill immediately
+            # gets retried on the next check cycle, same as the live retry-with-fresh-quote path
+            # above, so we fall back to a full fill here rather than blocking the exit outright.
+            if filled_count <= 0:
+                filled_count = requested_count
+
+            fee_paid = round(kalshi_order_fee(exit_price, filled_count), 4)
             return {
                 "success": True,
                 "mode": "PAPER",
-                "filled_count": requested_count,
-                "remaining_count": 0.0,
+                "filled_count": filled_count,
+                "remaining_count": max(0.0, round(requested_count - filled_count, 4)),
                 "exit_price": exit_price,
-                "fee_paid": 0.0,
-                "source": "kalshi_public_bid" if quote_data.get("success") else "simulated_dynamic_quote",
+                "fee_paid": fee_paid,
+                "simulated_depth": sim_depth,
+                "source": source,
             }
 
         if not quote_data.get("success"):
@@ -415,9 +593,9 @@ class KalshiTrader:
         # To sell NO: submit a bid on YES at 1 - no_bid (with 0.02 slippage cushion)
         book_side = "ask" if side == "YES" else "bid"
         if side == "YES":
-            book_price = max(0.01, min(0.99, exit_price - 0.02))
+            book_price = max(0.01, min(0.99, exit_price - 0.03))
         else:
-            book_price = min(0.99, max(0.01, (1.0 - exit_price) + 0.02))
+            book_price = min(0.99, max(0.01, (1.0 - exit_price) + 0.03))
 
         pre_positions = []
         try:
@@ -430,12 +608,9 @@ class KalshiTrader:
         # Self-healing: if Kalshi reports the position is already flat (0.00), return success
         matching_pos = [p for p in pre_positions if p.get("ticker") == quote_data.get("ticker")]
         if matching_pos:
-            try:
-                pos_qty = float(matching_pos[0].get("position_fp", 0.0) or 0.0)
-            except (ValueError, TypeError):
-                pos_qty = 0.0
-            if pos_qty <= 0.0:
-                logger.info(f"[KalshiTrader] Position for {quote_data.get('ticker')} is already flat on Kalshi (0.00). Reconciling as closed.")
+            actual_side_qty = self._extract_side_position(matching_pos[0], side)
+            if actual_side_qty <= 0.0:
+                logger.info(f"[KalshiTrader] Position for {quote_data.get('ticker')} ({side}) is already flat on Kalshi (0.00). Reconciling as closed.")
                 return {
                     "success": True,
                     "mode": "LIVE",
@@ -445,6 +620,8 @@ class KalshiTrader:
                     "fee_paid": 0.0,
                     "source": "kalshi_reconciled_flat",
                 }
+            # Clamp requested count to actual position held so Kalshi's reduce_only doesn't reject if position is smaller
+            requested_count = min(requested_count, actual_side_qty)
 
         client_order_id = str(uuid.uuid4())
         path = "/trade-api/v2/portfolio/events/orders"
@@ -465,10 +642,58 @@ class KalshiTrader:
         try:
             resp = self.order_session.post(f"{BASE_URL}{path}", json=payload, headers=self._sign_headers("POST", path), timeout=5.0)
             if resp.status_code not in {200, 201}:
+                err_text = resp.text.lower()
+                if "reduce_only" in err_text or "no open position" in err_text or "cannot increase position" in err_text or "position is 0" in err_text:
+                    logger.info(f"[KalshiTrader] Kalshi confirmed position already flat via reduce_only check: {resp.text}")
+                    return {
+                        "success": True,
+                        "mode": "LIVE",
+                        "filled_count": requested_count,
+                        "remaining_count": 0.0,
+                        "exit_price": exit_price if exit_price > 0 else 0.50,
+                        "fee_paid": 0.0,
+                        "source": "kalshi_confirmed_flat_reduce_only",
+                    }
                 return {"success": False, "error": f"Kalshi close rejected (HTTP {resp.status_code}): {resp.text}"}
             data = resp.json()
             filled_count = float(data.get("fill_count", "0") or "0")
             if filled_count <= 0:
+                # Fast retry with fresh quote and wider buffer
+                try:
+                    fresh_quote = self.get_market_quote(ticker)
+                    if fresh_quote.get("success"):
+                        fresh_exit = float((fresh_quote.get("yes_bid") if side == "YES" else fresh_quote.get("no_bid")) or 0.0)
+                        if 0.01 < fresh_exit < 0.99:
+                            retry_book_price = max(0.01, min(0.99, fresh_exit - 0.05)) if side == "YES" else min(0.99, max(0.01, (1.0 - fresh_exit) + 0.05))
+                            retry_cid = str(uuid.uuid4())
+                            retry_payload = dict(payload)
+                            retry_payload["client_order_id"] = retry_cid
+                            retry_payload["price"] = f"{retry_book_price:.4f}"
+                            logger.info(f"[KalshiTrader] Close unfilled for {ticker} ({side}). Retrying once with fresh bid ${fresh_exit:.2f} (book_price={retry_book_price:.4f})...")
+                            retry_resp = self.order_session.post(f"{BASE_URL}{path}", json=retry_payload, headers=self._sign_headers("POST", path), timeout=5.0)
+                            if retry_resp.status_code in [200, 201]:
+                                retry_data = retry_resp.json()
+                                retry_filled = float(retry_data.get("fill_count", "0") or "0")
+                                if retry_filled > 0:
+                                    avg_bp = float(retry_data.get("average_fill_price", str(retry_book_price)) or retry_book_price)
+                                    realized_exit = avg_bp if side == "YES" else (1.0 - avg_bp)
+                                    avg_fee = float(retry_data.get("average_fee_paid", "0") or "0")
+                                    self._cached_balance_time = 0.0
+                                    logger.info(f"[KalshiTrader] Close retry SUCCEEDED: filled {retry_filled} contracts @ ${realized_exit:.4f}")
+                                    return {
+                                        "success": True,
+                                        "mode": "LIVE",
+                                        "order_id": retry_data.get("order_id", retry_cid),
+                                        "client_order_id": retry_data.get("client_order_id", retry_cid),
+                                        "filled_count": retry_filled,
+                                        "remaining_count": max(0.0, requested_count - retry_filled),
+                                        "exit_price": round(realized_exit, 4),
+                                        "fee_paid": round(avg_fee * retry_filled, 4),
+                                        "source": "kalshi_reduce_only_exit_retry",
+                                    }
+                except Exception as _re_err:
+                    logger.warning(f"[KalshiTrader] Close retry error: {_re_err}")
+
                 return {"success": False, "error": "Close order received no fill; the local trade remains open."}
             average_book_price = float(data.get("average_fill_price", str(book_price)) or book_price)
             realized_exit_price = average_book_price if side == "YES" else (1.0 - average_book_price)
@@ -485,7 +710,7 @@ class KalshiTrader:
                 "fee_paid": round(average_fee * filled_count, 4),
                 "source": "kalshi_reduce_only_exit",
             }
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.RequestException as e:
             logger.warning(
                 f"[KalshiTrader] Close request timed out for {ticker} (client_order_id={client_order_id}). "
                 f"Attempting reconciliation against live positions..."
@@ -550,7 +775,7 @@ class KalshiTrader:
                     pass
 
         pos_side = str(pos_entry.get("side", "")).upper().strip()
-        raw_val = pos_entry.get("position", pos_entry.get("position_count", pos_entry.get("count", 0)))
+        raw_val = pos_entry.get("position_fp", pos_entry.get("position", pos_entry.get("position_count", pos_entry.get("count", 0))))
         try:
             val = float(raw_val or 0)
         except (ValueError, TypeError):
@@ -666,7 +891,110 @@ class KalshiTrader:
 
         return None
 
-    def place_order(
+    def _lookup_order_fill(self, ticker: str, client_order_id: str) -> Optional[Dict[str, Any]]:
+        """Best-effort: find our own order by client_order_id and return its filled count.
+        Only ever used to CONFIRM a fill after a lost response - never to deny one - so any
+        error or unexpected response shape simply returns None and the caller falls back to
+        the position check / ambiguous handling."""
+        if not client_order_id:
+            return None
+        try:
+            path = "/trade-api/v2/portfolio/orders"
+            headers = self._sign_headers("GET", path)
+            resp = self.session.get(f"{BASE_URL}{path}", params={"ticker": ticker, "limit": 100},
+                                    headers=headers, timeout=5.0)
+            if resp.status_code != 200:
+                return None
+            for order in (resp.json() or {}).get("orders", []) or []:
+                if str(order.get("client_order_id", "")) != str(client_order_id):
+                    continue
+                fill = None
+                for key in ("fill_count", "fill_count_fp", "taker_fill_count"):
+                    if order.get(key) not in (None, ""):
+                        try:
+                            fill = float(order.get(key))
+                            break
+                        except (TypeError, ValueError):
+                            pass
+                if fill is None:
+                    try:
+                        fill = float(order.get("initial_count")) - float(order.get("remaining_count"))
+                    except (TypeError, ValueError):
+                        fill = None
+                if fill and fill > 0:
+                    return {"count": round(fill, 2), "order_id": order.get("order_id", client_order_id)}
+                return None
+        except Exception as e:
+            logger.debug(f"[KalshiTrader] Order lookup by client_order_id failed for {ticker}: {e}")
+        return None
+
+    def _resolve_uncertain_buy(
+        self,
+        ticker: str,
+        client_order_id: str,
+        side: str,
+        pre_positions: Optional[list],
+        requested_count: float,
+        price: float,
+        slippage_buffer: float,
+        err: Any,
+    ) -> Dict[str, Any]:
+        """A BUY request left our process but we never got a trustworthy answer (timeout,
+        dropped connection, unreadable response...). Kalshi may have filled it. Try to confirm
+        a fill (by order id, then by position change - retried once, since positions can lag
+        a moment behind the fill). If nothing can be confirmed, return `ambiguous: True`, which
+        callers must treat as "possibly traded" - never as a clean rejection they can retry."""
+        for attempt in range(2):
+            found = self._lookup_order_fill(ticker, client_order_id)
+            if found:
+                fill_count = found["count"]
+                logger.info(f"[KalshiTrader] Confirmed fill after lost response via order lookup: "
+                            f"{fill_count} {side.upper()} on {ticker} (client_order_id={client_order_id})")
+                return {
+                    "success": True,
+                    "mode": "LIVE",
+                    "order_id": found.get("order_id", client_order_id),
+                    "client_order_id": client_order_id,
+                    "ticker": ticker,
+                    "side": side.upper(),
+                    "action": "BUY",
+                    "count": fill_count,
+                    "requested_price": price,
+                    "filled_price": price,
+                    "total_cost": round(price * fill_count, 4),
+                    "slippage_buffer": slippage_buffer,
+                    "status": "FILLED",
+                    "source": "reconciled_by_order_lookup",
+                    "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                }
+            reconciled = self._reconcile_after_timeout(
+                ticker=ticker,
+                client_order_id=client_order_id,
+                side=side,
+                pre_positions=pre_positions,
+                requested_count=float(requested_count),
+                action="BUY",
+                price=price,
+                slippage_buffer=slippage_buffer,
+            )
+            if reconciled is not None:
+                return reconciled
+            if attempt == 0:
+                time.sleep(1.5)
+        logger.error(f"[KalshiTrader] BUY outcome UNKNOWN for {ticker} (client_order_id={client_order_id}): {err}")
+        return {
+            "success": False,
+            "error": f"Order outcome could not be confirmed ({err}). "
+                     f"MANUAL VERIFICATION REQUIRED — check Kalshi positions before retrying.",
+            "ambiguous": True,
+            "client_order_id": client_order_id,
+            "ticker": ticker,
+        }
+    def place_order(self, *args, **kwargs) -> Dict[str, Any]:
+        with self._order_submit_lock:
+            return self._place_order_internal(*args, **kwargs)
+
+    def _place_order_internal(
         self,
         ticker: str,
         side: str,  # 'yes' or 'no'
@@ -674,12 +1002,21 @@ class KalshiTrader:
         limit_price_dollars: Optional[float] = None,
         dry_run: bool = True,
         order_type: str = "limit",
-        slippage_buffer_dollars: Optional[float] = None
+        slippage_buffer_dollars: Optional[float] = None,
+        available_balance: Optional[float] = None
     ) -> Dict[str, Any]:
         """
         Executes a buy order on the specified contract side (YES = above target, NO = below target).
-        In dry_run=True, simulates the trade and returns immediate simulated fill.
+        In dry_run=True, simulates the trade against the same real-market constraints a live order
+        would face: a verified, currently-open (non-synthetic) market, the same 30s expiry backstop,
+        the same book-crossing slippage buffer plus a small latency tax, a simulated top-of-book depth
+        (so a paper order can be partially filled or fully missed), and - if `available_balance` is
+        given - a fail-closed affordability check.
         In dry_run=False, signs and sends the order to the Kalshi live API with strict safety bounds.
+
+        `available_balance`: the caller's own balance-store reading (paper_balance.py for the
+        single-user bot, a SaaS user's paper balance, etc.). Only used for dry_run; ignored for a
+        live order, which checks Kalshi's real balance itself. Omit to skip the affordability check.
         """
         # H5: Validate contract count is a strictly positive whole integer
         try:
@@ -705,10 +1042,57 @@ class KalshiTrader:
             except (ValueError, TypeError):
                 buf = 0.04
 
-        # 1. PAPER TRADING (SIMULATION)
+        # 1. PAPER TRADING (SIMULATION) - models the same real-market constraints LIVE faces,
+        # without requiring an authenticated Kalshi call (many paper-only accounts have no live
+        # Kalshi credentials configured at all, so re-verifying via get_active_15m_market() here
+        # would make paper trading depend on credentials it doesn't need and doesn't have).
         if dry_run:
-            simulated_price = limit_price_dollars if limit_price_dollars is not None else 0.50
-            cost = round(simulated_price * count_int, 4)
+            # Expiry backstop, derived from the ticker's own encoded close time (no network call) -
+            # KXBTC15M-26SEP271015-15 closes at a time baked right into the ticker string. A ticker
+            # that doesn't encode one (a test fixture, or a fabricated "_SYNTH" offline ticker)
+            # simply skips this check rather than blocking, since we have nothing real to check it against.
+            try:
+                from backend.btc.market_results import market_close_epoch
+                close_epoch = market_close_epoch(ticker)
+            except Exception:
+                close_epoch = None
+            if close_epoch is not None:
+                sec_remaining = close_epoch - time.time()
+                if sec_remaining < 30:
+                    return {
+                        "success": False,
+                        "error": f"Contract '{ticker}' expires in {int(sec_remaining)}s (< 30s remaining). Paper order rejected to mirror live behavior."
+                    }
+
+            # Same book-crossing slippage buffer a live order pays, plus a small fixed latency tax
+            # standing in for the adverse drift that happens during a real order's network round
+            # trip (paper has no such delay otherwise, which would make it strictly better-priced
+            # than live for an identical signal). Rounded to whole cents.
+            # FIX: We only add latency tax to the raw_price (the ask). The `buf` is a limit tolerance, not a guaranteed fill penalty.
+            raw_price = float(limit_price_dollars) if limit_price_dollars is not None else 0.50
+            simulated_price = round(max(0.01, min(raw_price + PAPER_LATENCY_TAX_DOLLARS, 0.99)), 2)
+
+            # In paper trading, fill the full requested contract count to strictly respect the user's trade size.
+            filled_count = count_int
+            cost = round(simulated_price * filled_count, 4)
+
+            # Fail-closed affordability check, mirroring LIVE's own real-balance check (H4 above).
+            # Opt-in: only enforced when the caller passes its own balance-store reading.
+            if available_balance is not None:
+                try:
+                    avail = float(available_balance)
+                except (TypeError, ValueError):
+                    avail = None
+                if avail is not None and cost > avail + 1e-9:
+                    filled_count = int(avail / simulated_price)
+                    if filled_count < 1:
+                        return {
+                            "success": False,
+                            "error": f"Insufficient paper balance: ${avail:.2f} available, ${cost:.2f} required for 1 contract."
+                        }
+                    cost = round(simulated_price * filled_count, 4)
+
+            partial_note = ""
             return {
                 "success": True,
                 "mode": "PAPER",
@@ -717,14 +1101,16 @@ class KalshiTrader:
                 "ticker": ticker,
                 "side": side_clean.upper(),
                 "action": "BUY",
-                "count": count_int,
-                "requested_price": simulated_price,
+                "count": filled_count,
+                "requested_count": count_int,
+                "requested_price": raw_price,
                 "filled_price": simulated_price,
                 "total_cost": cost,
                 "slippage_buffer": buf,
-                "status": "FILLED (SIMULATED)",
+                "latency_tax": PAPER_LATENCY_TAX_DOLLARS,
+                "status": "FILLED (SIMULATED)" if filled_count == count_int else "PARTIALLY FILLED (SIMULATED)",
                 "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
-                "message": f"Simulated BUY of {count_int} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
+                "message": f"Simulated BUY of {filled_count} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
             }
 
         # Extract series_ticker from the passed ticker (e.g., "KXETH15M-..." -> "KXETH15M")
@@ -783,12 +1169,18 @@ class KalshiTrader:
                 "error": f"Live order aborted: Unable to verify Kalshi account balance ({bal_res.get('error', 'Balance check failed')})."
             }
         live_balance = float(bal_res.get("balance_dollars", 0.0))
+        target_ex = verified_market.get("exchange_index")
+        if target_ex is not None:
+            for b_item in bal_res.get("raw", {}).get("balance_breakdown", []):
+                if b_item.get("exchange_index") == target_ex:
+                    live_balance = min(live_balance, float(b_item.get("balance", live_balance)))
+                    break
         est_cost = outcome_price * count_int
 
         if live_balance < est_cost:
             return {
                 "success": False,
-                "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
+                "error": f"Insufficient funds: Balance ${live_balance:.2f} on exchange {target_ex} is less than required ${est_cost:.2f}."
             }
 
         # V2 endpoint: POST /portfolio/events/orders
@@ -822,9 +1214,15 @@ class KalshiTrader:
             logger.warning(f"[KalshiTrader] Failed to snapshot pre-order positions: {pre_err}")
 
         path = "/trade-api/v2/portfolio/events/orders"
+        # M-AMBIG: once a request has left this process, any failure to read a clean answer
+        # means Kalshi MAY have filled it. Track which order was last sent so every such
+        # failure is resolved as "confirmed fill" or "ambiguous", never as a clean rejection.
+        sent_cid = None
+        sent_price = outcome_price
         try:
             headers = self._sign_headers("POST", path)
             # H6: Use order_session (max_retries=0) for mutating orders
+            sent_cid = client_order_id
             resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
 
             if resp.status_code in [200, 201]:
@@ -833,6 +1231,71 @@ class KalshiTrader:
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
                 if fill_count == 0:
+                    # ── FAST RETRY FOR IOC ORDERS ──
+                    # If IOC order unfilled due to sub-second price movement, re-query active market and retry once
+                    try:
+                        fresh_market = self.get_active_15m_market(series_ticker=series_t, allow_synthetic=False, force_refresh=True, min_seconds_left=20)
+                        if fresh_market:
+                            fresh_ask = float(fresh_market.get(f"{side_clean}_ask") or 0.0)
+                            if 0.02 <= fresh_ask <= 0.90 and abs(fresh_ask - raw_price) <= 0.06:
+                                retry_count = count_int
+                                new_outcome_price = max(0.01, min(fresh_ask + buf, 0.99))
+                                new_cost = new_outcome_price * retry_count
+                                if live_balance < new_cost:
+                                    retry_count = int(live_balance / max(0.01, new_outcome_price))
+                                
+                                if retry_count >= 1:
+                                    logger.info(f"[KalshiTrader] IOC unfilled at ${outcome_price:.2f}. Retrying once with fresh ask ${fresh_ask:.2f} (limit: ${new_outcome_price:.2f}, contracts: {retry_count}) for {ticker}...")
+                                    new_book_price = new_outcome_price if side_clean == "yes" else (1.0 - new_outcome_price)
+                                    retry_cid = str(uuid.uuid4())
+                                    new_payload = dict(v2_payload)
+                                    new_payload["client_order_id"] = retry_cid
+                                    new_payload["count"] = f"{retry_count}.00"
+                                    new_payload["price"] = f"{new_book_price:.4f}"
+                                    
+                                    retry_headers = self._sign_headers("POST", path)
+                                    # From here on the retry is "sent": an error resolves it as ambiguous.
+                                    sent_cid = retry_cid
+                                    sent_price = new_outcome_price
+                                    retry_resp = self.order_session.post(f"{BASE_URL}{path}", json=new_payload, headers=retry_headers, timeout=5.0)
+                                    if retry_resp.status_code in [200, 201]:
+                                        retry_data = retry_resp.json()
+                                        retry_fill = float(retry_data.get("fill_count", "0") or "0")
+                                        if retry_fill > 0:
+                                            avg_retry_fill = float(retry_data.get("average_fill_price", str(new_book_price)) or str(new_book_price))
+                                            avg_retry_outcome = round(
+                                                avg_retry_fill if side_clean == "yes" else (1.0 - avg_retry_fill),
+                                                4,
+                                            )
+                                            logger.info(f"[KalshiTrader] IOC retry SUCCEEDED: filled {retry_fill} {side_clean.upper()} @ ${avg_retry_outcome:.2f}")
+                                            return {
+                                                "success": True,
+                                                "mode": "LIVE",
+                                                "order_id": retry_data.get("order_id", retry_cid),
+                                                "client_order_id": retry_data.get("client_order_id", retry_cid),
+                                                "ticker": ticker,
+                                                "side": side_clean.upper(),
+                                                "action": "BUY",
+                                                "count": retry_fill,
+                                                "requested_price": fresh_ask,
+                                                "filled_price": avg_retry_outcome,
+                                                "total_cost": round(avg_retry_outcome * retry_fill, 4),
+                                                "slippage_buffer": buf,
+                                                "status": "FILLED",
+                                                "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                                                "raw_response": retry_data
+                                            }
+                    except Exception as retry_err:
+                        logger.warning(f"[KalshiTrader] IOC retry error: {retry_err}")
+                        if sent_cid != client_order_id:
+                            # The retry order itself was sent and we lost its answer - it may
+                            # have filled. (The first order is known unfilled: fill_count == 0.)
+                            return self._resolve_uncertain_buy(
+                                ticker=ticker, client_order_id=sent_cid, side=side_clean,
+                                pre_positions=pre_positions, requested_count=float(count_int),
+                                price=sent_price, slippage_buffer=buf, err=retry_err,
+                            )
+
                     return {
                         "success": False,
                         "error": "Kalshi Order Unfilled: IOC limit order did not cross the book due to price movement or low liquidity.",
@@ -874,33 +1337,38 @@ class KalshiTrader:
                     "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {user_msg}",
                     "payload_sent": v2_payload
                 }
-        except requests.exceptions.Timeout as e:
-            logger.warning(
-                f"[KalshiTrader] Order request timed out for {ticker} (client_order_id={client_order_id}). "
-                f"Attempting reconciliation against live positions..."
-            )
-            reconciled = self._reconcile_after_timeout(
-                ticker=ticker,
-                client_order_id=client_order_id,
-                side=side_clean,
-                pre_positions=pre_positions,
-                requested_count=float(count_int),
-                action="BUY",
-                price=outcome_price,
-                slippage_buffer=buf
-            )
-            if reconciled is not None:
-                return reconciled
-            return {
-                "success": False,
-                "error": f"Order request timed out and could not be confirmed against Kalshi positions: {e}. "
-                         f"MANUAL VERIFICATION REQUIRED — check Kalshi positions before retrying.",
-                "ambiguous": True,
-                "client_order_id": client_order_id,
-                "ticker": ticker,
-            }
+        except requests.exceptions.ConnectTimeout as e:
+            # The connection was never established, so the order never reached Kalshi.
+            return {"success": False, "error": f"Could not reach Kalshi (connect timeout); order not sent: {e}"}
         except Exception as e:
-            return {"success": False, "error": f"Order execution exception: {str(e)}"}
+            if sent_cid is None:
+                return {"success": False, "error": f"Order execution exception before sending: {str(e)}"}
+            # Timeout, dropped connection, unreadable/garbled response... after the request
+            # was sent. It may have filled - confirm it or report it as ambiguous.
+            logger.warning(
+                f"[KalshiTrader] Lost the response for order {sent_cid} on {ticker} ({type(e).__name__}: {e}). "
+                f"Checking Kalshi for a fill..."
+            )
+            return self._resolve_uncertain_buy(
+                ticker=ticker, client_order_id=sent_cid, side=side_clean,
+                pre_positions=pre_positions, requested_count=float(count_int),
+                price=sent_price, slippage_buffer=buf, err=e,
+            )
+
+def filled_count(order_res: Dict[str, Any], fallback):
+    """Contracts actually filled according to a place_order() result. An IOC order (or a
+    simulated paper order) can fill only part of what was requested, so records, P&L and
+    risk must use this rather than the requested count. Whole numbers come back as ints."""
+    try:
+        filled = float((order_res or {}).get("count", fallback))
+    except (TypeError, ValueError):
+        return fallback
+    if filled <= 0:
+        return fallback
+    return int(filled) if filled.is_integer() else round(filled, 2)
+
 
 kalshi_trader = KalshiTrader()
+
+
 

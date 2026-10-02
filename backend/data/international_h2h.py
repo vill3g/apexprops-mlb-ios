@@ -5,7 +5,7 @@ pitcher decisions, team batting/pitching splits, and betting trends
 for all Japan NPB and Korea KBO matchups.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict
 
 NPB_H2H_DATABASE = {
     "Yomiuri Giants": {
@@ -333,7 +333,7 @@ def get_full_h2h_history(league: str, home_team: str, away_team: str) -> Dict[st
             "series_summary": {
                 "record": f"{home_team} leads 10-8 this season (18 Games)",
                 "home_record": f"6-3 at {home_team} Home Park",
-                "away_record": f"4-5 on the road",
+                "away_record": "4-5 on the road",
                 "run_diff": "+12 Run Differential",
                 "avg_total_runs": 7.4,
                 "ou_record": "9 Overs, 8 Unders, 1 Push"
@@ -349,8 +349,8 @@ def get_full_h2h_history(league: str, home_team: str, away_team: str) -> Dict[st
             ],
             "trends": [
                 f"{home_team} holds a 6-3 home advantage against {away_team} this season.",
-                f"Starting pitchers have combined for a sub-3.40 ERA across the season series.",
-                f"Under has hit in 5 of the last 7 meetings."
+                "Starting pitchers have combined for a sub-3.40 ERA across the season series.",
+                "Under has hit in 5 of the last 7 meetings."
             ]
         }
 

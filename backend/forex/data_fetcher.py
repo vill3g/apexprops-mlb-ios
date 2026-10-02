@@ -1,9 +1,9 @@
-import time
-from datetime import datetime
-import pandas as pd
-import yfinance as yf
-import pytz
 import logging
+from datetime import datetime
+
+import pandas as pd
+import pytz
+import yfinance as yf
 
 logger = logging.getLogger(__name__)
 

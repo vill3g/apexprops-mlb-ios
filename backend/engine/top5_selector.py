@@ -4,14 +4,15 @@ Coordinates live ESPN slate ingestion, Monte Carlo simulations, and ranks
 the Top 5 plays of the day with analytical matchup catalysts and portfolio diversification.
 """
 
-from typing import List, Dict, Any, Optional
 import time
-from backend.data.espn_client import ESPNClient
+from typing import Any, Dict, List, Optional
+
 from backend.data.draftkings_client import DraftKingsClient
-from backend.engine.simulator import HRRBISimulator
-from backend.data.verified_mlb_client import VerifiedMLBClient
+from backend.data.espn_client import ESPNClient
 from backend.data.injuries_client import InjuriesClient
 from backend.data.player_photos import photo_resolver
+from backend.data.verified_mlb_client import VerifiedMLBClient
+from backend.engine.simulator import HRRBISimulator
 
 FRANCHISE_CORNERSTONES = {
     "LAD": [

@@ -5,14 +5,15 @@ DraftKings game totals/spreads, and athlete metadata.
 Optimized with concurrent fetching and in-memory caching.
 """
 
+import datetime
 import json
 import logging
-import urllib.request
-import urllib.error
 import time
-import datetime
+import urllib.error
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from backend.data.player_photos import photo_resolver
 
 logger = logging.getLogger(__name__)

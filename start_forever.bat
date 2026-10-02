@@ -1,19 +1,18 @@
 @echo off
 title Kalshi AI Trader (Auto-Restart)
 color 0A
+cd /d "%~dp0"
 
 echo ==================================================
 echo      KALSHI AI TRADER - CONTINUOUS DAEMON
 echo ==================================================
-echo This script will automatically restart the bot if 
-echo it ever crashes or disconnects.
+echo Runs the watchdog in this window. It keeps the web server, the
+echo background worker and the ngrok tunnel running and restarts any
+echo of them that crash. Close this window or run stop_server.bat to stop.
+echo (start_btc_server.vbs does the same thing without a window.)
 echo.
 
-:loop
-echo [%time%] Starting server (HTTP)...
-call .venv\Scripts\python.exe -m uvicorn backend.main:app --host 0.0.0.0 --port 8056 --no-access-log
+".venv\Scripts\python.exe" server_watchdog.py
 echo.
-echo [%time%] CRITICAL: Server stopped or crashed!
-echo Restarting automatically in 5 seconds...
-timeout /t 5 >nul
-goto loop
+echo Watchdog exited (another copy may already be running - see server_watchdog.log).
+pause

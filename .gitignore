@@ -42,3 +42,18 @@ _test*.js
 *.ipa
 dist/
 node_modules/
+
+# Private runtime data — never commit (users' password hashes, encrypted API keys,
+# trade histories, tokens). Already-tracked copies must be removed from git with:
+#   git rm --cached -r backend/data/users.db* backend/data/users backend/data/trades.db* token.txt static/assets/server_qr.png data/guests
+token.txt
+backend/data/*.db
+backend/data/*.db-*
+backend/database/*.db
+backend/data/users/
+backend/data/locks/
+backend/data/profiles/
+backend/btc/data/users/
+data/guests/
+static/assets/server_qr.png
+backups/

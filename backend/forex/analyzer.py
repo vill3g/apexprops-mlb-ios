@@ -1,8 +1,10 @@
-import pandas as pd
 import logging
 from datetime import datetime
+
 import pytz
-from backend.btc.indicators import add_all_indicators, extract_indicator_summary
+
+from backend.btc.indicators import (add_all_indicators,
+                                    extract_indicator_summary)
 from backend.forex.data_fetcher import fetch_forex_candles
 
 logger = logging.getLogger(__name__)
@@ -119,5 +121,6 @@ def analyze_forex_pair(pair: str, timeframe: str = "15m") -> dict:
 if __name__ == "__main__":
     res = analyze_forex_pair("EURUSD")
     import json
+
     # Just print the high level fields to avoid console flood
     print(json.dumps({k:v for k,v in res.items() if k != 'indicators'}, indent=2))

@@ -33,7 +33,7 @@ def test_manual_trade_not_blocked_above_60_cents():
             "count": 1,
             "total_cost": 0.63,
         }
-        with patch.object(executor, "_save_trades_history"):
+        with patch.object(executor, "_save_trades_history"), patch.object(executor, "check_risk_budget", return_value=None):
             res = executor.execute_manual_trade("ABOVE")
             assert res["success"] is True
             assert res["trade"]["entry_price"] == 0.63

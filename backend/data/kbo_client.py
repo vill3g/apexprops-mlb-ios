@@ -4,10 +4,11 @@ Fetches live scores, current innings, venue, official standings with L10 and str
 and historical completed game results from MyKBO and TheSportsDB.
 """
 
-import urllib.request
-import re
 import logging
-from typing import List, Dict, Any
+import re
+import urllib.request
+from typing import Any, Dict, List
+
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger("kbo_client")

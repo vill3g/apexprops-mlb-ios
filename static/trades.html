@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kalshi AI - Full Trade Ledger</title>
+    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
+    <link rel="alternate icon" href="/static/assets/app_icon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .trade-win { border-left: 3px solid #10b981; }
@@ -17,10 +20,32 @@
         <div class="flex items-center gap-2">
             <h1 class="text-xs font-bold tracking-wider uppercase text-white">Full Trade Ledger</h1>
         </div>
-        <button onclick="fetchTradesHistory()" class="w-8 h-8 flex items-center justify-center bg-gray-800 text-gray-300 rounded-lg active:scale-95 transition-all">
-            <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        </button>
+        <div class="flex items-center gap-2">
+            <button onclick="fetchTradesHistory()" class="w-8 h-8 flex items-center justify-center bg-gray-800 text-gray-300 rounded-lg active:scale-95 transition-all">
+                <svg id="refreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+            <button onclick="window.close()" class="px-2.5 py-1 text-xs font-bold bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg">Close</button>
+        </div>
     </header>
+
+    <!-- iOS / Mobile Pull to Refresh Indicator -->
+    <div id="ptr-indicator" class="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none transition-transform duration-200" style="top: 3.5rem; transform: translateY(-130%);">
+        <div id="ptr-pill" class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0d1424]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.85)] text-cyan-300 text-xs font-bold tracking-wider transition-all duration-200">
+            <div class="w-4 h-4 flex items-center justify-center shrink-0">
+                <svg id="ptr-arrow" class="w-3.5 h-3.5 text-cyan-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+                <svg id="ptr-spinner" class="w-3.5 h-3.5 text-cyan-400 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <svg id="ptr-check" class="w-3.5 h-3.5 text-emerald-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <span id="ptr-text" class="text-[10px] font-black uppercase tracking-wider text-gray-200">Pull to refresh</span>
+        </div>
+    </div>
 
     <main class="max-w-3xl mx-auto p-4">
         <div id="tradesContainer" class="space-y-3">
@@ -29,10 +54,31 @@
     </main>
 
     <script>
+// Session token migration: when the server re-issues a login token, store it.
+(function () {
+  if (window.__tokenRefreshInstalled || !window.fetch) return;
+  window.__tokenRefreshInstalled = true;
+  const origFetch = window.fetch;
+  window.fetch = async function () {
+    const res = await origFetch.apply(this, arguments);
+    try {
+      const t = res.headers && res.headers.get('X-Refreshed-Token');
+      if (t) {
+        localStorage.setItem('saas_token', t);
+        document.cookie = `saas_token=${t}; path=/; max-age=7776000; SameSite=Lax`;
+      }
+    } catch (e) {}
+    return res;
+  };
+})();
+</script>
+<script>
         function getAuthHeaders() {
             const headers = {};
             const saasToken = localStorage.getItem("saas_token");
             if (saasToken) headers["Authorization"] = "Bearer " + saasToken;
+            const adminToken = localStorage.getItem("admin_api_token") || localStorage.getItem("api_token");
+            if (adminToken) headers["X-API-Token"] = adminToken;
             return headers;
         }
 
@@ -41,15 +87,25 @@
             if (icon) icon.classList.add('animate-spin');
             
             const urlParams = new URLSearchParams(window.location.search);
-            const guestId = urlParams.get("guest");
+            const targetId = urlParams.get("user") || urlParams.get("user_id") || urlParams.get("guest");
+            
             let url = '/api/engine/BTC/trade/history';
-            if (guestId) url += '?guest=' + guestId;
+            if (targetId) url += '?user=' + encodeURIComponent(targetId);
 
             try {
-                const res = await fetch(url, { headers: getAuthHeaders() });
+                let res = await fetch(url, { headers: getAuthHeaders() });
+                // If not ok and targetId was specified, try dedicated admin route as fallback
+                if (!res.ok && targetId && /^\d+$/.test(targetId)) {
+                    const adminRes = await fetch(`/api/admin/users/${targetId}/trades`, { headers: getAuthHeaders() });
+                    if (adminRes.ok) {
+                        const adminData = await adminRes.json();
+                        renderTrades(adminData.trades || []);
+                        return;
+                    }
+                }
                 if (!res.ok) throw new Error("HTTP " + res.status);
                 const data = await res.json();
-                renderTrades(Array.isArray(data) ? data : []);
+                renderTrades(Array.isArray(data) ? data : (data.trades || []));
             } catch (err) {
                 document.getElementById("tradesContainer").innerHTML = '<div class="text-center text-red-500 text-xs py-8">' + err.message + '</div>';
             } finally {
@@ -61,29 +117,72 @@
             const pills = [];
             const mode = String(t.mode || "PAPER").toUpperCase();
             const exitReason = String(t.exit_reason || t.reason || "").toUpperCase();
-            const isManual = t.is_manual === true || exitReason === "MANUAL";
+            const isManual = t.is_manual === true || String(t.trading_style || "").toUpperCase() === "MANUAL" || String(t.signal_source || "").toUpperCase() === "MANUAL" || exitReason === "MANUAL";
 
+            // Mode badge
             if (mode === "LIVE") {
                 pills.push('<span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-500/20 text-red-300 border border-red-500/40">LIVE</span>');
             } else {
                 pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">PAPER</span>');
             }
 
+            // Trading Style badge
             if (isManual) {
-                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35">MANUAL</span>');
+                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/35">👤 MANUAL</span>');
             } else {
-                const styleStr = t.trading_style ? String(t.trading_style).replace(/_/g, ' ') : "AUTO";
-                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-blue-500/20 text-blue-300 border border-blue-500/35">' + styleStr + '</span>');
+                const rawStyle = String(t.trading_style || "AUTO").toUpperCase();
+                if (rawStyle.includes("MOMENTUM")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-sky-500/20 text-sky-300 border border-sky-500/35">🏄 MOMENTUM</span>');
+                } else if (rawStyle.includes("SNIPER")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/35">🎯 SNIPER</span>');
+                } else if (rawStyle.includes("PREDICTION")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-300 border border-purple-500/35">🔮 PREDICTION</span>');
+                } else if (rawStyle.includes("AMBUSH")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-amber-500/20 text-amber-300 border border-amber-500/35">🥷 AMBUSH</span>');
+                } else if (rawStyle.includes("CHOP")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-violet-500/20 text-violet-300 border border-violet-500/35">🪓 CHOP</span>');
+                } else if (rawStyle.includes("GUARD") || rawStyle.includes("CAPITAL")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/35">🛡️ GUARD</span>');
+                } else if (rawStyle.includes("FORCE")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-rose-500/20 text-rose-300 border border-rose-500/35">🚀 FORCE</span>');
+                } else if (rawStyle.includes("SECOND") || rawStyle.includes("2ND")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-teal-500/20 text-teal-300 border border-teal-500/35">🔄 2ND ENTRY</span>');
+                } else {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-blue-500/20 text-blue-300 border border-blue-500/35">⚙️ ' + rawStyle.replace(/_/g, ' ') + '</span>');
+                }
             }
 
-            if (t.is_profit_reentry) {
-                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/35">2ND ENTRY</span>');
-            }
-            if (t.is_reversal || t.is_reverse) {
-                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-400 border border-purple-500/35">REVERSAL</span>');
+            // Signal Source badge
+            if (!isManual) {
+                const rawSource = String(t.signal_source || "").toUpperCase();
+                if (rawSource.includes("BLEND")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/35">⚖️ BLEND</span>');
+                } else if (rawSource.includes("DQN") || rawSource.includes("RL")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-300 border border-purple-500/35">🧠 RL DQN</span>');
+                } else if (rawSource.includes("TECH")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-orange-500/20 text-orange-300 border border-orange-500/35">📊 TECH</span>');
+                } else if (rawSource.includes("SWARM") || rawSource.includes("ENSEMBLE")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/35">🤖 SWARM</span>');
+                } else if (rawSource && !rawSource.includes("REVERSAL")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-slate-500/20 text-slate-300 border border-slate-500/35">📡 ' + rawSource.replace(/_/g, ' ') + '</span>');
+                }
             }
 
-            if (exitReason && exitReason !== 'KALSHI_POSITION_RECONCILED' && exitReason !== 'AI_SIGNAL' && exitReason !== 'SETTLEMENT' && !isManual) {
+            // Tactical badges
+            if (t.is_profit_reentry || t.is_stop_loss_reentry || exitReason.includes("SECOND_ENTRY") || exitReason.includes("THIRD_ENTRY") || exitReason.includes("STOP_LOSS_REENTRY")) {
+                const isThird = (t.trading_style === 'THIRD_ENTRY' || t.is_third_entry || exitReason.includes("THIRD_ENTRY") || (t.reason && t.reason.includes('THIRD_ENTRY')));
+                const isSL = (t.is_stop_loss_reentry || exitReason.includes("STOP_LOSS_REENTRY") || (t.reason && t.reason.includes('STOP_LOSS_REENTRY')));
+                const baseText = isThird ? '🔄 3RD ENTRY' : '🔄 2ND ENTRY';
+                const reentryText = isSL ? ('🔂 DIP (' + (isThird ? '3RD' : '2ND') + ')') : baseText;
+                const badgeColor = isSL ? 'bg-amber-500/20 text-amber-300 border-amber-500/35' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/35';
+                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ' + badgeColor + '">' + reentryText + '</span>');
+            }
+            if (t.is_reversal || t.is_reverse || (t.reason && t.reason.includes("REVERSAL")) || exitReason.includes("REVERSAL")) {
+                pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-pink-500/20 text-pink-300 border border-pink-500/35">🔀 REVERSAL</span>');
+            }
+
+            // Exit reason
+            if (exitReason && exitReason !== 'KALSHI_POSITION_RECONCILED' && exitReason !== 'AI_SIGNAL' && exitReason !== 'SETTLEMENT' && !isManual && !exitReason.includes("SECOND_ENTRY") && !exitReason.includes("REVERSAL") && !exitReason.includes("AI_COPY")) {
                 let exitStr = exitReason.replace(/_/g, ' ');
                 let exitColor = 'bg-slate-500/20 text-slate-400 border-slate-500/35';
                 if (exitStr.includes('PROFIT') || exitStr.includes('TP')) exitColor = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/35';
@@ -91,7 +190,28 @@
                 pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase border ' + exitColor + '">' + exitStr + '</span>');
             }
 
-            return pills.join(" ");
+            // Deduplicate pills
+            const seenPills = new Set();
+            const uniquePills = [];
+            pills.forEach(p => {
+                const txt = p.replace(/<[^>]*>/g, '').trim().toUpperCase();
+                if (txt && !seenPills.has(txt)) {
+                    seenPills.add(txt);
+                    uniquePills.push(p);
+                }
+            });
+
+            return uniquePills.join(" ");
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function renderTrades(trades) {
@@ -100,50 +220,808 @@
                 container.innerHTML = '<div class="text-center py-12 font-mono text-xs text-gray-500">No trades recorded yet.</div>';
                 return;
             }
+            window.tradesById = window.tradesById || {};
 
-            container.innerHTML = trades.map(t => {
+            container.innerHTML = trades.map((t, idx) => {
+                const tradeKey = t.id || ('ledger_' + idx);
+                window.tradesById[tradeKey] = t;
                 const resStr = String(t.result || t.status || "").toUpperCase();
-                const isWin = resStr.includes("WIN") || parseFloat(t.realized_pnl ?? t.pnl_dollars ?? t.pnl ?? 0) > 0;
-                const isLoss = resStr.includes("LOSS") || parseFloat(t.realized_pnl ?? t.pnl_dollars ?? t.pnl ?? 0) < 0;
+                const pnlVal = parseFloat(t.realized_pnl !== undefined ? t.realized_pnl : (t.pnl_dollars !== undefined ? t.pnl_dollars : (t.pnl || 0)));
+                const isWin = resStr.includes("WIN") || pnlVal > 0;
+                const isLoss = resStr.includes("LOSS") || pnlVal < 0;
 
                 let borderClass = "trade-open";
-                let statusBadge = '<span class="text-[9px] font-bold text-blue-400">OPEN</span>';
-                if (isWin) { borderClass = "trade-win"; statusBadge = '<span class="text-[9px] font-bold text-emerald-400">WIN</span>'; }
-                else if (isLoss) { borderClass = "trade-loss"; statusBadge = '<span class="text-[9px] font-bold text-red-400">LOSS</span>'; }
-                else if (resStr === "CLOSED") { statusBadge = '<span class="text-[9px] font-bold text-gray-400">CLOSED</span>'; }
+                let statusBadgeText = "OPEN";
+                let statusBadgeClass = "text-blue-400";
+                if (isWin) { borderClass = "trade-win"; statusBadgeText = "WIN"; statusBadgeClass = "text-emerald-400"; }
+                else if (isLoss) { borderClass = "trade-loss"; statusBadgeText = "LOSS"; statusBadgeClass = "text-red-400"; }
+                else if (resStr === "CLOSED") { statusBadgeText = "CLOSED"; statusBadgeClass = "text-gray-400"; }
+                let statusBadge = `<span class="text-[9px] font-bold ${statusBadgeClass}">${escapeHtml(statusBadgeText)}</span>`;
 
-                const pnlVal = parseFloat(t.realized_pnl ?? t.pnl_dollars ?? t.pnl ?? 0);
                 const pnlColor = pnlVal > 0 ? "text-emerald-400" : (pnlVal < 0 ? "text-red-400" : "text-gray-400");
-                const pnlStr = pnlVal > 0 ? "+$" + pnlVal.toFixed(2) : (pnlVal < 0 ? "-$" + Math.abs(pnlVal).toFixed(2) : ".00");
+                const pnlStr = pnlVal > 0 ? ("+$" + pnlVal.toFixed(2)) : (pnlVal < 0 ? ("-$" + Math.abs(pnlVal).toFixed(2)) : "$0.00");
 
                 const dir = String(t.direction || t.side || "").toUpperCase();
+                const dirText = dir;
                 const dirColor = (dir === "YES" || dir === "UP" || dir === "ABOVE") ? "text-green-400" : "text-red-400";
+                let strike = 'BTC';
+                if (t.strike) {
+                    const sNum = Number(t.strike);
+                    if (!isNaN(sNum) && isFinite(sNum) && sNum > 0) {
+                        strike = 'Strike $' + sNum.toLocaleString(undefined, { maximumFractionDigits: 0 });
+                    }
+                }
 
-                return 
-                    <div class="bg-[#131b2c] rounded-xl p-3 shadow-lg border border-gray-800  flex flex-col gap-2">
+                let assetType = String(t.asset || '').toUpperCase();
+                if (!assetType || assetType === 'NONE') {
+                    const tk = String(t.ticker || '').toUpperCase();
+                    if (tk.includes('BTC')) assetType = 'BTC';
+                    else if (tk.includes('ETH')) assetType = 'ETH';
+                    else if (tk.includes('GOLD')) assetType = 'GOLD';
+                    else if (tk.includes('EURUSD')) assetType = 'EUR/USD';
+                    else if (tk.includes('GBPUSD')) assetType = 'GBP/USD';
+                    else if (tk.includes('USDJPY')) assetType = 'USD/JPY';
+                    else assetType = 'BTC';
+                }
+                let assetBadgeClass = 'bg-gray-700 text-gray-300';
+                let assetIcon = '';
+                if (assetType === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40'; assetIcon = '₿ '; }
+                else if (assetType === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'; assetIcon = 'Ξ '; }
+                else if (assetType === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'; assetIcon = '🪙 '; }
+                const assetBadge = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${assetBadgeClass}">${assetIcon}${assetType}</span>`;
+
+                return `
+                    <div onclick="openTradeDetailsModal('${tradeKey}')" class="bg-[#131b2c] hover:bg-[#152033] cursor-pointer rounded-xl p-3 shadow-lg border border-gray-800 hover:border-blue-500/60 transition-all ${borderClass} flex flex-col gap-2 group active:scale-[0.99]" title="Click for AI breakdown & full trade details">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-white"></span>
-                                <span class="text-[10px] font-black "></span>
+                                ${assetBadge}
+                                <span class="text-xs font-bold text-white">${t.ticker ? escapeHtml(t.ticker) : escapeHtml(strike)}</span>
+                                <span class="text-[10px] font-black ${dirColor}">${escapeHtml(dirText)}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                
-                                <span class="text-xs font-mono font-bold "></span>
+                                ${statusBadge}
+                                <span class="text-xs font-mono font-bold ${pnlColor}">${pnlStr}</span>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center text-[10px] text-gray-400">
-                            <span></span>
-                            <span> Cont. @ </span>
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 font-mono">
+                            <span>${escapeHtml(t.timestamp || t.time || "Unknown Time")}</span>
+                            <span>${t.count || 0} Cont. @ $${parseFloat(t.entry_price || 0.50).toFixed(2)}</span>
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-1">
-                            
+                        <div class="flex flex-wrap gap-1 mt-0.5">
+                            ${getTradeIdentifierPills(t)}
+                        </div>
+                        <div class="flex items-center justify-between pt-1.5 mt-0.5 border-t border-white/5 text-[9px] text-gray-400 font-mono group-hover:text-gray-300">
+                            <span class="flex items-center gap-1.5"><span class="text-[10px]">🔍</span> Tap for AI/ML breakdown</span>
+                            <span class="text-blue-400 font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">Details →</span>
                         </div>
                     </div>
-                ;
+                `;
             }).join("");
         }
 
         fetchTradesHistory();
     </script>
+
+<!-- Sleek Detailed Trade Breakdown Modal -->
+<div id="tradeDetailsModal" class="fixed inset-0 z-[350] hidden items-center justify-center p-2.5 sm:p-5 bg-black/80 backdrop-blur-md transition-opacity duration-200" onclick="if(event.target === this) closeTradeDetailsModal()">
+    <div class="relative w-full max-w-xl max-h-[92vh] bg-[#0c111c] border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        
+        <!-- Sticky Header -->
+        <div class="sticky top-0 z-20 bg-[#0d1424]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 py-3.5 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2.5">
+                <span id="tdm-side-badge" class="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/35">
+                    YES
+                </span>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span id="tdm-ticker" class="text-xs font-mono font-bold text-gray-300">KXBTC15M</span>
+                        <span id="tdm-mode-badge" class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/35">PAPER</span>
+                    </div>
+                    <span id="tdm-strike-title" class="text-[13px] font-black text-white tracking-wide">Target Strike $83,441.05</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="tdm-status-badge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/35">
+                    WIN
+                </span>
+                <button onclick="closeTradeDetailsModal()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition-all active:scale-95 cursor-pointer border border-white/5" title="Close (Esc)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Modal Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 space-y-4 text-xs">
+            
+            <!-- Hero PnL / Outcome Card -->
+            <div id="tdm-hero-card" class="relative overflow-hidden rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <!-- Content injected dynamically -->
+            </div>
+
+            <!-- Plain English AI Executive Summary -->
+            <div class="bg-[#121929] border border-white/5 rounded-2xl p-4 shadow-sm space-y-2">
+                <div class="flex items-center gap-2 text-indigo-400 text-[10px] font-bold uppercase tracking-wider">
+                    <span>💡</span> Trade Breakdown & Thesis
+                </div>
+                <p id="tdm-ai-summary" class="text-xs text-gray-300 leading-relaxed font-sans">
+                    Loading breakdown...
+                </p>
+            </div>
+
+            <!-- Financial & Execution Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div class="bg-[#101726] border border-white/5 rounded-xl p-3">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Entry Price</span>
+                    <span id="tdm-entry-price" class="text-sm font-black text-white font-mono">--</span>
+                </div>
+                <div class="bg-[#101726] border border-white/5 rounded-xl p-3">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Exit / Settle</span>
+                    <span id="tdm-exit-price" class="text-sm font-black text-white font-mono">--</span>
+                </div>
+                <div class="bg-[#101726] border border-white/5 rounded-xl p-3">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Contracts</span>
+                    <span id="tdm-contracts" class="text-sm font-black text-white font-mono">--</span>
+                </div>
+                <div class="bg-[#101726] border border-white/5 rounded-xl p-3">
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Capital Risked</span>
+                    <span id="tdm-total-cost" class="text-sm font-black text-cyan-300 font-mono">--</span>
+                </div>
+            </div>
+
+            <!-- AI / Machine Learning Engine Diagnostics -->
+            <div class="bg-[#121929] border border-white/5 rounded-2xl p-4 space-y-3.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span>🧠</span> AI & Machine Learning Diagnostics
+                    </span>
+                    <span id="tdm-model-pill" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35">
+                        Dual-Engine ML
+                    </span>
+                </div>
+
+                <!-- Strategy & Direction Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 flex flex-col gap-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Trading Style</span>
+                        <div class="flex items-center gap-2">
+                            <span id="tdm-strategy-name" class="font-black text-white text-sm">🎯 SNIPER</span>
+                        </div>
+                        <span id="tdm-strategy-desc" class="text-[10px] text-gray-400 leading-snug">
+                            Disciplined entry waiting for high-conviction order flow & structural confluence.
+                        </span>
+                    </div>
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 flex flex-col gap-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Signal Source</span>
+                        <div class="flex items-center gap-2">
+                            <span id="tdm-signal-source" class="font-black text-cyan-300 text-sm">⚖️ BLEND</span>
+                        </div>
+                        <span id="tdm-source-desc" class="text-[10px] text-gray-400 leading-snug">
+                            Weighted confluence of trained AI neural predictions and 15m technical indicators.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Conviction Bar -->
+                <div class="space-y-1.5 pt-1">
+                    <div class="flex justify-between items-center text-[10px] font-bold">
+                        <span class="text-gray-400 uppercase tracking-wider">AI Directional Conviction</span>
+                        <span id="tdm-confidence-val" class="text-white font-mono">55.0%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-black/60 rounded-full overflow-hidden p-0.5 border border-white/5">
+                        <div id="tdm-confidence-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-500" style="width: 55%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Catalysts & Market Signals -->
+            <div class="bg-[#121929] border border-white/5 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span>⚡</span> Entry Catalysts & Signal Confluence
+                    </span>
+                    <span id="tdm-catalyst-count" class="text-[9px] font-bold text-gray-500">0 Signals</span>
+                </div>
+                <div id="tdm-catalysts-container" class="space-y-2">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Execution Timeline & Exit Details -->
+            <div class="bg-[#121929] border border-white/5 rounded-2xl p-4 space-y-3">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <span>⏱️</span> Execution Timeline
+                </span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 space-y-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider block">Entry Time</span>
+                        <span id="tdm-entry-time" class="font-mono text-gray-200 block text-xs">--</span>
+                    </div>
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 space-y-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider block">Exit / Settlement Time</span>
+                        <span id="tdm-exit-time" class="font-mono text-gray-200 block text-xs">--</span>
+                    </div>
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 space-y-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider block">Duration in Trade</span>
+                        <span id="tdm-duration" class="font-mono text-gray-200 block text-xs">--</span>
+                    </div>
+                    <div class="bg-[#0e1422] p-2.5 rounded-xl border border-white/5 space-y-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold tracking-wider block">Exit Reason</span>
+                        <span id="tdm-exit-reason" class="font-mono text-gray-200 block text-xs">--</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sticky Footer -->
+        <div class="sticky bottom-0 z-20 bg-[#0d1424]/95 backdrop-blur-md border-t border-white/10 px-4 sm:px-6 py-3 flex justify-between items-center shrink-0">
+            <span class="text-[10px] text-gray-400 font-mono">
+                Contract: <span id="tdm-footer-ticker" class="text-white font-bold">--</span>
+            </span>
+            <button onclick="closeTradeDetailsModal()" class="py-2 px-5 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all active:scale-95 cursor-pointer">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.openTradeDetailsModal = function(tradeIdOrObj) {
+        const modal = document.getElementById('tradeDetailsModal');
+        if (!modal) return;
+
+        let t = null;
+        if (typeof tradeIdOrObj === 'object' && tradeIdOrObj !== null) {
+            t = tradeIdOrObj;
+        } else if (window.tradesById && window.tradesById[tradeIdOrObj]) {
+            t = window.tradesById[tradeIdOrObj];
+        }
+
+        if (!t) {
+            console.warn("[TradeModal] Trade not found for identifier:", tradeIdOrObj);
+            return;
+        }
+
+        // Side & Direction
+        const side = String(t.side || t.direction || "YES").toUpperCase();
+        const isYes = side === "YES" || side === "UP" || side === "ABOVE";
+        const sideBadge = document.getElementById('tdm-side-badge');
+        if (sideBadge) {
+            sideBadge.textContent = isYes ? "BID YES" : "BID NO";
+            sideBadge.className = isYes
+                ? "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/35"
+                : "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/35";
+        }
+
+        // Ticker & Strike
+        const ticker = t.ticker || "KXBTC15M";
+        let rawStrike = t.strike || t.strike_price || t.target_price || t.target;
+        if (!rawStrike && t.market_snapshot) {
+            try {
+                const ms = typeof t.market_snapshot === 'string' ? JSON.parse(t.market_snapshot) : t.market_snapshot;
+                rawStrike = ms.target || ms.strike || ms.strike_price;
+            } catch(e) {}
+        }
+        let sNum = Number(rawStrike);
+        let strikeVal = (!isNaN(sNum) && isFinite(sNum) && sNum > 0)
+            ? sNum.toLocaleString(undefined, { maximumFractionDigits: 2 })
+            : null;
+
+        const tickerEl = document.getElementById('tdm-ticker');
+        if (tickerEl) tickerEl.textContent = ticker;
+        const strikeTitleEl = document.getElementById('tdm-strike-title');
+        if (strikeTitleEl) strikeTitleEl.textContent = strikeVal ? `Target Strike $${strikeVal}` : 'Target Strike ---';
+        const footerTicker = document.getElementById('tdm-footer-ticker');
+        if (footerTicker) footerTicker.textContent = ticker;
+
+        // Mode
+        const mode = String(t.mode || "PAPER").toUpperCase();
+        const modeBadge = document.getElementById('tdm-mode-badge');
+        if (modeBadge) {
+            modeBadge.textContent = mode;
+            modeBadge.className = mode === "LIVE"
+                ? "text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-500/20 text-rose-300 border border-rose-500/35"
+                : "text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/35";
+        }
+
+        // Status & PnL
+        const pnlVal = parseFloat(t.realized_pnl !== undefined ? t.realized_pnl : (t.pnl_dollars !== undefined ? t.pnl_dollars : (t.pnl || 0)));
+        const resStr = String(t.result || t.status || "").toUpperCase();
+        const isWin = resStr.includes("WIN") || pnlVal > 0;
+        const isLoss = resStr.includes("LOSS") || pnlVal < 0;
+        const isOpen = resStr === "OPEN";
+
+        const statusBadge = document.getElementById('tdm-status-badge');
+        if (statusBadge) {
+            if (isOpen) {
+                statusBadge.textContent = "OPEN POSITION";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-yellow-500/20 text-yellow-300 border border-yellow-500/35 animate-pulse";
+            } else if (isWin) {
+                statusBadge.textContent = "WIN";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/35";
+            } else if (isLoss) {
+                statusBadge.textContent = "LOSS";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/35";
+            } else {
+                statusBadge.textContent = "CLOSED";
+                statusBadge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-gray-600/20 text-gray-400 border border-gray-600/35";
+            }
+        }
+
+        // Financial Metrics
+        const count = parseInt(t.count || t.size || 1) || 1;
+        const entryPriceNum = parseFloat(t.entry_price || 0.50);
+        const exitPriceNum = (t.exit_price !== undefined && t.exit_price !== null) ? parseFloat(t.exit_price) : null;
+        const totalCost = count * entryPriceNum;
+
+        const entryPriceEl = document.getElementById('tdm-entry-price');
+        if (entryPriceEl) entryPriceEl.textContent = `${Math.round(entryPriceNum * 100)}¢ ($${entryPriceNum.toFixed(2)})`;
+
+        const exitPriceEl = document.getElementById('tdm-exit-price');
+        if (exitPriceEl) {
+            if (exitPriceNum !== null) {
+                exitPriceEl.textContent = `${Math.round(exitPriceNum * 100)}¢ ($${exitPriceNum.toFixed(2)})`;
+            } else {
+                exitPriceEl.textContent = isOpen ? 'Active Mark' : 'Settled';
+            }
+        }
+
+        const contractsEl = document.getElementById('tdm-contracts');
+        if (contractsEl) contractsEl.textContent = `${count} ${count === 1 ? 'Contract' : 'Contracts'}`;
+
+        const totalCostEl = document.getElementById('tdm-total-cost');
+        if (totalCostEl) totalCostEl.textContent = `$${totalCost.toFixed(2)}`;
+
+        // Hero Outcome Card
+        const heroCard = document.getElementById('tdm-hero-card');
+        if (heroCard) {
+            if (isOpen) {
+                heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 via-[#0d1424] to-black flex flex-col sm:flex-row justify-between sm:items-center gap-3";
+                heroCard.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 text-xl font-black animate-pulse">
+                            ●
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Active Position Live</div>
+                            <div class="text-2xl font-black text-white tabular-nums">${pnlVal >= 0 ? '+$' + pnlVal.toFixed(2) : '-$' + Math.abs(pnlVal).toFixed(2)}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">Unrealized PnL (Mark-to-Market)</div>
+                        </div>
+                    </div>
+                    <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
+                        <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Direction Target</span>
+                        <span class="text-xs font-black ${isYes ? 'text-emerald-400' : 'text-rose-400'}">${isYes ? (strikeVal ? 'YES (Above $' + strikeVal + ')' : 'YES (Above Target)') : (strikeVal ? 'NO (Below $' + strikeVal + ')' : 'NO (Below Target)')}</span>
+                    </div>
+                `;
+            } else if (isWin) {
+                const roiPct = totalCost > 0 ? (pnlVal / totalCost) * 100 : 0;
+                heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 via-[#0d1424] to-black flex flex-col sm:flex-row justify-between sm:items-center gap-3";
+                heroCard.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-xl font-black shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                            ✓
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Winning Trade Settled</div>
+                            <div class="text-2xl font-black text-emerald-400 tabular-nums">+$${pnlVal.toFixed(2)}</div>
+                            <div class="text-[10px] text-emerald-300/80 font-mono font-bold">+${roiPct.toFixed(1)}% Return on Capital Risked</div>
+                        </div>
+                    </div>
+                    <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
+                        <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Outcome Result</span>
+                        <span class="text-xs font-black text-emerald-400">Target Met (${isYes ? 'Closed Above' : 'Closed Below'} Strike)</span>
+                    </div>
+                `;
+            } else if (isLoss) {
+                heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-rose-500/30 bg-gradient-to-br from-rose-950/30 via-[#0d1424] to-black flex flex-col sm:flex-row justify-between sm:items-center gap-3";
+                heroCard.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-xl font-black shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+                            ✕
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Loss Incurred</div>
+                            <div class="text-2xl font-black text-rose-400 tabular-nums">-$${Math.abs(pnlVal).toFixed(2)}</div>
+                            <div class="text-[10px] text-rose-300/80 font-mono font-bold">-100% Capital Risked ($${totalCost.toFixed(2)})</div>
+                        </div>
+                    </div>
+                    <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
+                        <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Exit Outcome</span>
+                        <span class="text-xs font-black text-rose-400">${t.exit_reason ? t.exit_reason.replace(/_/g, ' ') : 'Expired Out-of-the-Money'}</span>
+                    </div>
+                `;
+            } else {
+                heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-white/10 bg-[#0e1424] flex flex-col sm:flex-row justify-between sm:items-center gap-3";
+                heroCard.innerHTML = `
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-gray-700/20 border border-gray-600/40 flex items-center justify-center text-gray-400 text-xl font-black">
+                            ■
+                        </div>
+                        <div>
+                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Trade Closed</div>
+                            <div class="text-2xl font-black text-white tabular-nums">$0.00</div>
+                            <div class="text-[10px] text-gray-400 font-mono">Break-Even / Neutral Settlement</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Strategy Descriptions
+        const styleDescriptions = {
+            'SNIPER': 'Disciplined sniper confluence targeting high-conviction order flow, structural bounces, and volume exhaustion.',
+            'MOMENTUM_SURFER': 'High-momentum trend following utilizing CVD acceleration and aggressive breakout velocity.',
+            'AMBUSH': 'Mean-reversion sniping at overextended Bollinger Band extremes and liquidity sweeps.',
+            'PREDICTION': 'Machine-learning directional forecasting waiting 1 minute 30 seconds post-open for price confirmation.',
+            'CHOP': 'Range-bound mean-reversion trading within low ADX consolidation zones.',
+            'CAPITAL_GUARD': 'Defensive capital preservation strategy requiring 4+ confluence gates before entry.',
+            'AUTO': 'Dynamic AI regime detection automatically selecting the highest EV strategy for current market conditions.',
+            'AUTO 2.0': 'Next-gen regime detector dynamically routing between momentum and mean-reversion.',
+            'MANUAL': 'Discretionary trade executed directly by trader.'
+        };
+
+        const isManual = t.is_manual === true || String(t.trading_style || '').toUpperCase() === 'MANUAL';
+        const rawStyle = String(t.trading_style || (isManual ? 'MANUAL' : 'AUTO')).toUpperCase().replace(/_/g, ' ');
+        const strategyNameEl = document.getElementById('tdm-strategy-name');
+        if (strategyNameEl) {
+            strategyNameEl.textContent = isManual ? '👤 MANUAL' : (rawStyle.includes('SNIPER') ? '🎯 SNIPER' : rawStyle.includes('MOMENTUM') ? '🏄 MOMENTUM SURFER' : rawStyle.includes('PREDICTION') ? '🔮 PREDICTION' : rawStyle.includes('AMBUSH') ? '🥷 AMBUSH' : rawStyle.includes('CHOP') ? '🪓 CHOP' : '🤖 ' + rawStyle);
+        }
+
+        const strategyDescEl = document.getElementById('tdm-strategy-desc');
+        if (strategyDescEl) {
+            const matchedKey = Object.keys(styleDescriptions).find(k => rawStyle.includes(k)) || 'AUTO';
+            strategyDescEl.textContent = styleDescriptions[matchedKey];
+        }
+
+        // Signal Source
+        const signalSource = isManual ? 'MANUAL' : String(t.signal_source || 'BLEND').toUpperCase();
+        const signalSourceEl = document.getElementById('tdm-signal-source');
+        if (signalSourceEl) {
+            signalSourceEl.textContent = signalSource === 'BLEND' ? '⚖️ BLEND' : signalSource === 'AI_ONLY' ? '🧠 AI ONLY' : signalSource === 'CHART_ONLY' ? '📊 CHART ONLY' : signalSource;
+        }
+
+        const sourceDescEl = document.getElementById('tdm-source-desc');
+        if (sourceDescEl) {
+            if (isManual) sourceDescEl.textContent = 'Manual order placed directly via dashboard controls.';
+            else if (signalSource.includes('AI_ONLY')) sourceDescEl.textContent = 'Pure machine learning inference isolated from traditional charting indicators.';
+            else if (signalSource.includes('CHART')) sourceDescEl.textContent = 'Pure price action, EMA ribbon alignment, and RSI/CVD momentum indicators.';
+            else sourceDescEl.textContent = 'Weighted confluence of trained AI neural predictions and 15m technical indicators.';
+        }
+
+        // Model Pill
+        const modelPill = document.getElementById('tdm-model-pill');
+        if (modelPill) {
+            const modelStr = t.model_choice ? String(t.model_choice) : (isManual ? 'Manual' : 'Dual-Engine ML');
+            modelPill.textContent = `${modelStr} Engine`;
+        }
+
+        // Conviction / Confidence
+        const confVal = t.confidence != null ? parseFloat(t.confidence) : (t.probability_percent != null ? parseFloat(t.probability_percent) : 55.0);
+        const confValEl = document.getElementById('tdm-confidence-val');
+        if (confValEl) confValEl.textContent = `${confVal.toFixed(1)}% Directional Conviction`;
+
+        const confBarEl = document.getElementById('tdm-confidence-bar');
+        if (confBarEl) {
+            confBarEl.style.width = `${Math.min(100, Math.max(10, confVal))}%`;
+            confBarEl.className = isYes
+                ? "h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                : "h-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500 transition-all duration-500";
+        }
+
+        // AI Catalysts List
+        const catalystsContainer = document.getElementById('tdm-catalysts-container');
+        const catalystCountEl = document.getElementById('tdm-catalyst-count');
+        const catalysts = Array.isArray(t.catalysts) ? t.catalysts : [];
+        
+        if (catalystCountEl) catalystCountEl.textContent = `${catalysts.length} Signal${catalysts.length === 1 ? '' : 's'}`;
+
+        if (catalystsContainer) {
+            if (catalysts.length === 0) {
+                catalystsContainer.innerHTML = `
+                    <div class="p-3 rounded-xl bg-[#0e1422] border border-white/5 text-gray-400 text-xs flex items-center gap-2">
+                        <span class="text-base">💡</span>
+                        <span>${isManual ? 'Manual trade: executed directly by trader.' : 'Executed via baseline confluence thresholds and standard risk management rules.'}</span>
+                    </div>
+                `;
+            } else {
+                let catHtml = '';
+                catalysts.forEach((cStr, idx) => {
+                    let badge = 'SIGNAL';
+                    let badgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/35';
+                    let icon = '⚡';
+
+                    if (cStr.includes('ML Confirmation') || cStr.includes('ML Engine') || cStr.includes('AI Model') || cStr.includes('Model')) {
+                        badge = 'ML ENGINE';
+                        badgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/35';
+                        icon = '🧠';
+                    } else if (cStr.includes('Head & Shoulders') || cStr.includes('Top') || cStr.includes('Bottom') || cStr.includes('Ribbon') || cStr.includes('Crossover')) {
+                        badge = 'TECHNICAL';
+                        badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/35';
+                        icon = '📉';
+                    } else if (cStr.includes('Neckline') || cStr.includes('Distribution') || cStr.includes('Orderbook') || cStr.includes('Liquidity')) {
+                        badge = 'FLOW';
+                        badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/35';
+                        icon = '🌊';
+                    } else if (cStr.includes('Pattern') || cStr.includes('Streak') || cStr.includes('samples')) {
+                        badge = 'STATISTICAL';
+                        badgeClass = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/35';
+                        icon = '📊';
+                    }
+
+                    const cleanText = cStr.replace(/^[^\w\s\$\%\-\(\)]+/g, '').trim();
+
+                    catHtml += `
+                        <div class="p-3 rounded-xl bg-[#0e1422] border border-white/5 flex flex-col gap-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${badgeClass} flex items-center gap-1">
+                                    <span>${icon}</span> ${badge}
+                                </span>
+                                <span class="text-[9px] text-gray-500 font-mono">#${idx + 1}</span>
+                            </div>
+                            <p class="text-xs text-gray-200 leading-snug mt-1 font-sans">
+                                ${cleanText || cStr}
+                            </p>
+                        </div>
+                    `;
+                });
+                catalystsContainer.innerHTML = catHtml;
+            }
+        }
+
+        // Plain English AI Executive Summary
+        const summaryEl = document.getElementById('tdm-ai-summary');
+        if (summaryEl) {
+            const strikeText = (strikeVal && strikeVal !== '---') ? '$' + strikeVal : 'target';
+            if (isManual) {
+                summaryEl.innerHTML = `You manually executed <strong>${count} ${side} contracts</strong> at <strong>${Math.round(entryPriceNum * 100)}¢</strong> ($${totalCost.toFixed(2)} capital risked), betting that Bitcoin would settle ${isYes ? 'above' : 'below'} the ${strikeText} strike.`;
+            } else {
+                let outcomePart = '';
+                if (isOpen) {
+                    outcomePart = `Position is currently <strong>active</strong> and monitoring live 15m order flow.`;
+                } else if (isWin) {
+                    outcomePart = `The thesis was <strong>correct</strong>: the market settled ${isYes ? 'above' : 'below'} ${strikeText}, delivering a <strong>+$${pnlVal.toFixed(2)}</strong> profit.`;
+                } else if (isLoss) {
+                    outcomePart = `The market moved against the position, resulting in an exit at ${t.exit_price ? Math.round(parseFloat(t.exit_price) * 100) + '¢' : 'settlement'}.`;
+                } else {
+                    outcomePart = `The position settled flat.`;
+                }
+
+                summaryEl.innerHTML = `
+                    The AI system executed <strong>${count} ${side} contracts</strong> at <strong>${Math.round(entryPriceNum * 100)}¢</strong> ($${totalCost.toFixed(2)} total cost) using the <strong>${rawStyle}</strong> strategy. 
+                    Algorithms detected <strong>${confVal.toFixed(1)}% directional conviction</strong> that BTC would finish ${isYes ? 'above' : 'below'} the ${strikeText} strike based on ${catalysts.length > 0 ? catalysts.length + ' confluence triggers including ' + (catalysts[0].substring(0, 45) + '...') : 'trend alignment and orderbook imbalances'}. ${outcomePart}
+                `;
+            }
+        }
+
+        // Timestamps & Duration
+        const entryTs = t.timestamp || t.time || '';
+        let entryDateStr = '--';
+        let entryDateObj = null;
+        try {
+            if (entryTs) {
+                entryDateObj = new Date(entryTs);
+                entryDateStr = entryDateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        } catch(e) {}
+
+        let exitDateStr = '--';
+        let exitDateObj = null;
+        try {
+            if (t.settled_at) {
+                exitDateObj = new Date(t.settled_at * 1000);
+                exitDateStr = exitDateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } else if (isOpen) {
+                exitDateStr = 'In Progress (Active)';
+            } else {
+                exitDateStr = 'Settled';
+            }
+        } catch(e) {}
+
+        let durationStr = '--';
+        if (entryDateObj && exitDateObj) {
+            const diffMs = Math.max(0, exitDateObj - entryDateObj);
+            const mins = Math.floor(diffMs / 60000);
+            const secs = Math.floor((diffMs % 60000) / 1000);
+            durationStr = `${mins}m ${secs}s`;
+        } else if (entryDateObj && isOpen) {
+            const diffMs = Math.max(0, new Date() - entryDateObj);
+            const mins = Math.floor(diffMs / 60000);
+            const secs = Math.floor((diffMs % 60000) / 1000);
+            durationStr = `${mins}m ${secs}s (elapsed)`;
+        }
+
+        const entryTimeEl = document.getElementById('tdm-entry-time');
+        if (entryTimeEl) entryTimeEl.textContent = entryDateStr;
+
+        const exitTimeEl = document.getElementById('tdm-exit-time');
+        if (exitTimeEl) exitTimeEl.textContent = exitDateStr;
+
+        const durationEl = document.getElementById('tdm-duration');
+        if (durationEl) durationEl.textContent = durationStr;
+
+        const exitReasonEl = document.getElementById('tdm-exit-reason');
+        if (exitReasonEl) {
+            const er = String(t.exit_reason || t.reason || (isOpen ? 'In Progress' : 'Settlement')).toUpperCase();
+            exitReasonEl.textContent = er.replace(/_/g, ' ');
+        }
+
+        // Reveal modal
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeTradeDetailsModal = function() {
+        const modal = document.getElementById('tradeDetailsModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeTradeDetailsModal();
+        }
+    });
+
+    // ── Native Mobile Pull-to-Refresh System ──
+    (function initTradesPullToRefresh() {
+        let startY = 0;
+        let startX = 0;
+        let currentY = 0;
+        let isPulling = false;
+        let isRefreshing = false;
+        const PULL_THRESHOLD = 60;
+        const MAX_PULL = 85;
+
+        const indicator = document.getElementById('ptr-indicator');
+        const pill = document.getElementById('ptr-pill');
+        const arrow = document.getElementById('ptr-arrow');
+        const spinner = document.getElementById('ptr-spinner');
+        const check = document.getElementById('ptr-check');
+        const text = document.getElementById('ptr-text');
+        const mainContent = document.querySelector('main');
+
+        if (!indicator || !pill) return;
+
+        function isAtTop() {
+            return (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0) <= 2;
+        }
+
+        window.addEventListener('touchstart', (e) => {
+            if (isRefreshing || document.body.style.overflow === 'hidden') return;
+            if (e.target.closest('input, select, textarea, button, .modal')) return;
+
+            if (isAtTop() && e.touches.length === 1) {
+                startY = e.touches[0].clientY;
+                startX = e.touches[0].clientX;
+                currentY = startY;
+                isPulling = true;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isPulling || isRefreshing || document.body.style.overflow === 'hidden') return;
+            if (!isAtTop()) {
+                isPulling = false;
+                resetUI();
+                return;
+            }
+
+            currentY = e.touches[0].clientY;
+            const currentX = e.touches[0].clientX;
+            const diffY = currentY - startY;
+            const diffX = currentX - startX;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) return;
+
+            if (diffY > 0) {
+                const offset = Math.min(Math.pow(diffY, 0.82) * 1.5, MAX_PULL);
+                indicator.style.transition = 'none';
+                indicator.style.transform = `translateY(${offset}px)`;
+                if (mainContent) {
+                    mainContent.style.transition = 'none';
+                    mainContent.style.transform = `translateY(${offset * 0.3}px)`;
+                }
+
+                const progress = Math.min(offset / PULL_THRESHOLD, 1.0);
+                if (arrow) arrow.style.transform = `rotate(${progress * 180}deg)`;
+
+                if (offset >= PULL_THRESHOLD) {
+                    text.textContent = 'Release to refresh';
+                    pill.classList.add('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
+                } else {
+                    text.textContent = 'Pull to refresh';
+                    pill.classList.remove('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
+                }
+
+                if (diffY > 10 && e.cancelable) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', async () => {
+            if (!isPulling || isRefreshing) return;
+            isPulling = false;
+
+            const diffY = currentY - startY;
+            const offset = Math.min(Math.pow(Math.max(0, diffY), 0.82) * 1.5, MAX_PULL);
+
+            if (offset >= PULL_THRESHOLD) {
+                await triggerRefresh();
+            } else {
+                resetUI();
+            }
+        });
+
+        async function triggerRefresh() {
+            isRefreshing = true;
+            indicator.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            indicator.style.transform = 'translateY(18px)';
+            if (mainContent) {
+                mainContent.style.transition = 'transform 0.25s ease-out';
+                mainContent.style.transform = 'translateY(12px)';
+            }
+
+            if (arrow) arrow.classList.add('hidden');
+            if (check) check.classList.add('hidden');
+            if (spinner) spinner.classList.remove('hidden');
+            if (text) text.textContent = 'Refreshing trade ledger...';
+            if (navigator.vibrate) {
+                try { navigator.vibrate(12); } catch(e){}
+            }
+
+            try {
+                if (typeof fetchTradesHistory === 'function') {
+                    await fetchTradesHistory();
+                }
+
+                if (spinner) spinner.classList.add('hidden');
+                if (check) check.classList.remove('hidden');
+                if (text) text.textContent = 'Updated!';
+                if (pill) {
+                    pill.classList.remove('border-cyan-400');
+                    pill.classList.add('border-emerald-500/50', 'text-emerald-300', 'shadow-[0_0_20px_rgba(16,185,129,0.4)]');
+                }
+                if (navigator.vibrate) {
+                    try { navigator.vibrate([15, 40, 15]); } catch(e){}
+                }
+
+                await new Promise(r => setTimeout(r, 550));
+            } catch (err) {
+                console.warn('[PTR] Refresh error:', err);
+            } finally {
+                resetUI();
+            }
+        }
+
+        function resetUI() {
+            indicator.style.transition = 'transform 0.3s ease-out';
+            indicator.style.transform = 'translateY(-130%)';
+            if (mainContent) {
+                mainContent.style.transition = 'transform 0.3s ease-out';
+                mainContent.style.transform = 'translateY(0px)';
+            }
+
+            setTimeout(() => {
+                isRefreshing = false;
+                if (arrow) {
+                    arrow.classList.remove('hidden');
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+                if (spinner) spinner.classList.add('hidden');
+                if (check) check.classList.add('hidden');
+                if (text) text.textContent = 'Pull to refresh';
+                if (pill) {
+                    pill.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0d1424]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.85)] text-cyan-300 text-xs font-bold tracking-wider transition-all duration-200';
+                }
+            }, 320);
+        }
+    })();
+</script>
 </body>
+
 </html>

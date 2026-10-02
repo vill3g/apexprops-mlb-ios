@@ -1,19 +1,20 @@
-from backend.btc.ml_ensemble import GodTierEnsemble
 import json
+import logging
 import math
 import os
 import threading
 import time
+
 import numpy as np
 import pandas as pd
-import logging
+
+from backend.btc.ml_ensemble import GodTierEnsemble
 
 logger = logging.getLogger(__name__)
 
-from xgboost import XGBClassifier
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-from sklearn.isotonic import IsotonicRegression
+from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
 
 # Empirically-optimal window constraints (Task 4)
 OPTIMAL_TRAINING_WINDOW_BARS = 20000  # from walk-forward backtest, see backend/data/backtest_report.json
@@ -62,7 +63,7 @@ class PlattCalibrator:
             calibrated = self.lr.predict_proba(logits)[:, c1_idx]
         else:
             calibrated = raw_probs
-        return np.clip(calibrated, 0.02, 0.98)
+        return np.clip(calibrated, 1e-4, 0.9999)
 
 
 class XGBoostModel:
@@ -141,7 +142,7 @@ class XGBoostModel:
 
         if len(X_holdout) < MIN_CALIBRATION_SAMPLES:
             logger.debug(
-                f"[MLEngine] Holdout too small for calibration "
+                "[MLEngine] Holdout too small for calibration "
                 f"({len(X_holdout)} < {MIN_CALIBRATION_SAMPLES}); using raw probabilities."
             )
             return
@@ -156,7 +157,7 @@ class XGBoostModel:
             if calibrator.is_fitted:
                 self.calibrator = calibrator
                 logger.info(f"[MLEngine] Fitted Platt scaling (sigmoid) calibration on {len(X_holdout)} holdout samples.")
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             logger.warning(f"[MLEngine] Calibration fit failed, using raw probabilities: {e}")
             self.calibrator = None
 
@@ -173,7 +174,8 @@ class XGBoostModel:
             class_1_index = list(classifier.classes_).index(1)
             probs = self.model.predict_proba(X)
             return probs[:, class_1_index]
-        except (ValueError, KeyError, AttributeError):
+        except (ValueError, KeyError, AttributeError) as e:
+            logger.warning(f"[MLEngine] predict_proba failed: {e}")
             # Fallback if class 1 wasn't in the training data
             return np.array([0.0] * X.shape[0])
 
@@ -185,10 +187,10 @@ class XGBoostModel:
             # IsotonicRegression.predict() maps raw score -> calibrated score
             # directly (it is NOT a classifier: no .predict_proba()/.classes_).
             calibrated = self.calibrator.predict(raw)
-            return np.clip(calibrated, 0.01, 0.99)
-        except Exception as e:
+            return np.clip(calibrated, 1e-4, 0.9999)
+        except (ValueError, TypeError) as e:
             logger.warning(f"[MLEngine] Calibrated prediction failed: {e}")
-            return raw
+            return np.clip(raw, 1e-4, 0.9999)
 
 
 # Note: Trade records logged before the rename from "score" to "heuristic_score"
@@ -211,8 +213,14 @@ FEATURE_KEYS = [
     "roc_15m", "roc_1h", "roc_4h",
     # CVD normalized divergence
     "cvd_divergence",
+    # CVD acceleration for tape reading (added to meet "read the market faster" requirement)
+    "cvd_acceleration",
     # Volatility regime percentile (added Task 5: 24h rolling ATR percentile)
     "vol_regime_percentile",
+    # Cross-Asset Macro (Nasdaq / DXY)
+    "ndq_roc", "dxy_roc",
+    # Institutional Tape Reading (VSA & Liquidity Swipes)
+    "vsa_absorption", "sfp_score",
     "vol_time_z_score",
     "bb_percent_b_lag_4", "rsi_lag_4", "volume_15m_ratio_lag_4", "roc_15m_lag_4", "cvd_divergence_lag_4", "bb_percent_b_lag_3", "rsi_lag_3", "volume_15m_ratio_lag_3", "roc_15m_lag_3", "cvd_divergence_lag_3", "bb_percent_b_lag_2", "rsi_lag_2", "volume_15m_ratio_lag_2", "roc_15m_lag_2", "cvd_divergence_lag_2", "bb_percent_b_lag_1", "rsi_lag_1", "volume_15m_ratio_lag_1", "roc_15m_lag_1", "cvd_divergence_lag_1", "bb_percent_b_lag_0", "rsi_lag_0", "volume_15m_ratio_lag_0", "roc_15m_lag_0", "cvd_divergence_lag_0"
 ]
@@ -242,6 +250,10 @@ NEUTRAL_FEATURE_DEFAULTS = {
     "roc_4h": 0.0,
     "cvd_divergence": 0.0,
     "vol_regime_percentile": 0.5,
+    "ndq_roc": 0.0,
+    "dxy_roc": 0.0,
+    "vsa_absorption": 0.0,
+    "sfp_score": 0.0,
     "vol_time_z_score": 0.0,
     "bb_percent_b_lag_4": 0.5,
     "rsi_lag_4": 0.5,
@@ -269,6 +281,42 @@ NEUTRAL_FEATURE_DEFAULTS = {
     "roc_15m_lag_0": 0.5,
     "cvd_divergence_lag_0": 0.5,
 }
+
+
+def normalize_features(raw: dict) -> dict:
+    """Normalize absolute prices to make features stationary across different BTC price regimes."""
+    norm = dict(raw)
+    base_price = float(raw.get("ema_50") or 1.0)
+    if base_price <= 0:
+        base_price = 1.0
+        
+    abs_keys = ["ema_9", "ema_21", "ema_50", "bb_upper", "bb_lower", "high_24h", "low_24h"]
+    for k in abs_keys:
+        if k in norm:
+            norm[k] = (float(norm[k]) / base_price) - 1.0
+            
+    if "atr" in norm:
+        norm["atr"] = (float(norm["atr"]) / base_price) * 100.0
+        
+    if "price_vs_vwap" in norm:
+        norm["price_vs_vwap"] = (float(norm["price_vs_vwap"]) / base_price) * 100.0
+
+    # Fix non-stationary features that blow out XGBoost bounds
+    for k in ["volume_24h", "open_interest"]:
+        if k in norm:
+            val = float(norm[k])
+            norm[k] = math.log1p(max(0.0, val)) if val > 0 else 0.0
+            
+    if "cvd_value" in norm:
+        val = float(norm["cvd_value"])
+        norm["cvd_value"] = math.copysign(math.log1p(abs(val)), val)
+        
+    for i in range(5):
+        k = f"rsi_lag_{i}"
+        if k in norm and float(norm[k]) > 1.5:
+            norm[k] = float(norm[k]) / 100.0
+
+    return norm
 
 
 def build_feature_row(df_ind, i: int) -> dict:
@@ -309,9 +357,15 @@ def build_feature_row(df_ind, i: int) -> dict:
     # 24h window excludes bar i already (slice stops at i, exclusive) — keep
     # that, but position the LAST KNOWN close (p_close) within that window,
     # not the future close.
-    high_24h_val = float(df_ind["high"].iloc[max(0, i - 96):i].max()) if "high" in df_ind.columns and len(df_ind) > 0 else target_price
-    low_24h_val = float(df_ind["low"].iloc[max(0, i - 96):i].min()) if "low" in df_ind.columns and len(df_ind) > 0 else target_price
-    vol_24h_val = float(df_ind["volume"].iloc[max(0, i - 96):i].sum()) if "volume" in df_ind.columns and len(df_ind) > 0 else 0.0
+    if "_pre_high_24h" in df_ind.columns:
+        high_24h_val = float(df_ind["_pre_high_24h"].iloc[i])
+        low_24h_val = float(df_ind["_pre_low_24h"].iloc[i])
+        vol_24h_val = float(df_ind["_pre_vol_24h"].iloc[i])
+    else:
+        high_24h_val = float(df_ind["high"].iloc[max(0, i - 96):i].max()) if "high" in df_ind.columns and len(df_ind) > 0 else target_price
+        low_24h_val = float(df_ind["low"].iloc[max(0, i - 96):i].min()) if "low" in df_ind.columns and len(df_ind) > 0 else target_price
+        vol_24h_val = float(df_ind["volume"].iloc[max(0, i - 96):i].sum()) if "volume" in df_ind.columns and len(df_ind) > 0 else 0.0
+
     range_24h_pos = (p_close - low_24h_val) / max(1.0, high_24h_val - low_24h_val)
     range_24h_pos = max(0.0, min(1.0, range_24h_pos))
 
@@ -333,22 +387,31 @@ def build_feature_row(df_ind, i: int) -> dict:
             hr_day = float(dt_ny.hour)
         else:
             is_wknd, hr_day = 0.0, 12.0
-    except Exception:
+    except (ValueError, TypeError, OSError) as e:
+        logger.warning(f"[MLEngine] datetime parse error: {e}")
         is_wknd, hr_day = 0.0, 12.0
 
     try:
-        vol_slice = df_ind["volume"].iloc[max(0, i-288):i]
-        avg_vol_3d = float(vol_slice.mean()) if len(vol_slice) > 0 else 1.0
+        if "_pre_vol_3d" in df_ind.columns:
+            avg_vol_3d = float(df_ind["_pre_vol_3d"].iloc[i])
+        else:
+            vol_slice = df_ind["volume"].iloc[max(0, i-288):i]
+            avg_vol_3d = float(vol_slice.mean()) if len(vol_slice) > 0 else 1.0
         curr_vol = float(p.get("volume", 0.0))
         vol_15m_ratio = curr_vol / max(avg_vol_3d, 1e-9)
-    except Exception:
+    except (ValueError, TypeError, KeyError) as e:
+        logger.warning(f"[MLEngine] volume calculation error: {e}")
         vol_15m_ratio = 1.0
 
     try:
-        atr_slice = df_ind["atr"].iloc[max(0, i - 96):i] if "atr" in df_ind.columns and i > 0 else pd.Series([100.0])
-        curr_atr = float(p.get("atr", 100.0))
-        vol_regime = float((atr_slice <= curr_atr).mean()) if len(atr_slice) > 0 else 0.5
-    except Exception:
+        if "_pre_vol_regime" in df_ind.columns:
+            vol_regime = float(df_ind["_pre_vol_regime"].iloc[i])
+        else:
+            atr_slice = df_ind["atr"].iloc[max(0, i - 96):i] if "atr" in df_ind.columns and i > 0 else pd.Series([100.0])
+            curr_atr = float(p.get("atr", 100.0))
+            vol_regime = float((atr_slice <= curr_atr).mean()) if len(atr_slice) > 0 else 0.5
+    except (ValueError, TypeError, KeyError) as e:
+        logger.warning(f"[MLEngine] atr regime calculation error: {e}")
         vol_regime = 0.5
 
 
@@ -372,9 +435,12 @@ def build_feature_row(df_ind, i: int) -> dict:
                         val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
                     else:
                         val = float(row.get(feat, 0.5))
-                except Exception:
-                    pass
-            lag_features[f"{feat}_lag_{step}"] = val
+                        if feat == "rsi" and val > 1.5:
+                            val = val / 100.0
+                except (ValueError, TypeError, KeyError, IndexError) as e:
+                    logger.error(f"[MLEngine] feature extraction error for {feat} at step {step}: {e}")
+                    raise RuntimeError(f"Missing critical ML feature {feat}")
+                lag_features[f"{feat}_lag_{step}"] = val
 
     raw_feat = {
         "rsi": rsi_val,
@@ -413,7 +479,12 @@ def build_feature_row(df_ind, i: int) -> dict:
         "roc_1h": float(p.get("roc_1h", 0.0)),
         "roc_4h": float(p.get("roc_4h", 0.0)),
         "cvd_divergence": float(p.get("cvd", 0.0)) / (float(p.get("atr", 1.0)) + 1e-5),
+        "cvd_acceleration": float(p.get("cvd_acceleration", 0.0)),
         "vol_regime_percentile": float(vol_regime),
+        "ndq_roc": float(p.get("ndq_roc", 0.0)),
+        "dxy_roc": float(p.get("dxy_roc", 0.0)),
+        "vsa_absorption": float(p.get("vsa_absorption", 0.0)),
+        "sfp_score": float(p.get("sfp_score", 0.0)),
         "vol_time_z_score": float((p_close - target_price) / max(1.0, float(p.get("atr", 100)) * math.sqrt(max(0.05, 14.5 / 15.0)))),
         "bb_percent_b_lag_4": lag_features["bb_percent_b_lag_4"],
         "rsi_lag_4": lag_features["rsi_lag_4"],
@@ -453,6 +524,7 @@ def build_live_ml_features(
     futures_data: dict = None,
     fng_data: dict = None,
     cb_ob: dict = None,
+    macro_data: dict = None,
     minutes_remaining: float = 14.5,
     heuristic_score: float = None,
 ) -> dict:
@@ -482,9 +554,12 @@ def build_live_ml_features(
     lower_wick = (min(p_open, p_close) - p_low) / rng
     body_range = abs(p_close - p_open) / rng
 
-    high_24h_val = float(df_ind["high"].tail(96).max()) if len(df_ind) > 0 and "high" in df_ind.columns else p_close
-    low_24h_val = float(df_ind["low"].tail(96).min()) if len(df_ind) > 0 and "low" in df_ind.columns else p_close
-    vol_24h_val = float(df_ind["volume"].tail(96).sum()) if len(df_ind) > 0 and "volume" in df_ind.columns else 0.0
+    p_idx = df_ind.index[-2] if len(df_ind) >= 2 else df_ind.index[-1]
+    df_hist = df_ind.loc[:p_idx] if p_idx in df_ind.index else df_ind.iloc[:-1]
+
+    high_24h_val = float(df_hist["high"].tail(96).max()) if len(df_hist) > 0 and "high" in df_hist.columns else p_close
+    low_24h_val = float(df_hist["low"].tail(96).min()) if len(df_hist) > 0 and "low" in df_hist.columns else p_close
+    vol_24h_val = float(df_hist["volume"].tail(96).sum()) if len(df_hist) > 0 and "volume" in df_hist.columns else 0.0
     range_24h_pos = (p_close - low_24h_val) / max(1.0, high_24h_val - low_24h_val)
     range_24h_pos = max(0.0, min(1.0, range_24h_pos))
 
@@ -532,21 +607,24 @@ def build_live_ml_features(
             now_ny = datetime.now(ZoneInfo("America/New_York"))
             is_wknd = 1.0 if now_ny.weekday() >= 5 else 0.0
             hr_day = float(now_ny.hour)
-    except Exception:
+    except (ValueError, TypeError, OSError) as e:
+        logger.warning(f"[MLEngine] datetime parse error: {e}")
         is_wknd, hr_day = 0.0, 12.0
 
     try:
-        vol_slice = df_ind["volume"].tail(288)
+        vol_slice = df_hist["volume"].tail(288)
         avg_vol_3d = float(vol_slice.mean()) if len(vol_slice) > 0 else 1.0
         curr_vol = float(p.get("volume", 0.0))
         vol_15m_ratio = curr_vol / max(avg_vol_3d, 1e-9)
-    except Exception:
+    except (ValueError, TypeError, KeyError) as e:
+        logger.warning(f"[MLEngine] volume calculation error: {e}")
         vol_15m_ratio = 1.0
 
     try:
-        atr_slice = df_ind["atr"].tail(96) if "atr" in df_ind.columns and len(df_ind) > 0 else pd.Series([100.0])
+        atr_slice = df_hist["atr"].tail(96) if "atr" in df_hist.columns and len(df_hist) > 0 else pd.Series([100.0])
         vol_regime = float((atr_slice <= atr).mean()) if len(atr_slice) > 0 else 0.5
-    except Exception:
+    except (ValueError, TypeError, KeyError) as e:
+        logger.warning(f"[MLEngine] atr regime calculation error: {e}")
         vol_regime = 0.5
 
 
@@ -576,9 +654,12 @@ def build_live_ml_features(
                         val = float(row.get("cvd", 0)) / (float(row.get("atr", 100)) + 1e-5)
                     else:
                         val = float(row.get(feat, 0.5))
-                except Exception:
-                    pass
-            lag_features[f"{feat}_lag_{step}"] = val
+                        if feat == "rsi" and val > 1.5:
+                            val = val / 100.0
+                except (ValueError, TypeError, KeyError, IndexError) as e:
+                    logger.error(f"[MLEngine] feature extraction error for {feat} at step {step}: {e}")
+                    raise RuntimeError(f"Missing critical ML feature {feat}")
+                lag_features[f"{feat}_lag_{step}"] = val
 
     features = {
         "rsi": rsi,
@@ -611,11 +692,16 @@ def build_live_ml_features(
         "minutes_remaining": float(minutes_remaining),
         "kalshi_yes_prob": kalshi_yes,
         "kalshi_book_imbalance": kalshi_imb,
-        "roc_15m": float(df_ind["roc_15m"].iloc[-2]) if "roc_15m" in df_ind.columns and len(df_ind) >= 2 else 0.0,
-        "roc_1h": float(df_ind["roc_1h"].iloc[-2]) if "roc_1h" in df_ind.columns and len(df_ind) >= 2 else 0.0,
-        "roc_4h": float(df_ind["roc_4h"].iloc[-2]) if "roc_4h" in df_ind.columns and len(df_ind) >= 2 else 0.0,
+        "roc_15m": float(p.get("roc_15m", 0.0)),
+        "roc_1h": float(p.get("roc_1h", 0.0)),
+        "roc_4h": float(p.get("roc_4h", 0.0)),
         "cvd_divergence": float(cvd_val / (float(atr) + 1e-5)),
+        "cvd_acceleration": float(p.get("cvd_acceleration", 0.0)),
         "vol_regime_percentile": float(vol_regime),
+        "ndq_roc": float(macro_data.get("ndq_roc", p.get("ndq_roc", 0.0)) if macro_data else p.get("ndq_roc", 0.0)),
+        "dxy_roc": float(macro_data.get("dxy_roc", p.get("dxy_roc", 0.0)) if macro_data else p.get("dxy_roc", 0.0)),
+        "vsa_absorption": float(p.get("vsa_absorption", 0.0)),
+        "sfp_score": float(p.get("sfp_score", 0.0)),
         "vol_time_z_score": float((p_close - target_price) / max(1.0, float(atr) * math.sqrt(max(0.05, float(minutes_remaining) / 15.0)))),
         "bb_percent_b_lag_4": lag_features["bb_percent_b_lag_4"],
         "rsi_lag_4": lag_features["rsi_lag_4"],
@@ -700,17 +786,18 @@ class MLEngine:
             try:
                 scaler = self.model.scaler
                 xgb = self.model.xgb
+                xgb_input = X_pred  # GodTierEnsemble trained XGB on unscaled X_np
             except AttributeError:
                 scaler = self.model.model.named_steps['standardscaler']
                 xgb = self.model.model.named_steps['xgbclassifier']
-            
-            # Scale the input
-            X_scaled = scaler.transform(X_pred)
+                xgb_input = scaler.transform(X_pred)  # Pipeline trained XGB on scaled data
             
             # Get booster and predict with pred_contribs=True
             import xgboost as xgb_lib
-            dmatrix = xgb_lib.DMatrix(X_scaled, feature_names=self.feature_keys)
-            contribs = xgb.get_booster().predict(dmatrix, pred_contribs=True)[0]
+            dmatrix = xgb_lib.DMatrix(xgb_input, feature_names=self.feature_keys)
+            
+            with self._lock:
+                contribs = xgb.get_booster().predict(dmatrix, pred_contribs=True)[0]
             
             # The last element is the bias, the rest are feature contributions
             feature_contribs = contribs[:-1]
@@ -736,7 +823,7 @@ class MLEngine:
             else:
                 return prob, "ML Reasoning: Balanced feature contributions."
                 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
             logger.error(f"[MLEngine] Failed to extract reasoning: {e}")
             return prob, "ML Reasoning unavailable."
 
@@ -789,7 +876,7 @@ class MLEngine:
         try:
             with open(self.history_file, 'r', encoding='utf-8') as f:
                 trades = json.load(f)
-        except Exception as e:
+        except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
             logger.error(f"[MLEngine] Error loading trades: {e}")
             return None, None, None
             
@@ -817,7 +904,7 @@ class MLEngine:
                         continue
                     if time_filter == "day" and is_night:
                         continue
-                except Exception as e:
+                except (ValueError, TypeError) as e:
                     logger.warning(f"[ML] Training background worker error: {e}")
 
             # Finding 5: Label semantics must match self_train_on_historical_market() / _extract_features_and_labels()
@@ -899,6 +986,7 @@ class MLEngine:
                     if not math.isfinite(val):
                         val = default_val
                 except (TypeError, ValueError):
+                    valid = False
                     val = default_val
                 feature_vec.append(val)
                 
@@ -927,6 +1015,23 @@ class MLEngine:
             
         return X_arr, y_arr, weights
         
+    def _is_model_compatible(self, loaded) -> bool:
+        if not getattr(loaded, "is_normalized", False):
+            return False
+        scaler = getattr(loaded, "scaler", None)
+        if scaler is None:
+            model_inner = getattr(loaded, "model", None)
+            if hasattr(model_inner, "named_steps"):
+                scaler = model_inner.named_steps.get("standardscaler")
+        if scaler is not None and hasattr(scaler, "n_features_in_"):
+            if scaler.n_features_in_ != len(self.feature_keys):
+                logger.warning(
+                    f"[MLEngine] Cached model expects {scaler.n_features_in_} features, "
+                    f"but current FEATURE_KEYS has {len(self.feature_keys)}. Invalidating cache."
+                )
+                return False
+        return True
+
     def train(self, force: bool = False, time_filter: str = "all"):
         with self._lock:
             cache_file = self._get_cache_path(time_filter)
@@ -935,8 +1040,8 @@ class MLEngine:
                 return 0
             try:
                 mtime = os.path.getmtime(self.history_file)
-            except Exception as e:
-                logger.debug(f"[MLEngine] Could not read mtime for {self.history_file}: {e}")
+            except OSError as e:
+                logger.warning(f"[MLEngine] Could not read mtime for {self.history_file}: {e}")
                 mtime = 0.0
 
             # If cache is fresher than the history file, load it!
@@ -945,12 +1050,20 @@ class MLEngine:
                     cache_mtime = os.path.getmtime(cache_file)
                     if cache_mtime >= mtime:
                         import joblib
-                        self.model = joblib.load(cache_file)
-                        self.is_trained = True
-                        self.last_trained_mtime = cache_mtime
-                        logger.info(f"[MLEngine] Loaded cached active {time_filter} model for {self.asset} from disk! Skipping retrain.")
-                        return 1
-                except Exception as e:
+                        loaded = joblib.load(cache_file)
+                        if self._is_model_compatible(loaded):
+                            self.model = loaded
+                            self.is_trained = True
+                            self.last_trained_mtime = cache_mtime
+                            logger.info(f"[MLEngine] Loaded cached active {time_filter} model for {self.asset} from disk! Skipping retrain.")
+                            return 1
+                        else:
+                            logger.warning(f"[MLEngine] Cached model at {cache_file} is incompatible or unnormalized. Invalidation triggered.")
+                            try:
+                                os.remove(cache_file)
+                            except OSError:
+                                pass
+                except (FileNotFoundError, OSError, ValueError, TypeError) as e:
                     logger.warning(f"[MLEngine] Failed to load cache: {e}")
                 
             if not force and self.is_trained and mtime <= self.last_trained_mtime:
@@ -968,12 +1081,20 @@ class MLEngine:
                     if n < 300 and os.path.exists(cache_file) and not force:
                         try:
                             import joblib
-                            self.model = joblib.load(cache_file)
-                            self.is_trained = True
-                            self.last_trained_mtime = mtime  # fake the mtime so it doesn't keep trying
-                            logger.info(f"[MLEngine] Only {n} trades in history. Keeping rich historical model for {time_filter}.")
-                            return 1
-                        except Exception as e:
+                            loaded = joblib.load(cache_file)
+                            if self._is_model_compatible(loaded):
+                                self.model = loaded
+                                self.is_trained = True
+                                self.last_trained_mtime = mtime  # fake the mtime so it doesn't keep trying
+                                logger.info(f"[MLEngine] Only {n} trades in history. Keeping rich historical model for {time_filter}.")
+                                return 1
+                            else:
+                                logger.warning(f"[MLEngine] Historical cache at {cache_file} is incompatible or unnormalized. Invalidation triggered.")
+                                try:
+                                    os.remove(cache_file)
+                                except OSError:
+                                    pass
+                        except (FileNotFoundError, OSError, ValueError, TypeError) as e:
                             logger.warning(f"[MLEngine] Failed to load cache fallback: {e}")
                     
                     # For small sample sizes (< 80), train on the full set to preserve signal;
@@ -985,6 +1106,7 @@ class MLEngine:
                     if len(X_train) >= 10:
                         logger.info(f"[MLEngine] Training custom ML model on {len(X_train)} historical trades (calibrating on {len(X_cal)}, filter={time_filter})...")
                         self.model.fit(X_train, y_train, sample_weight=w_train)
+                        self.model.is_normalized = True
                         self.is_trained = self.model.is_trained
                         if not self.is_trained:
                             logger.warning(f"[MLEngine] Training failed on {len(X_train)} samples (likely <2 unique classes).")
@@ -999,12 +1121,12 @@ class MLEngine:
                         try:
                             import joblib
                             joblib.dump(self.model, cache_file)
-                        except Exception as e:
+                        except (FileNotFoundError, OSError) as e:
                             logger.warning(f"[MLEngine] Failed to cache model to disk: {e}")
                             
                         logger.info("[MLEngine] Training complete.")
                         return len(X_train)
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, RuntimeError) as e:
                 logger.error(f"[MLEngine] Training failed: {e}", exc_info=True)
             return 0
             
@@ -1014,20 +1136,34 @@ class MLEngine:
         on having to wait for 10 live executed trades to be collected.
         """
         cache_file = self._get_cache_path(time_filter)
-        
-        # NOTE: We previously skipped if cache_file existed. 
-        # But if the cache was generated by live paper trades (e.g. 50 trades), it's highly underfit.
-        # We only want to skip if the cache is actually a robust historical model (which we can't easily check).
-        # So we'll skip ONLY if last_train_sample_count > 500.
-        if os.path.exists(cache_file) and self.last_train_sample_count > 500:
+
+        # Rolling retraining schedule: cache expires after 7 days to prevent regime drift
+        MAX_CACHE_AGE_SECONDS = 7 * 86400  # 7 days
+        cache_is_fresh = False
+        if os.path.exists(cache_file):
+            cache_age = time.time() - os.path.getmtime(cache_file)
+            cache_is_fresh = cache_age < MAX_CACHE_AGE_SECONDS
+            if not cache_is_fresh:
+                logger.info(f"[MLEngine] Cached model at {cache_file} is {cache_age / 86400:.1f} days old (>7 days). Retraining rolling model to adapt to new market regime...")
+
+        if cache_is_fresh:
             import joblib
             try:
-                self.model = joblib.load(cache_file)
-                self.is_trained = True
-                self.last_trained_mtime = os.path.getmtime(cache_file)
-                logger.info(f"[MLEngine] Loaded robust cached historical {time_filter} model (>{self.last_train_sample_count} samples). Skipping retrain.")
-                return 1
-            except Exception as e:
+                loaded = joblib.load(cache_file)
+                if self._is_model_compatible(loaded):
+                    self.model = loaded
+                    self.is_trained = True
+                    self.last_trained_mtime = os.path.getmtime(cache_file)
+                    self.last_train_sample_count = getattr(loaded, "sample_count", 500)
+                    logger.info(f"[MLEngine] Loaded robust cached historical {time_filter} model. Skipping retrain.")
+                    return 1
+                else:
+                    logger.warning(f"[MLEngine] Cached model at {cache_file} is incompatible or unnormalized. Skipping cache to retrain with normalized features.")
+                    try:
+                        os.remove(cache_file)
+                    except OSError:
+                        pass
+            except (FileNotFoundError, OSError, ValueError, TypeError) as e:
                 logger.warning(f"[MLEngine] Failed to load robust cache fallback: {e}")
 
         # Enforce OPTIMAL_TRAINING_WINDOW_BARS + 50 warmup context (Task 4)
@@ -1039,6 +1175,17 @@ class MLEngine:
         
         from datetime import datetime
         from zoneinfo import ZoneInfo
+
+        # Precompute $O(N)$ slicing features to prevent massive CPU looping
+        df_ind["_pre_high_24h"] = df_ind["high"].rolling(96).max().shift(1) if "high" in df_ind.columns else df_ind.get("close", 0.0)
+        df_ind["_pre_low_24h"] = df_ind["low"].rolling(96).min().shift(1) if "low" in df_ind.columns else df_ind.get("close", 0.0)
+        df_ind["_pre_vol_24h"] = df_ind["volume"].rolling(96).sum().shift(1) if "volume" in df_ind.columns else 0.0
+        df_ind["_pre_vol_3d"] = df_ind["volume"].rolling(288).mean().shift(1) if "volume" in df_ind.columns else 1.0
+        if "atr" in df_ind.columns:
+            # Rank calculates the percentile of the current element within the window
+            df_ind["_pre_vol_regime"] = df_ind["atr"].rolling(97).rank(pct=True)
+        else:
+            df_ind["_pre_vol_regime"] = 0.5
         
         # df_ind is a pandas DataFrame with indicators. Start at 50 to allow EMAs to warm up.
         for i in range(50, len(df_ind) - 1):
@@ -1057,13 +1204,14 @@ class MLEngine:
                     else:
                         dt_obj = dt_val
                     ny_dt = dt_obj.astimezone(ZoneInfo("America/New_York"))
-                except Exception as e:
-                    logger.debug(f"[ML] datetime parse error: {e}")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"[ML] datetime parse error: {e}")
                     
             if ny_dt is None:
                 try:
                     ny_dt = pd.to_datetime(c.get("time", 0), unit="s", utc=True).astimezone(ZoneInfo("America/New_York"))
-                except Exception:
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"[MLEngine] fallback datetime parse error: {e}")
                     ny_dt = datetime.now(ZoneInfo("America/New_York"))
             
             is_night = 0 <= ny_dt.hour < 7
@@ -1105,6 +1253,9 @@ class MLEngine:
                 target_price = float(c.get("open", p["close"]))
                 label = 1 if actual_close >= target_price else 0
             
+            # CRITICAL FIX: Normalize features so training matches inference distribution!
+            raw_feat = normalize_features(raw_feat)
+
             feature_vec = []
             valid = True
             for k in self.feature_keys:
@@ -1114,6 +1265,7 @@ class MLEngine:
                     if not math.isfinite(val):
                         val = 0.0
                 except (TypeError, ValueError):
+                    valid = False
                     val = 0.0
                 feature_vec.append(val)
                 
@@ -1134,6 +1286,7 @@ class MLEngine:
 
                 weights = self._recency_weights(len(X_train))
                 self.model.fit(np.array(X_train), np.array(y_train), sample_weight=weights)
+                self.model.is_normalized = True
                 self.is_trained = self.model.is_trained
                 if not self.is_trained:
                     logger.warning(f"[MLEngine] Self-training failed on {len(X_train)} samples (likely <2 unique classes).")
@@ -1147,42 +1300,18 @@ class MLEngine:
                 try:
                     joblib.dump(self.model, cache_file)
                     self.last_trained_mtime = time.time()
-                except Exception as e:
+                except (FileNotFoundError, OSError) as e:
                     logger.warning(f"[MLEngine] Failed to cache historical model to disk: {e}")
 
                 logger.info(f"[MLEngine] Self-trained ML model on {len(X_train)} historical 15m market intervals (calibrated on {len(X_cal)}).")
                 return len(X_train)
+        else:
+            self.last_trained_mtime = time.time()
         return 0
         
     def _normalize_features(self, raw: dict) -> dict:
         """Normalize absolute prices to make features stationary across different BTC price regimes."""
-        norm = dict(raw)
-        base_price = float(raw.get("ema_50") or 1.0)
-        if base_price <= 0:
-            base_price = 1.0
-            
-        abs_keys = ["ema_9", "ema_21", "ema_50", "bb_upper", "bb_lower", "high_24h", "low_24h"]
-        for k in abs_keys:
-            if k in norm:
-                norm[k] = (float(norm[k]) / base_price) - 1.0
-                
-        if "atr" in norm:
-            norm["atr"] = (float(norm["atr"]) / base_price) * 100.0
-            
-        if "price_vs_vwap" in norm:
-            norm["price_vs_vwap"] = (float(norm["price_vs_vwap"]) / base_price) * 100.0
-
-        # Fix non-stationary features that blow out XGBoost bounds
-        for k in ["volume_24h", "open_interest"]:
-            if k in norm:
-                val = float(norm[k])
-                norm[k] = math.log1p(max(0.0, val)) if val > 0 else 0.0
-                
-        if "cvd_value" in norm:
-            val = float(norm["cvd_value"])
-            norm["cvd_value"] = math.copysign(math.log1p(abs(val)), val)
-            
-        return norm
+        return normalize_features(raw)
 
     def predict_probability(self, current_raw_features: dict) -> float:
         """
@@ -1190,9 +1319,8 @@ class MLEngine:
         Returns 0.5 (50%) if the model isn't trained yet.
         """
         if not self.is_trained:
-            self.train()
-            
-        if not self.is_trained:
+            import threading
+            threading.Thread(target=self.train, daemon=True).start()
             return 0.5
             
         current_raw_features = self._normalize_features(current_raw_features)
@@ -1207,12 +1335,14 @@ class MLEngine:
                 if not math.isfinite(val):
                     val = default_val
             except (TypeError, ValueError):
-                val = default_val
+                logger.warning(f"[MLEngine] Unparseable feature {k}={val}. Aborting prediction.")
+                return 0.5
             feature_vec.append(val)
 
         # Extra safety net: np.nan_to_num catches any numpy scalars that slipped through
         X_pred = np.nan_to_num(np.array([feature_vec]), nan=0.0, posinf=0.0, neginf=0.0)
-        prob = self.model.predict_proba_calibrated(X_pred)[0]
+        with self._lock:
+            prob = self.model.predict_proba_calibrated(X_pred)[0]
         return float(prob)
 
 

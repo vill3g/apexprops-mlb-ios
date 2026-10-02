@@ -1,7 +1,23 @@
 {
-  "balance": -1530.8,
+  "balance": -1531.8,
   "positions": [],
   "trade_history": [
+    {
+      "id": "c5bdb98c",
+      "pair": "EURUSD",
+      "side": "BUY",
+      "size": 10000,
+      "entry_price": 1.139311654663086,
+      "sl": 1.13921,
+      "tp": 1.13921,
+      "status": "CLOSED",
+      "opened_at": "2026-09-27T16:57:51.428482+00:00",
+      "unrealized_pnl": 0.0,
+      "close_price": 1.139211654663086,
+      "realized_pnl": -1.0,
+      "closed_at": "2026-09-27T16:58:23.815903+00:00",
+      "close_reason": "MANUAL_CLOSE"
+    },
     {
       "id": "093da4c5",
       "pair": "GBPUSD",

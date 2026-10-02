@@ -1,6 +1,5 @@
 import json
 import time
-import os
 
 path = r"C:\Users\Vill3\Desktop\kalshi-ai-trader\backend\data\trades_history.json"
 with open(path, "r") as f:
