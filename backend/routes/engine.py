@@ -491,6 +491,10 @@ def api_btc_trade_status(asset: str, request: Request):
     """Returns full status of the automated trading engine."""
     try:
 
+        
+        if asset.upper() in ["NFL", "MLB", "NBA", "UFC"]:
+            return JSONResponse({"data": []})
+
         if asset.upper() in ACTIVE_PAIRS:
 
 
