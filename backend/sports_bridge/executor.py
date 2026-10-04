@@ -1,13 +1,27 @@
-﻿import logging
 import time
+import logging
+import uuid
+import json
 from backend.sports_bridge.prediction_client import SportsPredictionClient
 from backend.sports_bridge.kalshi_mapper import KalshiMapper
 from backend.database.models import get_all_active_users, get_db_connection
 from backend.btc.kalshi_trader import kalshi_trader
-import uuid
-import json
 
 logger = logging.getLogger(__name__)
+
+def _generate_kalshi_ticker(prediction: dict) -> str:
+    """Dummy mapper to generate a unique string for the TradeStore."""
+    sport = (prediction.get("sport") or "UNKNOWN").upper()
+    team = (prediction.get("predicted_team") or "UNKNOWN").upper()
+    meta = prediction.get("metadata") or {}
+    date = meta.get("date") or "NODATE"
+    if date == "NODATE":
+        date = time.strftime("%y%m%d")
+    return f"KALSHI-{sport}-{team}-{date}".replace(" ", "-")
+
+def _check_kalshi_settlement(market_ticker: str) -> dict:
+    """Dummy Kalshi API check function."""
+    return {"status": "open", "result": None}
 
 class SportsBridgeExecutor:
     def __init__(self):
@@ -33,51 +47,97 @@ class SportsBridgeExecutor:
         for u in sports_users:
             try:
                 self._process_user(u, picks)
+                self._settle_open_trades(u)
             except Exception as e:
                 logger.error(f"[SportsBridge] Error processing user {u.get('id')}: {e}")
 
     def _process_user(self, user, picks):
         uid = user["id"]
-        min_conf = float(user.get("min_sports_confidence", 70.0))
-        mode = user.get("trading_mode", "PAPER")
-        trade_size = float(user.get("paper_trade_size_dollars", 50.0)) if mode == "PAPER" else float(user.get("trade_size_dollars", 5.0))
+        min_conf = float(user.get("min_sports_confidence") or 70.0)
+        min_edge = float(user.get("min_sports_edge") or 0.0)
+        max_wager = float(user.get("sports_max_wager") or 5.0)
+        include_live = bool(user.get("sports_include_live") or False)
+        mode = user.get("trading_mode") or "PAPER"
         
-        valid_picks = [p for p in picks if p["confidence_pct"] >= min_conf]
-        if not valid_picks:
+        if mode != "PAPER":
             return
-            
-        best_pick = valid_picks[0]
-        sport = best_pick["sport"]
-        team = best_pick["predicted_team"]
-        
-        k_key = user.get("kalshi_key_id")
-        k_priv = user.get("kalshi_priv_key_encrypted")
-        if not k_key or not k_priv:
-            return
-            
-        ticker = KalshiMapper.get_kalshi_ticker(kalshi_trader, sport, team)
-        if not ticker:
-            return
-            
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id FROM trades WHERE user_id = ? AND market_ticker = ? AND status = 'open'", (uid, ticker))
-        if cursor.fetchone():
-            return
-            
-        logger.info(f"[SportsBridge] Executing {mode} trade for user {uid} on {ticker}")
         
-        trade_id = str(uuid.uuid4())
-        price = 0.50 
-        cursor.execute('''
-            INSERT INTO trades (
-                id, user_id, market_ticker, direction, mode, 
-                entry_price, contracts, status, initial_risk_amount,
-                asset, execution_time, details
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            trade_id, uid, ticker, "YES", mode,
-            price, int(trade_size / max(price, 0.01)), "open", trade_size,
-            "SPORTS", time.time(), json.dumps({"confidence": best_pick["confidence_pct"], "sport": sport})
-        ))
-        conn.commit()
+        # Get all open tickers
+        cursor.execute("SELECT market_ticker FROM trades WHERE user_id = ? AND status = 'open' AND asset = 'SPORTS'", (uid,))
+        open_tickers = {row[0] for row in cursor.fetchall() if row[0]}
+        
+        for pred in picks:
+            conf = float(pred.get("confidence_pct") or 0.0)
+            edge = float(pred.get("edge_pct") or 0.0)
+            meta = pred.get("metadata") or {}
+            is_upcoming = bool(meta.get("is_upcoming", True))
+            status = str(pred.get("status") or "unknown").lower()
+
+            if conf < min_conf or edge < min_edge:
+                continue
+            
+            if not include_live:
+                if not is_upcoming or status == "live":
+                    continue
+            
+            # For now use the dummy ticker since bridge is generating predictions without market_ticker
+            # Later this uses KalshiMapper
+            ticker = _generate_kalshi_ticker(pred)
+            
+            if ticker not in open_tickers:
+                predicted_team = pred.get("predicted_team", "UNKNOWN")
+                sport = pred.get("sport", "UNKNOWN")
+                price = 0.50 
+                
+                trade_id = str(uuid.uuid4())
+                
+                logger.info(f"[SportsBridge] Executing {mode} trade for user {uid} on {ticker}")
+                
+                cursor.execute('''
+                    INSERT INTO trades (
+                        id, user_id, market_ticker, direction, mode, 
+                        entry_price, contracts, status, initial_risk_amount,
+                        asset, execution_time, details
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    trade_id, uid, ticker, "YES", mode,
+                    price, int(max_wager / max(price, 0.01)), "open", max_wager,
+                    "SPORTS", time.time(), json.dumps({"confidence": conf, "sport": sport, "team": predicted_team})
+                ))
+                conn.commit()
+                open_tickers.add(ticker)
+        
+        conn.close()
+
+    def _settle_open_trades(self, user):
+        uid = user["id"]
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT id, market_ticker, entry_price, contracts FROM trades WHERE user_id = ? AND status = 'open' AND asset = 'SPORTS'", (uid,))
+        open_trades = cursor.fetchall()
+        
+        for row in open_trades:
+            t_id, ticker, entry_price, contracts = row
+            if not ticker or not ticker.startswith("KALSHI-"):
+                continue
+                
+            settlement = _check_kalshi_settlement(ticker)
+            if settlement.get("status") == "determined":
+                result = settlement.get("result")
+                if result == "YES":
+                    exit_price = 1.0
+                    pnl = (1.0 - float(entry_price or 0.5)) * int(contracts or 1)
+                else:
+                    exit_price = 0.0
+                    pnl = -float(entry_price or 0.5) * int(contracts or 1)
+                    
+                cursor.execute("UPDATE trades SET status = 'closed', exit_price = ?, pnl = ?, closing_reason = ?, settled_at = ? WHERE id = ?",
+                               (exit_price, pnl, "SETTLEMENT", time.time(), t_id))
+                conn.commit()
+                logger.info(f"[SportsBridge] Settled sports trade {t_id} for {pnl}")
+        
+        conn.close()
