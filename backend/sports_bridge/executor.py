@@ -2,6 +2,7 @@ import time
 import logging
 import uuid
 import json
+import kalshi_python
 from backend.sports_bridge.prediction_client import SportsPredictionClient
 from backend.sports_bridge.kalshi_mapper import KalshiMapper
 from backend.database.models import get_all_active_users, get_db_connection
@@ -10,18 +11,64 @@ from backend.btc.kalshi_trader import kalshi_trader
 logger = logging.getLogger(__name__)
 
 def _generate_kalshi_ticker(prediction: dict) -> str:
-    """Dummy mapper to generate a unique string for the TradeStore."""
+    """Uses Kalshi API to find the exact event ticker."""
     sport = (prediction.get("sport") or "UNKNOWN").upper()
     team = (prediction.get("predicted_team") or "UNKNOWN").upper()
     meta = prediction.get("metadata") or {}
     date = meta.get("date") or "NODATE"
-    if date == "NODATE":
-        date = time.strftime("%y%m%d")
-    return f"KALSHI-{sport}-{team}-{date}".replace(" ", "-")
+    
+    def get_dummy():
+        d = date
+        if d == "NODATE":
+            d = time.strftime("%y%m%d")
+        return f"KALSHI-{sport}-{team}-{d}".replace(" ", "-")
+
+    try:
+        config = kalshi_python.Configuration()
+        config.host = 'https://api.elections.kalshi.com/trade-api/v2'
+        api_client = kalshi_python.ApiClient(config)
+        events_api = kalshi_python.EventsApi(api_client)
+        
+        response = events_api.get_events(series_ticker=sport, with_nested_markets=True)
+        for event in getattr(response, 'events', []):
+            title = getattr(event, 'title', '').lower()
+            event_ticker = getattr(event, 'event_ticker', '').lower()
+            if team.lower() in title or team.lower() in event_ticker:
+                markets = getattr(event, 'markets', [])
+                if markets:
+                    return getattr(markets[0], 'ticker', getattr(event, 'event_ticker', get_dummy()))
+                return getattr(event, 'event_ticker', get_dummy())
+        
+        return get_dummy()
+    except Exception as e:
+        if isinstance(e, kalshi_python.ApiException) and getattr(e, 'status', None) == 429:
+            logger.warning("Kalshi API 429 Too Many Requests. Falling back to dummy ticker.")
+        else:
+            logger.error(f"Error fetching Kalshi ticker: {e}")
+        return get_dummy()
 
 def _check_kalshi_settlement(market_ticker: str) -> dict:
-    """Dummy Kalshi API check function."""
-    return {"status": "open", "result": None}
+    """Uses Kalshi API to check if market is determined."""
+    try:
+        config = kalshi_python.Configuration()
+        config.host = 'https://api.elections.kalshi.com/trade-api/v2'
+        api_client = kalshi_python.ApiClient(config)
+        markets_api = kalshi_python.MarketsApi(api_client)
+        
+        market_response = markets_api.get_market(market_ticker)
+        market = getattr(market_response, 'market', market_response)
+        
+        status = getattr(market, 'status', 'open')
+        result = getattr(market, 'result', None)
+        return {"status": status, "result": result}
+    except Exception as e:
+        if isinstance(e, kalshi_python.ApiException) and getattr(e, 'status', None) == 429:
+            logger.warning("Kalshi API 429 Too Many Requests during settlement check.")
+        elif isinstance(e, kalshi_python.ApiException) and getattr(e, 'status', None) == 404:
+            logger.warning(f"Market not found on Kalshi: {market_ticker}")
+        else:
+            logger.error(f"Error checking Kalshi settlement for {market_ticker}: {e}")
+        return {"status": "open", "result": None}
 
 class SportsBridgeExecutor:
     def __init__(self):
