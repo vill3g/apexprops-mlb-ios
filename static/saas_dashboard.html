@@ -3236,87 +3236,50 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             const moreAssetsWrapper = document.getElementById('btn-asset-more') ? document.getElementById('btn-asset-more').parentElement : null;
             const sportsAssets = document.querySelectorAll('.asset-btn-sports');
             
+            const fAs = document.getElementById('finance-asset-settings');
+            const fRs = document.getElementById('finance-risk-settings');
+            const sRs = document.getElementById('sports-risk-settings');
 
             if(universe === 'SPORTS') {
                 finAssets.forEach(el => { el.style.display = 'none'; });
                 if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'none';
-                sportsAssets.forEach(el => { el.style.display = 'flex'; });
+                sportsAssets.forEach(el => { el.style.display = 'inline-block'; el.classList.remove('hidden'); });
                 
-                const fAs = document.getElementById('finance-asset-settings');
-                const fRs = document.getElementById('finance-risk-settings');
-                const sRs = document.getElementById('sports-risk-settings');
                 if(fAs) fAs.classList.add('hidden');
                 if(fRs) fRs.classList.add('hidden');
                 if(sRs) sRs.classList.remove('hidden');
 
-                if (window.activeSportsEventMarket) {
-                    const found = Array.from(sportsAssets).find(b => b.innerText.includes(window.activeSportsEventMarket));
-                    if(found) found.click();
-                    else document.getElementById('btn-asset-nfl')?.click();
-                } else {
-                    document.getElementById('btn-asset-nfl')?.click();
-                }
-            } else {
-                finAssets.forEach(el => { el.style.display = 'flex'; });
-                if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'flex';
-                sportsAssets.forEach(el => { el.style.display = 'none'; });
-                
-                const fAs = document.getElementById('finance-asset-settings');
-                const fRs = document.getElementById('finance-risk-settings');
-                const sRs = document.getElementById('sports-risk-settings');
-                if(fAs) fAs.classList.remove('hidden');
-                if(fRs) fRs.classList.remove('hidden');
-                if(sRs) sRs.classList.add('hidden');
-
-                const found = Array.from(finAssets).find(b => b.innerText.includes(window.activeAsset));
-                if(found) found.click();
-                else document.getElementById('btn-asset-btc')?.click();
-            });
-                if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'none';
-                sportsAssets.forEach(el => { el.style.display = 'inline-block'; el.classList.remove('hidden'); });
-
-                
-                const slRows = document.querySelectorAll('.stop-loss-row');
-                slRows.forEach(el => el.classList.add('hidden'));
-                
-                const sportsConf = document.getElementById('sports-confidence-container');
-                if (sportsConf) sportsConf.classList.remove('hidden');
-                
                 document.getElementById('lw-chart-container').style.display = 'none';
                 document.getElementById('stats-bar-target').style.display = 'none';
                 document.getElementById('sports-event-list').style.display = 'block';
                 document.getElementById('sports-event-list').classList.remove('hidden');
-                loadSportsEvents();
                 
-                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('NFL');
-
+                if (window.activeSportsEventMarket) {
+                    const found = Array.from(sportsAssets).find(b => b.innerText.includes(window.activeSportsEventMarket));
+                    if(found) found.click();
+                    else filterSportsEvents('NFL');
+                } else {
+                    filterSportsEvents('NFL');
+                }
             } else {
                 finAssets.forEach(el => { el.style.display = ''; el.classList.remove('hidden'); });
                 if (moreAssetsWrapper) moreAssetsWrapper.style.display = '';
-                sportsAssets.forEach(el => { el.style.display = 'none'; });
+                sportsAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                
+                if(fAs) fAs.classList.remove('hidden');
+                if(fRs) fRs.classList.remove('hidden');
+                if(sRs) sRs.classList.add('hidden');
 
-                
-                const slRows = document.querySelectorAll('.stop-loss-row');
-                slRows.forEach(el => el.classList.remove('hidden'));
-                
-                const sportsConf = document.getElementById('sports-confidence-container');
-                if (sportsConf) sportsConf.classList.add('hidden');
-                
                 document.getElementById('lw-chart-container').style.display = 'block';
                 document.getElementById('stats-bar-target').style.display = 'flex';
                 document.getElementById('sports-event-list').style.display = 'none';
-                
-                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
+                document.getElementById('sports-event-list').classList.add('hidden');
+
+                const found = Array.from(finAssets).find(b => b.innerText.includes(window.activeAsset));
+                if(found) found.click();
+                else if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
             }
-            if (typeof saveUserConfig === 'function') saveUserConfig();
         };
-        
-
-
-
-        window.sportsFilter = window.sportsFilter || 'ALL';
-        window.__sportsEventsCache = window.__sportsEventsCache || [];
-        const SPORT_ICONS = { NFL: '🏈', MLB: '⚾', NHL: '🏒', NPB: '🇯🇵', SOCCER: '⚽', UFC: '🥊', TENNIS: '🎾' };
 
         window.filterSportsEvents = function(sport) {
             window.sportsFilter = (window.sportsFilter === sport) ? 'ALL' : sport;
