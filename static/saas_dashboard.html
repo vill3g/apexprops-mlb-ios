@@ -678,8 +678,13 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                 <button type="button" id="btn-asset-eth" onclick="selectDashboardAsset('ETH')" class="asset-btn flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
                     <span class="text-[11px]">Ξ</span> <span>ETH</span>
                 </button>
-                        <button id="btn-asset-nfl" onclick="selectDashboardAsset('NFL')" class="asset-btn-sports hidden px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-[#2a2b36] text-gray-400 hover:text-white border border-transparent">🏈 NFL</button>
-        <button id="btn-asset-mlb" onclick="selectDashboardAsset('MLB')" class="asset-btn-sports hidden px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-[#2a2b36] text-gray-400 hover:text-white border border-transparent">⚾ MLB</button>
+                        <button id="btn-asset-nfl" onclick="selectDashboardAsset('NFL')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏈 NFL</button>
+<button id="btn-asset-mlb" onclick="selectDashboardAsset('MLB')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">⚾ MLB</button>
+<button id="btn-asset-nhl" onclick="selectDashboardAsset('NHL')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏒 NHL</button>
+<button id="btn-asset-nba" onclick="selectDashboardAsset('NBA')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏀 NBA</button>
+<button id="btn-asset-soccer" onclick="selectDashboardAsset('SOCCER')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">⚽ SOC</button>
+<button id="btn-asset-ufc" onclick="selectDashboardAsset('UFC')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🥊 UFC</button>
+<button id="btn-asset-tennis" onclick="selectDashboardAsset('TENNIS')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🎾 TEN</button>
 
         <button id="btn-asset-gold" onclick="selectDashboardAsset('GOLD')" class="asset-btn flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
                     <span class="text-[11px]">🪙</span> <span>GOLD</span>
@@ -4428,7 +4433,15 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             const container = document.getElementById('activePositionHud');
             if (!container) return;
 
-            const openTrades = (s.recent_trades || []).filter(t => String(t.status || '').toUpperCase() === 'OPEN');
+            let openTrades = (s.recent_trades || []).filter(t => String(t.status || '').toUpperCase() === 'OPEN');
+            
+            // Filter by universe
+            const sportsAssetsList = ['NFL', 'MLB', 'NHL', 'NBA', 'SOCCER', 'UFC', 'TENNIS'];
+            openTrades = openTrades.filter(t => {
+                const asset = String(t.asset || '').toUpperCase();
+                const isSport = sportsAssetsList.includes(asset);
+                return (window.currentUniverse === 'SPORTS') ? isSport : !isSport;
+            });
             
             // Audio trigger on newly opened trade
             if (openTrades.length > previousOpenTradeCount && previousOpenTradeCount === 0) {
@@ -4437,24 +4450,24 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             previousOpenTradeCount = openTrades.length;
 
             if (openTrades.length === 0) {
-                container.innerHTML = `
+                const statusText = window.currentUniverse === 'SPORTS' ? 'SPORTS (NFL, MLB, ETC)' : '10 ASSETS (BTC, ETH, GOLD, ETC)';
+                container.innerHTML = 
                     <div class="bg-[#0e1626]/95 border-t border-cyan-500/20 px-4 py-3 shadow-md flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Position Scanner:</span>
                             <span class="text-[10px] font-mono text-emerald-400 font-bold">READY · Bot Scanning Active</span>
                         </div>
-                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${s.trading_style || 'AUTO'} · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)</span>
+                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest"> · </span>
                     </div>
-                `;
+                ;
                 return;
             }
 
-            // Order: BTC first, then ETH, then GOLD, then others
             const assetOrder = { 'BTC': 1, 'ETH': 2, 'GOLD': 3, 'EURUSD': 4, 'GBPUSD': 5, 'USDJPY': 6, 'AUDUSD': 7, 'NDQ': 8, 'SOL': 9, 'DOGE': 10 };
             const sortedOpen = [...openTrades].sort((a, b) => {
-                const aAsset = String(a.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => String(a.ticker||'').includes(x)) || 'OTHER')).toUpperCase();
-                const bAsset = String(b.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => String(b.ticker||'').includes(x)) || 'OTHER')).toUpperCase();
+                const aAsset = String(a.asset || 'OTHER').toUpperCase();
+                const bAsset = String(b.asset || 'OTHER').toUpperCase();
                 return (assetOrder[aAsset] || 99) - (assetOrder[bAsset] || 99);
             });
 
@@ -4475,115 +4488,111 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                     else if (tk.includes('NDQ')) asset = 'NDQ';
                     else if (tk.includes('SOL')) asset = 'SOL';
                     else if (tk.includes('DOGE')) asset = 'DOGE';
-                    else asset = 'BTC';
+                    else asset = 'UNKNOWN';
                 }
 
-                const dir = String(t.side || 'YES').toUpperCase();
-                const isYes = dir === 'YES';
-                const count = t.count || t.size || 1;
-                const entryPrice = t.entry_price ? Math.round(t.entry_price * 100) : 50;
-
-                // User requested format: "YES BTC 11 Contracts @ 50c", "NO ETH 20 Contracts @ 47c", etc.
-                const tradeLabel = `${dir} ${asset} ${count} Contracts @ ${entryPrice}¢`;
-
-                // Live PnL
-                const estPnl = t.live_pnl !== undefined ? Number(t.live_pnl) : (t.pnl_dollars !== undefined ? Number(t.pnl_dollars) : 0);
-                totalOpenPnl += estPnl;
-                const pnlColor = estPnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
-                const pnlStr = (estPnl >= 0 ? '+$' : '-$') + Math.abs(estPnl).toFixed(2);
-                const costBasis = (entryPrice / 100) * count;
-                const pnlPct = costBasis > 0 ? ((estPnl / costBasis) * 100).toFixed(1) : '0.0';
-
-                // Strike & distance
-                let spot = 0;
-                if (asset === 'BTC') spot = window.lastBtcPrice || window.lastSpotPrice || 0;
-                else if (asset === 'ETH') spot = window.lastEthPrice || 0;
-                else if (asset === 'GOLD') spot = window.lastGoldPrice || 0;
-                else spot = window.lastSpotPrice || 0;
-
-                const strikeNum = Number(t.strike || 0);
-                const strike = (!isNaN(strikeNum) && isFinite(strikeNum) && strikeNum > 0) ? strikeNum : null;
-                let distanceStr = '';
-                if (spot && strike) {
-                    const diff = spot - strike;
-                    const isItm = (isYes && diff > 0) || (!isYes && diff < 0);
-                    const absDiff = Math.abs(diff).toFixed(1);
-                    distanceStr = isItm 
-                        ? `<span class="text-emerald-400 font-bold">+$${absDiff} ITM</span>`
-                        : `<span class="text-rose-400 font-bold">-$${absDiff} OTM</span>`;
+                const isSport = sportsAssetsList.includes(asset);
+                const side = String(t.side || 'YES').toUpperCase();
+                const sideClass = side === 'YES' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+                
+                let pnlVal = 0;
+                let curPrice = null;
+                if (asset === window.currentAsset) {
+                    curPrice = (side === 'YES') ? window.lastYesBid : window.lastNoBid;
+                }
+                
+                let pnlClass = 'text-gray-300';
+                let pnlStr = '---';
+                if (curPrice !== null && t.entry_price) {
+                    pnlVal = (curPrice - (t.entry_price * 100)) * (t.contracts || 0);
+                    if (pnlVal > 0) { pnlClass = 'text-emerald-400'; pnlStr = '+$' + pnlVal.toFixed(2); }
+                    else if (pnlVal < 0) { pnlClass = 'text-rose-400'; pnlStr = '-$' + Math.abs(pnlVal).toFixed(2); }
+                    else { pnlStr = '.00'; }
+                    totalOpenPnl += pnlVal;
                 }
 
-                let assetBadgeClass = 'bg-slate-500/20 text-slate-300 border-slate-500/40';
-                let assetIcon = '';
-                if (asset === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40'; assetIcon = '₿ '; }
-                else if (asset === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; assetIcon = 'Ξ '; }
-                else if (asset === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; assetIcon = '🪙 '; }
-                    else if (asset === 'EURUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                    else if (asset === 'GBPUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                    else if (asset === 'USDJPY') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                    else if (asset === 'AUDUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                    else if (asset === 'NDQ') { assetBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; assetIcon = '📈 '; }
-                    else if (asset === 'SOL') { assetBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; assetIcon = '🚀 '; }
-                    else if (asset === 'DOGE') { assetBadgeClass = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; assetIcon = '🐕 '; }
+                let assetBadgeClass = 'bg-orange-500/20 text-orange-400 border-orange-500/40';
+                if (asset === 'ETH') assetBadgeClass = 'bg-blue-500/20 text-blue-400 border-blue-500/40';
+                if (asset === 'GOLD') assetBadgeClass = 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40';
+                if (['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(asset)) assetBadgeClass = 'bg-green-500/20 text-green-400 border-green-500/40';
+                if (asset === 'NDQ') assetBadgeClass = 'bg-purple-500/20 text-purple-400 border-purple-500/40';
+                if (isSport) assetBadgeClass = 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40';
 
-                rowsHtml += `
-                    <div class="px-3.5 py-2.5 flex flex-col gap-1.5 ${isYes ? 'bg-emerald-950/20' : 'bg-rose-950/20'} hover:bg-white/[0.04] transition-colors">
-                        <!-- Line 1: Direction Badge, Asset Badge, Trade Label, Live PnL -->
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <div class="flex items-center gap-2 flex-wrap min-w-0">
-                                <span class="text-xs font-bold text-white tracking-wide truncate ${isYes ? 'text-emerald-400' : 'text-rose-400'}">
-                                    ${tradeLabel}
+                let entryCost = ((t.entry_price || 0) * 100 * (t.contracts || 0)).toFixed(2);
+                let leverage = t.leverage || '1';
+                
+                let infoHtml = '';
+                if (isSport) {
+                    infoHtml = 
+                        <div class="hidden sm:flex flex-col">
+                            <span class="text-[9px] text-gray-500 uppercase">Matchup</span>
+                            <span class="text-xs font-mono font-bold text-gray-200"></span>
+                        </div>
+                        <div class="hidden md:flex flex-col">
+                            <span class="text-[9px] text-gray-500 uppercase">Wager</span>
+                            <span class="text-xs font-mono font-bold text-gray-200">{entryCost}</span>
+                        </div>
+                    ;
+                } else {
+                    infoHtml = 
+                        <div class="hidden sm:flex flex-col">
+                            <span class="text-[9px] text-gray-500 uppercase">Mark Price</span>
+                            <span class="text-xs font-mono font-bold text-gray-200"></span>
+                        </div>
+                        <div class="hidden md:flex flex-col">
+                            <span class="text-[9px] text-gray-500 uppercase">Leverage</span>
+                            <span class="text-xs font-mono font-bold text-gray-200">x</span>
+                        </div>
+                    ;
+                }
+
+                rowsHtml += 
+                    <div class="flex items-center justify-between p-2 lg:p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer" onclick="openTradeDetails('')">
+                        <div class="flex items-center gap-3 w-1/4 sm:w-auto">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider border "></span>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-white tracking-tight flex items-center gap-1.5">
+                                    <span class="px-1.5 py-[1px] rounded-[3px] border text-[9px] font-black tracking-widest "></span>
+                                    <span> CTs</span>
                                 </span>
-                                <span class="text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-blue-500/20 text-blue-300 border border-blue-500/35">ACTIVE</span>
-                            </div>
-                            <div class="flex items-baseline gap-1.5 font-mono shrink-0">
-                                <span class="text-xs sm:text-sm font-black tabular-nums ${pnlColor}">${pnlStr}</span>
-                                <span class="text-[9px] sm:text-[10px] font-bold ${pnlColor}">(${pnlPct}%)</span>
+                                <span class="text-[10px] font-mono text-gray-400 uppercase mt-0.5"></span>
                             </div>
                         </div>
-
-                        <!-- Line 2: Strike & Distance, Quick Action Buttons -->
-                        <div class="flex items-center justify-between gap-2 text-[10px] font-mono">
-                            <div class="text-gray-400 truncate text-[9px]">
-                                ${strike ? `Strike <span class="text-white font-bold">$${strike.toLocaleString()}</span>` : ''}
-                                ${distanceStr ? `<span class="ml-1.5">${distanceStr}</span>` : ''}
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button onclick="executeManualTrade('${t.side}', '${t.asset}')" class="py-1 px-2.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                                    <span>➕</span> ADD
-                                </button>
-                                <button onclick="takeProfitTrade('${t.id}')" class="py-1 px-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                                    <span>⚡</span> TP
-                                </button>
-                                <button onclick="closeTrade('${t.id}', 'MANUAL_CLOSE')" class="py-1 px-2.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                                    <span>🛑</span> Close
-                                </button>
-                            </div>
+                        
+                        
+                        
+                        <div class="hidden lg:flex flex-col">
+                            <span class="text-[9px] text-gray-500 uppercase">Entry</span>
+                            <span class="text-xs font-mono font-bold text-gray-200"></span>
+                        </div>
+                        
+                        <div class="flex flex-col text-right min-w-[70px]">
+                            <span class="text-[9px] text-gray-500 uppercase">Unrealized PnL</span>
+                            <span class="text-sm font-black tabular-nums "></span>
                         </div>
                     </div>
-                `;
+                ;
             });
 
-            const totalColor = totalOpenPnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
-            const totalStr = (totalOpenPnl >= 0 ? '+$' : '-$') + Math.abs(totalOpenPnl).toFixed(2);
-
-            container.innerHTML = `
-                <div class="relative bg-[#0c1220]/95 border-b lg:border lg:border-t-0 lg:border-cyan-500/20 lg:rounded-b-2xl border-cyan-500/20 shadow-md overflow-hidden">
-                    <div class="bg-black/60 px-3.5 py-1.5 border-b border-white/10 flex items-center justify-between text-[10px] font-mono">
-                        <div class="flex items-center gap-2">
+            container.innerHTML = 
+                <div class="bg-[#0e1626] border-t border-cyan-500/20 shadow-md">
+                    <div class="flex items-center justify-between px-3 lg:px-4 py-2 border-b border-white/5 bg-black/20">
+                        <div class="flex items-center gap-2.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span class="text-gray-300 font-bold uppercase tracking-wider">Position Scanner · Active (${sortedOpen.length})</span>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active ()</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-gray-400">Total PnL:</span>
-                            <span class="font-bold tabular-nums ${totalColor}">${totalStr}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] text-gray-400 uppercase tracking-widest">Total PnL:</span>
+                            <span class="text-sm font-black tabular-nums ">
+                                
+                            </span>
                         </div>
                     </div>
-                    <div class="divide-y divide-white/5 max-h-[35vh] overflow-y-auto">
-                        ${rowsHtml}
+                    <div class="flex flex-col max-h-[160px] lg:max-h-[220px] overflow-y-auto">
+                        
                     </div>
                 </div>
-            `;
+            ;
         }
 
         // ── Battle Tape Social Activity Feed (Feature 4) ──
