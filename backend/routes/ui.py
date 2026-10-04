@@ -37,7 +37,7 @@ def health_check():
 @router.api_route("/favicon.ico", methods=["GET", "HEAD"])
 def serve_root_favicon():
 
-    ico_path = os.path.join(STATIC_DIR, "assets", "app_icon.ico")
+    ico_path = os.path.join(STATIC_DIR, "favicon.ico")
     if os.path.exists(ico_path):
         return FileResponse(ico_path, media_type="image/x-icon")
     return Response(status_code=404)
@@ -49,6 +49,19 @@ def serve_root_apple_touch_icon():
     icon_path = os.path.join(STATIC_DIR, "assets", "apple-touch-icon.png")
     if os.path.exists(icon_path):
         return FileResponse(icon_path, media_type="image/png")
+    return Response(status_code=404)
+
+@router.api_route("/manifest.json", methods=["GET", "HEAD"])
+def serve_manifest():
+    manifest_path = os.path.join(STATIC_DIR, "manifest.json")
+    if os.path.exists(manifest_path):
+        return FileResponse(
+            manifest_path,
+            media_type="application/manifest+json",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+            }
+        )
     return Response(status_code=404)
 
 @router.api_route("/", methods=["GET", "HEAD"])
@@ -95,13 +108,18 @@ def get_saas_dashboard():
 def get_admin_dashboard():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-@router.get("/admin/mobile")
+@router.api_route("/admin/mobile", methods=["GET", "HEAD"])
+@router.api_route("/admin_mobile.html", methods=["GET", "HEAD"])
+@router.api_route("/admin_mobile", methods=["GET", "HEAD"])
 def get_admin_mobile():
-    return FileResponse(
-        os.path.join(STATIC_DIR, "admin_mobile.html"),
-        headers={
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-    )
+    admin_mobile_path = os.path.join(STATIC_DIR, "admin_mobile.html")
+    if os.path.exists(admin_mobile_path):
+        return FileResponse(
+            admin_mobile_path,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+    return Response(status_code=404)

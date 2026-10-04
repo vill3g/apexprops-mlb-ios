@@ -1,0 +1,25 @@
+{
+  "enabled": false,
+  "mode": "PAPER",
+  "min_conviction": "GRADE B SETUP",
+  "max_contracts": 14,
+  "prediction_mode": true,
+  "broadcast_trades": true,
+  "max_daily_risk": 25.0,
+  "max_daily_trades": 10,
+  "ai_settings": {
+    "dryRun": true,
+    "ignorePass": false,
+    "dynamicStopLoss": true,
+    "stopLossMoveDollars": 45.0,
+    "stopLossMaxMinutes": 8.0,
+    "positionReversal": true,
+    "reversalMaxPriceCents": 65.0,
+    "reversalMinMinutesLeft": 6.0,
+    "reversalMinConfidence": 75.0,
+    "slippageBufferDollars": 0.04,
+    "oneShotAiStartTrade": false,
+    "useKellyCriterion": false,
+    "use_kelly_criterion": false
+  }
+}

@@ -1,8 +1,7 @@
-
 {
-  "name": "kalshi-ai-trader",
+  "name": "shadowtrader-ai",
   "version": "1.0.0",
-  "description": "Kalshi AI Trader iOS Wrapper",
+  "description": "ShadowTrade AI iOS Wrapper",
   "main": "index.js",
   "scripts": {
     "build": "echo \"Nothing to build for web, HTML is static.\"",
@@ -12,5 +11,8 @@
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/ios": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.0"
   }
 }

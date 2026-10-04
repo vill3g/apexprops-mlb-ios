@@ -4,6 +4,9 @@ import json
 from fastapi.testclient import TestClient
 from backend.main import app
 from backend.database.models import get_all_users, get_user_by_id, admin_update_user, admin_reset_paper_balance
+from backend.auth.admin_routes import require_admin_auth
+
+app.dependency_overrides[require_admin_auth] = lambda: {"owner": True, "user_id": 1}
 
 client = TestClient(app)
 

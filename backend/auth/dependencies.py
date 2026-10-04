@@ -25,7 +25,8 @@ def _get_guest_id(request: Request) -> Optional[str]:
 
 
 def _is_local_client(request) -> bool:
-    return False
+    host = request.client.host if request.client else ""
+    return host in _LOOPBACK or any(host.startswith(p) for p in _LAN_PREFIXES)
 
 
 def _extract_jwt(request: Request) -> Optional[str]:

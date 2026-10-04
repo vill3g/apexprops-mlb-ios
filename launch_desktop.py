@@ -79,8 +79,9 @@ def main():
 
     import subprocess
     venv_python = os.path.join(APP_DIR, ".venv", "Scripts", "python.exe")
+    python_exe = venv_python if os.path.exists(venv_python) else sys.executable
     cmd = [
-        venv_python, "-m", "uvicorn", "backend.main:app",
+        python_exe, "-m", "uvicorn", "backend.main:app",
         "--host", BIND_HOST,
         "--port", str(PORT),
         "--no-access-log"
@@ -93,7 +94,7 @@ def main():
     # Launch the background worker (places and settles trades) and restart it if it
     # ever exits while the web server is running. worker.py refuses to run twice, so a
     # duplicate simply exits and is retried later.
-    worker_cmd = [venv_python, "backend/worker.py"]
+    worker_cmd = [python_exe, "backend/worker.py"]
     stop_event = threading.Event()
     worker_state = {"proc": None}
 

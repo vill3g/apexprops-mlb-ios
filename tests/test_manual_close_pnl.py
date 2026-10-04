@@ -107,7 +107,7 @@ def test_live_manual_close_calculates_pnl(test_user):
     }
 
     with patch("backend.auth.security.decrypt_kalshi_key", return_value="dummy_pem"):
-        with patch("backend.btc.kalshi_trader.KalshiTrader", return_value=mock_kt):
+        with patch("backend.auth.routes.KalshiTrader", return_value=mock_kt):
             resp = client.post("/api/auth/trade/close/live_trade_1", headers=headers)
             assert resp.status_code == 200, resp.text
             res_data = resp.json()
@@ -133,11 +133,13 @@ def test_paper_manual_close_calculates_pnl(test_user):
     mock_market = {
         "status": "active",
         "ticker": "KXBTC15M-TEST-2",
+        "yes_bid": 0.65,
         "no_bid": 0.65
     }
 
-    with patch("backend.btc.kalshi_client.get_kalshi_15m_market", return_value=mock_market):
-        resp = client.post("/api/auth/trade/close/paper_trade_1", headers=headers)
+    with patch("backend.auth.routes.get_kalshi_15m_market", return_value=mock_market):
+        with patch("backend.btc.kalshi_trader.paper_exit_price", return_value=0.65):
+            resp = client.post("/api/auth/trade/close/paper_trade_1", headers=headers)
         assert resp.status_code == 200, resp.text
         res_data = resp.json()
         assert res_data["success"] is True
@@ -171,7 +173,7 @@ def test_live_close_all_trades_calculates_pnl(test_user):
     }
 
     with patch("backend.auth.security.decrypt_kalshi_key", return_value="dummy_pem"):
-        with patch("backend.btc.kalshi_trader.KalshiTrader", return_value=mock_kt):
+        with patch("backend.auth.routes.KalshiTrader", return_value=mock_kt):
             resp = client.post("/api/auth/trade/close_all", headers=headers)
             assert resp.status_code == 200, resp.text
             res_data = resp.json()

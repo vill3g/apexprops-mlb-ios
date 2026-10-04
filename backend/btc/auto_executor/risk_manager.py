@@ -63,17 +63,23 @@ class RiskManagerMixin:
                     f"Open Collateral: ${open_collateral:.2f}, Effective: ${effective_risk:.2f} <= -${self.max_daily_risk:.2f})"
                 )
 
-            # Circuit Breaker: Halt trading after 3 consecutive losses
+            # Circuit Breaker: Halt trading after 3 consecutive losing INTERVALS
+            interval_pnl_map = {}
+            for trade in sorted(today_trades, key=lambda x: str(x.get("timestamp", ""))):
+                ticker = trade.get("ticker")
+                if trade.get("status") in ["SETTLED", "CLOSED"]:
+                    pnl = float(trade.get("pnl", 0.0))
+                    interval_pnl_map.setdefault(ticker, []).append(pnl)
+                    
             consecutive_losses = 0
-            sorted_today = sorted(today_trades, key=lambda x: str(x.get("timestamp", "")))
-            for t in reversed(sorted_today):
-                if t.get("status") in ["SETTLED", "CLOSED"]:
-                    if float(t.get("pnl", 0.0)) < 0.0:
-                        consecutive_losses += 1
-                        if consecutive_losses >= 3:
-                            return "Circuit Breaker Activated: 3 consecutive losing trades. Halting to protect capital."
-                    elif float(t.get("pnl", 0.0)) > 0.0:
-                        break  # Found a winning trade, safe to continue
+            for ticker in reversed(list(interval_pnl_map.keys())):
+                net_interval_pnl = sum(interval_pnl_map[ticker])
+                if net_interval_pnl < 0.0:
+                    consecutive_losses += 1
+                    if consecutive_losses >= 3:
+                        return f"Circuit Breaker Activated: {consecutive_losses} consecutive losing intervals. Halting to protect capital."
+                else:
+                    break
             return None
 
         def check_live_calibration_drift(self, min_samples: int = 40, window: int = 100) -> Dict[str, Any]:

@@ -45,19 +45,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
     <meta name="color-scheme" content="dark">
-    <title id="page-title">Kalshi AI Trader - Copilot Login</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/assets/app_icon_192.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
-    <!-- iOS PWA Splash Screens -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="/static/assets/splash_1290x2796.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="/static/assets/splash_1179x2556.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/static/assets/splash_1170x2532.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="/static/assets/splash_1242x2688.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="/static/assets/splash_828x1792.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/static/assets/splash_1125x2436.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/static/assets/splash_750x1334.png">
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="/static/assets/splash_640x1136.png">
+    <title id="page-title">ShadowTrade AI - Copilot Login</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
     <style>
         html {
             background-color: #000000 !important;
@@ -98,9 +90,10 @@
             margin-bottom: 0.5rem;
         }
         .brand-logo {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            box-shadow: 0 0 16px rgba(0, 200, 255, 0.3);
         }
         .brand-name {
             font-size: 1.15rem;
@@ -294,11 +287,55 @@
     </style>
 </head>
 <body>
+<div id="splash-screen" style="position:fixed;inset:0;z-index:99999;background:#000;margin:0;padding:0;overflow:hidden;transition:opacity 0.7s ease,transform 0.7s ease;">
+        <img src="./assets/splash.png" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;" alt="">
+        <!-- Animated loading bar overlay -->
+        <div style="position:absolute;bottom:13%;left:50%;transform:translateX(-50%);width:55%;max-width:280px;text-align:center;">
+            <div style="font-size:11px;color:rgba(150,220,255,0.7);letter-spacing:0.12em;margin-bottom:8px;font-family:system-ui,sans-serif;text-transform:uppercase;">Loading...</div>
+            <div style="width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">
+                <div id="splash-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00c8ff,#a855f7);border-radius:99px;box-shadow:0 0 10px 2px rgba(0,200,255,0.6);transition:width 2.4s cubic-bezier(0.4,0,0.2,1);"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Island: Glowing trading status indicator -->
+    <div id="dynamic-island" class="fixed top-0 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none" style="top: max(8px, calc(env(safe-area-inset-top, 0px) * 0.18));">
+        <div id="dynamic-island-pill" class="relative flex items-center gap-1.5 px-3 py-1 rounded-full bg-black border border-white/10 transition-all duration-500 opacity-0" style="min-width:80px; justify-content:center;">
+            <span id="di-dot" class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" style="box-shadow:0 0 8px 2px rgba(52,211,153,0.8);"></span>
+            <span id="di-label" class="text-[10px] font-black text-emerald-300 tracking-widest uppercase">AUTO ON</span>
+        </div>
+    </div>
+
+    <script>
+        // Only hide the splash screen if they are NOT being redirected.
+        window.hideLoginSplash = function() {
+            const splash = document.getElementById("splash-screen");
+            const bar = document.getElementById("splash-bar");
+            if (bar) bar.style.width = "100%";
+            if (splash) {
+                setTimeout(() => {
+                    splash.style.opacity = "0";
+                    splash.style.transform = "scale(1.03)";
+                    setTimeout(() => splash.remove(), 700);
+                }, 800);
+            }
+        };
+        // If we stay on this page and fully load (no redirect happened), fade it out!
+        window.addEventListener('load', () => {
+            window.hideLoginSplash();
+        });
+        // Ultimate fallback
+        setTimeout(() => {
+            if(document.getElementById("splash-screen")) window.hideLoginSplash();
+        }, 3000);
+    </script>
+    
+
 
 <div class="container" id="auth-box">
     <div class="brand-header">
-        <img src="/static/assets/icon.png" alt="ShadowTrader AI Logo" class="brand-logo" onerror="this.style.display='none'">
-        <div class="brand-name">Kalshi AI Trader</div>
+        <img src="./assets/icon.png" alt="Kalshi AI Logo" class="brand-logo" onerror="this.style.display='none'">
+        <div class="brand-name">ShadowTrade AI</div>
         <span class="badge" id="mode-badge">Copilot</span>
     </div>
 
@@ -394,7 +431,7 @@
         // Check for Master API Token (Admin fallback) FIRST
         const masterAdminToken = localStorage.getItem('admin_api_token') || localStorage.getItem('app_api_token');
         if (masterAdminToken) {
-            window.location.replace('/admin');
+            window.location.replace('./admin_mobile.html');
             return;
         }
 
@@ -419,9 +456,9 @@
                     }
                     
                     if (localStorage.getItem('is_admin_session') === 'true') {
-                        window.location.replace('/admin');
+                        window.location.replace('./admin_mobile.html');
                     } else {
-                        window.location.replace('/saas_dashboard.html');
+                        window.location.replace('./saas_dashboard.html');
                     }
                     return;
                 }
@@ -486,7 +523,7 @@
             submitBtn.classList.add('admin-theme');
             switchBtn.classList.add('back-copilot');
 
-            pageTitle.innerText = "Kalshi AI Trader - Admin Login";
+            pageTitle.innerText = "ShadowTrade AI - Admin Login";
             formTitle.innerText = "🛡️ Admin Login";
             formSubtitle.innerText = "System Admin & Engine Management Control";
             modeBadge.innerText = "Admin";
@@ -513,7 +550,7 @@
             switchBtn.classList.remove('back-copilot');
 
             isLogin = true;
-            pageTitle.innerText = "Kalshi AI Trader - Copilot Login";
+            pageTitle.innerText = "ShadowTrade AI - Copilot Login";
             formTitle.innerText = "Login";
             formSubtitle.innerText = "Enter your credentials to access your trading dashboard";
             modeBadge.innerText = "Copilot";
@@ -564,7 +601,7 @@
                     if (verifyRes.ok) {
                         localStorage.setItem('app_api_token', adminToken);
                         localStorage.setItem('admin_api_token', adminToken);
-                        window.location.href = '/admin';
+                        window.location.href = './admin_mobile.html';
                         return;
                     } else {
                         const errData = await verifyRes.json().catch(() => ({}));
@@ -599,7 +636,7 @@
                     localStorage.setItem('saas_username', data.username);
                     localStorage.setItem('is_admin_session', 'true');
                     setTokenCookie(data.token);
-                    window.location.href = '/admin';
+                    window.location.href = './admin_mobile.html';
                 } else {
                     errorMsg.innerText = data.detail || "Admin authentication failed.";
                     errorMsg.style.display = 'block';
@@ -635,7 +672,7 @@
                 localStorage.setItem('saas_token', data.token);
                 localStorage.setItem('saas_username', data.username);
                 setTokenCookie(data.token);
-                window.location.href = '/saas_dashboard.html';
+                window.location.href = './saas_dashboard.html';
             } else {
                 errorMsg.innerText = data.detail || "Authentication failed.";
                 errorMsg.style.display = 'block';
@@ -656,4 +693,3 @@
 
 </body>
 </html>
-

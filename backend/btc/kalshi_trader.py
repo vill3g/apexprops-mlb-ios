@@ -54,6 +54,116 @@ def _simulated_book_depth(ticker: str, side: str) -> int:
     return PAPER_MIN_SIM_DEPTH + int(((roll - PAPER_NO_FILL_CHANCE) / (1.0 - PAPER_NO_FILL_CHANCE)) * span)
 
 
+# ── Real order book for paper fills (Fix D) ───────────────────────────────────────────
+# Kalshi's public GET /markets/{ticker}/orderbook returns resting BIDS per side as
+# [[price_dollars, qty], ...] sorted ascending (best bid last). Buying YES lifts NO bids
+# (YES ask = 1 - NO bid) and vice versa; selling YES hits YES bids. Paper orders walk these
+# levels exactly like a live IOC would, so size beyond the visible book is partially filled.
+PAPER_BOOK_CACHE_SEC = 1.0
+_paper_book_cache: Dict[str, Any] = {}
+_paper_book_lock = threading.Lock()
+
+
+def _fetch_order_book(ticker: str) -> Optional[Dict[str, list]]:
+    """{'yes': [(price, qty) best-first], 'no': [...]} of resting bids, or None on any failure."""
+    t = str(ticker or "").upper()
+    if not t or "_SYNTH" in t:
+        return None
+    now = time.time()
+    with _paper_book_lock:
+        hit = _paper_book_cache.get(t)
+        if hit and now - hit[0] < PAPER_BOOK_CACHE_SEC:
+            return hit[1]
+    try:
+        from urllib.parse import quote
+        r = requests.get(f"{BASE_URL}/trade-api/v2/markets/{quote(t, safe='')}/orderbook", timeout=2.0)
+        if r.status_code != 200:
+            return None
+        ob = (r.json() or {}).get("orderbook_fp") or {}
+        book = {}
+        is_empty = True
+        for side in ("yes", "no"):
+            levels = []
+            for p, q in (ob.get(f"{side}_dollars") or []):
+                try:
+                    p, q = float(p), float(q)
+                except (TypeError, ValueError):
+                    continue
+                if 0.0 < p < 1.0 and q > 0:
+                    levels.append((p, q))
+                    is_empty = False
+            levels.sort(key=lambda x: x[0], reverse=True)  # best bid first
+            book[side] = levels
+        if is_empty:
+            return None
+        with _paper_book_lock:
+            _paper_book_cache[t] = (now, book)
+        return book
+    except Exception:
+        return None
+
+
+def _walk_book(levels, count: float, price_ok) -> tuple:
+    """Fill up to `count` across (price, qty) levels in order while price_ok(price).
+    Returns (filled_count, total_cost)."""
+    filled, cost = 0.0, 0.0
+    for price, qty in levels:
+        if filled >= count or not price_ok(price):
+            break
+        take = min(qty, count - filled)
+        filled += take
+        cost += take * price
+    return filled, cost
+
+
+def paper_buy_from_book(ticker: str, side: str, count: int, limit_price: float):
+    """Simulated IOC buy against the real book. Returns (filled_int, vwap) or None if no book."""
+    book = _fetch_order_book(ticker)
+    if not book:
+        return None
+    opp = "no" if side.lower() == "yes" else "yes"
+    asks = [(round(1.0 - p, 4), q) for p, q in book.get(opp, [])]  # cheapest ask first
+    filled, cost = _walk_book(asks, float(count), lambda px: px <= limit_price + 1e-9)
+    filled_int = int(filled)
+    if filled_int <= 0:
+        return (0, 0.0)
+    # recompute cost for the whole-contract quantity actually filled
+    _, cost = _walk_book(asks, float(filled_int), lambda px: px <= limit_price + 1e-9)
+    return (filled_int, cost / filled_int)
+
+
+def paper_sell_from_book(ticker: str, side: str, count: float, floor_price: float):
+    """Simulated IOC sell of `side` contracts into the real bids. Returns (filled, vwap) or None."""
+    book = _fetch_order_book(ticker)
+    if not book:
+        return None
+    filled, cost = _walk_book(book.get(side.lower(), []), float(count), lambda px: px >= floor_price - 1e-9)
+    if filled <= 0:
+        return (0.0, 0.0)
+    return (filled, cost / filled)
+
+
+def paper_exit_price(ticker: str, side: str, count: float, best_bid: float, cushion: float = 0.03) -> float:
+    """Realistic per-contract exit price for closing a whole paper position now.
+    Walks the real bids down to `best_bid - cushion` (what a live reduce-only exit crosses);
+    any size the book can't absorb there is priced at that floor (the worst a live retry
+    accepts). Minus the same latency tax as entries. Falls back to best_bid - tax."""
+    try:
+        best_bid = float(best_bid)
+        count = float(count)
+    except (TypeError, ValueError):
+        return 0.0
+    if not (0.0 < best_bid < 1.0) or count <= 0:
+        return round(max(0.0, best_bid), 4)
+    floor = max(0.01, best_bid - cushion)
+    px = best_bid
+    res = paper_sell_from_book(ticker, side, count, floor)
+    if res is not None and res[0] > 0:
+        filled, vwap = res
+        px = (filled * vwap + max(0.0, count - filled) * floor) / count
+    return round(max(0.01, px - PAPER_LATENCY_TAX_DOLLARS), 4)
+
+
 class KalshiTrader:
     def __init__(self, key_id: Optional[str] = None, private_key_pem: Optional[str] = None):
         self.key_id = key_id or os.environ.get("KALSHI_KEY_ID")
@@ -129,6 +239,7 @@ class KalshiTrader:
     def get_balance(self, force_refresh: bool = False) -> Dict[str, Any]:
         """
         Retrieves live portfolio balance and dollar breakdown (cached for 4.0s for sub-ms polling).
+        Protected with exponential backoff on HTTP 429 and network errors.
         """
         now = time.time()
         with self._lock:
@@ -136,40 +247,67 @@ class KalshiTrader:
                 return self._cached_balance
 
         path = "/trade-api/v2/portfolio/balance"
-        try:
-            headers = self._sign_headers("GET", path)
-            resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                dollars = float(data.get("balance_dollars", int(data.get("balance", 0)) / 100.0))
-                cents = int(data.get("balance", 0))
-                # Kalshi returns portfolio_value in cents
-                port_val = float(data.get("portfolio_value", 0.0)) / 100.0
-                res = {
-                    "success": True,
-                    "balance_dollars": dollars,
-                    "balance_cents": cents,
-                    "portfolio_value": port_val,
-                    "updated_ts": data.get("updated_ts"),
-                    "raw": data
+        max_attempts = 3
+        backoff = 1.0
+        for attempt in range(1, max_attempts + 1):
+            try:
+                headers = self._sign_headers("GET", path)
+                resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
+                if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if attempt < max_attempts:
+                        logger.warning(
+                            f"[KalshiTrader] get_balance received HTTP {resp.status_code}, "
+                            f"retrying in {backoff:.1f}s (attempt {attempt}/{max_attempts})..."
+                        )
+                        time.sleep(backoff)
+                        backoff *= 2.0
+                        continue
+                if resp.status_code == 200:
+                    data = resp.json()
+                    dollars = float(data.get("balance_dollars", int(data.get("balance", 0)) / 100.0))
+                    cents = int(data.get("balance", 0))
+                    # Kalshi returns portfolio_value in cents
+                    port_val = float(data.get("portfolio_value", 0.0)) / 100.0
+                    res = {
+                        "success": True,
+                        "balance_dollars": dollars,
+                        "balance_cents": cents,
+                        "portfolio_value": port_val,
+                        "updated_ts": data.get("updated_ts"),
+                        "raw": data
+                    }
+                    with self._lock:
+                        self._cached_balance = res
+                        self._cached_balance_time = now
+                    return res
+                return {
+                    "success": False,
+                    "error": f"HTTP {resp.status_code}: {resp.text}",
+                    "balance_dollars": 0.0,
+                    "balance_cents": 0
                 }
-                with self._lock:
-                    self._cached_balance = res
-                    self._cached_balance_time = now
-                return res
-            return {
-                "success": False,
-                "error": f"HTTP {resp.status_code}: {resp.text}",
-                "balance_dollars": 0.0,
-                "balance_cents": 0
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "balance_dollars": 0.0,
-                "balance_cents": 0
-            }
+            except (requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if attempt < max_attempts:
+                    logger.warning(
+                        f"[KalshiTrader] get_balance network error ({e}), "
+                        f"retrying in {backoff:.1f}s (attempt {attempt}/{max_attempts})..."
+                    )
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "balance_dollars": 0.0,
+                    "balance_cents": 0
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "balance_dollars": 0.0,
+                    "balance_cents": 0
+                }
 
     def get_exchange_breakdown(self, force_refresh: bool = False) -> Dict[str, Any]:
         """
@@ -439,7 +577,16 @@ class KalshiTrader:
             }
         return None
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, min=1, max=5), retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)))
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, min=1, max=5),
+        retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)),
+        retry_error_callback=lambda retry_state: {
+            "success": False,
+            "result": "",
+            "error": f"Kalshi API retries exhausted: {retry_state.outcome.exception()}",
+        }
+    )
     def get_market_result(self, ticker: str) -> Dict[str, Any]:
         """Return Kalshi's official result for one exact market ticker."""
         clean_ticker = str(ticker or "").strip()
@@ -453,6 +600,9 @@ class KalshiTrader:
                 headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
                 timeout=5.0,
             )
+            if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                logger.warning(f"[KalshiTrader] get_market_result {ticker} received HTTP {resp.status_code}, retrying with backoff...")
+                raise requests.exceptions.RequestException(f"HTTP {resp.status_code} Rate Limit / Server Error: {resp.text}")
             if resp.status_code != 200:
                 return {
                     "success": False,
@@ -467,10 +617,20 @@ class KalshiTrader:
                 "status": str(market.get("status") or "").lower(),
                 "market": market,
             }
+        except requests.exceptions.RequestException:
+            raise
         except Exception as e:
             return {"success": False, "result": "", "error": str(e)}
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=0.5, min=1, max=5), retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)))
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=0.5, min=1, max=5),
+        retry=retry_if_exception_type((requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError)),
+        retry_error_callback=lambda retry_state: {
+            "success": False,
+            "error": f"Kalshi API retries exhausted: {retry_state.outcome.exception()}",
+        }
+    )
     def get_market_quote(self, ticker: str) -> Dict[str, Any]:
         """Return executable YES/NO bid prices for one exact open market."""
         clean_ticker = str(ticker or "").strip()
@@ -494,6 +654,9 @@ class KalshiTrader:
                 headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
                 timeout=5.0,
             )
+            if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                logger.warning(f"[KalshiTrader] get_market_quote {ticker} received HTTP {resp.status_code}, retrying with backoff...")
+                raise requests.exceptions.RequestException(f"HTTP {resp.status_code} Rate Limit / Server Error: {resp.text}")
             if resp.status_code != 200:
                 return {"success": False, "error": f"HTTP {resp.status_code}: {resp.text}"}
             market = resp.json().get("market", {})
@@ -508,6 +671,8 @@ class KalshiTrader:
                 "exchange_index": market.get("exchange_index"),
                 "market": market,
             }
+        except requests.exceptions.RequestException:
+            raise
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -557,10 +722,22 @@ class KalshiTrader:
             # can never be crossed at a fractional-cent price the way the synthetic fallback quote
             # above can produce.
             from backend.btc.fees import kalshi_order_fee
+            best_bid = exit_price
             exit_price = round(max(0.01, exit_price - PAPER_LATENCY_TAX_DOLLARS), 2)
 
             sim_depth = _simulated_book_depth(ticker, f"exit_{side}")
             filled_count = min(requested_count, sim_depth) if sim_depth > 0 else requested_count
+
+            # Fix D: sell into Kalshi's real resting bids, down to the same 3c cushion a live
+            # reduce-only exit crosses (see book_price below). Partial fills leave the rest open
+            # for the next check cycle, exactly like a live exit.
+            if 0.0 < best_bid < 1.0:
+                book_fill = paper_sell_from_book(ticker, side, requested_count, max(0.01, best_bid - 0.03))
+                if book_fill is not None and book_fill[0] > 0:
+                    filled_count = round(book_fill[0], 4)
+                    exit_price = round(max(0.01, book_fill[1] - PAPER_LATENCY_TAX_DOLLARS), 4)
+                    source = "kalshi_order_book"
+                    sim_depth = None
             # A missed exit isn't modeled as "stuck open forever" (unlike a missed entry, which
             # simply never happened) - a real stop/take-profit exit that fails to fill immediately
             # gets retried on the next check cycle, same as the live retry-with-fresh-quote path
@@ -740,17 +917,40 @@ class KalshiTrader:
     def get_positions(self) -> Dict[str, Any]:
         """
         Fetch current portfolio open positions.
+        Protected with exponential backoff on HTTP 429 and network errors.
         """
         path = "/trade-api/v2/portfolio/positions"
-        try:
-            headers = self._sign_headers("GET", path)
-            resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                return {"success": True, "positions": data.get("market_positions", [])}
-            return {"success": False, "error": resp.text, "positions": []}
-        except Exception as e:
-            return {"success": False, "error": str(e), "positions": []}
+        max_attempts = 3
+        backoff = 1.0
+        for attempt in range(1, max_attempts + 1):
+            try:
+                headers = self._sign_headers("GET", path)
+                resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
+                if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if attempt < max_attempts:
+                        logger.warning(
+                            f"[KalshiTrader] get_positions received HTTP {resp.status_code}, "
+                            f"retrying in {backoff:.1f}s (attempt {attempt}/{max_attempts})..."
+                        )
+                        time.sleep(backoff)
+                        backoff *= 2.0
+                        continue
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return {"success": True, "positions": data.get("market_positions", [])}
+                return {"success": False, "error": resp.text, "positions": []}
+            except (requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if attempt < max_attempts:
+                    logger.warning(
+                        f"[KalshiTrader] get_positions network error ({e}), "
+                        f"retrying in {backoff:.1f}s (attempt {attempt}/{max_attempts})..."
+                    )
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                return {"success": False, "error": str(e), "positions": []}
+            except Exception as e:
+                return {"success": False, "error": str(e), "positions": []}
 
     def _extract_side_position(self, pos_entry: Dict[str, Any], side: str) -> float:
         """
@@ -1064,16 +1264,43 @@ class KalshiTrader:
                         "error": f"Contract '{ticker}' expires in {int(sec_remaining)}s (< 30s remaining). Paper order rejected to mirror live behavior."
                     }
 
+            # Fix A chokepoint: synthetic markets have fabricated prices and nothing real to settle
+            # against, so no paper order may open on one (LIVE already refuses them).
+            if "_SYNTH" in str(ticker).upper():
+                return {"success": False, "error": f"'{ticker}' is a synthetic market with no real Kalshi contract; paper orders are disabled to mirror live."}
+
             # Same book-crossing slippage buffer a live order pays, plus a small fixed latency tax
             # standing in for the adverse drift that happens during a real order's network round
             # trip (paper has no such delay otherwise, which would make it strictly better-priced
             # than live for an identical signal). Rounded to whole cents.
-            # FIX: We only add latency tax to the raw_price (the ask). The `buf` is a limit tolerance, not a guaranteed fill penalty.
             raw_price = float(limit_price_dollars) if limit_price_dollars is not None else 0.50
-            simulated_price = round(max(0.01, min(raw_price + PAPER_LATENCY_TAX_DOLLARS, 0.99)), 2)
+            simulated_price = round(max(0.01, min(raw_price + buf + PAPER_LATENCY_TAX_DOLLARS, 0.99)), 2)
 
-            # In paper trading, fill the full requested contract count to strictly respect the user's trade size.
-            filled_count = count_int
+            sim_depth = _simulated_book_depth(ticker, f"entry_{side_clean}")
+            filled_count = min(count_int, sim_depth) if sim_depth > 0 else count_int
+            
+            if sim_depth == 0:
+                return {
+                    "success": False,
+                    "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live)."
+                }
+                
+            fill_source = "estimated_top_of_book"
+
+            # Fix D: walk Kalshi's real order book up to the same limit a live order would send
+            # (ask + slippage buffer). Thin books now partially fill or miss, like a live IOC.
+            book_fill = paper_buy_from_book(ticker, side_clean, count_int, min(0.99, raw_price + buf))
+            if book_fill is not None:
+                book_filled, book_vwap = book_fill
+                if book_filled <= 0:
+                    return {
+                        "success": False,
+                        "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live).",
+                    }
+                filled_count = book_filled
+                simulated_price = round(max(0.01, min(book_vwap + PAPER_LATENCY_TAX_DOLLARS, raw_price + buf, 0.99)), 4)
+                fill_source = "kalshi_order_book"
+
             cost = round(simulated_price * filled_count, 4)
 
             # Fail-closed affordability check, mirroring LIVE's own real-balance check (H4 above).
@@ -1084,19 +1311,17 @@ class KalshiTrader:
                 except (TypeError, ValueError):
                     avail = None
                 if avail is not None and cost > avail + 1e-9:
-                    filled_count = int(avail / simulated_price)
-                    if filled_count < 1:
-                        return {
-                            "success": False,
-                            "error": f"Insufficient paper balance: ${avail:.2f} available, ${cost:.2f} required for 1 contract."
-                        }
-                    cost = round(simulated_price * filled_count, 4)
+                    return {
+                        "success": False,
+                        "error": f"Insufficient paper balance: ${avail:.2f} available, ${cost:.2f} required."
+                    }
 
             partial_note = ""
             return {
                 "success": True,
                 "mode": "PAPER",
                 "order_id": f"sim_{client_order_id[:8]}",
+                "ambiguous": False,
                 "client_order_id": client_order_id,
                 "ticker": ticker,
                 "side": side_clean.upper(),
@@ -1108,6 +1333,7 @@ class KalshiTrader:
                 "total_cost": cost,
                 "slippage_buffer": buf,
                 "latency_tax": PAPER_LATENCY_TAX_DOLLARS,
+                "fill_source": fill_source,
                 "status": "FILLED (SIMULATED)" if filled_count == count_int else "PARTIALLY FILLED (SIMULATED)",
                 "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                 "message": f"Simulated BUY of {filled_count} {side_clean.upper()} on {ticker} @ ${simulated_price:.2f}"
@@ -1219,11 +1445,25 @@ class KalshiTrader:
         # failure is resolved as "confirmed fill" or "ambiguous", never as a clean rejection.
         sent_cid = None
         sent_price = outcome_price
+        max_order_attempts = 3
+        order_backoff = 1.0
         try:
-            headers = self._sign_headers("POST", path)
-            # H6: Use order_session (max_retries=0) for mutating orders
-            sent_cid = client_order_id
-            resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
+            for order_attempt in range(1, max_order_attempts + 1):
+                headers = self._sign_headers("POST", path)
+                # H6: Use order_session (max_retries=0) for mutating orders
+                sent_cid = client_order_id
+                resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
+
+                if resp.status_code == 429:
+                    if order_attempt < max_order_attempts:
+                        logger.warning(
+                            f"[KalshiTrader] place_order received HTTP 429, backing off for {order_backoff:.1f}s "
+                            f"(attempt {order_attempt}/{max_order_attempts})..."
+                        )
+                        time.sleep(order_backoff)
+                        order_backoff *= 2.0
+                        continue
+                break
 
             if resp.status_code in [200, 201]:
                 self._cached_balance_time = 0.0
@@ -1272,6 +1512,7 @@ class KalshiTrader:
                                                 "success": True,
                                                 "mode": "LIVE",
                                                 "order_id": retry_data.get("order_id", retry_cid),
+                                                "ambiguous": False,
                                                 "client_order_id": retry_data.get("client_order_id", retry_cid),
                                                 "ticker": ticker,
                                                 "side": side_clean.upper(),
@@ -1311,6 +1552,7 @@ class KalshiTrader:
                     "success": True,
                     "mode": "LIVE",
                     "order_id": res_data.get("order_id", client_order_id),
+                    "ambiguous": False,
                     "client_order_id": res_data.get("client_order_id", client_order_id),
                     "ticker": ticker,
                     "side": side_clean.upper(),
@@ -1334,15 +1576,27 @@ class KalshiTrader:
                     user_msg = err_text
                 return {
                     "success": False,
+                    "order_id": "",
+                    "ambiguous": False,
                     "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {user_msg}",
                     "payload_sent": v2_payload
                 }
         except requests.exceptions.ConnectTimeout as e:
             # The connection was never established, so the order never reached Kalshi.
-            return {"success": False, "error": f"Could not reach Kalshi (connect timeout); order not sent: {e}"}
+            return {
+                "success": False,
+                "order_id": "",
+                "ambiguous": False,
+                "error": f"Could not reach Kalshi (connect timeout); order not sent: {e}"
+            }
         except Exception as e:
             if sent_cid is None:
-                return {"success": False, "error": f"Order execution exception before sending: {str(e)}"}
+                return {
+                    "success": False,
+                    "order_id": "",
+                    "ambiguous": False,
+                    "error": f"Order execution exception before sending: {str(e)}"
+                }
             # Timeout, dropped connection, unreadable/garbled response... after the request
             # was sent. It may have filled - confirm it or report it as ambiguous.
             logger.warning(

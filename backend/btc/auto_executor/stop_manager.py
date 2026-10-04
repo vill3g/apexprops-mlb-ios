@@ -16,6 +16,7 @@ except ImportError:
 import requests
 
 from backend.btc.analyzer.contract_eval import evaluate_next_15m_contract
+from backend.btc.auto_executor.remediations import evaluate_exit_discipline, calculate_anti_whipsaw_trailing_stop, is_reentry_permitted
 from backend.btc.fees import kalshi_order_fee
 from backend.btc.indicators import add_all_indicators, compute_atr
 from backend.btc.kalshi_trader import filled_count as _filled_count
@@ -340,110 +341,30 @@ class StopManagerMixin:
                                     trade["min_seen_bid"] = bid_price
     
                             max_seen_profit_pct = ((max_seen_bid - entry_price) / entry_price) * 100.0
-    
-                            # 1. Hard Take-Profit Check
-                            if take_profit_enabled and profit_pct >= take_profit_percent:
-                                logger.info(
-                                    f"[AutoExecutor] TAKE-PROFIT TRIGGERED for {trade_id} ({side}): "
-                                    f"Current bid ${bid_price:.2f} is up {profit_pct:.1f}% from entry ${entry_price:.2f} "
-                                    f"(Target: {take_profit_percent}%)."
-                                )
-                                close_res = self.close_specific_trade(trade_id, reason="TAKE_PROFIT", estimated_exit_price=bid_price)
+
+                            # Remediation 2 & 4: Evaluate Exit Discipline and Anti-Whipsaw Trailing Stop
+                            # 1. Anti-Whipsaw Trailing Stop
+                            ts_res = calculate_anti_whipsaw_trailing_stop(entry_price, max_seen_bid, bid_price)
+                            if ts_res.get("should_exit"):
+                                logger.info(f"[AutoExecutor] {ts_res['reason']} for {trade_id} ({side}).")
+                                close_res = self.close_specific_trade(trade_id, reason="TRAILING_TAKE_PROFIT", estimated_exit_price=bid_price)
                                 if close_res.get("success"):
-                                    logger.info(f"[AutoExecutor] Take profit executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
                                     self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
-                                    continue
-    
-                            # 2. Dynamic Trailing Profit Stop (Locks in gains if they drop from peak)
-                            ts_enabled = bool(self.ai_settings.get("trailing_stop_enabled", False))
-                            ts_activation = float(self.ai_settings.get("trailing_stop_activation_pct", 35.0))
-                            ts_distance = float(self.ai_settings.get("trailing_stop_distance_pct", 6.0)) / 100.0
-                            
-                            if ts_enabled and max_seen_profit_pct >= ts_activation:
-                                # We trail the max seen bid by the configured distance (cents or percentage, whichever tightens first)
-                                trail_threshold = max(max_seen_bid - ts_distance, max_seen_bid * (1.0 - ts_distance))
-                                
-                                # Ensure we don't accidentally trail into a loss (secure at least a small profit)
-                                trail_threshold = max(trail_threshold, entry_price * 1.02)
-    
-                                if bid_price <= trail_threshold:
-                                    logger.info(
-                                        f"[AutoExecutor] DYNAMIC TRAILING PROFIT TRIGGERED for {trade_id} ({side}): "
-                                        f"Max bid was ${max_seen_bid:.2f} (+{max_seen_profit_pct:.1f}%), now dropped to ${bid_price:.2f}. Securing gains."
-                                    )
-                                    close_res = self.close_specific_trade(trade_id, reason="TRAILING_TAKE_PROFIT", estimated_exit_price=bid_price)
-                                    if close_res.get("success"):
-                                        logger.info(f"[AutoExecutor] Trailing profit executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
-                                        self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
-                                        continue
-                                        
-                            # 3. Contract Price Stop Loss
-                            stop_loss_pct = float(self.ai_settings.get("stop_loss_pct", self.ai_settings.get("stopLossPercent", 50.0)))
-                            sl_enabled = bool(self.ai_settings.get("stop_loss_enabled", self.ai_settings.get("stopLossEnabled", 1)))
-                            if sl_enabled and profit_pct <= -stop_loss_pct:
-                                logger.info(
-                                    f"[AutoExecutor] CONTRACT STOP-LOSS TRIGGERED for {trade_id} ({side}): "
-                                    f"Current bid ${bid_price:.2f} is down {abs(profit_pct):.1f}% from entry ${entry_price:.2f} "
-                                    f"(Target: {stop_loss_pct}%)."
-                                )
-                                close_res = self.close_specific_trade(trade_id, reason="CONTRACT_STOP_LOSS", estimated_exit_price=bid_price)
+                                continue
+
+                            # 2. Exit Discipline
+                            exit_res = evaluate_exit_discipline(trade, bid_price, spot_price, strike, time_remaining_sec)
+                            if exit_res.get("should_close"):
+                                logger.info(f"[AutoExecutor] EXIT DISCIPLINE: {exit_res['reason']} for {trade_id}.")
+                                reason_str = "TAKE_PROFIT" if "PROFIT" in exit_res['reason'] else "DYNAMIC_STOP_LOSS"
+                                close_res = self.close_specific_trade(trade_id, reason=reason_str, estimated_exit_price=exit_res["exit_price"])
                                 if close_res.get("success"):
-                                    logger.info(f"[AutoExecutor] Contract stop loss executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
-                                    if bool(self.ai_settings.get("reentryAfterStopLoss", False)) or bool(self.ai_settings.get("reentry_after_stop_loss", False)):
-                                        self._attempt_profit_reentry(trade, minutes_remaining, spot_price, is_stop_loss=True)
-                                    continue
+                                    if reason_str == "TAKE_PROFIT":
+                                        self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
+                                continue
+
                         except Exception as e:
                             logger.warning(f"[AutoExecutor] Take profit check failed: {e}")
-    
-                if dynamic_stop_enabled:
-                    # Pillar 5: Structural Spot Invalidation Stop-Loss
-                    # Eliminates whipsaw bleeding by preventing exits on momentary synthetic bid noise.
-                    is_adverse = False
-                    deficit = 0.0
-                    invalidation_reason = ""
-
-                    if strike > 0:
-                        if side == "YES" and spot_price < strike:
-                            deficit = strike - spot_price
-                        elif side == "NO" and spot_price >= strike:
-                            deficit = spot_price - strike
-                    
-                    # Check 1: Late-candle terminal divergence
-                    if minutes_remaining < 2.0 and deficit > 35.0:
-                        is_adverse = True
-                        invalidation_reason = f"Terminal Deficit: {minutes_remaining:.1f}m left and spot is ${deficit:.2f} away from strike."
-                    
-                    # Check 2: Early structural breakdown (Requires EMA-21 break AND volume expansion)
-                    elif minutes_remaining >= 2.0 and ema_21_val > 0:
-                        if side == "YES" and spot_price < ema_21_val and cvd_val < -10.0:
-                            is_adverse = True
-                            invalidation_reason = f"Structural Breakdown: Spot ${spot_price:,.2f} crossed under 15m EMA-21 (${ema_21_val:,.2f}) with negative CVD."
-                        elif side == "NO" and spot_price > ema_21_val and cvd_val > 10.0:
-                            is_adverse = True
-                            invalidation_reason = f"Structural Breakdown: Spot ${spot_price:,.2f} crossed above 15m EMA-21 (${ema_21_val:,.2f}) with positive CVD."
-
-                    if is_adverse:
-                        logger.info(
-                            f"[AutoExecutor] STRUCTURAL STOP-LOSS TRIGGERED for {trade_id} ({side}): "
-                            f"{invalidation_reason} "
-                            f"at {minutes_elapsed:.1f}m elapsed ({minutes_remaining:.1f}m left)."
-                        )
-                        # Realistic salvage exit price for simulation / paper fallback
-                        est_exit = round(max(0.01, min(0.35, entry_price - 0.25)), 2)
-                        close_res = self.close_specific_trade(trade_id, reason="DYNAMIC_STOP_LOSS", estimated_exit_price=est_exit)
-                        if close_res.get("success"):
-                            logger.info(f"[AutoExecutor] Structural stop executed for {trade_id}; realized P&L ${close_res.get('pnl', 0):.2f}")
-                            if position_reversal_enabled and not trade.get("is_reversal"):
-                                self._attempt_position_reversal(
-                                    stopped_trade=trade,
-                                    spot_price=spot_price,
-                                    minutes_remaining=minutes_remaining,
-                                    reversal_max_price=reversal_max_price,
-                                    reversal_min_minutes=reversal_min_minutes,
-                                    reversal_min_conf=reversal_min_conf
-                                )
-                            elif bool(self.ai_settings.get("reentryAfterStopLoss", False)) or bool(self.ai_settings.get("reentry_after_stop_loss", False)):
-                                self._attempt_profit_reentry(trade, minutes_remaining, spot_price, is_stop_loss=True)
 
         def _attempt_position_reversal(
             self,
@@ -514,16 +435,16 @@ class StopManagerMixin:
                     eval_res = evaluate_next_15m_contract(df_ind, target_price=strike, kalshi_m=active_m)
                     conf = float(eval_res.get("probability_percent", 0.0))
                     model_direction = normalize_prediction_direction(eval_res.get("recommendation", ""))
-                # else: conf stays None â†’ rejected below
+                # else: conf stays None → rejected below
             except Exception as eg4:
                 logger.warning(f"[AutoExecutor] Reversal Guardrail 4 evaluation failed: {eg4}")
-                # conf stays None â†’ rejected below
+                # conf stays None → rejected below
     
             if conf is None:
                 logger.info("[AutoExecutor] Reversal rejected: Could not evaluate momentum confidence (no candle data or error).")
                 return None
     
-            # normalize_prediction_direction maps YESâ†’ABOVE and NOâ†’BELOW; compute expected
+            # normalize_prediction_direction maps YES→ABOVE and NO→BELOW; compute expected
             # from opposite_side the same way and compare.
             expected_direction = normalize_prediction_direction(opposite_side)
             if model_direction != expected_direction:
@@ -590,7 +511,7 @@ class StopManagerMixin:
                         "direction": opposite_side,
                         "recommendation": f"REVERSAL FLIP ({opposite_side})",
                         "conviction_grade": "REVERSAL FLIP",
-                        "conviction_badge": f"ðŸ”„ REVERSAL ({int(conf)}%)",
+                        "conviction_badge": f"🔄 REVERSAL ({int(conf)}%)",
                         "probability_percent": conf,
                         "trade_source": "SCALP",
                         "trading_style": "SCALP",
@@ -641,12 +562,7 @@ class StopManagerMixin:
             spot_price: float,
             is_stop_loss: bool = False
         ) -> Optional[Dict[str, Any]]:
-            """
-            After securing a take-profit or getting stopped out (if re-entry enabled), evaluate
-            if there is still enough time (>= 4.0 minutes) and conviction to enter a fresh contract.
-            """
-            if minutes_remaining < 0.25:
-                logger.info(f"[AutoExecutor] Profit re-entry skipped: Only {minutes_remaining:.1f}m remaining in interval (< 15s minimum).")
+            if not is_reentry_permitted(self.get_trades_history(), closed_trade.get("ticker", ""), closed_trade.get("exit_reason", ""), minutes_remaining * 60):
                 return None
     
             ticker = closed_trade.get("ticker", "")
@@ -759,7 +675,7 @@ class StopManagerMixin:
                 last_exit_price = float(closed_trade.get("exit_price") or closed_trade.get("entry_price") or 0.50)
                 if not is_stop_loss:
                     if market_price > (last_exit_price - 0.03):
-                        logger.info(f"[AutoExecutor] Profit re-entry skipped: {side.upper()} ask ${market_price:.2f} has not pulled back >= 3Â¢ below scalp exit ${last_exit_price:.2f}")
+                        logger.info(f"[AutoExecutor] Profit re-entry skipped: {side.upper()} ask ${market_price:.2f} has not pulled back >= 3¢ below scalp exit ${last_exit_price:.2f}")
                         return None
                 else:
                     if not is_side_flipped:
@@ -811,7 +727,7 @@ class StopManagerMixin:
                     style_tag = "THIRD_ENTRY" if entry_num == 3 else self.ai_settings.get("tradingStyle", "MOMENTUM_SURFER")
                     if is_stop_loss:
                         title_text = f"Pivoted Re-Entry #{entry_num} ({side.upper()})" if is_side_flipped else f"Dip Re-Entry #{entry_num} ({side.upper()})"
-                        badge_icon = "ðŸ”„" if is_side_flipped else "ðŸ”‚"
+                        badge_icon = "🔄" if is_side_flipped else "🔂"
                         catalyst_text = (
                             f"Stopped out on {closed_side.upper()}; fresh AI prediction pivoted to {side.upper()} ({conf:.1f}% conviction) with {minutes_remaining:.1f}m left"
                             if is_side_flipped else
@@ -819,7 +735,7 @@ class StopManagerMixin:
                         )
                     else:
                         title_text = f"Profit Re-Entry #{entry_num} ({side.upper()})"
-                        badge_icon = "ðŸŽ¯"
+                        badge_icon = "🎯"
                         catalyst_text = f"Secured take-profit; trend confirmed fresh {side.upper()} continuation (Entry #{entry_num}) with {minutes_remaining:.1f}m left"
                     reentry_record = {
                         "id": f"{'sim' if trade_mode == 'PAPER' else 'live'}_{uuid.uuid4().hex[:8]}",

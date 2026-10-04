@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 _executors: Dict[str, Any] = {}
 _guest_executors: Dict[str, Any] = {}
-SUPPORTED_ASSETS = {"BTC", "ETH", "GOLD", "NDQ"}
+SUPPORTED_ASSETS = {"BTC", "ETH", "GOLD", "NDQ", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "SOL", "DOGE"}
 
 def get_auto_executor(asset: str = "BTC", guest_id: Optional[str] = None) -> Any:
     """Return a singleton AutoExecutor for the given asset.

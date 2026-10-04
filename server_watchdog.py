@@ -115,18 +115,74 @@ def _ngrok_monitor():
         time.sleep(60)
 
 
+import atexit
+import signal
+
+_watchdog_mutex = None
+
+def _release_watchdog_lock():
+    global _watchdog_mutex
+    if _watchdog_mutex and sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.kernel32.CloseHandle(_watchdog_mutex)
+            _watchdog_mutex = None
+        except Exception as e:
+            logger.debug(f"[Watchdog] Error releasing mutex handle: {e}")
+
+atexit.register(_release_watchdog_lock)
+
 def _acquire_watchdog_lock():
+    global _watchdog_mutex
+    if sys.platform != "win32":
+        return True
     import ctypes
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "KalshiAITraderWatchdogLock")
-    if ctypes.windll.kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
+    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         return None
+    _watchdog_mutex = mutex
     return mutex
 
+def _terminate_conflicting_watchdogs():
+    """If another watchdog or legacy instance is running, allow graceful takeover if requested."""
+    import psutil
+    current_pid = os.getpid()
+    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if p.info['pid'] == current_pid:
+                continue
+            cmdline = ' '.join(p.info['cmdline'] or [])
+            if "server_watchdog.py" in cmdline:
+                logger.warning(f"[Watchdog] Graceful restart: Terminating existing watchdog process (PID {p.info['pid']})...")
+                p.terminate()
+                try:
+                    p.wait(timeout=3)
+                except psutil.TimeoutExpired:
+                    p.kill()
+        except Exception:
+            pass
+
 def main():
+    if "--restart" in sys.argv or "--force" in sys.argv or os.environ.get("WATCHDOG_RESTART") == "1":
+        logger.info("[Watchdog] Restart requested. Terminating conflicting watchdogs for graceful restart...")
+        _terminate_conflicting_watchdogs()
+        time.sleep(1.0)
+
     lock_socket = _acquire_watchdog_lock()
     if lock_socket is None:
         logger.info("[Watchdog] Another server_watchdog instance is already active. Exiting duplicate process cleanly.")
-        return
+        return 0
+
+    def _sig_handler(sig, frame):
+        logger.info(f"[Watchdog] Received signal {sig}. Exiting gracefully...")
+        _release_watchdog_lock()
+        sys.exit(0)
+
+    try:
+        signal.signal(signal.SIGINT, _sig_handler)
+        signal.signal(signal.SIGTERM, _sig_handler)
+    except Exception:
+        pass
 
     logger.info("==================================================")
     logger.info("  BTC 15M WATCHDOG SUPERVISOR INITIATED")

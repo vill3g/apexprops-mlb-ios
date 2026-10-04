@@ -259,7 +259,10 @@ def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     # Volume
     df["vol_sma"] = df["volume"].rolling(20, min_periods=5).mean()
-    df["vol_ratio"] = df["volume"] / (df["vol_sma"] + 1e-10)
+    raw_vol_ratio = df["volume"] / (df["vol_sma"] + 1e-10)
+    # The current candle is incomplete and has artificially low volume.
+    # Blend with the previous candle's volume ratio to maintain momentum context.
+    df["vol_ratio"] = raw_vol_ratio.combine(raw_vol_ratio.shift(1), max).fillna(raw_vol_ratio)
     df["vol_surge"] = df["vol_ratio"] >= 1.5
 
     # VWAP

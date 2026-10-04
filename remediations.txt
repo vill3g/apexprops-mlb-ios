@@ -1,0 +1,399 @@
+### 4.1 Remediation 1: Mathematically Rigorous Binary Kelly Sizing with Exchange Taker Fee Deduction
+
+**Target Files**: `backend/btc/auto_executor/executor.py` (replacing lines 1042–1056) and `backend/btc/auto_executor/saas_broadcaster.py` (replacing lines 945–955).
+
+```python
+# PRODUCTION REPLACEMENT: True Binary Kelly Criterion with Kalshi Fee Deduction
+import math
+import logging
+
+logger = logging.getLogger("AutoExecutor.Kelly")
+
+def calculate_binary_kelly_position(
+    win_prob: float,
+    ask_price: float,
+    available_capital: float,
+    max_position_cap: float,
+    slippage_buffer: float = 0.04,
+    fractional_multiplier: float = 0.25  # Quarter-Kelly for capital conservation
+) -> dict:
+    """
+    Computes fee- and slippage-adjusted Expected Value (EV) and true Binary Kelly sizing.
+    
+    Formula:
+        f* = (p * b_odds - q) / b_odds = (p - b_eff) / (1.0 - b_eff)
+        where b_eff = ask_price + slippage_buffer + taker_fee
+    """
+    p = float(win_prob)
+    ask = float(ask_price)
+    
+    # Input validation
+    if ask <= 0.01 or ask >= 0.99 or p <= 0.0 or p >= 1.0:
+        return {"contracts": 0, "ev": 0.0, "reason": "INVALID_PRICE_OR_PROB"}
+    
+    # 1. Conservative execution price including allowable slippage
+    effective_entry = min(0.98, ask + slippage_buffer)
+    
+    # 2. Kalshi taker entry fee per contract (ceil to whole cents)
+    taker_fee = math.ceil(0.07 * effective_entry * (1.0 - effective_entry) * 100.0) / 100.0
+    
+    # 3. Payoffs per $1.00 contract held to settlement
+    net_win = 1.0 - effective_entry - taker_fee
+    net_loss = effective_entry + taker_fee
+    
+    # 4. Strict Expected Value Gate (Require at least +1.0 cent net EV per contract)
+    ev = (p * net_win) - ((1.0 - p) * net_loss)
+    if ev < 0.01:
+        logger.info(f"[Kelly] Trade Blocked: Sub-threshold EV (${ev:.4f}/contract < +$0.0100 min).")
+        return {"contracts": 0, "ev": round(ev, 4), "reason": "NEGATIVE_OR_NEGLIGIBLE_EV"}
+    
+    # 5. True Binary Kelly fraction f* = (p - entry_cost) / (1 - entry_cost)
+    b_odds = net_win / net_loss
+    q = 1.0 - p
+    f_star = (p * b_odds - q) / b_odds
+    
+    if f_star <= 0.0:
+        return {"contracts": 0, "ev": round(ev, 4), "reason": "NON_POSITIVE_KELLY"}
+    
+    # 6. Apply Fractional Multiplier (Quarter-Kelly) with strict 15% portfolio cap
+    # NO ARTIFICIAL 25% FLOOR (eliminates max(0.25, ...))
+    f_allocated = min(0.15, f_star * fractional_multiplier)
+    
+    # 7. Sizing in dollars and integer contracts
+    alloc_budget = min(available_capital * f_allocated, max_position_cap)
+    unit_cost = effective_entry + taker_fee
+    contracts = int(alloc_budget / unit_cost)
+    
+    return {
+        "contracts": max(1, contracts) if alloc_budget >= unit_cost else 0,
+        "ev": round(ev, 4),
+        "f_star": round(f_star, 4),
+        "allocated_dollars": round(alloc_budget, 2),
+        "effective_entry": round(effective_entry, 2),
+        "taker_fee": round(taker_fee, 2)
+    }
+```
+
+---
+
+
+
+### 4.2 Remediation 2: Elimination of the Asymmetric Payoff Trap (Hold to Settlement as Primary Baseline)
+
+**Target Files**: `backend/btc/auto_executor/stop_manager.py` (replacing lines 345–395) and `backend/saas_settler.py` (replacing lines 281–295).
+
+```python
+# PRODUCTION REPLACEMENT: Symmetric Payoff Discipline & Invalidation-Only Exits
+def evaluate_exit_discipline(trade: dict, current_bid: float, spot_price: float, strike_price: float, seconds_left: int) -> dict:
+    """
+    Enforces settlement-first holding discipline. Eliminates early scalping exits
+    that cap wins while allowing full losses.
+    
+    Rules:
+      1. Default action is HOLD_TO_SETTLEMENT (captures full $1.00 payout at 76% win rate).
+      2. Take-Profit is prohibited below $0.88 (preserves positive risk-reward).
+      3. Stop-Loss triggers ONLY upon structural thesis invalidation (underlying spot trend breaks),
+         NEVER on binary contract price noise alone.
+    """
+    entry_price = float(trade.get("entry_price", 0.50))
+    direction = str(trade.get("direction", "ABOVE")).upper()
+    
+    # 1. Take Profit Discipline: Never exit early unless near-maximum payoff (> 88c) is realized
+    if current_bid >= 0.88:
+        return {
+            "should_close": True,
+            "reason": "NEAR_CERTAINTY_TAKE_PROFIT",
+            "exit_price": current_bid
+        }
+    
+    # 2. Structural Spot Invalidation Check (NOT binary contract bid fluctuation)
+    # Underlying spot must move severely against strike with confirmed momentum
+    spot_deficit = (strike_price - spot_price) if direction in ["ABOVE", "YES"] else (spot_price - strike_price)
+    
+    # Require spot deficit > 1.5x 15m ATR AND time remaining > 5 minutes
+    # If < 5 minutes remain, option delta collapses; hold for settlement jump
+    if spot_deficit > 75.0 and seconds_left > 300:
+        return {
+            "should_close": True,
+            "reason": "STRUCTURAL_SPOT_INVALIDATION",
+            "exit_price": current_bid
+        }
+        
+    # Default: Hold to natural expiration
+    return {"should_close": False, "reason": "HOLD_TO_SETTLEMENT"}
+```
+
+---
+
+
+
+### 4.3 Remediation 3: Strict Prohibition of Averaging Down / DCA into Decaying Binary Options
+
+**Target Files**: `backend/btc/auto_executor/stop_manager.py` (lines 764–770), `backend/btc/auto_executor/saas_broadcaster.py` (lines 877–881), and `backend/saas_settler.py` (lines 960, 1010–1025).
+
+```python
+# PRODUCTION REPLACEMENT: Ban Binary DCA and Re-Entry After Stop Loss
+def is_reentry_permitted(user_history: list, current_ticker: str, last_exit_reason: str, seconds_left: int) -> bool:
+    """
+    Enforces strict 1-trade per interval discipline and bans averaging down.
+    
+    Rules:
+      1. Zero re-entries permitted if the prior trade was stopped out (Bans 81.5% loss multiplier).
+      2. Maximum of 1 entry per unique 15-minute contract interval.
+    """
+    # Rule 1: Never re-enter after a stop loss
+    if "STOP_LOSS" in str(last_exit_reason).upper() or "INVALIDATION" in str(last_exit_reason).upper():
+        logger.info(f"[ReEntry Guard] Blocked: Re-entry after stop loss prohibited on {current_ticker}.")
+        return False
+        
+    # Rule 2: Strict single-entry interval discipline
+    interval_trades = [t for t in user_history if t.get("ticker") == current_ticker]
+    if len(interval_trades) >= 1:
+        logger.info(f"[ReEntry Guard] Blocked: Interval {current_ticker} already traded ({len(interval_trades)} entries).")
+        return False
+        
+    # Rule 3: Expiration cutoff
+    if seconds_left < 210:
+        return False
+        
+    return True
+```
+
+---
+
+
+
+### 4.4 Remediation 4: Anti-Whipsaw Trailing Stop with 12¢ Minimum Buffer and Break-Even Lock
+
+**Target Files**: `backend/btc/auto_executor/stop_manager.py` (lines 358–375) and `backend/saas_settler.py` (lines 849–856).
+
+```python
+# PRODUCTION REPLACEMENT: Anti-Whipsaw Trailing Stop with Fixed-Cent Floor
+def calculate_anti_whipsaw_trailing_stop(
+    entry_price: float,
+    max_seen_bid: float,
+    current_bid: float,
+    ts_activation_pct: float = 40.0,
+    ts_distance_pct: float = 15.0,
+    min_buffer_cents: float = 0.12  # Strict 12-cent minimum buffer (exceeds spread)
+) -> dict:
+    """
+    Fixes the 4.2-cent mathematical degeneracy by enforcing a minimum 12-cent trailing buffer
+    and locking in break-even plus transaction fees.
+    """
+    profit_pct = ((max_seen_bid - entry_price) / entry_price) * 100.0
+    
+    # Must achieve at least +40% profit before trailing stop activates
+    if profit_pct < ts_activation_pct:
+        return {"should_exit": False}
+        
+    # Compute trailing distance with mandatory 12-cent floor
+    percentage_distance = max_seen_bid * (ts_distance_pct / 100.0)
+    effective_trail_distance = max(min_buffer_cents, percentage_distance)
+    
+    stop_threshold = max_seen_bid - effective_trail_distance
+    
+    # Lock in at least Break-Even + 4 cents (covers round-trip fees)
+    breakeven_floor = entry_price + 0.04
+    stop_threshold = max(stop_threshold, breakeven_floor)
+    
+    if current_bid <= stop_threshold:
+        return {
+            "should_exit": True,
+            "exit_threshold": round(stop_threshold, 2),
+            "current_bid": round(current_bid, 2),
+            "reason": "ANTI_WHIPSAW_TRAILING_STOP"
+        }
+        
+    return {"should_exit": False, "stop_threshold": round(stop_threshold, 2)}
+```
+
+---
+
+
+
+### 4.5 Remediation 5: Elimination of Force-Trade Coin-Flips & Mandatory $\ge 60\%$ Conviction Filter
+
+**Target Files**: `backend/btc/auto_executor/saas_broadcaster.py` (lines 752–768, 897–905) and `backend/btc/auto_executor/executor.py` (lines 822–858).
+
+```python
+# PRODUCTION REPLACEMENT: Ban Coin-Flips and Enforce 60% Conviction Floor
+def determine_execution_signal(model_prob: float, heuristic_grade: str, is_force_flag: bool) -> dict:
+    """
+    Completely removes even/odd Unix second coin-flips and enforces a strict 60% conviction floor.
+    Bans 50-51% churn (which caused 91% of system losses).
+    """
+    # 1. Prohibit all force-trade bypass flags
+    if is_force_flag:
+        logger.warning("[Execution Gate] Force trade flag detected. Bypassing force mode; applying strict EV validation.")
+        
+    # 2. Strict Conviction Threshold (Bans 50-51% coin-flips)
+    MINIMUM_CONVICTION = 60.0  # Empirical threshold for positive expectancy
+    if model_prob < MINIMUM_CONVICTION:
+        return {
+            "execute": False,
+            "direction": "PASS",
+            "reason": f"INSUFFICIENT_CONVICTION: Model {model_prob:.1f}% < {MINIMUM_CONVICTION}% required"
+        }
+        
+    # 3. Directional Assignment based purely on statistically validated edge
+    direction = "YES" if model_prob >= 50.0 else "NO"
+    
+    return {
+        "execute": True,
+        "direction": direction,
+        "conviction": model_prob
+    }
+```
+
+---
+
+
+
+### 4.6 Remediation 6: Slippage-Aware Edge Gate with Exact Taker Fee Ceilings
+
+**Target Files**: `backend/btc/fees.py` (lines 25–31) and `backend/btc/auto_executor/saas_broadcaster.py` (lines 897–905).
+
+```python
+# PRODUCTION REPLACEMENT: Slippage-Aware Edge Calculation
+import math
+
+def calculate_realized_edge_cents(
+    prob_percent: float, 
+    ask_price: float, 
+    slippage_buffer_dollars: float = 0.04
+) -> float:
+    """
+    Calculates expected profit per contract in cents after taker entry fee AND allowable slippage.
+    Returns negative value if trade does not clear transaction friction.
+    """
+    p = float(prob_percent) / 100.0
+    ask = float(ask_price)
+    
+    # Effective fill price assuming adverse execution across slippage corridor
+    fill_price = min(0.99, ask + slippage_buffer_dollars)
+    
+    # Exact Kalshi Taker Fee (7% of p*(1-p), rounded up to whole cent)
+    exact_taker_fee = math.ceil(0.07 * fill_price * (1.0 - fill_price) * 100.0) / 100.0
+    
+    # True Expected Net Value in cents per contract
+    expected_value_dollars = (p * (1.0 - fill_price - exact_taker_fee)) - ((1.0 - p) * (fill_price + exact_taker_fee))
+    return round(expected_value_dollars * 100.0, 2)
+```
+
+---
+
+
+
+### 4.7 Remediation 7: Dollar-to-Cent Unit Normalization in Kalshi Market Structure Gate
+
+**Target Files**: `backend/btc/analyzer/contract_eval.py` (lines 638–657).
+
+```python
+# PRODUCTION REPLACEMENT: Dollar-to-Cent Quote Normalization
+def check_kalshi_market_structure_confluence(kalshi_market: dict, thresholds: dict) -> dict:
+    """
+    Normalizes dollar quotes (0.0 - 1.0) to cent scales (0 - 100) before comparing against thresholds.
+    Fixes the bug where 0.52 >= 62.0 evaluated to False.
+    """
+    if not kalshi_market:
+        return {"override": False}
+        
+    raw_yes = float(kalshi_market.get("yes_ask", 0.50) or 0.50)
+    raw_no = float(kalshi_market.get("no_ask", 0.50) or 0.50)
+    
+    # Normalize to 0-100 scale
+    yes_cents = raw_yes * 100.0 if raw_yes <= 1.0 else raw_yes
+    no_cents = raw_no * 100.0 if raw_no <= 1.0 else raw_no
+    imbalance = float(kalshi_market.get("book_imbalance", 0.0) or 0.0)
+    
+    target_yes = float(thresholds.get("kalshi_override_yes", 62.0))
+    target_imbalance = float(thresholds.get("kalshi_imbalance_threshold", 0.35))
+    
+    if yes_cents >= target_yes or imbalance >= target_imbalance:
+        return {
+            "override": True,
+            "direction": "YES",
+            "implied_prob": yes_cents,
+            "imbalance": imbalance
+        }
+        
+    return {"override": False}
+```
+
+---
+
+
+
+### 4.8 Remediation 8: Terminal Gamma Guardrail ($T \ge 210$s) and Toxic Minute 3–6 Entry Filter
+
+**Target Files**: `backend/btc/auto_executor/saas_broadcaster.py` (lines 361–363) and `backend/btc/auto_executor/executor.py` (lines 638–657).
+
+```python
+# PRODUCTION REPLACEMENT: Intra-Candle Timing Filter & Terminal Gamma Gate
+def is_entry_timing_valid(seconds_left: int, timeframe_seconds: int = 900) -> dict:
+    """
+    Enforces timing safety filters:
+      1. Blocks Terminal Gamma zone: No trades with < 210s (3.5 minutes) remaining.
+      2. Blocks Phase 02 Toxic Window (Minutes 3 to 6): Profit Factor 0.49 (-$586.91 loss).
+    """
+    seconds_elapsed = timeframe_seconds - seconds_left
+    minute_elapsed = seconds_elapsed // 60
+    
+    # 1. Terminal Gamma Gate (replaces 15s check)
+    if seconds_left < 210:
+        return {
+            "valid": False,
+            "reason": f"TERMINAL_GAMMA_LOCK: {seconds_left}s remaining < 210s minimum corridor"
+        }
+        
+    # 2. Intra-Candle Toxic Window Filter (Minutes 3 through 6)
+    if 3 <= minute_elapsed <= 6:
+        return {
+            "valid": False,
+            "reason": f"TOXIC_TIMING_WINDOW: Minute {minute_elapsed} (opening drive mean-reversion trap)"
+        }
+        
+    return {"valid": True, "minute": minute_elapsed, "seconds_left": seconds_left}
+```
+
+---
+
+
+
+### 4.9 Remediation 9: Grouped Interval Risk Budget & Multi-Entry Circuit Breaker
+
+**Target Files**: `backend/btc/auto_executor/risk_manager.py` (lines 66–77).
+
+```python
+# PRODUCTION REPLACEMENT: Grouped Interval Circuit Breaker
+def evaluate_consecutive_interval_circuit_breaker(today_trades: list, max_consecutive_losing_intervals: int = 3) -> str:
+    """
+    Groups settled trades by 15-minute contract interval/ticker to evaluate true market regime failures.
+    Prevents a single candle's multi-entry sequence from tripping the circuit breaker.
+    """
+    interval_pnl_map = {}
+    
+    # Group trades chronologically by contract ticker
+    for trade in sorted(today_trades, key=lambda x: str(x.get("timestamp", ""))):
+        ticker = trade.get("ticker")
+        if trade.get("status") in ["SETTLED", "CLOSED"]:
+            pnl = float(trade.get("pnl", 0.0))
+            interval_pnl_map.setdefault(ticker, []).append(pnl)
+            
+    # Count consecutive losing intervals
+    consecutive_losses = 0
+    for ticker in reversed(list(interval_pnl_map.keys())):
+        net_interval_pnl = sum(interval_pnl_map[ticker])
+        if net_interval_pnl < 0.0:
+            consecutive_losses += 1
+            if consecutive_losses >= max_consecutive_losing_intervals:
+                return f"CIRCUIT_BREAKER_ACTIVE: {consecutive_losses} consecutive losing INTERVALS. Halting trading."
+        else:
+            break  # Found winning interval; streak broken
+            
+    return "OK"
+```
+
+---
+

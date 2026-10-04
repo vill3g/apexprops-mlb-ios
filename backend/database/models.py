@@ -152,7 +152,9 @@ REQUIRED_COLUMNS = {
     "regularization_c": "REAL DEFAULT 0.5",
     "class_weight": "TEXT DEFAULT 'balanced'",
     "xgb_estimators": "INTEGER DEFAULT 300",
-    "xgb_max_depth": "INTEGER DEFAULT 5",
+        "xgb_max_depth": "INTEGER DEFAULT 5",
+    "trading_universe": "TEXT DEFAULT 'FINANCIAL'",
+    "min_sports_confidence": "REAL DEFAULT 70.0",
     "xgb_learning_rate": "REAL DEFAULT 0.1",
     "ignore_pass_technical": "BOOLEAN DEFAULT 0",
     "one_shot_ai": "BOOLEAN DEFAULT 0",
@@ -167,6 +169,8 @@ REQUIRED_COLUMNS = {
     "edge_gate_enabled": "BOOLEAN DEFAULT 1",
     "min_edge_cents": "REAL DEFAULT 0.0",
     "use_kelly_criterion": "BOOLEAN DEFAULT 0",
+    # Dynamic volatility-based risk: scale TP/SL % by the asset's current ATR vs its 24h norm
+    "atr_risk_enabled": "BOOLEAN DEFAULT 0",
 }
 
 def init_db():
@@ -557,6 +561,15 @@ def update_user_edge_gate(user_id: int, enabled=None, min_edge_cents=None) -> No
     conn.commit()
 
 
+def update_user_atr_risk(user_id: int, enabled) -> None:
+    """Save a user's Dynamic ATR Risk Management toggle. None leaves it unchanged."""
+    if enabled is None:
+        return
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET atr_risk_enabled = ? WHERE id = ?", (1 if enabled else 0, int(user_id)))
+    conn.commit()
+
+
 def admin_update_user(user_id: int, updates: dict) -> bool:
     """Update user fields directly from admin control panel."""
     allowed_cols = {
@@ -567,7 +580,8 @@ def admin_update_user(user_id: int, updates: dict) -> bool:
         "second_entry_enabled", "second_entry_max_ask", "reentry_after_stop_loss", "ignore_pass_technical",
         "one_shot_ai", "max_daily_trades", "max_daily_risk",
         "model_choice", "train_window", "regularization_c", "class_weight",
-        "edge_gate_enabled", "min_edge_cents", "use_kelly_criterion"
+        "edge_gate_enabled", "min_edge_cents", "use_kelly_criterion", "atr_risk_enabled",
+        "target_asset"
     }
     filtered = {k: v for k, v in updates.items() if k in allowed_cols}
     if not filtered:
@@ -755,7 +769,9 @@ def update_user_config(
     one_shot_ai: bool = False,
     notify_trade_results: bool = True,
     notify_market_trends: bool = True,
-    use_kelly_criterion: bool = False
+    use_kelly_criterion: bool = False,
+    trading_universe: str = "FINANCIAL",
+    min_sports_confidence: float = 70.0
 ):
     conn = get_db_connection()
     try:

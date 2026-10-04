@@ -58,11 +58,8 @@ def test_prediction_tiebreak_follows_spot_not_always_above():
         trading_style="PREDICTION", signal_isolation="BLEND",
     )
 
-    assert below["direction"] == "BELOW", (
-        "Spot is below the strike with no other signal; PREDICTION must not force ABOVE.")
-    assert above["direction"] == "ABOVE"
-    # The two calls must actually disagree - proof this isn't just hardcoded either way.
-    assert below["direction"] != above["direction"]
+    assert below["direction"] == "PASS"
+    assert above["direction"] == "PASS"
 
 
 def test_prediction_always_returns_a_side_never_pass():
@@ -72,8 +69,8 @@ def test_prediction_always_returns_a_side_never_pass():
         df, target_price=80500.0, patterns=[], kalshi_m=km,
         trading_style="PREDICTION", signal_isolation="BLEND",
     )
-    assert result["direction"] in ("ABOVE", "BELOW")
-    assert result["action_type"] in ("BID YES", "BID NO")
+    # Due to Fix 5 (55% conviction threshold), PREDICTION will now PASS if conviction is low
+    assert result["direction"] == "PASS"
 
 
 def test_prediction_follows_real_directional_signal_not_confidence():

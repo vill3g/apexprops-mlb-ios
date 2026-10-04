@@ -63,6 +63,8 @@ class UserConfigRequest(BaseModel):
     class_weight: Optional[str] = None
     xgb_estimators: Optional[int] = None
     xgb_max_depth: Optional[int] = None
+    trading_universe: Optional[str] = None
+    min_sports_confidence: Optional[float] = None
     xgb_learning_rate: Optional[float] = None
     ignore_pass_technical: Optional[bool] = None
     one_shot_ai: Optional[bool] = None
@@ -72,6 +74,7 @@ class UserConfigRequest(BaseModel):
     notify_trade_results: Optional[bool] = None
     notify_market_trends: Optional[bool] = None
     use_kelly_criterion: Optional[bool] = None
+    atr_risk_enabled: Optional[bool] = None
 
 class ExchangeTransferRequest(BaseModel):
     source_exchange: int = 0
@@ -476,7 +479,7 @@ def get_my_signal(current_user: dict = Depends(get_current_user)):
         ask = None
     if ask:
         out["ask"] = round(ask, 2)
-        out["edge_cents"] = entry_edge_cents(prob, ask)
+        out["edge_cents"] = calculate_realized_edge_cents(prob, ask)
     label = f"buy {side.upper()}" + (f" at {round(ask * 100)}\u00a2" if ask else "")
 
     # Same gates as the trade engine (saas_broadcaster)
@@ -536,8 +539,33 @@ def _market_finished(ticker):
         return None
 
 
+_KNOWN_ASSETS = ("BTC", "ETH", "GOLD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NDQ", "SOL", "DOGE")
+
+
+def _asset_from_ticker(ticker, stored=None) -> str:
+    """Resolve a trade's asset. 'KXSOL15M-26OCT030530-30' -> 'SOL', 'KXEURUSD15M_SYNTH' -> 'EURUSD'.
+    The ticker's series prefix is the source of truth; a stored asset is used only when the
+    ticker can't be parsed; then a substring match; then 'OTHER' (never silently 'BTC')."""
+    tk = str(ticker or "").upper()
+    series = tk.split("-", 1)[0].replace("_SYNTH", "")
+    if series.startswith("KX"):
+        series = series[2:]
+    if series.endswith("15M"):
+        series = series[:-3]
+    if series in _KNOWN_ASSETS:
+        return series
+    s = str(stored or "").upper().strip()
+    if s in _KNOWN_ASSETS:
+        return s
+    for a in _KNOWN_ASSETS:
+        if a in tk:
+            return a
+    return "OTHER"
+
+
+from fastapi import Request
 @router.get("/dashboard_stats")
-def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
+def get_dashboard_stats(request: Request, response: Response, current_user: dict = Depends(get_current_user)):
     
     user_id = current_user['id']
     trades = TradeStore.get_recent_trades(user_id, limit=100)
@@ -562,22 +590,8 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 
     for t in trades_filtered:
         tk = str(t.get("ticker") or "").upper()
-        # Ensure asset is always tagged
-        if not t.get("asset") or t.get("asset") == "None":
-            if "BTC" in tk:
-                t["asset"] = "BTC"
-            elif "ETH" in tk:
-                t["asset"] = "ETH"
-            elif "GOLD" in tk:
-                t["asset"] = "GOLD"
-            elif "EURUSD" in tk:
-                t["asset"] = "EURUSD"
-            elif "GBPUSD" in tk:
-                t["asset"] = "GBPUSD"
-            elif "USDJPY" in tk:
-                t["asset"] = "USDJPY"
-            else:
-                t["asset"] = "BTC"
+        # Ensure asset is always tagged (derived from the ticker's series)
+        t["asset"] = _asset_from_ticker(tk, t.get("asset"))
 
         if t.get("status") == "OPEN":
             series = tk.split("-")[0] if "-" in tk else f"KX{t['asset']}15M"
@@ -895,11 +909,11 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
             "settled_at": t.get("settled_at"),
             "market_regime": t.get("market_regime") or t.get("regime") or "",
             "direction": t.get("direction") or t.get("prediction_direction") or t.get("side", ""),
-            "asset": t.get("asset") or ("BTC" if "BTC" in str(ticker) else "ETH" if "ETH" in str(ticker) else "GOLD" if "GOLD" in str(ticker) else "BTC"),
+            "asset": _asset_from_ticker(ticker, t.get("asset")),
             "live_pnl": t.get("live_pnl", pnl)
         })
 
-    return {
+    ret = {
         "success": True,
         "username": current_user.get("username", "Trader"),
         "profile_pic": current_user.get("profile_pic"),
@@ -946,6 +960,7 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "notify_market_trends": bool(current_user.get("notify_market_trends", 1)),
         "min_edge_cents": float(current_user.get("min_edge_cents", 0.0) or 0.0),
         "use_kelly_criterion": bool(current_user.get("use_kelly_criterion", 0)),
+        "atr_risk_enabled": bool(current_user.get("atr_risk_enabled", 0)),
         "total_pnl": round(total_pnl, 2),
         "total_pnl_pct": total_pnl_pct,
         "live_open_pnl": round(live_open_pnl, 2),
@@ -954,6 +969,15 @@ def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "losses": losses,
         "recent_trades": formatted_trades
     }
+
+    import hashlib
+    data_bytes = json.dumps(ret, sort_keys=True).encode("utf-8")
+    etag = hashlib.md5(data_bytes).hexdigest()
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304)
+    response.headers["ETag"] = etag
+    
+    return ret
 
 
 @router.get("/trade/{trade_id}")
@@ -985,7 +1009,7 @@ def update_trade_config(req: TradingModeRequest, current_user: dict = Depends(ge
                 
         if not has_keys:
             raise HTTPException(
-                status_code=403,
+                status_code=400,
                 detail="Cannot switch to LIVE trading: No Kalshi API keys linked. Please link your Kalshi API keys in Settings first."
             )
             
@@ -1102,8 +1126,26 @@ def manual_trade(req: ManualTradeRequest, current_user: dict = Depends(get_curre
         trade_rec["requested_count"] = count
             
     else:
-        # Paper trade
-        cost = count * price + kalshi_order_fee(price, count)
+        # Paper trade - Fix A: no synthetic markets; Fix D: fill against the real Kalshi book
+        # through the same simulator auto-trades use (same limit/slippage as the live order above).
+        if market.get("is_synthetic") or "_SYNTH" in str(market.get("ticker", "")).upper():
+            raise HTTPException(status_code=400, detail="No live Kalshi contract for this asset right now. Paper trading mirrors live, so synthetic markets can't be traded.")
+        from backend.btc.kalshi_trader import kalshi_trader as _sim_kt
+        sim = _sim_kt.place_order(
+            ticker=market.get("ticker"),
+            side="yes" if side == "YES" else "no",
+            count=count,
+            limit_price_dollars=price,
+            dry_run=True,
+        )
+        if not sim.get("success"):
+            raise HTTPException(status_code=400, detail=f"Paper order not filled: {sim.get('error')}")
+        fill_px = float(sim.get("filled_price", price))
+        fill_n = int(sim.get("count", count) or count)
+        trade_rec["entry_price"] = fill_px
+        trade_rec["count"] = fill_n
+        trade_rec["requested_count"] = count
+        cost = fill_n * fill_px + kalshi_order_fee(fill_px, fill_n)
         if not deduct_user_paper_balance(user_id, cost):
             curr_bal = current_user.get("paper_balance", 500.0)
             raise HTTPException(status_code=400, detail=f"Insufficient paper balance. Cost: ${cost:.2f}, Bal: ${curr_bal:.2f}")
@@ -1231,6 +1273,12 @@ def close_all_trades(current_user: dict = Depends(get_current_user)):
                     exit_price = entry
                 else:
                     exit_price = float(raw_exit)
+                    if 0.0 < exit_price < 1.0:  # Fix D: real-book paper exit while still trading
+                        try:
+                            from backend.btc.kalshi_trader import paper_exit_price
+                            exit_price = paper_exit_price(ticker, side.lower(), count, exit_price) or exit_price
+                        except Exception as e:
+                            logger.debug(f"paper book close-all fallback: {e}")
 
                 _close = {
                     "exit_reason": "MANUAL_CLOSE",
@@ -1331,10 +1379,19 @@ def close_individual_trade(
             raise HTTPException(status_code=400, detail="Cannot close: No bids available on orderbook.")
 
         exit_price = float(raw_exit)
+        if 0.0 < exit_price < 1.0:  # still trading (not a $1/$0 settlement) -> Fix D book pricing
+            try:
+                from backend.btc.kalshi_trader import paper_exit_price
+                exit_price = paper_exit_price(ticker, side.lower(), count, exit_price) or exit_price
+            except Exception as e:
+                logger.debug(f"paper book close fallback: {e}")
 
-    req_action_upper = str(action or "").upper()
-    is_take_profit = ("PROFIT" in req_action_upper) or (exit_price > entry and req_action_upper != "MANUAL_CLOSE")
-    resolved_exit_reason = "TAKE_PROFIT" if is_take_profit else "MANUAL_CLOSE"
+    req_action_upper = str(action or "MANUAL_CLOSE").upper()
+    if req_action_upper == "CLOSE":
+        req_action_upper = "MANUAL_CLOSE"
+    is_take_profit = ("PROFIT" in req_action_upper)
+    resolved_exit_reason = "TAKE_PROFIT" if is_take_profit else req_action_upper
+
 
     target_trade["status"] = "CLOSED"
     target_trade["exit_reason"] = resolved_exit_reason
@@ -1478,10 +1535,16 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
         req.notify_trade_results if req.notify_trade_results is not None else bool(current_user.get("notify_trade_results", 1)),
         req.notify_market_trends if req.notify_market_trends is not None else bool(current_user.get("notify_market_trends", 1)),
         req.use_kelly_criterion if req.use_kelly_criterion is not None else bool(current_user.get("use_kelly_criterion", 0)),
+        req.trading_universe if req.trading_universe is not None else current_user.get("trading_universe", "FINANCIAL"),
+        req.min_sports_confidence if req.min_sports_confidence is not None else float(current_user.get("min_sports_confidence", 70.0))
     )
 
     if req.edge_gate_enabled is not None or req.min_edge_cents is not None:
         update_user_edge_gate(current_user["id"], req.edge_gate_enabled, req.min_edge_cents)
+
+    if req.atr_risk_enabled is not None:
+        from backend.database.models import update_user_atr_risk
+        update_user_atr_risk(current_user["id"], req.atr_risk_enabled)
     
     if req.trading_mode:
         m = req.trading_mode.strip().upper()
@@ -1537,6 +1600,9 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
     new_settings["one_shot_ai"] = bool(u_fresh.get("one_shot_ai", 0))
     new_settings["use_kelly_criterion"] = bool(u_fresh.get("use_kelly_criterion", 0))
     new_settings["useKellyCriterion"] = bool(u_fresh.get("use_kelly_criterion", 0))
+    new_settings["atr_risk_enabled"] = bool(u_fresh.get("atr_risk_enabled", 0))
+    new_settings["edge_gate_enabled"] = bool(u_fresh.get("edge_gate_enabled", 0))
+    new_settings["min_edge_cents"] = float(u_fresh.get("min_edge_cents", 0.0) or 0.0)
 
     ex.set_ai_settings(new_settings)
     
@@ -2188,7 +2254,7 @@ from backend.database.trade_store import _trade_epoch
 from backend.btc.auto_executor.saas_broadcaster import SIGNAL_SNAPSHOT_PATH, _snapshot_key
 from backend.btc.kalshi_client import get_kalshi_15m_market
 from backend.database.trade_store import TradeStore
-from backend.btc.fees import entry_edge_cents
+from backend.btc.fees import calculate_realized_edge_cents
 from backend.auth.security import decrypt_kalshi_key
 from backend.btc.kalshi_trader import KalshiTrader
 from backend.database.models import update_user_trading_mode

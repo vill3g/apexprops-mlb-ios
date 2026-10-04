@@ -32,6 +32,11 @@ def forex_trading_loop():
             open_positions = get_open_positions()
             current_balance = get_balance()
             
+            if current_balance <= 0:
+                logger.warning(f"[Forex] Account balance is non-positive (${current_balance:.2f}). Halting forex execution until funded.")
+                _stop_event.wait(60)
+                continue
+
             for pair in ACTIVE_PAIRS:
                 # 1. Update prices & evaluate SL/TP
                 ticker = get_forex_ticker(pair)

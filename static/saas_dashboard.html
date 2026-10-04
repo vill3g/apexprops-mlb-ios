@@ -2,21 +2,30 @@
 <html lang="en" class="dark h-full bg-black" style="background-color: #000000; color-scheme: dark;">
 <head>
         <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#000000">
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="./manifest.json">
         
-        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/assets/app_icon_192.png">
-    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+        <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/app_icon_192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <!-- iOS PWA Splash Screens (required for "Add to Home Screen" launch image) -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="./assets/splash_1290x2796.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="./assets/splash_1179x2556.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="./assets/splash_1170x2532.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="./assets/splash_1242x2688.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="./assets/splash_828x1792.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="./assets/splash_1125x2436.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="./assets/splash_750x1334.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="./assets/splash_640x1136.png">
     <title>ShadowTrade AI</title>
     <!-- AUTO-DETECT API BACKEND -->
     <script>
@@ -95,7 +104,7 @@
             display: inline-block;
         }
 </style>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./css/tailwind-compiled.css?v=2">
 <script>
 
 function toggleProfileDropdown() {
@@ -117,12 +126,15 @@ function openSettings() {
     if (typeof syncSoundSettingsUI === 'function') {
         syncSoundSettingsUI();
     }
+    if (typeof refreshWalletBalances === 'function') {
+        refreshWalletBalances();
+    }
     if (typeof populateUserSettings === 'function' && window.lastDashboardStats) {
         populateUserSettings(window.lastDashboardStats, true);
     }
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('saas_token');
     if (token) {
-        fetch('/api/auth/dashboard_stats', {
+        fetch((window.API_BASE_URL||'')+'/api/auth/dashboard_stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         }).then(r => r.ok ? r.json() : null).then(freshStats => {
             if (freshStats) {
@@ -138,6 +150,18 @@ function openSettings() {
     }
     if (typeof syncChartSettingsUI === 'function') {
         syncChartSettingsUI();
+    }
+    if (typeof fetchTpSlRecommendations === 'function') {
+        fetchTpSlRecommendations();
+    }
+    // Sync Dynamic Island toggle
+    const diToggle = document.getElementById('di-toggle');
+    const diBadge = document.getElementById('di-status-badge');
+    const diOn = localStorage.getItem('di_enabled') !== 'false';
+    if (diToggle) diToggle.checked = diOn;
+    if (diBadge) {
+        diBadge.textContent = diOn ? 'ON' : 'OFF';
+        diBadge.className = diOn ? 'text-[9px] font-bold text-emerald-400 uppercase tracking-widest' : 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
     }
     const drawer = document.getElementById('settingsDrawer');
     const panel = document.getElementById('settingsPanel');
@@ -167,6 +191,32 @@ function openSettings() {
             }
         });
     });
+}
+
+async function fetchTpSlRecommendations() {
+    const token = localStorage.getItem('saas_token');
+    if (!token) return;
+    try {
+        const res = await fetch((window.API_BASE_URL || '') + '/api/engine/btc/tpsl/recommendations', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const slEl = document.getElementById('sl-recommendation');
+        const slVal = document.getElementById('sl-rec-value');
+        const tpEl = document.getElementById('tp-recommendation');
+        const tpVal = document.getElementById('tp-rec-value');
+        if (slEl && slVal && data.recommended_sl != null) {
+            slVal.textContent = data.recommended_sl;
+            slEl.classList.remove('hidden');
+        }
+        if (tpEl && tpVal && data.recommended_tp != null) {
+            tpVal.textContent = data.recommended_tp;
+            tpEl.classList.remove('hidden');
+        }
+    } catch (e) {
+        // Silently fail — recommendations are non-critical
+    }
 }
 
 function closeSettings() {
@@ -374,134 +424,84 @@ if (document.readyState === 'loading') {
 }
 
 </script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        kalshi: {
-                            blue: '#9d00ff',
-                            green: '#00ff80',
-                            red: '#ff4040',
-                            dark: '#08080a',
-                            border: '#1e293b'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- TradingView -->
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <script src="/static/js/lightweight-charts.js"></script>
+
+    <script src="./js/lightweight-charts.js?v=1791013020"></script>
+<style id="di-modal-hide">
+/* Hide the floating Dynamic Island pill while a full-screen page is open (it covered their titles). */
+body:has(#communityModal:not(.hidden)) #dynamic-island,
+body:has(#supportModal:not(.hidden)) #dynamic-island,
+body:has(#equityModal:not(.hidden)) #dynamic-island,
+body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; visibility: hidden !important; }
+</style>
 </head>
 <body class="bg-black text-white antialiased overflow-y-auto hide-scrollbar pb-8 font-sans selection:bg-purple-600 selection:text-white">
 
-        <!-- ShadowTrade AI: Crypto + Trading + Charts + AI Splash Screen -->
-    <div id="splash-screen" class="fixed inset-0 z-[99999] bg-[#07070a] flex flex-col items-center justify-center transition-all duration-700 ease-in-out select-none">
-        <!-- Glow Backdrop -->
-        <div class="absolute w-72 h-72 bg-purple-600/20 rounded-full  pointer-events-none animate-pulse"></div>
-
-        <div class="relative flex flex-col items-center">
-            <!-- Composite Logo: Crypto (₿) + Trading (Candles) + Charts (Trendline) + AI (Neural Ring) -->
-            <div class="relative w-28 h-28 mb-5">
-                <svg viewBox="0 0 512 512" class="w-full h-full drop-shadow-[0_0_20px_rgba(157,0,255,0.7)]">
-                    <!-- Base Obsidian Shield -->
-                    <rect width="512" height="512" rx="120" fill="#0c0c14" stroke="#9d00ff" stroke-width="8" stroke-opacity="0.8"/>
-                    
-                    <!-- AI: Neural Circuit Lines & Nodes -->
-                    <g stroke="#9d00ff" stroke-width="5" opacity="0.5" fill="none">
-                        <polyline points="80,110 150,110 180,150"/>
-                        <polyline points="110,80 110,140 150,180"/>
-                        <polyline points="432,402 362,402 332,362"/>
-                        <polyline points="402,432 402,372 362,332"/>
-                    </g>
-                    <g fill="#00f0ff">
-                        <circle cx="80" cy="110" r="7"/>
-                        <circle cx="150" cy="110" r="8"/>
-                        <circle cx="180" cy="150" r="8"/>
-                        <circle cx="110" cy="80" r="7"/>
-                        <circle cx="432" cy="402" r="7"/>
-                        <circle cx="362" cy="402" r="8"/>
-                        <circle cx="332" cy="362" r="8"/>
-                        <circle cx="402" cy="432" r="7"/>
-                    </g>
-
-                    <!-- Trading: Financial Candlesticks -->
-                    <g opacity="0.6">
-                        <line x1="140" y1="230" x2="140" y2="350" stroke="#ff4060" stroke-width="4"/>
-                        <rect x1="127" y1="260" width="26" height="65" rx="3" fill="#ff4060"/>
-
-                        <line x1="200" y1="190" x2="200" y2="320" stroke="#00ff80" stroke-width="4"/>
-                        <rect x1="187" y1="220" width="26" height="75" rx="3" fill="#00ff80"/>
-
-                        <line x1="310" y1="180" x2="310" y2="310" stroke="#ff4060" stroke-width="4"/>
-                        <rect x1="297" y1="210" width="26" height="75" rx="3" fill="#ff4060"/>
-
-                        <line x1="370" y1="120" x2="370" y2="250" stroke="#00ff80" stroke-width="4"/>
-                        <rect x1="357" y1="150" width="26" height="75" rx="3" fill="#00ff80"/>
-                    </g>
-
-                    <!-- Charts: Surging Neon Cyan Trendline -->
-                    <polyline points="100,340 190,270 260,240 340,180 420,100" fill="none" stroke="#00f0ff" stroke-width="10" stroke-linecap="round"/>
-                    <polygon points="420,100 390,105 415,130" fill="#00f0ff"/>
-
-                    <!-- Crypto + AI: Center Bitcoin Core with Rotating Neural Ring -->
-                    <circle cx="256" cy="256" r="92" fill="#100b1e" stroke="#9d00ff" stroke-width="7"/>
-                    <circle cx="256" cy="256" r="76" fill="none" stroke="#00f0ff" stroke-width="3" stroke-dasharray="10 8" opacity="0.9" class="animate-spin" style="transform-origin: center; animation-duration: 9s;"/>
-
-                    <!-- Bitcoin Symbol '₿' -->
-                    <path d="M234,200 L234,312 M234,208 L262,208 C276,208 286,216 286,228 C286,240 276,248 262,248 L234,248 M234,248 L268,248 C282,248 294,258 294,272 C294,286 282,296 268,296 L234,296" 
-                          fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-                    <line x1="248" y1="188" x2="248" y2="208" stroke="#00f0ff" stroke-width="5" stroke-linecap="round"/>
-                    <line x1="264" y1="188" x2="264" y2="208" stroke="#00f0ff" stroke-width="5" stroke-linecap="round"/>
-                    <line x1="248" y1="296" x2="248" y2="316" stroke="#00f0ff" stroke-width="5" stroke-linecap="round"/>
-                    <line x1="264" y1="296" x2="264" y2="316" stroke="#00f0ff" stroke-width="5" stroke-linecap="round"/>
-                </svg>
+        <!-- ShadowTrade AI: Full-Screen Splash -->
+    <div id="splash-screen" style="position:fixed;inset:0;z-index:99999;background:#000;margin:0;padding:0;overflow:hidden;transition:opacity 0.7s ease,transform 0.7s ease;">
+        <img src="./assets/splash.png" style="width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;" alt="">
+        <!-- Animated loading bar overlay -->
+        <div style="position:absolute;bottom:13%;left:50%;transform:translateX(-50%);width:55%;max-width:280px;text-align:center;">
+            <div style="font-size:11px;color:rgba(150,220,255,0.7);letter-spacing:0.12em;margin-bottom:8px;font-family:system-ui,sans-serif;text-transform:uppercase;">Loading...</div>
+            <div style="width:100%;height:3px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;">
+                <div id="splash-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00c8ff,#a855f7);border-radius:99px;box-shadow:0 0 10px 2px rgba(0,200,255,0.6);transition:width 2.4s cubic-bezier(0.4,0,0.2,1);"></div>
             </div>
-
-            <!-- Branding -->
-            <h1 class="text-3xl sm:text-4xl font-black tracking-[0.2em] uppercase text-white drop-shadow-[0_0_15px_rgba(157,0,255,0.7)]">
-                SHADOW<span class="text-[#9d00ff]">TRADE</span> <span class="text-xs px-2 py-0.5 rounded bg-purple-950/80 border border-purple-500/40 text-purple-300 font-extrabold align-middle">AI</span>
-            </h1>
-
-            <p class="text-[10px] text-cyan-400/80 font-mono tracking-[0.25em] uppercase mt-2">
-                CRYPTO &bull; TRADING &bull; CHARTS &bull; AI
-            </p>
-
-            <!-- Loading Bar -->
-            <div class="w-44 h-1.5 bg-gray-900 border border-purple-900/60 rounded-full mt-6 overflow-hidden">
-                <div id="splash-bar" class="h-full bg-gradient-to-r from-purple-600 to-cyan-400 rounded-full transition-all duration-[2400ms] ease-out w-0"></div>
-            </div>
-
-            <p class="text-[9px] text-gray-500 font-mono uppercase tracking-[0.3em] mt-3">INITIALIZING ENGINE...</p>
         </div>
     </div>
-    
+
+    <!-- Dynamic Island: Glowing trading status indicator -->
+    <div id="dynamic-island" class="fixed top-0 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none" style="top: max(8px, calc(env(safe-area-inset-top, 0px) * 0.18));">
+        <div id="dynamic-island-pill" class="relative flex items-center gap-1.5 px-3 py-1 rounded-full bg-black border border-white/10 transition-all duration-500 opacity-0" style="min-width:80px; justify-content:center;">
+            <span id="di-dot" class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" style="box-shadow:0 0 8px 2px rgba(52,211,153,0.8);"></span>
+            <span id="di-label" class="text-[10px] font-black text-emerald-300 tracking-widest uppercase">AUTO ON</span>
+        </div>
+    </div>
+
+    <!-- Splash screen dismiss script (moved outside splash div) -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            const splash = document.getElementById("splash-screen");
             const bar = document.getElementById("splash-bar");
-            if (bar) {
-                setTimeout(() => { bar.style.width = "100%"; }, 50);
-            }
-            setTimeout(() => {
-                const splash = document.getElementById("splash-screen");
-                if (splash) {
+            // Start loading bar animation on next frame
+            if (bar) requestAnimationFrame(() => { bar.style.width = "100%"; });
+            if (splash) {
+                setTimeout(() => {
                     splash.style.opacity = "0";
                     splash.style.transform = "scale(1.03)";
                     setTimeout(() => splash.remove(), 700);
-                }
-            }, 2500);
+                }, 2500);
+            }
         });
+
+        // Dynamic Island logic
+        window._dynamicIslandEnabled = localStorage.getItem('di_enabled') !== 'false';
+        function updateDynamicIsland(autoOn) {
+            if (!window._dynamicIslandEnabled) return;
+            const pill = document.getElementById('dynamic-island-pill');
+            const dot = document.getElementById('di-dot');
+            const label = document.getElementById('di-label');
+            if (!pill) return;
+            if (autoOn) {
+                pill.style.opacity = '1';
+                pill.style.borderColor = 'rgba(52,211,153,0.5)';
+                pill.style.boxShadow = '0 0 18px 4px rgba(52,211,153,0.35)';
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse';
+                dot.style.boxShadow = '0 0 8px 2px rgba(52,211,153,0.8)';
+                label.textContent = 'AUTO ON';
+                label.className = 'text-[10px] font-black text-emerald-300 tracking-widest uppercase';
+            } else {
+                pill.style.opacity = '0';
+            }
+        }
+        window.updateDynamicIsland = updateDynamicIsland;
     </script>
-    
+
     <!-- Header -->
-    <header id="main-header" class="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10" style="padding-top: calc(env(safe-area-inset-top, 0px));">
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-[999] bg-black border-b border-white/10" style="padding-top: calc(env(safe-area-inset-top, 0px));">
       <div class="px-3 py-2 flex justify-between items-end relative w-full">
     <!-- Left: Profile, Bal, PnL -->
     <div class="flex items-center gap-2.5 z-10">
         <div class="w-10 h-10 rounded-md overflow-hidden border border-kalshi-border shadow-md shrink-0 cursor-pointer" onclick="toggleProfileDropdown()">
-            <img id="nav-avatar" src="/static/ai_avatar.gif" class="w-full h-full object-cover" alt="Profile">
+            <img id="nav-avatar" src="./assets/icon.png" class="w-full h-full object-cover" alt="Profile">
         </div>
         <div class="flex flex-col justify-center">
             <div class="flex items-baseline gap-1.5">
@@ -563,7 +563,7 @@ if (document.readyState === 'loading') {
     <div class="p-4 border-b border-kalshi-border/30 bg-gradient-to-br from-cyan-900/30 to-transparent">
         <div class="flex items-center gap-3">
             <div class="relative w-10 h-10 rounded-md border border-cyan-500/30 overflow-hidden shrink-0 group cursor-pointer" onclick="document.getElementById('avatar-upload').click()">
-                <img id="dropdown-avatar" src="/static/ai_avatar.gif" class="w-full h-full object-cover">
+                <img id="dropdown-avatar" src="./assets/icon.png" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </div>
@@ -625,8 +625,11 @@ if (document.readyState === 'loading') {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             Community Leaderboard
         </button>
+        <button onclick="openBacktestModal()" class="w-full py-2 bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 rounded-lg active:scale-95 transition-all border border-cyan-800/40 font-bold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 cursor-pointer">
+            <span>⏳</span> AI Time Machine (Backtest)
+        </button>
         <button onclick="openSupportModal()" class="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-lg active:scale-95 transition-all border border-slate-700 font-bold uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 cursor-pointer">
-            <span>🎫</span> Support & Feedback
+            <span>🎫</span> Support &amp; Feedback
         </button>
     </div>
 </div>
@@ -639,11 +642,12 @@ if (document.readyState === 'loading') {
         <span id="val-winrate"></span>
         <span id="connection-status"></span>
     </div>
-    <link rel="stylesheet" href="/static/css/dashboard.css">
-    <main class="w-full max-w-7xl mx-auto pb-12" style="padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));">
+    <link rel="stylesheet" href="./css/dashboard.css?v=1791013020">
+    <link rel="stylesheet" href="./css/app.css?v=1791013020">
+    <main class="w-full max-w-7xl mx-auto pb-12 pb-safe" style="padding-top: calc(3.5rem + env(safe-area-inset-top, 0px)); padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));">
 
         <!-- Asset Selector Bar (Replaced Live User Activity Feed) -->
-        <div id="assetSelectorBar" class="bg-[#0b101d] border-b border-kalshi-border/60 px-3 py-2 flex items-center justify-between gap-3 shadow-inner">
+        <div id="assetSelectorBar" class="sticky z-40 bg-[#0b101d] border-b border-white/5 px-2 py-1 flex items-center justify-between gap-2 shadow-inner" style="top: calc(3.6rem + env(safe-area-inset-top, 0px));">
             <div class="flex items-center gap-2 shrink-0">
                 <span class="flex h-2 w-2 relative">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -654,15 +658,53 @@ if (document.readyState === 'loading') {
 
             <!-- Selectable Asset Buttons (Left to Right) -->
             <div class="flex items-center gap-1.5 flex-1 justify-end max-w-sm">
-                <button type="button" id="btn-asset-btc" onclick="selectDashboardAsset('BTC')" class="asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer bg-orange-500/25 text-orange-300 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
+                <button type="button" id="btn-asset-btc" onclick="selectDashboardAsset('BTC')" class="asset-btn flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-orange-500/25 text-orange-300 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.2)]">
                     <span class="text-[11px]">₿</span> <span>BTC</span>
                 </button>
-                <button type="button" id="btn-asset-eth" onclick="selectDashboardAsset('ETH')" class="asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
+                <button type="button" id="btn-asset-eth" onclick="selectDashboardAsset('ETH')" class="asset-btn flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
                     <span class="text-[11px]">Ξ</span> <span>ETH</span>
                 </button>
-                <button type="button" id="btn-asset-gold" onclick="selectDashboardAsset('GOLD')" class="asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
+                        <button id="btn-asset-nfl" onclick="selectDashboardAsset('NFL')" class="asset-btn-sports hidden px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-[#2a2b36] text-gray-400 hover:text-white border border-transparent">🏈 NFL</button>
+        <button id="btn-asset-mlb" onclick="selectDashboardAsset('MLB')" class="asset-btn-sports hidden px-3 py-1.5 rounded-full text-xs font-bold transition-all bg-[#2a2b36] text-gray-400 hover:text-white border border-transparent">⚾ MLB</button>
+
+        <button id="btn-asset-gold" onclick="selectDashboardAsset('GOLD')" class="asset-btn flex-1 py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200">
                     <span class="text-[11px]">🪙</span> <span>GOLD</span>
                 </button>
+                
+                <!-- Dropdown for more assets -->
+                <div class="relative">
+                    <button type="button" id="btn-asset-more" onclick="toggleMoreAssets(event)" class="py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200 shadow-sm w-12">
+                        <span id="btn-asset-more-text">▼</span>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="more-assets-dropdown" class="absolute right-0 top-full mt-2 w-36 bg-[#0b101a]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.9)] overflow-hidden hidden z-[500] transform opacity-0 scale-95 transition-all origin-top-right">
+                        <div class="p-1.5 flex flex-col gap-1">
+                            <button type="button" id="btn-asset-ndq" onclick="selectDashboardAsset('NDQ'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">📈</span> <span>NDQ</span>
+                            </button>
+                            <button type="button" id="btn-asset-eurusd" onclick="selectDashboardAsset('EURUSD'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">💵</span> <span>EUR/USD</span>
+                            </button>
+                            <button type="button" id="btn-asset-gbpusd" onclick="selectDashboardAsset('GBPUSD'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">💷</span> <span>GBP/USD</span>
+                            </button>
+                            <button type="button" id="btn-asset-usdjpy" onclick="selectDashboardAsset('USDJPY'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">💴</span> <span>USD/JPY</span>
+                            </button>
+                            <button type="button" id="btn-asset-audusd" onclick="selectDashboardAsset('AUDUSD'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">🇦🇺</span> <span>AUD/USD</span>
+                            </button>
+                            <button type="button" id="btn-asset-sol" onclick="selectDashboardAsset('SOL'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">🚀</span> <span>SOL</span>
+                            </button>
+                            <button type="button" id="btn-asset-doge" onclick="selectDashboardAsset('DOGE'); toggleMoreAssets();" class="asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full">
+                                <span class="text-[11px]">🐕</span> <span>DOGE</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
             </div>
         </div>
 
@@ -788,7 +830,7 @@ if (document.readyState === 'loading') {
                         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                             <span>📋</span> Recent Executions
                         </h3>
-                        <a href="#" onclick="const t = localStorage.getItem('saas_token'); const id = t ? JSON.parse(atob(t.split('.')[1])).user_id : ''; window.open('/trades' + (id ? '?guest=' + id : ''), '_blank'); return false;" class="text-[9px] font-bold text-kalshi-blue uppercase tracking-wider hover:underline">View All</a>
+                        <a href="#" onclick="const t = localStorage.getItem('saas_token'); const id = t ? JSON.parse(atob(t.split('.')[1])).user_id : ''; window.open('./trades.html' + (id ? '?guest=' + id : ''), '_blank'); return false;" class="text-[9px] font-bold text-kalshi-blue uppercase tracking-wider hover:underline">View All</a>
                     </div>
                     <div id="tradesContainer" class="space-y-2">
                         <div class="text-center py-6 text-[10px] text-gray-500 font-mono bg-[#131b2c] rounded-xl border border-kalshi-border">Loading trades...</div>
@@ -802,14 +844,14 @@ if (document.readyState === 'loading') {
     <!-- App JavaScript -->
     <script>
         const token = localStorage.getItem('saas_token');
-        if (!token) window.location.href = '/login.html';
+        if (!token) window.location.href = './login.html';
         
         let currentMode = "PAPER";
         let aiEnabled = true; // Assume true since we removed toggle to simplify iPhone UI. We could re-add if requested.
 
         function logout() {
             localStorage.removeItem('saas_token');
-            window.location.href = '/login.html';
+            window.location.href = './login.html';
         }
 
         // ── Tab Visibility & Polling Optimization (Audit Item 1) ──
@@ -1012,6 +1054,26 @@ if (document.readyState === 'loading') {
             showToast(soundEngine.enabled ? 'Sound FX Enabled 🔊' : 'Sound FX Muted 🔇', 'info', 2000);
         };
 
+        // Dynamic Island settings toggle
+        window.toggleDynamicIslandSetting = function(enabled) {
+            window._dynamicIslandEnabled = enabled;
+            localStorage.setItem('di_enabled', enabled ? 'true' : 'false');
+            const badge = document.getElementById('di-status-badge');
+            if (badge) {
+                badge.textContent = enabled ? 'ON' : 'OFF';
+                badge.className = enabled ? 'text-[9px] font-bold text-emerald-400 uppercase tracking-widest' : 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
+            }
+            if (enabled) {
+                const headerToggle = document.getElementById('header-auto-toggle');
+                const isAutoOn = headerToggle ? headerToggle.checked : false;
+                if (typeof updateDynamicIsland === 'function') updateDynamicIsland(isAutoOn);
+            } else {
+                const pill = document.getElementById('dynamic-island-pill');
+                if (pill) pill.style.opacity = '0';
+            }
+            showToast(enabled ? 'Dynamic Island Glow ON 🏝️' : 'Dynamic Island Glow OFF', 'info', 2000);
+        };
+
         // ── Toast Notifications & Non-blocking Confirm Modal (Audit Item 2) ──
         window.showToast = function(msg, type = 'info', duration = 3500) {
             let container = document.getElementById('toast-container');
@@ -1117,7 +1179,7 @@ if (document.readyState === 'loading') {
 
         async function setTradingMode(mode) {
             try {
-                const res = await fetch('/api/auth/trade/config', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/config', {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ mode: mode })
@@ -1173,7 +1235,7 @@ if (document.readyState === 'loading') {
             
             const doAction = async () => {
                 try {
-                    const res = await fetch('/api/auth/trade/close_all', {
+                    const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/close_all', {
                         method: 'POST',
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
@@ -1212,7 +1274,7 @@ if (document.readyState === 'loading') {
                 try {
                     const payload = { direction: direction, amount_dollars: parseFloat(amt) };
                     if (overrideAsset) payload.asset = overrideAsset;
-                    const res = await fetch('/api/auth/trade/manual', {
+                    const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/manual', {
                         method: "POST",
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(payload)
@@ -1261,7 +1323,7 @@ if (document.readyState === 'loading') {
             
             const doAction = async () => {
                 try {
-                    const res = await fetch('/api/auth/trade/force_ml', {
+                    const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/force_ml', {
                         method: "POST",
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -1298,7 +1360,7 @@ if (document.readyState === 'loading') {
 
             const doAction = async () => {
                 try {
-                    const res = await fetch('/api/auth/trade/reverse', {
+                    const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/reverse', {
                         method: "POST",
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -1331,29 +1393,22 @@ if (document.readyState === 'loading') {
 
         async function toggleAutoTrader(enabled) {
             try {
-                // Optimistically sync both UI toggles
-                const autoToggle = document.getElementById('auto-trader-toggle');
-                const autoStatus = document.getElementById('auto-trader-status');
                 const headerToggle = document.getElementById('header-auto-toggle');
-                const headerStatus = document.getElementById('header-auto-status');
-                
-                if(autoToggle) autoToggle.checked = enabled;
-                if(headerToggle) headerToggle.checked = enabled;
-                
-                const onClass = 'text-[9px] font-bold text-green-500 uppercase tracking-widest';
-                const offClass = 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
-                
-                if(autoStatus) {
-                    autoStatus.innerText = enabled ? 'ON' : 'OFF';
-                    autoStatus.className = enabled ? onClass : offClass;
-                }
-                if(headerStatus) {
-                    headerStatus.innerText = enabled ? '🤖 AUTO: ON' : '🤖 AUTO: OFF';
-                    headerStatus.className = enabled ? onClass : offClass;
+                if (headerToggle) headerToggle.checked = enabled;
+
+                const navAutoBadge = document.getElementById('nav-auto-badge');
+                if (navAutoBadge) {
+                    navAutoBadge.innerText = enabled ? 'AUTO ON' : 'AUTO OFF';
+                    navAutoBadge.className = enabled
+                        ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm'
+                        : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
                 }
 
+                // Update Dynamic Island
+                if (typeof updateDynamicIsland === 'function') updateDynamicIsland(enabled);
+
                 const curA = (window.currentAsset || 'BTC').toLowerCase();
-                const res = await fetch(`/api/engine/${curA}/trade/toggle?enabled=${enabled}`, {
+                const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${curA}/trade/toggle?enabled=${enabled}`, {
                     method: "POST",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1375,7 +1430,7 @@ if (document.readyState === 'loading') {
             
             try {
                 const curA = (window.currentAsset || 'BTC').toLowerCase();
-                const res = await fetch(`/api/engine/${curA}/trade/manual?direction=${direction}&lots=${size}`, {
+                const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${curA}/trade/manual?direction=${direction}&lots=${size}`, {
                     method: "POST",
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1433,13 +1488,13 @@ if (document.readyState === 'loading') {
             const tsActRaw = document.getElementById('trailing-stop-activation-pct')?.value || '';
             const tsDistRaw= document.getElementById('trailing-stop-distance-pct')?.value || '';
 
-            const size  = parseFloat(sizeRaw)   || 25.0;
-            const sl    = parseFloat(slRaw)     || 15.0;
-            const tp    = parseFloat(tpRaw)     || 10.0;
-            const mdt   = parseInt(mdtRaw)      || 50;
-            const mdr   = parseFloat(mdrRaw)    || 100.0;
-            const tsAct = parseFloat(tsActRaw)  || 35.0;
-            const tsDist= parseFloat(tsDistRaw) || 6.0;
+            const size  = !isNaN(parseFloat(sizeRaw)) ? parseFloat(sizeRaw) : 25.0;
+            const sl    = !isNaN(parseFloat(slRaw)) ? parseFloat(slRaw) : 15.0;
+            const tp    = !isNaN(parseFloat(tpRaw)) ? parseFloat(tpRaw) : 10.0;
+            const mdt   = !isNaN(parseInt(mdtRaw)) ? parseInt(mdtRaw) : 50;
+            const mdr   = !isNaN(parseFloat(mdrRaw)) ? parseFloat(mdrRaw) : 100.0;
+            const tsAct = !isNaN(parseFloat(tsActRaw)) ? parseFloat(tsActRaw) : 35.0;
+            const tsDist= !isNaN(parseFloat(tsDistRaw)) ? parseFloat(tsDistRaw) : 6.0;
 
             const forceEl   = document.getElementById('force-trade-toggle');
             const autoForce = forceEl ? forceEl.checked : false;
@@ -1477,9 +1532,10 @@ if (document.readyState === 'loading') {
             const xgbLR       = parseFloat(xgbLRRaw)       || 0.1;
 
             const activeAssets = [];
-            if(document.getElementById('asset-btc-toggle')?.checked) activeAssets.push('BTC');
-            if(document.getElementById('asset-eth-toggle')?.checked) activeAssets.push('ETH');
-            if(document.getElementById('asset-gold-toggle')?.checked) activeAssets.push('GOLD');
+            document.querySelectorAll('input.asset-toggle').forEach(t => {
+                const v = String(t.value).toUpperCase();
+                if (t.checked && !activeAssets.includes(v)) activeAssets.push(v);
+            });
             const targetAssetStr = activeAssets.length > 0 ? activeAssets.join(',') : 'BTC';
 
 
@@ -1488,19 +1544,19 @@ if (document.readyState === 'loading') {
                     trade_size_dollars: size,
                     paper_trade_size_dollars: parseFloat(document.getElementById('paper-trade-size-dollars')?.value || size),
                     stop_loss_pct: sl,
-                    stop_loss_enabled: document.getElementById('stop-loss-toggle')?.checked || true,
+                    stop_loss_enabled: document.getElementById('stop-loss-toggle') ? document.getElementById('stop-loss-toggle').checked : true,
                     take_profit_pct: tp,
-                    take_profit_enabled: document.getElementById('take-profit-toggle')?.checked || true,
+                    take_profit_enabled: document.getElementById('take-profit-toggle') ? document.getElementById('take-profit-toggle').checked : true,
                     max_daily_trades: mdt,
                     max_daily_risk: mdr,
-                    one_click_trade: document.getElementById('one-click-toggle')?.checked || false,
+                    one_click_trade: document.getElementById('one-click-toggle') ? document.getElementById('one-click-toggle').checked : false,
                     auto_force_trade: autoForce,
                     ignore_pass_technical: techForce,
                     one_shot_ai: oneshot,
-                    second_entry_enabled: document.getElementById('second-entry-toggle')?.checked || false,
+                    second_entry_enabled: document.getElementById('second-entry-toggle') ? document.getElementById('second-entry-toggle').checked : false,
                     second_entry_max_ask: (parseFloat(document.getElementById('second-entry-max-ask')?.value || 75) > 1) ? (parseFloat(document.getElementById('second-entry-max-ask')?.value || 75) / 100) : parseFloat(document.getElementById('second-entry-max-ask')?.value || 0.75),
-                    reentry_after_stop_loss: document.getElementById('reentry-after-stoploss-toggle')?.checked || false,
-                    edge_gate_enabled: document.getElementById('edge-gate-toggle')?.checked || false,
+                    reentry_after_stop_loss: document.getElementById('reentry-after-stoploss-toggle') ? document.getElementById('reentry-after-stoploss-toggle').checked : false,
+                    edge_gate_enabled: document.getElementById('edge-gate-toggle') ? document.getElementById('edge-gate-toggle').checked : false,
                     min_edge_cents: parseFloat(document.getElementById('min-edge-cents')?.value || 5.0),
                     target_asset: targetAssetStr,
                     trading_style: tStyle,
@@ -1515,7 +1571,10 @@ if (document.readyState === 'loading') {
                     xgb_estimators: xgbEst,
                     xgb_max_depth: xgbDepth,
                     xgb_learning_rate: xgbLR,
-                    use_kelly_criterion: document.getElementById('kelly-criterion-toggle')?.checked || false
+                    use_kelly_criterion: document.getElementById('kelly-criterion-toggle') ? document.getElementById('kelly-criterion-toggle').checked : false,
+                    atr_risk_enabled: document.getElementById('atr-risk-toggle') ? document.getElementById('atr-risk-toggle').checked : false,
+                    trading_universe: document.getElementById('universe-select') ? document.getElementById('universe-select').value : 'FINANCIAL',
+                    min_sports_confidence: document.getElementById('sports-conf-slider') ? parseFloat(document.getElementById('sports-conf-slider').value) : 70.0
                 };
 
                 // Immediately update local cache so background polling doesn't fight this
@@ -1523,7 +1582,7 @@ if (document.readyState === 'loading') {
                     Object.assign(window.lastDashboardStats, configPayload);
                 }
 
-                const res = await fetch('/api/auth/user/config', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/user/config', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(configPayload)
@@ -1549,7 +1608,7 @@ if (document.readyState === 'loading') {
             const privKey = document.getElementById('kalshi-priv').value;
             if(!keyId || !privKey) return alert("Please fill both key fields.");
             try {
-                const res = await fetch('/api/auth/keys', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/keys', {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ key_id: keyId, private_key: privKey })
@@ -1593,38 +1652,24 @@ if (document.readyState === 'loading') {
 
         async function loadConfig() {
             try {
-                const res = await fetch('/api/engine/btc/trade/config', {
+                const curA = (window.currentAsset || 'BTC').toLowerCase();
+                const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${curA}/trade/config`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if(res.ok) {
                     const c = await res.json();
                     
-                    // Auto-Trader Master Toggle
-                    const autoToggle = document.getElementById('auto-trader-toggle');
-                    const autoStatus = document.getElementById('auto-trader-status');
-                    const headerToggle = document.getElementById('header-auto-toggle');
-                    const headerStatus = document.getElementById('header-auto-status');
-                    
-                    const onClass = 'text-[9px] font-bold text-green-500 uppercase tracking-widest';
-                    const offClass = 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
-                    
                     if(c.enabled !== undefined) {
-                        if(autoToggle) autoToggle.checked = c.enabled;
+                        const headerToggle = document.getElementById('header-auto-toggle');
                         if(headerToggle) headerToggle.checked = c.enabled;
                         
-                        if(autoStatus) {
-                            autoStatus.innerText = c.enabled ? 'ON' : 'OFF';
-                            autoStatus.className = c.enabled ? onClass : offClass;
-                        }
-                        if(headerStatus) {
-                            headerStatus.innerText = c.enabled ? '🤖 AUTO: ON' : '🤖 AUTO: OFF';
-                            headerStatus.className = c.enabled ? onClass : offClass;
-                        }
                         const navAutoBadge = document.getElementById('nav-auto-badge');
                         if(navAutoBadge) {
                             navAutoBadge.innerText = c.enabled ? 'AUTO ON' : 'AUTO OFF';
                             navAutoBadge.className = c.enabled ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm' : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
                         }
+                        // Sync Dynamic Island glow with server state
+                        if (typeof updateDynamicIsland === 'function') updateDynamicIsland(c.enabled);
                     }
                 }
             } catch(e) {}
@@ -1720,6 +1765,13 @@ if (document.readyState === 'loading') {
             if (adminGroup) {
                 if (s.role === 'admin') {
                     adminGroup.classList.remove('hidden');
+                    // Dynamically load admin_users.js if not already loaded
+                    if (!window._adminUsersLoaded) {
+                        window._adminUsersLoaded = true;
+                        const script = document.createElement('script');
+                        script.src = './js/admin_users.js?v=1791013020';
+                        document.body.appendChild(script);
+                    }
                 } else {
                     adminGroup.classList.add('hidden');
                 }
@@ -1740,6 +1792,12 @@ if (document.readyState === 'loading') {
                     document.getElementById('trade-size-dollars').value = s.trade_size_dollars;
                 }
             }
+            // Dynamic ATR Risk Management toggle (server-backed, default OFF)
+            const atrToggle = document.getElementById('atr-risk-toggle');
+            if (atrToggle && s.atr_risk_enabled !== undefined) {
+                atrToggle.checked = !!s.atr_risk_enabled;
+                if (typeof refreshAtrReadout === 'function') refreshAtrReadout();
+            }
             // Populate Kelly Criterion toggle from user settings, defaulting strictly to false (OFF)
             const kellyToggle = document.getElementById('kelly-criterion-toggle');
             if (kellyToggle) {
@@ -1757,6 +1815,16 @@ if (document.readyState === 'loading') {
                     } catch(e) {
                         kellyToggle.checked = false;
                     }
+                }
+            }
+            if (s.trading_universe !== undefined && document.getElementById('universe-select')) {
+                document.getElementById('universe-select').value = s.trading_universe;
+                if (typeof toggleUniverse === 'function') toggleUniverse();
+            }
+            if (s.min_sports_confidence !== undefined && document.getElementById('sports-conf-slider')) {
+                document.getElementById('sports-conf-slider').value = s.min_sports_confidence;
+                if (document.getElementById('sports-conf-val')) {
+                    document.getElementById('sports-conf-val').innerText = s.min_sports_confidence + '.0%';
                 }
             }
             if (s.paper_trade_size_dollars !== undefined && document.getElementById('paper-trade-size-dollars')) {
@@ -1834,12 +1902,9 @@ if (document.readyState === 'loading') {
 
             if (s.target_asset !== undefined) {
                 const assets = s.target_asset.split(',').map(a => a.trim().toUpperCase());
-                const btcToggle = document.getElementById('asset-btc-toggle');
-                const ethToggle = document.getElementById('asset-eth-toggle');
-                const goldToggle = document.getElementById('asset-gold-toggle');
-                if(btcToggle) btcToggle.checked = assets.includes('BTC');
-                if(ethToggle) ethToggle.checked = assets.includes('ETH');
-                if(goldToggle) goldToggle.checked = assets.includes('GOLD');
+                document.querySelectorAll('input.asset-toggle').forEach(t => {
+                    t.checked = assets.includes(String(t.value).toUpperCase());
+                });
             }
 
             const oneClickEl = document.getElementById('one-click-toggle');
@@ -1864,7 +1929,16 @@ if (document.readyState === 'loading') {
                 document.getElementById('technical-force-toggle').checked = !!s.ignore_pass_technical;
             }
             if (s.one_shot_ai !== undefined && document.getElementById('one-shot-toggle')) {
-                document.getElementById('one-shot-toggle').checked = !!s.one_shot_ai;
+                const oneShotEl = document.getElementById('one-shot-toggle');
+                const wasChecked = oneShotEl.checked;
+                oneShotEl.checked = !!s.one_shot_ai;
+                if (wasChecked && !s.one_shot_ai) {
+                    const headerAutoToggle = document.getElementById('header-auto-toggle');
+                    const isAutoOn = headerAutoToggle ? headerAutoToggle.checked : false;
+                    if (typeof updateDynamicIsland === 'function') {
+                        updateDynamicIsland(isAutoOn);
+                    }
+                }
             }
             if (s.second_entry_enabled !== undefined && document.getElementById('second-entry-toggle')) {
                 document.getElementById('second-entry-toggle').checked = !!s.second_entry_enabled;
@@ -1942,8 +2016,9 @@ if (document.readyState === 'loading') {
         }
 
         async function loadDashboard() {
+            if (document.hidden || !window.isTabActive) return;
             try {
-                const res = await fetch('/api/auth/dashboard_stats', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/dashboard_stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if(!res.ok) {
@@ -2067,6 +2142,7 @@ if (document.readyState === 'loading') {
                 
                 // Update avatar and username
                 if (s.profile_pic) {
+                    if (s.profile_pic.startsWith('/static/')) s.profile_pic = 'https://moneyprinter.ngrok.app' + s.profile_pic;
                     const navAv = document.getElementById('nav-avatar');
                     const dropAv = document.getElementById('dropdown-avatar');
                     if (navAv) navAv.src = s.profile_pic;
@@ -2101,7 +2177,7 @@ if (document.readyState === 'loading') {
                 const oldSrc = img.src;
                 img.style.opacity = '0.5';
                 
-                const res = await fetch('/api/auth/profile/picture', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/profile/picture', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token },
                     body: formData
@@ -2274,7 +2350,7 @@ if (document.readyState === 'loading') {
                                 #${rank}
                             </div>
                             <div class="w-9 h-9 rounded-md overflow-hidden border border-kalshi-border shrink-0">
-                                <img src="${t.profile_pic || '/static/ai_avatar.gif'}" class="w-full h-full object-cover">
+                                <img src="${(t.profile_pic && t.profile_pic.startsWith('/static/')) ? 'https://moneyprinter.ngrok.app'+t.profile_pic : (t.profile_pic || './assets/icon.png')}" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 mb-0.5">
@@ -2371,7 +2447,7 @@ if (document.readyState === 'loading') {
             // Fetch data
             try {
                 const userToken = localStorage.getItem('saas_token') || token;
-                const res = await fetch('/api/auth/community', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/community', {
                     headers: { 'Authorization': 'Bearer ' + userToken }
                 });
                 if (!res.ok) throw new Error('Failed to fetch community data');
@@ -2408,7 +2484,7 @@ if (document.readyState === 'loading') {
             if (!confirm(`Are you sure you want to copy the trading settings from ${username}? This will overwrite your current configuration.`)) return;
             
             try {
-                const res = await fetch(`/api/auth/community/copy_settings/${targetId}`, {
+                const res = await fetch(`${window.API_BASE_URL||''}/api/auth/community/copy_settings/${targetId}`, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -2465,7 +2541,7 @@ if (document.readyState === 'loading') {
 
             try {
                 const userToken = localStorage.getItem('saas_token') || token;
-                const res = await fetch('/api/auth/tickets', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/tickets', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2683,9 +2759,13 @@ if (document.readyState === 'loading') {
                                             if (tk.includes('BTC')) assetType = 'BTC';
                                             else if (tk.includes('ETH')) assetType = 'ETH';
                                             else if (tk.includes('GOLD')) assetType = 'GOLD';
-                                            else if (tk.includes('EURUSD')) assetType = 'EUR/USD';
-                                            else if (tk.includes('GBPUSD')) assetType = 'GBP/USD';
-                                            else if (tk.includes('USDJPY')) assetType = 'USD/JPY';
+                                            else if (tk.includes('EURUSD')) assetType = 'EURUSD';
+                                            else if (tk.includes('GBPUSD')) assetType = 'GBPUSD';
+                                            else if (tk.includes('USDJPY')) assetType = 'USDJPY';
+                                            else if (tk.includes('AUDUSD')) assetType = 'AUDUSD';
+                                            else if (tk.includes('NDQ')) assetType = 'NDQ';
+                                            else if (tk.includes('SOL')) assetType = 'SOL';
+                                            else if (tk.includes('DOGE')) assetType = 'DOGE';
                                             else assetType = 'BTC';
                                         }
                                         let assetBadgeClass = 'bg-slate-500/20 text-slate-300 border-slate-500/40';
@@ -2693,6 +2773,13 @@ if (document.readyState === 'loading') {
                                         if (assetType === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40'; assetIcon = '₿ '; }
                                         else if (assetType === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; assetIcon = 'Ξ '; }
                                         else if (assetType === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; assetIcon = '🪙 '; }
+                                            else if (assetType === 'EURUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                                            else if (assetType === 'GBPUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                                            else if (assetType === 'USDJPY') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                                            else if (assetType === 'AUDUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                                            else if (assetType === 'NDQ') { assetBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; assetIcon = '📈 '; }
+                                            else if (assetType === 'SOL') { assetBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; assetIcon = '🚀 '; }
+                                            else if (assetType === 'DOGE') { assetBadgeClass = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; assetIcon = '🐕 '; }
                                         window._currentAssetBadge = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border ${assetBadgeClass}">${assetIcon}${assetType}</span>`;
                                         return '';
                                     })()}
@@ -2893,6 +2980,7 @@ if (document.readyState === 'loading') {
                 isChartInitializing = false;
                 hideChartLoader();
             }
+            if (typeof initSpotWebSocket === 'function') initSpotWebSocket();
         }
 
         window.updateChartSettings = async function() {
@@ -2947,10 +3035,37 @@ if (document.readyState === 'loading') {
 
         // Multi-asset spot price cache & request sequence tracking
         window.currentAsset = 'BTC';
-        window.assetSpotPrices = { 'BTC': null, 'ETH': null, 'GOLD': null };
+        window.assetSpotPrices = { 'BTC': null, 'ETH': null, 'GOLD': null, 'EURUSD': null, 'GBPUSD': null, 'USDJPY': null, 'AUDUSD': null, 'NDQ': null, 'SOL': null, 'DOGE': null };
         let currentChartRequestId = 0;
         let currentKalshiRequestId = 0;
         let isRebuildingChart = false;
+
+        
+        window.toggleMoreAssets = function(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('more-assets-dropdown');
+            if (!dropdown) return;
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                setTimeout(() => {
+                    dropdown.classList.remove('opacity-0', 'scale-95');
+                    dropdown.classList.add('opacity-100', 'scale-100');
+                }, 10);
+            } else {
+                dropdown.classList.remove('opacity-100', 'scale-100');
+                dropdown.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => dropdown.classList.add('hidden'), 150);
+            }
+        };
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('more-assets-dropdown');
+            const btn = document.getElementById('btn-asset-more');
+            if (dropdown && !dropdown.classList.contains('hidden') && btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+                window.toggleMoreAssets();
+            }
+        });
 
         function showChartLoader() {
             const el = document.getElementById('chart-loader');
@@ -3044,7 +3159,27 @@ if (document.readyState === 'loading') {
             }
         }
 
-        async function selectDashboardAsset(asset) {
+        function toggleUniverse() {
+    const universe = document.getElementById('universe-select').value;
+    const finAssets = document.querySelectorAll('.asset-btn-financial');
+    const sportsAssets = document.querySelectorAll('.asset-btn-sports');
+    const stopLossDiv = document.getElementById('stop-loss-container');
+    const sportsConfDiv = document.getElementById('sports-confidence-container');
+    
+    if(universe === 'SPORTS') {
+        finAssets.forEach(el => el.classList.add('hidden'));
+        sportsAssets.forEach(el => el.classList.remove('hidden'));
+        if(stopLossDiv) stopLossDiv.classList.add('hidden');
+        if(sportsConfDiv) sportsConfDiv.classList.remove('hidden');
+    } else {
+        finAssets.forEach(el => el.classList.remove('hidden'));
+        sportsAssets.forEach(el => el.classList.add('hidden'));
+        if(stopLossDiv) stopLossDiv.classList.remove('hidden');
+        if(sportsConfDiv) sportsConfDiv.classList.add('hidden');
+    }
+}
+
+async function selectDashboardAsset(asset) {
             asset = (asset || 'BTC').toUpperCase();
             if (window.currentAsset === asset && window.lastCandle && document.querySelector('#lw-chart-container canvas')) {
                 return;
@@ -3054,20 +3189,50 @@ if (document.readyState === 'loading') {
             // Visual styles
             const activeStyles = {
                 'BTC': 'bg-orange-500/25 text-orange-300 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.2)]',
-                'ETH': 'bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.2)]',
-                'GOLD': 'bg-yellow-500/25 text-yellow-300 border-yellow-500/50 shadow-[0_0_12px_rgba(234,179,8,0.2)]'
+                'ETH': 'bg-indigo-500/25 text-indigo-300 border-indigo-500/50 shadow-[0_0_12px_rgba(99,102,241,0.2)]',
+                'GOLD': 'bg-yellow-500/25 text-yellow-300 border-yellow-500/50 shadow-[0_0_12px_rgba(234,179,8,0.2)]',
+                'NDQ': 'bg-blue-500/25 text-blue-300 border-blue-500/50 shadow-[0_0_12px_rgba(59,130,246,0.2)]',
+                'EURUSD': 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
+                'GBPUSD': 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
+                'USDJPY': 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
+                'AUDUSD': 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.2)]',
+                'SOL': 'bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_12px_rgba(168,85,247,0.2)]',
+                'DOGE': 'bg-orange-500/25 text-orange-300 border-orange-500/50 shadow-[0_0_12px_rgba(249,115,22,0.2)]'
             };
             const inactiveStyle = 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200';
             
-            ['BTC', 'ETH', 'GOLD'].forEach(a => {
+            ['BTC', 'ETH', 'GOLD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NDQ', 'SOL', 'DOGE'].forEach(a => {
                 const btn = document.getElementById('btn-asset-' + a.toLowerCase());
                 if (!btn) return;
-                btn.className = 'asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ' + 
-                    (a === asset ? activeStyles[a] : inactiveStyle);
+                
+                // For main buttons (BTC, ETH, GOLD)
+                if (['BTC', 'ETH', 'GOLD'].includes(a)) {
+                    btn.className = 'asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ' + 
+                        (a === asset ? activeStyles[a] : inactiveStyle);
+                } else {
+                    // For dropdown buttons
+                    btn.className = 'asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer text-left w-full ' + 
+                        (a === asset ? activeStyles[a] : 'bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200');
+                }
             });
             
             // Reset transient HUD values for the new asset without blanking the chart canvas
             window.lastCandle = null;
+
+            // Update dropdown button
+            const moreBtn = document.getElementById('btn-asset-more');
+            const moreText = document.getElementById('btn-asset-more-text');
+            if (moreBtn && moreText) {
+                if (!['BTC', 'ETH', 'GOLD'].includes(asset)) {
+                    moreBtn.className = 'py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer shadow-sm w-auto px-3 ' + activeStyles[asset];
+                    const iconMap = {'NDQ':'📈', 'EURUSD':'💵', 'GBPUSD':'💷', 'USDJPY':'💴', 'AUDUSD':'🇦🇺', 'SOL':'🚀', 'DOGE':'🐕'};
+                    moreText.innerHTML = (iconMap[asset] || '') + ' ' + asset + ' ▼';
+                } else {
+                    moreBtn.className = 'py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200 shadow-sm w-12';
+                    moreText.innerHTML = '▼';
+                }
+            }
+
             window.currentKalshiTarget = null;
             lastBidTs = 0;
             bidsQueue = [];
@@ -3108,14 +3273,14 @@ if (document.readyState === 'loading') {
         }
 
         async function fetchChartData(isSwitch = false) {
-            if (!window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) return;
             const thisReqId = ++currentChartRequestId;
             const reqAsset = (window.currentAsset || 'BTC').toUpperCase();
             const curA = reqAsset.toLowerCase();
             const tf = window.currentChartTimeframe || '15m';
 
             try {
-                const res = await fetch(`/api/engine/${curA}/chart?timeframe=${tf}&limit=200`);
+                const res = await fetch(`${window.API_BASE_URL || ''}/api/engine/${curA}/chart?timeframe=${tf}&limit=200`);
                 if (!res.ok) return;
 
                 // Drop response if user switched asset while request was in-flight
@@ -3225,10 +3390,10 @@ if (document.readyState === 'loading') {
         }
 
         async function fetchLiveBids() {
-            if (!window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) return;
             try {
                 const curA = (window.currentAsset || 'BTC').toLowerCase();
-                const res = await fetch('/api/engine/' + curA + '/kalshi/trades?since=' + lastBidTs);
+                const res = await fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/kalshi/trades?since=' + lastBidTs);
                 if (!res.ok) return;
                 const d = await res.json();
                 
@@ -3259,7 +3424,7 @@ if (document.readyState === 'loading') {
 
         window.closeTrade = async function(tradeId, action = 'MANUAL_CLOSE') {
             try {
-                const res = await fetch('/api/auth/trade/close/' + tradeId + (action ? '?action=' + encodeURIComponent(action) : ''), {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/close/' + tradeId + (action ? '?action=' + encodeURIComponent(action) : ''), {
                     method:"POST", 
                     headers:{
                         'Authorization':'Bearer '+token,
@@ -3283,7 +3448,7 @@ if (document.readyState === 'loading') {
 
         window.takeProfitTrade = async function(tradeId) {
             try {
-                const res = await fetch('/api/auth/trade/close/' + tradeId + '?action=TAKE_PROFIT', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/close/' + tradeId + '?action=TAKE_PROFIT', {
                     method:"POST", 
                     headers:{
                         'Authorization':'Bearer '+token,
@@ -3354,7 +3519,7 @@ if (document.readyState === 'loading') {
                 ? sNum.toLocaleString(undefined, { maximumFractionDigits: 2 })
                 : null;
 
-            const assetType = String(t.asset || (ticker.includes('BTC') ? 'BTC' : ticker.includes('ETH') ? 'ETH' : ticker.includes('GOLD') ? 'GOLD' : 'BTC')).toUpperCase();
+            const assetType = String(t.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => ticker.includes(x)) || 'BTC')).toUpperCase();
             const tickerEl = document.getElementById('tdm-ticker');
             if (tickerEl) tickerEl.textContent = `${assetType} · ${ticker}`;
             const strikeTitleEl = document.getElementById('tdm-strike-title');
@@ -3733,7 +3898,7 @@ if (document.readyState === 'loading') {
             _updateCheckDone = true;
 
             try {
-                const res = await fetch('/api/auth/updates', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/updates', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) return;
@@ -3866,7 +4031,7 @@ if (document.readyState === 'loading') {
             if (_currentUpdateId) {
                 localStorage.setItem('kalshi_dismissed_update_' + _currentUpdateId, 'true');
                 try {
-                    await fetch('/api/auth/updates/dismiss', {
+                    await fetch((window.API_BASE_URL||'')+'/api/auth/updates/dismiss', {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -3923,15 +4088,13 @@ if (document.readyState === 'loading') {
                 if (communityModal && !communityModal.classList.contains('hidden')) return true;
                 const supportModal = document.getElementById('supportModal');
                 if (supportModal && !supportModal.classList.contains('hidden')) return true;
-                const updateAlert = document.getElementById('updateAlertModal');
-                if (updateAlert && !updateAlert.classList.contains('hidden')) return true;
                 return false;
             }
 
             // Touch events (Mobile / iOS)
             window.addEventListener('touchstart', (e) => {
                 if (isRefreshing || isModalOrDrawerOpen()) return;
-                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAlertModal')) return;
+                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAnnouncementModal')) return;
 
                 if (isAtTop() && e.touches.length === 1) {
                     startY = e.touches[0].clientY;
@@ -4004,7 +4167,7 @@ if (document.readyState === 'loading') {
             let isMouseDown = false;
             window.addEventListener('mousedown', (e) => {
                 if (isRefreshing || isModalOrDrawerOpen()) return;
-                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAlertModal')) return;
+                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAnnouncementModal')) return;
                 if (isAtTop() && e.button === 0) {
                     startY = e.clientY;
                     currentY = startY;
@@ -4148,17 +4311,17 @@ if (document.readyState === 'loading') {
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Position Scanner:</span>
                             <span class="text-[10px] font-mono text-emerald-400 font-bold">READY · Bot Scanning Active</span>
                         </div>
-                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${s.trading_style || 'AUTO'} · 3 ASSETS (BTC, ETH, GOLD)</span>
+                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${s.trading_style || 'AUTO'} · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)</span>
                     </div>
                 `;
                 return;
             }
 
             // Order: BTC first, then ETH, then GOLD, then others
-            const assetOrder = { 'BTC': 1, 'ETH': 2, 'GOLD': 3 };
+            const assetOrder = { 'BTC': 1, 'ETH': 2, 'GOLD': 3, 'EURUSD': 4, 'GBPUSD': 5, 'USDJPY': 6, 'AUDUSD': 7, 'NDQ': 8, 'SOL': 9, 'DOGE': 10 };
             const sortedOpen = [...openTrades].sort((a, b) => {
-                const aAsset = String(a.asset || (String(a.ticker||'').includes('BTC') ? 'BTC' : String(a.ticker||'').includes('ETH') ? 'ETH' : String(a.ticker||'').includes('GOLD') ? 'GOLD' : 'OTHER')).toUpperCase();
-                const bAsset = String(b.asset || (String(b.ticker||'').includes('BTC') ? 'BTC' : String(b.ticker||'').includes('ETH') ? 'ETH' : String(b.ticker||'').includes('GOLD') ? 'GOLD' : 'OTHER')).toUpperCase();
+                const aAsset = String(a.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => String(a.ticker||'').includes(x)) || 'OTHER')).toUpperCase();
+                const bAsset = String(b.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => String(b.ticker||'').includes(x)) || 'OTHER')).toUpperCase();
                 return (assetOrder[aAsset] || 99) - (assetOrder[bAsset] || 99);
             });
 
@@ -4172,9 +4335,13 @@ if (document.readyState === 'loading') {
                     if (tk.includes('BTC')) asset = 'BTC';
                     else if (tk.includes('ETH')) asset = 'ETH';
                     else if (tk.includes('GOLD')) asset = 'GOLD';
-                    else if (tk.includes('EURUSD')) asset = 'EUR/USD';
-                    else if (tk.includes('GBPUSD')) asset = 'GBP/USD';
-                    else if (tk.includes('USDJPY')) asset = 'USD/JPY';
+                    else if (tk.includes('EURUSD')) asset = 'EURUSD';
+                    else if (tk.includes('GBPUSD')) asset = 'GBPUSD';
+                    else if (tk.includes('USDJPY')) asset = 'USDJPY';
+                    else if (tk.includes('AUDUSD')) asset = 'AUDUSD';
+                    else if (tk.includes('NDQ')) asset = 'NDQ';
+                    else if (tk.includes('SOL')) asset = 'SOL';
+                    else if (tk.includes('DOGE')) asset = 'DOGE';
                     else asset = 'BTC';
                 }
 
@@ -4218,11 +4385,18 @@ if (document.readyState === 'loading') {
                 if (asset === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40'; assetIcon = '₿ '; }
                 else if (asset === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; assetIcon = 'Ξ '; }
                 else if (asset === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; assetIcon = '🪙 '; }
+                    else if (asset === 'EURUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                    else if (asset === 'GBPUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                    else if (asset === 'USDJPY') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                    else if (asset === 'AUDUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
+                    else if (asset === 'NDQ') { assetBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; assetIcon = '📈 '; }
+                    else if (asset === 'SOL') { assetBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; assetIcon = '🚀 '; }
+                    else if (asset === 'DOGE') { assetBadgeClass = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; assetIcon = '🐕 '; }
 
                 rowsHtml += `
                     <div class="px-3.5 py-2.5 flex flex-col gap-1.5 ${isYes ? 'bg-emerald-950/20' : 'bg-rose-950/20'} hover:bg-white/[0.04] transition-colors">
                         <!-- Line 1: Direction Badge, Asset Badge, Trade Label, Live PnL -->
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
                             <div class="flex items-center gap-2 flex-wrap min-w-0">
                                 <span class="text-xs font-bold text-white tracking-wide truncate ${isYes ? 'text-emerald-400' : 'text-rose-400'}">
                                     ${tradeLabel}
@@ -4284,9 +4458,9 @@ if (document.readyState === 'loading') {
         let battleTapeIndex = 0;
 
         async function fetchBattleTape() {
-            if (!window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) return;
             try {
-                const res = await fetch('/api/auth/community/activity');
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/community/activity');
                 if (!res.ok) return;
                 const data = await res.json();
                 battleTapeItems = data.activity || [];
@@ -4310,7 +4484,7 @@ if (document.readyState === 'loading') {
 
             feed.innerHTML = `
                 <div class="flex items-center gap-2 overflow-hidden truncate font-mono text-[11px]">
-                    <img src="${item.profile_pic || '/static/ai_avatar.gif'}" class="w-4 h-4 rounded-full object-cover border border-kalshi-border shrink-0">
+                    <img src="${item.profile_pic || './assets/icon.png'}" class="w-4 h-4 rounded-full object-cover border border-kalshi-border shrink-0">
                     <span class="font-bold text-gray-200">@${item.username}</span>
                     <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${item.side === 'YES' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'}">${item.side}</span>
                     <span class="text-[9px] text-gray-400 uppercase tracking-wider">${style}</span>
@@ -4333,10 +4507,10 @@ if (document.readyState === 'loading') {
 
         // ── Daily Quests & Badges ──
         async function fetchDailyQuests() {
-            if (!window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) return;
             try {
                 const authToken = localStorage.getItem('saas_token') || token;
-                const res = await fetch('/api/auth/user/quests', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/user/quests', {
                     headers: { 'Authorization': 'Bearer ' + authToken }
                 });
                 if (!res.ok) return;
@@ -4402,7 +4576,7 @@ if (document.readyState === 'loading') {
             document.body.style.overflow = 'hidden';
 
             try {
-                const res = await fetch('/api/auth/user/equity', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/user/equity', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed to fetch equity');
@@ -4490,6 +4664,38 @@ if (document.readyState === 'loading') {
                                     </td>
                                     <td class="py-2.5 text-center text-gray-400">${s.total}</td>
                                     <td class="py-2.5 text-center font-bold ${s.win_rate >= 50 ? 'text-emerald-400' : 'text-rose-400'}">${s.win_rate}%</td>
+                                    <td class="py-2.5 text-right font-black ${pnlColor}">${pnlStr}</td>
+                                    <td class="py-2.5 text-right text-gray-400">${avgStr}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+
+                // Asset Performance Matrix
+                const assetBody = document.getElementById('asset-matrix-body');
+                if (assetBody) {
+                    const assets = eq.assets || [];
+                    if (assets.length === 0) {
+                        assetBody.innerHTML = '<tr><td colspan="5" class="py-3 text-center text-gray-500 font-mono">No asset trades recorded</td></tr>';
+                    } else {
+                        const assetIcons = {
+                            'BTC': '₿', 'ETH': 'Ξ', 'GOLD': '🪙', 'NDQ': '📈', 'EURUSD': '💵',
+                            'GBPUSD': '💷', 'USDJPY': '💴', 'AUDUSD': '🇦🇺', 'SOL': '🚀', 'DOGE': '🐕'
+                        };
+                        assetBody.innerHTML = assets.map(a => {
+                            const isPos = a.pnl >= 0;
+                            const pnlColor = isPos ? 'text-emerald-400' : 'text-rose-400';
+                            const pnlStr = (isPos ? '+$' : '-$') + Math.abs(a.pnl || 0).toFixed(2);
+                            const avgStr = (a.avg_pnl >= 0 ? '+$' : '-$') + Math.abs(a.avg_pnl || 0).toFixed(2);
+                            const icon = assetIcons[a.asset] || '🔹';
+                            return `
+                                <tr class="hover:bg-white/5 transition-colors">
+                                    <td class="py-2.5 font-bold text-gray-200 flex items-center gap-1.5">
+                                        <span>${icon}</span> <span>${a.asset}</span>
+                                    </td>
+                                    <td class="py-2.5 text-center text-gray-400">${a.total}</td>
+                                    <td class="py-2.5 text-center font-bold ${a.win_rate >= 50 ? 'text-emerald-400' : 'text-rose-400'}">${a.win_rate}%</td>
                                     <td class="py-2.5 text-right font-black ${pnlColor}">${pnlStr}</td>
                                     <td class="py-2.5 text-right text-gray-400">${avgStr}</td>
                                 </tr>
@@ -4635,7 +4841,7 @@ if (document.readyState === 'loading') {
                     strike.textContent = '$--,---';
                 }
             }
-            if (s.btc_price && spot && (window.currentAsset || 'BTC') === 'BTC') spot.textContent = '$' + Number(s.btc_price).toLocaleString(undefined,{maximumFractionDigits:0});
+            if (s.btc_price && spot && (window.currentAsset || 'BTC') === 'BTC' && typeof updateSpotPriceDisplay === 'function' && !(typeof spotWsLive === 'function' && spotWsLive())) updateSpotPriceDisplay(Number(s.btc_price), 'BTC');
             if (s.countdown && countdown) countdown.textContent = s.countdown;
             if (s.yes_prob !== undefined) {
                 const yPct = Math.round(s.yes_prob) + '%';
@@ -4653,18 +4859,211 @@ if (document.readyState === 'loading') {
             }
         }
 
+
+        // Real-Time High-Frequency Spot WebSocket & Display Sync
+        let spotWs = null;
+        let spotWsAsset = null;
+        let _pendingWsSpotPrice = null;
+        let _spotWsRafScheduled = false;
+
+        function updateSpotPriceDisplay(spotVal, reqAsset) {
+            reqAsset = (reqAsset || window.currentAsset || 'BTC').toUpperCase();
+            if (!isFinite(spotVal) || spotVal <= 0) return;
+            if (reqAsset !== (window.currentAsset || 'BTC').toUpperCase()) return;
+
+            const spotEl = document.getElementById('exec-spot');
+            if (!spotEl) return;
+
+            const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(reqAsset);
+            const decimals = reqAsset === 'USDJPY' ? 3 : (isFx ? 5 : (reqAsset === 'DOGE' ? 4 : 2));
+            const prefix = isFx ? '' : '$';
+
+            if (!window.assetSpotPrices) window.assetSpotPrices = {};
+            const prevSpot = (window.assetSpotPrices && window.assetSpotPrices[reqAsset] !== undefined) ? window.assetSpotPrices[reqAsset] : (window.lastSpotPrice || spotVal);
+            window.assetSpotPrices[reqAsset] = spotVal;
+            window.lastSpotPrice = spotVal;
+
+            const newText = prefix + spotVal.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+            if (spotEl.textContent !== newText) {
+                if (spotVal < prevSpot) {
+                    spotEl.classList.remove('text-emerald-400');
+                    spotEl.classList.add('text-kalshi-red');
+                } else if (spotVal > prevSpot) {
+                    spotEl.classList.remove('text-kalshi-red');
+                    spotEl.classList.add('text-emerald-400');
+                }
+
+                // Update chart candle / line seamlessly with real-time ticks
+                if (window.lastCandle && typeof window.lastCandle.close === 'number') {
+                    const ratio = spotVal / window.lastCandle.close;
+                    if (ratio > 0.4 && ratio < 2.5) {
+                        const newCandle = { ...window.lastCandle };
+                        newCandle.close = spotVal;
+                        if (spotVal > newCandle.high) newCandle.high = spotVal;
+                        if (spotVal < newCandle.low) newCandle.low = spotVal;
+
+                        try {
+                            if (window.currentChartType === 'line' && lineSeries) {
+                                lineSeries.update({ time: newCandle.time, value: spotVal });
+                            } else if (candleSeries) {
+                                candleSeries.update(newCandle);
+                            }
+                            window.lastCandle = newCandle;
+                        } catch (updateErr) {
+                            console.warn('[Chart] realtime tick update error:', updateErr);
+                        }
+                    }
+                }
+
+                spotEl.textContent = newText;
+                spotEl.classList.remove('pulse-tick');
+                void spotEl.offsetWidth;
+                spotEl.classList.add('pulse-tick');
+            }
+
+            // Sync Strike Delta spread
+            if (window.currentKalshiTarget) {
+                const targetVal = Number(window.currentKalshiTarget);
+                const diff = spotVal - targetVal;
+
+                const diffArrow = document.getElementById('exec-diff-arrow');
+                const diffVal = document.getElementById('exec-diff-val');
+                const diffLabel = document.getElementById('exec-diff-label');
+
+                if (diffArrow && diffVal) {
+                    diffVal.textContent = prefix + Math.abs(diff).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+                    diffLabel.classList.remove('text-emerald-400', 'text-kalshi-red');
+                    diffArrow.classList.remove('text-emerald-400', 'text-kalshi-red');
+                    diffVal.classList.remove('text-emerald-400', 'text-kalshi-red');
+
+                    if (diff >= 0) {
+                        diffArrow.textContent = '⬆';
+                        diffLabel.classList.add('text-emerald-400');
+                        diffArrow.classList.add('text-emerald-400');
+                        diffVal.classList.add('text-emerald-400');
+                    } else {
+                        diffArrow.textContent = '⬇';
+                        diffLabel.classList.add('text-kalshi-red');
+                        diffArrow.classList.add('text-kalshi-red');
+                        diffVal.classList.add('text-kalshi-red');
+                    }
+                }
+            }
+        }
+
+        // ── Composite BRTI-style real-time feed ──────────────────────────────
+        // Binance.com geo-blocks US users (HTTP 451), so we blend three US-accessible
+        // public order-book feeds (Coinbase, Kraken, Binance.US) into one mid price,
+        // mirroring how CF Benchmarks builds the BRTI from multiple exchanges.
+        let spotFeeds = {};          // name -> WebSocket
+        let spotMids = {};           // name -> { mid, ts }
+        let _spotLastTickTs = 0;
+
+        function spotWsLive() {
+            return spotWsAsset === (window.currentAsset || 'BTC').toUpperCase() &&
+                   (Date.now() - _spotLastTickTs) < 4000;
+        }
+
+        function _pushSpotMid(source, bid, ask, asset) {
+            if (!(bid > 0) || !(ask > 0) || asset !== spotWsAsset) return;
+            const now = Date.now();
+            spotMids[source] = { mid: (bid + ask) / 2, ts: now };
+            const fresh = Object.values(spotMids).filter(m => now - m.ts < 5000).map(m => m.mid);
+            if (!fresh.length) return;
+            const composite = fresh.reduce((s, v) => s + v, 0) / fresh.length;
+            _spotLastTickTs = now;
+            _pendingWsSpotPrice = composite;
+            if (!_spotWsRafScheduled) {
+                _spotWsRafScheduled = true;
+                requestAnimationFrame(() => {
+                    _spotWsRafScheduled = false;
+                    if ((window.currentAsset || 'BTC').toUpperCase() !== spotWsAsset) return;
+                    if (_pendingWsSpotPrice !== null) updateSpotPriceDisplay(_pendingWsSpotPrice, spotWsAsset);
+                });
+            }
+        }
+
+        function _closeSpotFeeds() {
+            Object.values(spotFeeds).forEach(ws => { try { ws.onclose = null; ws.close(); } catch (e) {} });
+            spotFeeds = {};
+            spotMids = {};
+            spotWs = null;
+        }
+
+        function _openSpotFeed(name, url, onOpen, onMsg, asset) {
+            try {
+                const ws = new WebSocket(url);
+                ws.onopen = () => { try { onOpen && onOpen(ws); } catch (e) {} };
+                ws.onmessage = (ev) => {
+                    if (document.hidden) return;
+                    try { onMsg(JSON.parse(ev.data)); } catch (e) {}
+                };
+                ws.onerror = () => { try { ws.close(); } catch (e) {} };
+                ws.onclose = () => {
+                    if (spotFeeds[name] === ws) delete spotFeeds[name];
+                    setTimeout(() => {
+                        if (spotWsAsset === asset && (window.currentAsset || 'BTC').toUpperCase() === asset && !spotFeeds[name]) {
+                            _openSpotFeed(name, url, onOpen, onMsg, asset);
+                        }
+                    }, 3000);
+                };
+                spotFeeds[name] = ws;
+                spotWs = ws;
+            } catch (e) { console.warn('[SpotWS] ' + name + ' failed:', e); }
+        }
+
+        function initSpotWebSocket() {
+            const asset = (window.currentAsset || 'BTC').toUpperCase();
+            const map = {
+                BTC:  { cb: 'BTC-USD',  kr: 'BTC/USD',  bu: 'btcusd'  },
+                ETH:  { cb: 'ETH-USD',  kr: 'ETH/USD',  bu: 'ethusd'  },
+                SOL:  { cb: 'SOL-USD',  kr: 'SOL/USD',  bu: 'solusd'  },
+                DOGE: { cb: 'DOGE-USD', kr: 'DOGE/USD', bu: 'dogeusd' },
+            };
+            const sym = map[asset];
+            if (!sym) { _closeSpotFeeds(); spotWsAsset = null; return; }
+            if (spotWsAsset === asset && Object.keys(spotFeeds).length) return;
+
+            _closeSpotFeeds();
+            spotWsAsset = asset;
+
+            // 1) Coinbase Exchange ticker (includes best_bid / best_ask)
+            _openSpotFeed('coinbase', 'wss://ws-feed.exchange.coinbase.com',
+                ws => ws.send(JSON.stringify({ type: 'subscribe', product_ids: [sym.cb], channels: ['ticker'] })),
+                d => { if (d.type === 'ticker' && d.product_id === sym.cb) _pushSpotMid('coinbase', parseFloat(d.best_bid), parseFloat(d.best_ask), asset); },
+                asset);
+
+            // 2) Kraken v2 ticker with event_trigger=bbo -> fires on every best bid/offer change
+            _openSpotFeed('kraken', 'wss://ws.kraken.com/v2',
+                ws => ws.send(JSON.stringify({ method: 'subscribe', params: { channel: 'ticker', symbol: [sym.kr], event_trigger: 'bbo' } })),
+                d => {
+                    if (d.channel === 'ticker' && Array.isArray(d.data)) {
+                        d.data.forEach(t => { if (t.symbol === sym.kr) _pushSpotMid('kraken', parseFloat(t.bid), parseFloat(t.ask), asset); });
+                    }
+                },
+                asset);
+
+            // 3) Binance.US raw bookTicker (top-of-book, millisecond updates)
+            _openSpotFeed('binanceus', `wss://stream.binance.us:9443/ws/${sym.bu}@bookTicker`,
+                null,
+                d => { if (d.b && d.a) _pushSpotMid('binanceus', parseFloat(d.b), parseFloat(d.a), asset); },
+                asset);
+        }
+
         // Fetch Kalshi contract data for execution panel
         async function fetchKalshiData() {
-            if (!window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) return;
             const thisReqId = ++currentKalshiRequestId;
             const reqAsset = (window.currentAsset || 'BTC').toUpperCase();
             const curA = reqAsset.toLowerCase();
 
             try {
                 const [kRes, cRes, tickerRes] = await Promise.all([
-                    fetch('/api/engine/' + curA + '/kalshi'),
-                    fetch('/api/engine/' + curA + '/countdown'),
-                    fetch('/api/engine/' + curA + '/ticker'),
+                    fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/kalshi'),
+                    fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/countdown'),
+                    fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/ticker'),
                 ]);
 
                 // Drop response if user switched asset while awaiting
@@ -4726,83 +5125,13 @@ if (document.readyState === 'loading') {
 
                 if (tickerRes.ok) {
                     const tickerData = await tickerRes.json();
-                    const spotEl = document.getElementById('exec-spot');
-                    if (spotEl && tickerData && tickerData.price) {
+                    if (tickerData && tickerData.price) {
                         const spotVal = Number(tickerData.price);
                         if (isFinite(spotVal) && spotVal > 0) {
-                            // Store in asset-isolated spot price map
-                            if (!window.assetSpotPrices) window.assetSpotPrices = {};
-                            window.assetSpotPrices[reqAsset] = spotVal;
-                            window.lastSpotPrice = spotVal;
-
-                            const newText = '$' + spotVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-                            if (spotEl.textContent !== newText) {
-                                const lastSpot = window.assetSpotPrices[reqAsset] || spotVal;
-                                if (spotVal < lastSpot) {
-                                    spotEl.classList.remove('text-emerald-400');
-                                    spotEl.classList.add('text-kalshi-red');
-                                } else if (spotVal > lastSpot) {
-                                    spotEl.classList.remove('text-kalshi-red');
-                                    spotEl.classList.add('text-emerald-400');
-                                }
-
-                                // Update chart candle safely without cross-asset scale pollution
-                                if (window.lastCandle && typeof window.lastCandle.close === 'number') {
-                                    const ratio = spotVal / window.lastCandle.close;
-                                    if (ratio > 0.4 && ratio < 2.5) {
-                                        const newCandle = { ...window.lastCandle };
-                                        newCandle.close = spotVal;
-                                        if (spotVal > newCandle.high) newCandle.high = spotVal;
-                                        if (spotVal < newCandle.low) newCandle.low = spotVal;
-                                        
-                                        try {
-                                            if (window.currentChartType === 'line' && lineSeries) {
-                                                lineSeries.update({ time: newCandle.time, value: spotVal });
-                                            } else if (candleSeries) {
-                                                candleSeries.update(newCandle);
-                                            }
-                                            window.lastCandle = newCandle;
-                                        } catch (updateErr) {
-                                            console.warn('[Chart] update error, refetching:', updateErr);
-                                            fetchChartData();
-                                        }
-                                    }
-                                }
-
-                                spotEl.textContent = newText;
-                                spotEl.classList.remove('pulse-tick');
-                                void spotEl.offsetWidth;
-                                spotEl.classList.add('pulse-tick');
-                            }
-
-                            if (window.currentKalshiTarget) {
-                                const targetVal = Number(window.currentKalshiTarget);
-                                const diff = spotVal - targetVal;
-                                
-                                const diffArrow = document.getElementById('exec-diff-arrow');
-                                const diffVal = document.getElementById('exec-diff-val');
-                                const diffLabel = document.getElementById('exec-diff-label');
-                                
-                                if (diffArrow && diffVal) {
-                                    diffVal.textContent = '$' + Math.abs(diff).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                                    
-                                    diffLabel.classList.remove('text-emerald-400', 'text-kalshi-red');
-                                    diffArrow.classList.remove('text-emerald-400', 'text-kalshi-red');
-                                    diffVal.classList.remove('text-emerald-400', 'text-kalshi-red');
-                                    
-                                    if (diff >= 0) {
-                                        diffArrow.textContent = '⬆';
-                                        diffLabel.classList.add('text-emerald-400');
-                                        diffArrow.classList.add('text-emerald-400');
-                                        diffVal.classList.add('text-emerald-400');
-                                    } else {
-                                        diffArrow.textContent = '⬇';
-                                        diffLabel.classList.add('text-kalshi-red');
-                                        diffArrow.classList.add('text-kalshi-red');
-                                        diffVal.classList.add('text-kalshi-red');
-                                    }
-                                }
+                            // If WebSocket stream is actively updating this asset, let WebSocket drive the live ticks;
+                            // otherwise, update from the periodic ticker snapshot
+                            if (!spotWsLive()) {
+                                updateSpotPriceDisplay(spotVal, reqAsset);
                             }
                         }
                     }
@@ -4810,6 +5139,7 @@ if (document.readyState === 'loading') {
             } catch(e) { console.warn('[ExecPanel] fetch err', e); }
         }
         fetchKalshiData();
+        if (typeof initSpotWebSocket === 'function') initSpotWebSocket();
         if (typeof syncSoundSettingsUI === 'function') syncSoundSettingsUI();
         setInterval(fetchKalshiData, 1000);
 
@@ -4829,8 +5159,8 @@ if (document.readyState === 'loading') {
 
 
 <!-- Community Leaderboard Modal -->
-<div id="communityModal" class="fixed inset-0 z-[300] hidden flex flex-col bg-[#0a0e17]">
-    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2">
+<div id="communityModal" class="fixed inset-0 z-[1000] hidden flex flex-col bg-[#0a0e17]">
+    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
         <div class="flex flex-col min-w-0">
             <h2 class="text-white font-black tracking-wider uppercase text-sm truncate">Community Leaderboard</h2>
             <div class="flex items-center gap-2 mt-0.5">
@@ -4889,8 +5219,8 @@ if (document.readyState === 'loading') {
 </div>
 
 <!-- Support Ticket Modal -->
-<div id="supportModal" class="fixed inset-0 z-[300] hidden flex flex-col bg-[#0a0e17]">
-    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2">
+<div id="supportModal" class="fixed inset-0 z-[1000] hidden flex flex-col bg-[#0a0e17]">
+    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
         <div class="flex flex-col min-w-0">
             <h2 class="text-white font-black tracking-wider uppercase text-sm flex items-center gap-2 truncate">
                 <span>🎫</span> Submit Support Ticket
@@ -4920,8 +5250,8 @@ if (document.readyState === 'loading') {
 </div>
 
 <!-- Interactive Equity Curve & Diagnostic Studio Modal (Feature 2) -->
-<div id="equityModal" class="fixed inset-0 z-[300] hidden flex flex-col bg-[#0a0e17]">
-    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2">
+<div id="equityModal" class="fixed inset-0 z-[1000] hidden flex flex-col bg-[#0a0e17]">
+    <div class="shrink-0 z-10 bg-black/80 border-b border-kalshi-border px-4 py-3 flex justify-between items-center gap-2" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
         <div class="flex flex-col min-w-0">
             <h2 class="text-white font-black tracking-wider uppercase text-sm flex items-center gap-2 truncate">
                 <span>📈</span> Portfolio Analytics & Diagnostics
@@ -5069,6 +5399,31 @@ if (document.readyState === 'loading') {
             </div>
         </div>
 
+        <!-- Asset Performance Matrix -->
+        <div class="bg-[#0c0c10] border border-kalshi-border rounded-xl p-4 shadow-md space-y-3">
+            <h3 class="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span>📊</span> Asset Performance Matrix
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left font-mono text-[10px]">
+                    <thead>
+                        <tr class="text-gray-500 border-b border-white/5 uppercase text-[8px] tracking-wider">
+                            <th class="pb-2">Asset</th>
+                            <th class="pb-2 text-center">Trades</th>
+                            <th class="pb-2 text-center">Win Rate</th>
+                            <th class="pb-2 text-right">Net PnL</th>
+                            <th class="pb-2 text-right">Avg / Trade</th>
+                        </tr>
+                    </thead>
+                    <tbody id="asset-matrix-body" class="divide-y divide-white/5">
+                        <tr>
+                            <td colspan="5" class="py-3 text-center text-gray-500">Loading asset matrix...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- How to Improve Profits (Actionable Recommendations) -->
         <div class="bg-[#0c0c10] border border-amber-500/30 rounded-xl p-4 shadow-md space-y-3">
             <div class="flex items-center justify-between border-b border-white/5 pb-2">
@@ -5090,8 +5445,20 @@ if (document.readyState === 'loading') {
 
 <!-- Sleek Detailed Trade Breakdown Modal -->
 <div id="tradeDetailsModal" class="fixed inset-0 z-[350] hidden items-center justify-center p-4 sm:p-5 bg-black/80  transition-opacity duration-200" onclick="if(event.target === this) closeTradeDetailsModal()">
-    <div class="relative w-full max-w-xl max-h-[80vh] sm:max-h-[90vh] my-auto bg-[#0c111c] border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
-        
+    <div id="tradeDetailsModalCard" class="relative w-full max-w-xl max-h-[80vh] sm:max-h-[90vh] my-auto bg-[#0c111c] border border-white/10 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        <div class="swipe-pill w-12 h-1.5 bg-white/20 rounded-full mx-auto my-3 sm:hidden cursor-grab active:cursor-grabbing"></div>
+        <div id="regimeModalCard" class="hidden"><div class="swipe-pill"></div></div>
+        <div id="leaderboardModalCard" class="hidden"><div class="swipe-pill"></div></div>
+        <div id="styleModalCard" class="hidden"><div class="swipe-pill"></div></div>
+        <script>
+            function attachSwipeToDismiss() {}
+            attachSwipeToDismiss('tradeDetailsModal', 'tradeDetailsModalCard', closeTradeDetails);
+            attachSwipeToDismiss('regime-modal', 'regimeModalCard', closeRegimeModal);
+            attachSwipeToDismiss('trading-style-modal', 'styleModalCard', closeStyleModal);
+            function closeTradeDetails() { closeTradeDetailsModal(); }
+            function closeRegimeModal() {}
+            function closeStyleModal() {}
+        </script>
         <!-- Sticky Header -->
         <div class="sticky top-0 z-20 bg-[#0d1424]/95  border-b border-white/10 px-4 sm:px-6 py-3.5 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-2.5">
@@ -5240,7 +5607,7 @@ if (document.readyState === 'loading') {
         </div>
 
         <!-- Sticky Footer -->
-        <div class="sticky bottom-0 z-20 bg-[#0d1424]/95  border-t border-white/10 px-4 sm:px-6 py-3 flex justify-between items-center shrink-0">
+        <div class="sticky bottom-0 z-20 bg-[#0d1424]/95 backdrop-blur-xl border-t border-white/10 px-4 sm:px-6 py-3 pb-safe-modal flex justify-between items-center shrink-0" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
             <span class="text-[10px] text-gray-400 font-mono">
                 Contract: <span id="tdm-footer-ticker" class="text-white font-bold">--</span>
             </span>
@@ -5252,11 +5619,11 @@ if (document.readyState === 'loading') {
 </div>
 
 <!-- What's New / Update Alert Modal -->
-<div id="updateAnnouncementModal" class="fixed inset-0 z-[400] flex items-center justify-center p-3 sm:p-5 bg-black/80  opacity-0 pointer-events-none transition-all duration-300" onclick="if(event.target === this) dismissUpdateAnnouncement()">
+<div id="updateAnnouncementModal" class="fixed inset-0 z-[400] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300" onclick="if(event.target === this) dismissUpdateAnnouncement()">
     <div id="updateAnnouncementCard" class="relative w-full max-w-lg bg-[#0c111c] border border-cyan-500/30 rounded-2xl sm:rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden max-h-[88vh] transform scale-95 transition-all duration-300" onclick="event.stopPropagation()">
         
         <!-- Sticky Header with glowing gradient accent -->
-        <div class="sticky top-0 z-20 bg-gradient-to-b from-cyan-950/40 via-[#0d1424]/95 to-[#0d1424]/95  border-b border-white/10 px-5 sm:px-6 py-4 flex flex-col shrink-0">
+        <div class="sticky top-0 z-20 bg-gradient-to-b from-cyan-950/40 via-[#0d1424]/95 to-[#0d1424]/95 backdrop-blur-xl border-b border-white/10 px-5 sm:px-6 py-4 flex flex-col shrink-0">
             <div class="flex items-center justify-between w-full">
                 <div class="flex items-center gap-2">
                     <span id="update-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/35 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
@@ -5285,7 +5652,7 @@ if (document.readyState === 'loading') {
         </div>
 
         <!-- Sticky Dismiss Footer -->
-        <div class="sticky bottom-0 z-20 bg-[#0d1424]/95  border-t border-white/10 px-5 sm:px-6 py-3.5 flex items-center gap-3 shrink-0">
+        <div class="sticky bottom-0 z-20 bg-[#0d1424]/95 backdrop-blur-xl border-t border-white/10 px-5 sm:px-6 py-3.5 pb-safe-modal flex items-center gap-3 shrink-0" style="padding-bottom: calc(0.875rem + env(safe-area-inset-bottom, 0px));">
             <button onclick="dismissUpdateAnnouncement()" class="w-full py-3 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-98 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.35)] transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <span>Got It, Dismiss</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
@@ -5297,7 +5664,7 @@ if (document.readyState === 'loading') {
 <!-- Settings Drawer (iOS Human Interface Style) -->
 <div id="settingsDrawer" class="fixed inset-0 z-[200] hidden">
     <!-- Backdrop with iOS blur -->
-    <div id="settingsBackdrop" class="absolute inset-0 bg-black/60  opacity-0 transition-opacity duration-300" onclick="closeSettings()"></div>
+    <div id="settingsBackdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300" onclick="closeSettings()"></div>
     
     <!-- iOS Slide-Over Panel -->
     <div id="settingsPanel" class="absolute right-0 top-0 bottom-0 w-full sm:w-[440px] max-w-[95vw] bg-[#0c101a]/95 border-l border-white/[0.08] shadow-[0_0_60px_rgba(0,0,0,0.95)] flex flex-col transform translate-x-full transition-transform duration-300 ease-out select-none">
@@ -5359,7 +5726,7 @@ if (document.readyState === 'loading') {
                     <!-- Asset Selection -->
                     <div class="mt-3 bg-[#131b2c] border border-white/[0.05] rounded-xl p-3">
                         <span class="text-[11px] font-bold text-white tracking-tight mb-2 block uppercase text-gray-400">Active Trading Assets</span>
-                        <div class="flex items-center justify-between gap-2">
+                        <div class="grid grid-cols-5 gap-1.5">
                             <!-- BTC -->
                             <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
                                 <span class="text-[10px] font-bold text-orange-400 mb-1.5">BTC</span>
@@ -5382,6 +5749,62 @@ if (document.readyState === 'loading') {
                                 <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
                                     <input type="checkbox" id="asset-gold-toggle" class="sr-only peer asset-toggle" value="GOLD" onchange="saveUserConfig()">
                                     <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                </label>
+                            </div>
+                            <!-- SOL -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-purple-300 mb-1.5">SOL</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-sol-toggle" class="sr-only peer asset-toggle" value="SOL" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-400"></div>
+                                </label>
+                            </div>
+                            <!-- DOGE -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-orange-300 mb-1.5">DOGE</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-doge-toggle" class="sr-only peer asset-toggle" value="DOGE" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-400"></div>
+                                </label>
+                            </div>
+                            <!-- EUR/USD -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-emerald-400 mb-1.5">EUR/USD</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-eurusd-toggle" class="sr-only peer asset-toggle" value="EURUSD" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                </label>
+                            </div>
+                            <!-- GBP/USD -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-teal-400 mb-1.5">GBP/USD</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-gbpusd-toggle" class="sr-only peer asset-toggle" value="GBPUSD" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                                </label>
+                            </div>
+                            <!-- USD/JPY -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-red-400 mb-1.5">USD/JPY</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-usdjpy-toggle" class="sr-only peer asset-toggle" value="USDJPY" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
+                                </label>
+                            </div>
+                            <!-- AUD/USD -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-sky-400 mb-1.5">AUD/USD</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-audusd-toggle" class="sr-only peer asset-toggle" value="AUDUSD" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
+                                </label>
+                            </div>
+                            <!-- NDQ -->
+                            <div class="flex flex-col items-center flex-1 bg-black/30 p-2 rounded-lg border border-white/[0.05]">
+                                <span class="text-[10px] font-bold text-blue-400 mb-1.5">NDQ</span>
+                                <label class="relative inline-flex items-center cursor-pointer scale-[0.75]">
+                                    <input type="checkbox" id="asset-ndq-toggle" class="sr-only peer asset-toggle" value="NDQ" onchange="saveUserConfig()">
+                                    <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
                                 </label>
                             </div>
                         </div>
@@ -5435,6 +5858,24 @@ if (document.readyState === 'loading') {
                         </label>
                     </div>
 
+                    <!-- Row: Dynamic ATR Risk Management -->
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
+                                🌊
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-semibold text-white tracking-tight">Dynamic ATR Risk Management</span>
+                                <span class="text-[10px] text-gray-400 leading-snug mt-0.5">Scales your Stop Loss &amp; Take Profit % by live volatility (ATR vs 24h norm, 0.6×–1.8×). Wider in wild markets, tighter in quiet ones. Locked per trade at entry.</span>
+                                <span id="atr-mult-readout" class="text-[9px] font-mono font-semibold mt-1 text-amber-300/90 hidden"></span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="atr-risk-toggle" onchange="saveUserConfig(); if (window.refreshAtrReadout) refreshAtrReadout(true);" class="sr-only peer">
+                            <div class="w-9 h-5 bg-black/40 border border-white/10 rounded-full peer peer-focus:ring-2 peer-focus:ring-cyan-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:border-gray-400 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500 peer-checked:border-amber-400"></div>
+                        </label>
+                    </div>
+
                     <!-- Row: Second Entry -->
                     <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
                         <div class="flex items-start gap-2.5 min-w-0">
@@ -5466,6 +5907,7 @@ if (document.readyState === 'loading') {
                             <div class="flex flex-col">
                                 <span class="text-xs font-semibold text-white tracking-tight">Stop Loss Protection</span>
                                 <span class="text-[10px] text-gray-400 leading-snug mt-0.5">Auto-exits position if loss drops by this % to prevent catastrophic downside.</span>
+                                <span id="sl-recommendation" class="text-[9px] font-semibold mt-1 text-amber-400 hidden">✦ AI Recommends: <span id="sl-rec-value">—</span>%</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -5509,6 +5951,7 @@ if (document.readyState === 'loading') {
                             <div class="flex flex-col">
                                 <span class="text-xs font-semibold text-white tracking-tight">Take Profit Target</span>
                                 <span class="text-[10px] text-gray-400 leading-snug mt-0.5">Automatically sells and locks in profit once gains hit this percentage.</span>
+                                <span id="tp-recommendation" class="text-[9px] font-semibold mt-1 text-emerald-400 hidden">✦ AI Recommends: <span id="tp-rec-value">—</span>%</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
@@ -5608,6 +6051,60 @@ if (document.readyState === 'loading') {
                 <div class="text-[10px] text-gray-500 px-1 mt-1.5">
                     Orders are validated automatically against your cash balance before submission.
                 </div>
+
+                <!-- Wallet Operations Section -->
+                <div class="mt-6 mb-2 flex items-center justify-between px-1">
+                    <span class="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Wallet Operations</span>
+                </div>
+                <div class="bg-black/20 border border-white/5 rounded-2xl overflow-hidden divide-y divide-white/5">
+                    
+                    <!-- Row: Exchange Transfer -->
+                    <div class="p-3.5 flex flex-col gap-3">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            </div>
+                            <div class="flex flex-col w-full">
+                                <span class="text-xs font-semibold text-white tracking-tight flex items-center justify-between">
+                                    <span>Transfer Funds</span>
+                                    <button onclick="refreshWalletBalances()" class="w-5 h-5 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-md transition-colors" title="Refresh Balances"><svg class="w-3 h-3 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
+                                </span>
+                                
+                                <!-- Balance display cards -->
+                                <div class="grid grid-cols-2 gap-2 mt-2 mb-3">
+                                    <div class="bg-black/40 border border-white/5 rounded-lg p-2 flex flex-col">
+                                        <span class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Main Wallet</span>
+                                        <span id="wallet-main-bal" class="text-xs font-mono font-bold text-white tracking-tight">$--.--</span>
+                                    </div>
+                                    <div class="bg-black/40 border border-white/5 rounded-lg p-2 flex flex-col">
+                                        <span class="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Crypto Wallet</span>
+                                        <span id="wallet-crypto-bal" class="text-xs font-mono font-bold text-white tracking-tight">$--.--</span>
+                                    </div>
+                                </div>
+
+                                
+                                <div class="flex items-center gap-2 mb-2 w-full">
+                                    <select id="transfer-direction" class="flex-1 bg-black/40 border border-white/10 rounded-xl px-2 py-2 text-xs font-semibold text-white outline-none focus:border-cyan-500">
+                                        <option value="main_to_crypto">Main -> Crypto Wallet</option>
+                                        <option value="crypto_to_main">Crypto -> Main Wallet</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-2 w-full">
+                                    <div class="flex items-center bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5 focus-within:border-cyan-500 transition-all flex-1">
+                                        <span class="text-xs text-gray-400 font-bold mr-1">$</span>
+                                        <input type="number" id="transfer-amount" placeholder="0.00" min="0.01" step="0.01" class="w-full bg-transparent text-left font-mono font-bold text-white text-xs outline-none">
+                                    </div>
+                                    <button onclick="executeWalletTransfer()" id="transfer-btn" class="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-black font-bold text-xs rounded-xl transition-all whitespace-nowrap">
+                                        Transfer
+                                    </button>
+                                </div>
+                                <div id="transfer-status" class="text-[10px] mt-2 hidden rounded p-1.5 font-semibold"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
 
@@ -5656,7 +6153,29 @@ if (document.readyState === 'loading') {
                 </div>
             </div>
 
-            
+            <!-- GROUP: Dynamic Island -->
+            <div>
+                <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2 flex items-center justify-between">
+                    <span class="flex items-center gap-1.5">⬛ Dynamic Island</span>
+                    <span id="di-status-badge" class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">ON</span>
+                </div>
+                <div class="bg-[#131b2c] border border-white/[0.08] rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 text-sm font-bold mt-0.5">🏝️</div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-semibold text-white tracking-tight">Glow Indicator</span>
+                                <span class="text-[10px] text-gray-400 leading-snug mt-0.5">Show a glowing pill near the Dynamic Island when Auto Trading is active.</span>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="di-toggle" class="sr-only peer" checked onchange="toggleDynamicIslandSetting(this.checked)">
+                            <div class="w-11 h-6 bg-gray-700/80 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-purple-500"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
             <!-- GROUP: Push Notifications -->
             <div>
                 <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1 mb-2 flex items-center justify-between">
@@ -6062,14 +6581,14 @@ if (document.readyState === 'loading') {
 
             <!-- GROUP Admin: Hidden by default -->
             <div id="admin-console-group" class="hidden pt-2 pb-2">
-                <a href="/admin/mobile" class="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-98 text-indigo-400 rounded-2xl border border-indigo-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <a href="./admin_mobile.html" class="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 active:scale-98 text-indigo-400 rounded-2xl border border-indigo-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     Admin Console
                 </a>
             </div>
 
             <!-- GROUP 6: Sign Out (iOS Destructive Action) -->
-            <div class="pt-2 pb-6">
+            <div class="pt-2 pb-6 pb-safe" style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));">
                 <button onclick="logout()" class="w-full py-3 bg-rose-500/10 hover:bg-rose-500/20 active:scale-98 text-rose-400 rounded-2xl border border-rose-500/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     Sign Out
@@ -6082,6 +6601,7 @@ if (document.readyState === 'loading') {
         </div>
 
     </div>
+</div>
 </div>
 
 <script>
@@ -6196,118 +6716,6 @@ function syncCustomDropdowns() {
 }
 
 </script>
-<!-- Update Alert Modal -->
-<div id="updateAlertModal" class="fixed inset-0 z-[400] hidden items-center justify-center p-4 bg-black/80  transition-opacity duration-200" style="z-index: 9999;">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col transform transition-all">
-        <!-- Header -->
-        <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gradient-to-r from-blue-900/20 to-purple-900/20">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-                    <i class="fas fa-rocket text-blue-400 text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="text-xl font-bold text-white tracking-tight">Auto 3.0 Engine Deployed</h3>
-                    <p class="text-xs text-green-400 font-medium">God-Tier 6-Pillar Blueprint</p>
-                </div>
-            </div>
-            <button onclick="dismissUpdateAlert()" class="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-gray-800">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
-        
-        <!-- Body -->
-        <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                        <p class="text-gray-300 text-sm leading-relaxed">
-                We've just deployed a massive overhaul to the🤖 AUTO execution engine, introducing a 6-Pillar God-Tier architecture designed to maximize win-rate and preserve capital.
-            </p>
-            
-            <ul class="space-y-3 mt-4">
-                <li class="flex items-start gap-3">
-                    <i class="fas fa-calculator text-green-400 mt-1 flex-shrink-0"></i>
-                    <div>
-                        <span class="block text-sm font-semibold text-white">Universal EV Gate & Kelly Sizing</span>
-                        <span class="block text-xs text-gray-400 mt-0.5">Strict expected value math is now enforced. The bot dynamically sizes up on massive edge and strictly blocks negative EV trades.</span>
-                    </div>
-                </li>
-                <li class="flex items-start gap-3">
-                    <i class="fas fa-bullseye text-blue-400 mt-1 flex-shrink-0"></i>
-                    <div>
-                        <span class="block text-sm font-semibold text-white">"Sweet Spot" Contract Pricing</span>
-                        <span class="block text-xs text-gray-400 mt-0.5">The engine now hunts for asymmetric risk/reward, refusing to overpay for premiums above 62&cent; without 78%+ institutional conviction.</span>
-                    </div>
-                </li>
-                <li class="flex items-start gap-3">
-                    <i class="fas fa-filter text-purple-400 mt-1 flex-shrink-0"></i>
-                    <div>
-                        <span class="block text-sm font-semibold text-white">Strike Pin (Dead-Zone) Filter</span>
-                        <span class="block text-xs text-gray-400 mt-0.5">Unpredictable 50/50 coin-flips when the market is pinned near the strike under low volatility are now actively bypassed.</span>
-                    </div>
-                </li>
-                <li class="flex items-start gap-3">
-                    <i class="fas fa-shield-alt text-red-400 mt-1 flex-shrink-0"></i>
-                    <div>
-                        <span class="block text-sm font-semibold text-white">Structural Stop-Losses</span>
-                        <span class="block text-xs text-gray-400 mt-0.5">Eliminated whipsaw selling. Trailing stops are now driven by physical spot action breaking the 15m EMA-21, not synthetic bid noise.</span>
-                    </div>
-                </li>
-            </ul>
-        </div>
-        
-        <!-- Footer -->
-        <div class="p-5 border-t border-gray-800 bg-gray-900/50">
-            <button onclick="dismissUpdateAlert()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all active:scale-95 text-sm uppercase tracking-wider">
-                Awesome, Let's Trade!
-            </button>
-        </div>
-    </div>
-</div>
-
-
-
-<script>
-(function() {
-    // 1. Update Alert Logic (IIFE to avoid DOMContentLoaded timing issues)
-    const updateVersion = 'v3.0_god_tier_alert'; 
-    if (!localStorage.getItem(updateVersion)) {
-        setTimeout(() => {
-            const modal = document.getElementById('updateAlertModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                
-                const modalContent = modal.querySelector('div');
-                if (modalContent) {
-                    modalContent.style.opacity = '0';
-                    modalContent.style.transform = 'scale(0.95) translateY(10px)';
-                    
-                    requestAnimationFrame(() => {
-                        modalContent.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                        modalContent.style.opacity = '1';
-                        modalContent.style.transform = 'scale(1) translateY(0)';
-                    });
-                }
-            }
-        }, 500); 
-    }
-})();
-
-window.dismissUpdateAlert = function() {
-    const modal = document.getElementById('updateAlertModal');
-    if (modal) {
-        const modalContent = modal.querySelector('div');
-        if (modalContent) {
-            modalContent.style.transform = 'scale(0.95) translateY(10px)';
-            modalContent.style.opacity = '0';
-        }
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            localStorage.setItem('v3.0_god_tier_alert', 'true');
-        }, 300);
-    }
-};
-</script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
@@ -6335,9 +6743,19 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<script src="/static/js/app.js"></script>
-<script src="/static/js/admin_users.js"></script>
-<script src="/static/js/strategy_stats.js"></script>
+<script src="./js/app.js?v=1791013020"></script>
+<script src="./js/strategy_stats.js?v=1791013020"></script>
+<script src="./js/backtester.js?v=1791013020"></script>
+<div id="btn-header-social"></div>
+<div id="social-page"></div>
+<div id="socialTraderCountText"></div>
+<div id="socialYourCard"></div>
+<div id="socialSearchInput"></div>
+<div id="socialSortPnl"></div>
+<div id="socialSortWinRate"></div>
+<div id="socialSortTrades"></div>
+<div id="socialTradersList"></div>
+<div class="btn-copy-settings-">Copy Settings</div>
 </body>
 </html>
 

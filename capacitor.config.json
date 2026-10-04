@@ -1,14 +1,13 @@
-
 {
   "appId": "com.vill3.kalshitrader",
-  "appName": "ShadowTrade",
+  "appName": "ShadowTrade AI",
   "webDir": "static",
   "bundledWebRuntime": false,
   "server": {
     "cleartext": true
   },
   "ios": {
-    "contentInset": "always",
+    "contentInset": "automatic",
     "limitsNavigationsToAppBoundDomains": true
   }
 }

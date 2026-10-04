@@ -902,8 +902,8 @@
               <div class="w-8 h-8 rounded-lg ${
                 u.ai_enabled ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"
               } flex items-center justify-center font-black text-xs shrink-0 overflow-hidden bg-cover bg-center"
-              ${u.profile_picture_url ? `style="background-image: url('${escapeHtml(u.profile_picture_url)}'); border: 1px solid #334155;"` : ''}>
-                ${u.profile_picture_url ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
+              ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? `style="background-image: url('${escapeHtml((u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url))}'); border: 1px solid #334155;"` : ''}>
+                ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
               </div>
 
 
@@ -1305,8 +1305,8 @@
 
 
             <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center font-black text-sm overflow-hidden bg-cover bg-center"
-              ${u.profile_picture_url ? `style="background-image: url('${escapeHtml(u.profile_picture_url)}'); border-color: transparent;"` : ''}>
-              ${u.profile_picture_url ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
+              ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? `style="background-image: url('${escapeHtml((u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url))}'); border-color: transparent;"` : ''}>
+              ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
             </div>
 
 
@@ -1379,7 +1379,7 @@
 
 
 
-            <a href="/trades?user=${u.id}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95" title="Open full trade ledger in new tab">
+            <a href="./trades.html?user=${u.id}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95" title="Open full trade ledger in new tab">
 
 
 

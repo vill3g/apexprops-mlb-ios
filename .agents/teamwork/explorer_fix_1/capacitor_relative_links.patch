@@ -1,0 +1,42 @@
+--- a/static/admin_mobile.html
++++ b/static/admin_mobile.html
+@@ -89,5 +89,5 @@
+         <header class="pt-safe px-4 pb-3 bg-[#0c1222]/90 backdrop-blur-md border-b border-slate-800/80 shrink-0 z-30">
+             <div class="flex items-center justify-between">
+                 <!-- Back to SaaS Dashboard -->
+-                <a href="/saas_dashboard.html" class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white active:scale-95 transition-all py-1 px-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
++                <a href="./saas_dashboard.html" class="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white active:scale-95 transition-all py-1 px-2 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                     <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+--- a/static/js/admin_users.js
++++ b/static/js/admin_users.js
+@@ -1379,5 +1379,5 @@
+             </button>
+ 
+-            <a href="/trades?user=${u.id}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95" title="Open full trade ledger in new tab">
++            <a href="./trades.html?user=${u.id}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95" title="Open full trade ledger in new tab">
+ 
+             </a>
+--- a/static/saas_dashboard.html
++++ b/static/saas_dashboard.html
+@@ -756,5 +756,5 @@
+                         <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                             <span>📋</span> Recent Executions
+                         </h3>
+-                        <a href="#" onclick="const t = localStorage.getItem('saas_token'); const id = t ? JSON.parse(atob(t.split('.')[1])).user_id : ''; window.open('/trades' + (id ? '?guest=' + id : ''), '_blank'); return false;" class="text-[9px] font-bold text-kalshi-blue uppercase tracking-wider hover:underline">View All</a>
++                        <a href="#" onclick="const t = localStorage.getItem('saas_token'); const id = t ? JSON.parse(atob(t.split('.')[1])).user_id : ''; window.open('./trades.html' + (id ? '?guest=' + id : ''), '_blank'); return false;" class="text-[9px] font-bold text-kalshi-blue uppercase tracking-wider hover:underline">View All</a>
+                     </div>
+--- a/backend/routes/ui.py
++++ b/backend/routes/ui.py
+@@ -95,6 +95,7 @@
+     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+ 
++@router.get("/admin_mobile.html")
+ @router.get("/admin/mobile")
+ def get_admin_mobile():
+     return FileResponse(
+@@ -106,3 +107,7 @@
+     )
+ 
++@router.get("/manifest.json")
++def get_manifest():
++    return FileResponse(os.path.join(STATIC_DIR, "manifest.json"), media_type="application/manifest+json")

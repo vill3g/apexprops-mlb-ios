@@ -2,21 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Kalshi AI - Full Trade Ledger</title>
-    <link rel="icon" type="image/svg+xml" href="/static/assets/favicon.svg">
-    <link rel="alternate icon" href="/static/assets/app_icon.ico">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="./css/tailwind-compiled.css?v=2">
     <style>
         .trade-win { border-left: 3px solid #10b981; }
         .trade-loss { border-left: 3px solid #ef4444; }
         .trade-open { border-left: 3px solid #3b82f6; }
     </style>
 </head>
-<body class="bg-[#0b0f19] text-white font-sans antialiased pb-10">
+<body class="bg-[#0b0f19] text-white font-sans antialiased pb-10" style="padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));">
 
-    <header class="sticky top-0 z-50 bg-[#0b0f19]/90 backdrop-blur-md border-b border-gray-800 px-4 py-3 flex justify-between items-center">
+    <header class="sticky top-0 z-50 bg-[#0b0f19]/90 backdrop-blur-md border-b border-gray-800 px-4 py-3 flex justify-between items-center" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
         <div class="flex items-center gap-2">
             <h1 class="text-xs font-bold tracking-wider uppercase text-white">Full Trade Ledger</h1>
         </div>
@@ -29,7 +29,7 @@
     </header>
 
     <!-- iOS / Mobile Pull to Refresh Indicator -->
-    <div id="ptr-indicator" class="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none transition-transform duration-200" style="top: 3.5rem; transform: translateY(-130%);">
+    <div id="ptr-indicator" class="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none transition-transform duration-200" style="top: calc(3.5rem + env(safe-area-inset-top, 0px)); transform: translateY(-130%);">
         <div id="ptr-pill" class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0d1424]/95 backdrop-blur-xl border border-cyan-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.85)] text-cyan-300 text-xs font-bold tracking-wider transition-all duration-200">
             <div class="w-4 h-4 flex items-center justify-center shrink-0">
                 <svg id="ptr-arrow" class="w-3.5 h-3.5 text-cyan-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">

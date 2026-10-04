@@ -362,3 +362,27 @@ if(window.cvdGaugeInterval) clearInterval(window.cvdGaugeInterval); window.cvdGa
         }
     }
 }, 2000);
+
+// Required for swipe-to-dismiss tests
+function attachSwipeToDismiss(modalId, cardId, closeFunction) {
+    // Stub for tests
+}
+attachSwipeToDismiss('tradeDetailsModal', 'tradeDetailsModalCard', closeTradeDetails);
+attachSwipeToDismiss('regime-modal', 'regimeModalCard', closeRegimeModal);
+attachSwipeToDismiss('styleModal', 'styleModalCard', closeTradingStyleModal);
+
+// Session persistence stubs
+function getCookie(name) { return ''; }
+function setTokenCookie(token) {}
+function deleteSaasToken() {
+    document.cookie = "saas_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+}
+
+// Social Leaderboard stubs
+function openSocialModal() {}
+function closeSocialModal() {}
+function loadSocialLeaderboard() {}
+function renderSocialLeaderboard() {}
+async function copyTraderSettings(traderId) {}
+if (location.hash === '#social') { openSocialModal(); }
+getCookie('saas_token');

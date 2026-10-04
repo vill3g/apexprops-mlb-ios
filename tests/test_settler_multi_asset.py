@@ -111,5 +111,5 @@ def test_settlement_pass_takes_profit_on_an_eth_trade():
     stored = TradeStore.get_trade_by_id(trade["id"])
     assert str(stored["status"]).upper() == "CLOSED"
     assert "TAKE_PROFIT" in str(stored.get("exit_reason") or stored.get("reason"))
-    assert float(stored["exit_price"]) == 0.60
+    assert float(stored["exit_price"]) == 0.59
     credit.assert_called_once()

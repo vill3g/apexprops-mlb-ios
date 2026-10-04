@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 TICKER_MAP = {
     "BTC": {"kraken": "XBTUSD", "binance": "BTCUSDT", "coinbase": "BTC-USD", "yf": "BTC-USD"},
     "ETH": {"kraken": "ETHUSD", "binance": "ETHUSDT", "coinbase": "ETH-USD", "yf": "ETH-USD"},
+    "SOL": {"kraken": "SOLUSD", "binance": "SOLUSDT", "coinbase": "SOL-USD", "yf": "SOL-USD"},
+    "DOGE": {"kraken": "XDGUSD", "binance": "DOGEUSDT", "coinbase": "DOGE-USD", "yf": "DOGE-USD"},
     "GOLD": {"kraken": "PAXGUSD", "binance": None, "coinbase": None, "yf": "PAXG-USD"},
     "NDQ": {"kraken": None, "binance": None, "coinbase": None, "yf": "NQ=F"},
     "EURUSD": {"kraken": None, "binance": None, "coinbase": None, "yf": "EURUSD=X"},
@@ -114,7 +116,7 @@ def fetch_asset_candles(asset: str = "BTC", timeframe: str = "15m", limit: int =
             ("Kraken", lambda: _fetch_kraken_asset(asset, tf, limit)),
             ("Yahoo Finance", lambda: _fetch_yf_asset(asset, tf, limit))
         ]
-    elif asset == "ETH":
+    elif asset in ["ETH", "SOL", "DOGE"]:
         fetchers = [
             ("Kraken", lambda: _fetch_kraken_asset(asset, tf, limit)),
             ("Binance", lambda: _fetch_binance_asset(asset, tf, limit)),
@@ -198,7 +200,7 @@ import pytz
 
 def is_market_open(asset: str) -> bool:
     asset = asset.upper()
-    if asset in ["BTC", "ETH"]:
+    if asset in ["BTC", "ETH", "SOL", "DOGE"]:
         return True
     now = datetime.now(pytz.timezone("America/New_York"))
     if asset == "NDQ":
@@ -209,5 +211,11 @@ def is_market_open(asset: str) -> bool:
         if now.weekday() == 4 and now.hour >= 17: return False
         if now.weekday() == 5: return False
         if now.weekday() == 6 and now.hour < 18: return False
+        return True
+    if asset in ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]:
+        # Spot FX: closed from Friday 17:00 ET until Sunday 17:00 ET
+        if now.weekday() == 4 and now.hour >= 17: return False
+        if now.weekday() == 5: return False
+        if now.weekday() == 6 and now.hour < 17: return False
         return True
     return True

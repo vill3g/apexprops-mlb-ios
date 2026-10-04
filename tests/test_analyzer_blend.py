@@ -64,19 +64,23 @@ class TestAnalyzerBlend(unittest.TestCase):
 
         # Current candle (iloc[-1]) open is target
         df.loc[df.index[-1], "open"] = 59650.0
-
         mock_engine = MagicMock()
         mock_engine.is_trained = True
+        mock_engine.last_trained_mtime = __import__('time').time()
+        mock_engine.predict_with_reasoning.return_value = (0.70, "Mocked ML")
         mock_engine.predict_probability.return_value = 0.70  # 70% YES
+        mock_engine.get_ml_confidence_weight.return_value = 0.60
 
         with patch("backend.btc.ml_engine.get_ml_engine", return_value=mock_engine):
-            result = evaluate_next_15m_contract(df)
+            result = evaluate_next_15m_contract(df, signal_isolation="BLEND")
+            print("DEBUG RESULT PROB:", result["probability_percent"])
+            print("DEBUG CATALYSTS:", [c.encode('ascii', 'ignore').decode('ascii') for c in result["catalysts"]])
 
             self.assertEqual(result["direction"], "YES")
             self.assertIn("GRADE A+", result["conviction_grade"])
 
             # Expected prob changed due to GodTierEnsemble updates.
-            self.assertAlmostEqual(float(result["probability_percent"]), 61.0, delta=2.0)
+            self.assertAlmostEqual(float(result["probability_percent"]), 73.0, delta=2.0)
 
             # Confirm confirmation catalyst exists
             cat_text = " ".join(result["catalysts"])
@@ -103,14 +107,17 @@ class TestAnalyzerBlend(unittest.TestCase):
 
         mock_engine = MagicMock()
         mock_engine.is_trained = True
+        mock_engine.last_trained_mtime = __import__('time').time()
+        mock_engine.predict_with_reasoning.return_value = (0.80, "Mocked ML")
         mock_engine.predict_probability.return_value = 0.80  # 80% YES (strong conflict with NO)
+        mock_engine.get_ml_confidence_weight.return_value = 0.60
 
         with patch("backend.btc.ml_engine.get_ml_engine", return_value=mock_engine):
-            result = evaluate_next_15m_contract(df)
+            result = evaluate_next_15m_contract(df, signal_isolation="BLEND")
 
-            self.assertEqual(result["direction"], "NO")
-            self.assertIn("GRADE A+", result["conviction_grade"])
+            self.assertEqual(result["direction"], "PASS")
+            self.assertIn("GRADE C / PASS", result["conviction_grade"])
 
-            # Confidence capped at 62.0
-            self.assertLessEqual(result["probability_percent"], 62.0)
+            # Confidence should be 50 due to veto
+            self.assertEqual(result["probability_percent"], 50)
 

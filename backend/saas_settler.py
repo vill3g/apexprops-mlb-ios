@@ -6,6 +6,7 @@ import time
 import uuid
 
 from backend.auth.security import decrypt_kalshi_key
+from backend.btc.atr_risk import effective_tp_sl
 from backend.btc.fees import kalshi_order_fee, net_pnl
 from backend.btc.kalshi_client import get_kalshi_15m_market
 from backend.btc.kalshi_trader import (
@@ -21,6 +22,16 @@ from backend.database.models import (DATA_DIR, credit_user_paper_balance,
                                      get_all_active_users, get_user_lock)
 
 logger = logging.getLogger(__name__)
+
+# Per-ticker negative caching/backoff to prevent 1-second 429 polling storms on unresolved contracts
+_unresolved_tickers_cache = {}  # ticker -> timestamp until which requests are backed off
+_unresolved_tickers_lock = threading.Lock()
+UNRESOLVED_POLL_INTERVAL_SEC = 30.0
+
+def clear_unresolved_settlement_cache():
+    """Clear the per-ticker settlement retry backoff cache (useful for test isolation)."""
+    with _unresolved_tickers_lock:
+        _unresolved_tickers_cache.clear()
 
 def _fresh_quote(ticker, cache):
     """Fresh executable quote for one market (cached for the rest of this settlement pass)."""
@@ -52,7 +63,9 @@ def _position_avg_price(ap, qty):
 
 # Only markets this bot trades are synced. Positions a user holds in other Kalshi
 # markets (sports, politics, parlays...) are theirs to manage and are ignored.
-BOT_SERIES_PREFIXES = ("KXBTC15M-", "KXETH15M-")
+BOT_SERIES_PREFIXES = tuple(
+    f"KX{a}15M-" for a in ("BTC", "ETH", "GOLD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NDQ", "SOL", "DOGE")
+)
 
 
 def _is_bot_market(ticker) -> bool:
@@ -104,7 +117,7 @@ def _drop_synced_foreign_positions(user_id, trades) -> bool:
 def _sync_untracked_kalshi_positions(user, user_id, kt, trades) -> bool:
     """Record positions on the user's Kalshi account that the bot has no trade for.
 
-    Safety rules (a previous version created a new record â€” and a real stop-loss sell â€”
+    Safety rules (a previous version created a new record — and a real stop-loss sell —
     every ~1.5 s for one position):
       * one deterministic record id per (ticker, side), inserted with INSERT OR IGNORE,
         so the same position can never be recorded twice;
@@ -269,6 +282,7 @@ def fast_exit_check() -> int:
         sl = max(0.01, float(user.get("stop_loss_pct", 50.0)) / 100.0)
         tp_enabled = bool(user.get("take_profit_enabled", 1))
         tp = float(user.get("take_profit_pct", 50.0)) / 100.0
+        tp, sl, _ = effective_tp_sl(user, t, tp, sl)
         ts_enabled = bool(user.get("trailing_stop_enabled", 0))
         ts_activation = float(user.get("trailing_stop_activation_pct", 35.0)) / 100.0
         ts_dist = float(user.get("trailing_stop_distance_pct", 6.0)) / 100.0
@@ -442,7 +456,7 @@ def trigger_saas_take_profit_reentry(
     # Tactical pullback verification: ask must be at least 3 cents cheaper than the exit price
     resolved_exit_price = float(exit_price or closed_trade.get("exit_price") or 0.50)
     if second_ask > (resolved_exit_price - 0.03):
-        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {reentry_side.upper()} ask ${second_ask:.2f} has not pulled back >= 3Â¢ below exit price ${resolved_exit_price:.2f}")
+        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {reentry_side.upper()} ask ${second_ask:.2f} has not pulled back >= 3¢ below exit price ${resolved_exit_price:.2f}")
         return None
 
     second_count = _second_entry_size(user, second_mode, second_ask)
@@ -732,20 +746,41 @@ def _settle_saas_trades_pass():
                         sl_enabled = bool(user.get("stop_loss_enabled", 1))
                     
                         if not market or market.get("status") != "active" or market.get("ticker") != ticker:
+                            now = time.time()
+                            is_synthetic = "SYNTH" in ticker.upper() or "TEST" in ticker.upper()
+
+                            with _unresolved_tickers_lock:
+                                next_poll = _unresolved_tickers_cache.get(ticker, 0.0)
+
+                            if not is_synthetic and now < next_poll:
+                                # Negative cached: contract is unresolved and was queried recently
+                                continue
+
                             from backend.btc.kalshi_trader import kalshi_trader
                             res = kalshi_trader.get_market_result(ticker)
                             ans = res.get("result", "").lower()
                         
                             exit_price = 0.0
                             if ans == "yes":
+                                with _unresolved_tickers_lock:
+                                    _unresolved_tickers_cache.pop(ticker, None)
                                 exit_price = 1.0 if side.upper() == "YES" else 0.0
                             elif ans == "no":
+                                with _unresolved_tickers_lock:
+                                    _unresolved_tickers_cache.pop(ticker, None)
                                 exit_price = 1.0 if side.upper() == "NO" else 0.0
                             else:
                                 # Only fallback to synthetic if it's explicitly a synthetic contract or test ticker
-                                if "SYNTH" in ticker.upper() or "TEST" in ticker.upper():
-                                    exit_price = 1.0 if float(t.get("probability_percent") or 50.0) > 50 else 0.0
+                                if is_synthetic:
+                                    # A synthetic market has no real outcome. It used to "settle" as a WIN
+                                    # whenever the model's own confidence was > 50%, which fabricated profit.
+                                    # Close it flat at the entry price instead (only Kalshi fees apply).
+                                    exit_price = entry
                                 else:
+                                    # Contract is unresolved (or returned 429/error).
+                                    # Back off next query for this ticker to eliminate 1-second polling storms.
+                                    with _unresolved_tickers_lock:
+                                        _unresolved_tickers_cache[ticker] = now + UNRESOLVED_POLL_INTERVAL_SEC
                                     continue # Wait for official Kalshi resolution
                                 
                             _close = {
@@ -773,6 +808,10 @@ def _settle_saas_trades_pass():
 
                         tp_enabled = bool(user.get("take_profit_enabled", 1))
                         tp_pct = float(user.get("take_profit_pct", 50.0)) / 100.0
+                        _had_atr_mult = "atr_mult" in t
+                        tp_pct, sl_pct, _atr_mult = effective_tp_sl(user, t, tp_pct, sl_pct)
+                        if not _had_atr_mult and "atr_mult" in t:
+                            modified = True  # lock this trade's volatility multiplier
                         ts_enabled = bool(user.get("trailing_stop_enabled", 0))
                         ts_activation = float(user.get("trailing_stop_activation_pct", 35.0)) / 100.0
                         ts_distance = float(user.get("trailing_stop_distance_pct", 6.0)) / 100.0
@@ -808,10 +847,11 @@ def _settle_saas_trades_pass():
                                 reason = ""
                             
                                 if ts_enabled and max_seen_profit_pct >= ts_activation:
-                                    trail_threshold = max(max_seen_bid - ts_distance, max_seen_bid * (1.0 - ts_distance))
-                                    trail_threshold = max(trail_threshold, entry * 1.02)
-                                    if curr_bid <= trail_threshold:
+                                    from backend.btc.auto_executor.remediations import calculate_anti_whipsaw_trailing_stop
+                                    ts_res = calculate_anti_whipsaw_trailing_stop(entry, max_seen_bid, curr_bid)
+                                    if ts_res.get("should_exit"):
                                         trigger_exit = True
+                                        trail_threshold = ts_res.get("exit_threshold", curr_bid)
                                         realized_p_pct = (curr_bid - entry) / entry
                                         reason = f"TRAILING_STOP (+{realized_p_pct*100:.1f}%)"
                             
@@ -870,6 +910,15 @@ def _settle_saas_trades_pass():
                                         live_filled = float(c_res.get("filled_count", count) or count)
                                         count = live_filled
                                         t["count"] = count
+                                    else:
+                                        # Fix D: price the paper exit off Kalshi's real order book
+                                        # (full size, live's 3c cushion, latency tax), not the bare top bid.
+                                        try:
+                                            from backend.btc.kalshi_trader import paper_exit_price
+                                            exit_price = paper_exit_price(ticker, side, count, curr_bid) or curr_bid
+                                        except Exception as _pe:
+                                            logger.debug(f"[SaaSSettler] paper book exit fallback: {_pe}")
+                                            exit_price = curr_bid
 
                                     _close = {
                                         "exit_reason": reason,
@@ -1104,7 +1153,7 @@ def process_auto_force_trades():
     return
 
 
-# â”€â”€ P3: Trades archival â€” keeps trades_history.json lean â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── P3: Trades archival — keeps trades_history.json lean ─────────────────────
 _last_archive_run: float = 0.0
 _ARCHIVE_INTERVAL = 86400.0  # run at most once every 24 hours
 

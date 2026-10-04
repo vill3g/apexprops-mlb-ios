@@ -1,4 +1,4 @@
-﻿// Session token migration: when the server re-issues a login token, store it.
+// Session token migration: when the server re-issues a login token, store it.
 (function () {
   if (window.__tokenRefreshInstalled || !window.fetch) return;
   window.__tokenRefreshInstalled = true;
@@ -19,7 +19,7 @@
 
 
 
-// â”€â”€ Guest Mode Detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Guest Mode Detection ─────────────────────────────────────────────
 // If ?guest=<id> is in the URL, store the guest token for all API calls.
 ;(function() {
   const params = new URLSearchParams(window.location.search);
@@ -105,7 +105,7 @@ function renderBtcTradeSetup(){}
 
       grid.innerHTML = itemsToRender.map(t => {
 
-        const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "â–²";
+        const isUp = t.direction === "HIGHER" || t.direction === "UP" || t.arrow === "▲";
 
         const cardClass = isUp ? "trend-card trend-up bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "trend-card trend-down bg-red-500/15 border border-red-500/30 text-red-400";
 
@@ -117,7 +117,7 @@ function renderBtcTradeSetup(){}
 
         const predVal = t.ml_prediction || t.predicted || t.prediction || (isUp ? "UP" : "DOWN");
 
-        const predTimeStr = t.pred_time ? `â±ï¸ Prediction Time: ${t.pred_time}\n` : '';
+        const predTimeStr = t.pred_time ? `⏱️ Prediction Time: ${t.pred_time}\n` : '';
 
         const targetStartStr = t.target_price ? `$${Number(t.target_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "--";
 
@@ -129,7 +129,7 @@ function renderBtcTradeSetup(){}
 
 
 
-        const tooltipStr = `ðŸ•’ 15M Contract Close: ${timeStr}\n${predTimeStr}ðŸŽ¯ Target Start Price: ${targetStartStr}\nðŸ Actual Close Price: ${targetCloseStr}\nðŸ“Š Price Delta: ${deltaVal}\nðŸ¤– AI Model Prediction: ${predVal}\nâœ… Actual Settlement Result: ${resultVal}`;
+        const tooltipStr = `🕒 15M Contract Close: ${timeStr}\n${predTimeStr}🎯 Target Start Price: ${targetStartStr}\n🏁 Actual Close Price: ${targetCloseStr}\n📊 Price Delta: ${deltaVal}\n🤖 AI Model Prediction: ${predVal}\n✅ Actual Settlement Result: ${resultVal}`;
 
 
 
@@ -139,7 +139,7 @@ function renderBtcTradeSetup(){}
 
             <div class="flex items-center gap-0.5 leading-none">
 
-              <span class="text-[10px] font-black leading-none">${isUp ? 'â–²' : 'â–¼'}</span>
+              <span class="text-[10px] font-black leading-none">${isUp ? '▲' : '▼'}</span>
 
               <span class="text-[8.5px] sm:text-[9.5px] font-black text-white leading-none">${formattedPrice}</span>
 
@@ -194,7 +194,7 @@ window.currentAsset = "BTC";
     }
     
     // Initialize Risk Management UI state
-    if(!window.__domLoadedAppJs_1) { window.__domLoadedAppJs_1 = true; document.addEventListener('DOMContentLoaded', () => { if(window.__hasLoadedAppJs1) return; window.__hasLoadedAppJs1 = true;
+    if(!window.__domLoadedAppJs_1) { /* __expose_block_async__ */ [["fetchBundledData", fetchBundledData], ["loadPlayerPhotoRegistry", loadPlayerPhotoRegistry], ["loadMLBData", loadMLBData], ["loadPitcherKs", loadPitcherKs], ["fetchKalshiDirect", fetchKalshiDirect], ["fetchBtcKlinesDirect", fetchBtcKlinesDirect], ["pollBtcLive1s", pollBtcLive1s], ["triggerBtcAnalysis", triggerBtcAnalysis], ["updateBtcCountdown", updateBtcCountdown], ["refreshAllData", refreshAllData], ["authFetch", authFetch], ["saveKalshiContractsCount", saveKalshiContractsCount], ["updateKalshiContracts", updateKalshiContracts], ["saveAiMaxCap", saveAiMaxCap], ["pollKalshiTradingStatus", pollKalshiTradingStatus], ["togglePredictionMode", togglePredictionMode]].forEach(([n, f]) => { if (typeof window[n] === "undefined") window[n] = f; }); window.__domLoadedAppJs_1 = true; document.addEventListener('DOMContentLoaded', () => { if(window.__hasLoadedAppJs1) return; window.__hasLoadedAppJs1 = true;
       if (!riskEnabled) {
         const wrapper = document.getElementById("riskManagementWrapper");
         const btn = document.getElementById("btnToggleRisk");
@@ -227,7 +227,7 @@ window.currentAsset = "BTC";
         if (btn) {
           if (t === tf) {
             btn.className = 'iphone17-tf-btn active';
-            btn.innerHTML = `<span class="tf-dot">â—</span>${t}`;
+            btn.innerHTML = `<span class="tf-dot">●</span>${t}`;
           } else {
             btn.className = 'iphone17-tf-btn';
             btn.innerHTML = t;
@@ -238,7 +238,7 @@ window.currentAsset = "BTC";
     };
 
     function updateIphone17HeaderInfo(liveData) {
-      // 1. Contract 15m Interval Time Range (e.g. 1:15â€“1:30 PM EDT)
+      // 1. Contract 15m Interval Time Range (e.g. 1:15–1:30 PM EDT)
       try {
         const now = new Date();
         const nyDate = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
@@ -259,11 +259,11 @@ window.currentAsset = "BTC";
         
         const intervalEl = document.getElementById("iphone17IntervalTime");
         if (intervalEl) {
-          intervalEl.innerText = `${fmtStart.replace(/ [AP]M/, "")}â€“${fmtEnd} EDT`;
+          intervalEl.innerText = `${fmtStart.replace(/ [AP]M/, "")}–${fmtEnd} EDT`;
         }
       } catch (e) { console.warn('Fetch failed:', e); }
 
-      // 2. Countdown Pill is updated directly by updateBtcCountdownClock() every second â€” no copy needed here.
+      // 2. Countdown Pill is updated directly by updateBtcCountdownClock() every second — no copy needed here.
 
 
       // 3. Live Price
@@ -316,7 +316,7 @@ window.currentAsset = "BTC";
       const deskGrade = document.getElementById("btcPredConfidenceTag")?.innerText || "";
       const forecast = window.lockedContractForecast || window.cachedNextContractForecast;
 
-      let directionText = deskOutcome || (forecast?.direction ? (forecast.direction === "ABOVE" ? (isFx ? "â–² BUY / LONG" : "â–² ABOVE") : (forecast.direction === "BELOW" ? (isFx ? "â–¼ SELL / SHORT" : "â–¼ BELOW") : "CHOP")) : "SCANNING");
+      let directionText = deskOutcome || (forecast?.direction ? (forecast.direction === "ABOVE" ? (isFx ? "▲ BUY / LONG" : "▲ ABOVE") : (forecast.direction === "BELOW" ? (isFx ? "▼ SELL / SHORT" : "▼ BELOW") : "CHOP")) : "SCANNING");
       let convictionPct = deskProb || (forecast?.probability_percent ? `${forecast.probability_percent}%` : "--%");
       let gradeBadge = deskGrade || forecast?.conviction_badge || (forecast?.conviction_grade ? forecast.conviction_grade.replace(" SETUP", "") : "AI MODEL");
 
@@ -358,7 +358,7 @@ window.currentAsset = "BTC";
         const diff = curPrice - targetPrice;
         const sign = diff >= 0 ? "+" : "";
         deltaValEl.innerText = `${sign}${(isNaN(diff) ? 0 : diff).toFixed(1)}`;
-        if (deltaArrowEl) deltaArrowEl.innerText = diff >= 0 ? "â–²" : "â–¼";
+        if (deltaArrowEl) deltaArrowEl.innerText = diff >= 0 ? "▲" : "▼";
         if (deltaPanel) {
           deltaPanel.className = `iphone17-delta-panel ${diff >= 0 ? "delta-up" : "delta-down"}`;
         }
@@ -429,7 +429,7 @@ window.currentAsset = "BTC";
       loadScalpSettingsFromStorage();
     });
     
-    // Auto Refresh â€” interval is configurable via the "Poll Interval" setting (seconds, 1-15)
+    // Auto Refresh — interval is configurable via the "Poll Interval" setting (seconds, 1-15)
     window._analysisPollTimer = null;
     function restartAnalysisPolling() {
       if (window._analysisPollTimer) clearInterval(window._analysisPollTimer);
@@ -567,7 +567,7 @@ window.currentAsset = "BTC";
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
-    // Live Clock & 1-Second Auto-Refresh (Shows Date Before Time: e.g. Sep 9 â€¢ 7:15:32 AM)
+    // Live Clock & 1-Second Auto-Refresh (Shows Date Before Time: e.g. Sep 9 • 7:15:32 AM)
     function updateLiveClock() {
       const now = new Date();
       const opts = { timeZone: 'America/New_York' };
@@ -582,6 +582,7 @@ window.currentAsset = "BTC";
       if (clockDesktop) clockDesktop.innerHTML = stackedHtml;
     }
 
+    let _isPolling1s = false;
     window._live1sTimer = null;
     function startLive1sRefresh() {
       if (window._live1sTimer) clearInterval(window._live1sTimer);
@@ -591,6 +592,8 @@ window.currentAsset = "BTC";
       fetchBtcKlinesDirect();
       window._live1sTimer = setInterval(async () => {
         if (document.hidden) return;
+        if (_isPolling1s) return;
+        _isPolling1s = true;
         updateLiveClock();
         updateBtcCountdownClock();
 
@@ -598,13 +601,9 @@ window.currentAsset = "BTC";
         try {
           if (activeMode === 'btc_analyzer') {
             await pollBtcLive1s();
-          } else {
-            const res = await fetch('/api/live/poll');
-            if (res.ok) {
-              const data = await res.json();
-            }
           }
         } catch (e) { console.warn('Fetch failed:', e); }
+        finally { _isPolling1s = false; }
       }, 1000);
     }
 
@@ -627,15 +626,25 @@ window.currentAsset = "BTC";
       } catch (err) {
         console.warn('API offline or standalone mode, loading local bundled data for iOS...');
         try {
-          const tRes = await fetch('data/top5.json').catch(() => fetch('/static/data/top5.json'));
-          const tData = await tRes.json();
-          top5Picks = tData.top_5 || [];
-          renderTop5(top5Picks);
+          let tRes = await fetch('data/top5.json').catch(() => null);
+          if (!tRes || !tRes.ok) {
+            tRes = await fetch('/static/data/top5.json').catch(() => null);
+          }
+          if (tRes && tRes.ok) {
+            const tData = await tRes.json();
+            top5Picks = tData.top_5 || [];
+            renderTop5(top5Picks);
+          }
 
-          const pRes = await fetch('data/props.json').catch(() => fetch('/static/data/props.json'));
-          const pData = await pRes.json();
-          allPropsData = pData.props || [];
-          renderTable(allPropsData);
+          let pRes = await fetch('data/props.json').catch(() => null);
+          if (!pRes || !pRes.ok) {
+            pRes = await fetch('/static/data/props.json').catch(() => null);
+          }
+          if (pRes && pRes.ok) {
+            const pData = await pRes.json();
+            allPropsData = pData.props || [];
+            renderTable(allPropsData);
+          }
         } catch (e2) {
           console.warn('Local fallback loading error:', e2);
         }
@@ -658,12 +667,17 @@ window.currentAsset = "BTC";
       } catch (e) {
         console.warn('API offline or standalone mode, loading local pitcher data for iOS...');
         try {
-          const res = await fetch('data/pitchers.json').catch(() => fetch('/static/data/pitchers.json'));
-          const data = await res.json();
-          top5Pitchers = data.top5 || [];
-          allPitcherProps = data.props || [];
-          renderPitcherTop5(top5Pitchers);
-          renderPitcherTable(allPitcherProps);
+          let res = await fetch('data/pitchers.json').catch(() => null);
+          if (!res || !res.ok) {
+            res = await fetch('/static/data/pitchers.json').catch(() => null);
+          }
+          if (res && res.ok) {
+            const data = await res.json();
+            top5Pitchers = data.top5 || [];
+            allPitcherProps = data.props || [];
+            renderPitcherTop5(top5Pitchers);
+            renderPitcherTable(allPitcherProps);
+          }
         } catch (e2) {
           console.warn('Local pitcher fallback error:', e2);
         }
@@ -731,7 +745,7 @@ window.currentAsset = "BTC";
 
     function getFormattedSlipText() {
       if (activeSlip.length === 0) return "";
-      let text = "âš¡ APEXPROPS BET SLIP (THE ODDS API) âš¡\n";
+      let text = "⚡ APEXPROPS BET SLIP (THE ODDS API) ⚡\n";
       text += "====================================\n";
       let joint = 1.0;
       let parlayDec = 1.0;
@@ -763,7 +777,7 @@ window.currentAsset = "BTC";
       }
       text += "====================================\n";
       text += `Model Win Probability: ${(isNaN(joint * 100) ? 0 : (joint * 100)).toFixed(1)}%\n`;
-      text += `âš¡ Parlay Odds (The Odds API): ${dkParlayOdds} (${(isNaN(parlayDec) ? 0 : parlayDec).toFixed(2)}x Payout)\n`;
+      text += `⚡ Parlay Odds (The Odds API): ${dkParlayOdds} (${(isNaN(parlayDec) ? 0 : parlayDec).toFixed(2)}x Payout)\n`;
       text += `$10 Bet Payout: $${(isNaN(10 * parlayDec) ? 0 : (10 * parlayDec)).toFixed(2)}\n`;
       text += "Live lines strictly powered by The Odds API (the-odds-api.com)";
       return text;
@@ -798,13 +812,13 @@ window.currentAsset = "BTC";
 
     function launchDraftKingsDirect() {
       if (activeSlip.length === 0) {
-        showDkToast("âš ï¸ Please select (+ Slip) at least 1 prop first!");
+        showDkToast("⚠️ Please select (+ Slip) at least 1 prop first!");
         return;
       }
 
       // 1. Silent clipboard copy of formatted picks
       copySlipToClipboard(true);
-      showDkToast("ðŸ‘‘ Picks copied! Opening DraftKings App...");
+      showDkToast("👑 Picks copied! Opening DraftKings App...");
 
       // 2. Format outcomes for native iOS deep link
       const selections = activeSlip.map(p => ({
@@ -936,13 +950,13 @@ window.currentAsset = "BTC";
 
       const isVerified = p.is_verified || (p.game_log && p.game_log.some(g => g.verified));
       const badgeHtml = isVerified 
-        ? `<span class="inline-flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"><span>âœ“</span> MLB &amp; ESPN Verified</span>` 
+        ? `<span class="inline-flex items-center gap-1 text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20"><span>✓</span> MLB &amp; ESPN Verified</span>` 
         : `<span class="inline-flex items-center gap-1 text-blue-400 font-bold bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">Official Log</span>`;
 
       if (noteEl) {
         noteEl.innerHTML = isVerified
-          ? `<span class="flex items-center gap-1"><span>ðŸ›¡ï¸</span> Data Source: Official MLB Stats API &amp; ESPN</span><span class="text-emerald-400 font-semibold">100% Authentic Logs</span>`
-          : `<span class="flex items-center gap-1"><span>ðŸ›¡ï¸</span> Multi-Source Baseball Data Feeds</span><span class="text-slate-400">Standard Calibration</span>`;
+          ? `<span class="flex items-center gap-1"><span>🛡️</span> Data Source: Official MLB Stats API &amp; ESPN</span><span class="text-emerald-400 font-semibold">100% Authentic Logs</span>`
+          : `<span class="flex items-center gap-1"><span>🛡️</span> Multi-Source Baseball Data Feeds</span><span class="text-slate-400">Standard Calibration</span>`;
       }
 
       if (isPitcher) {
@@ -1037,10 +1051,10 @@ window.currentAsset = "BTC";
         mHs.src = p.headshot;
       }
       safeSet('modalPlayerName', 'innerText', p.name);
-      const dtStr = p.game_date ? `${p.game_date} â€¢ ${p.game_time}` : (p.game_datetime || 'Today â€¢ 7:05 PM ET');
-      const pitcherStr = (p.pitcher_name || p.pitcher) ? ` â€¢ SP: ${p.pitcher_name || p.pitcher}` : '';
-      const statusStr = p.lineup_status ? ` â€¢ ${p.is_confirmed_lineup ? 'âœ“ ' : ''}${p.lineup_status} (#${p.order})` : '';
-      safeSet('modalSub', 'innerText', `${escapeHtml(p.team)} ${p.is_home ? 'vs' : (p.is_home === false ? '@' : 'vs')} ${escapeHtml(p.opponent)}${pitcherStr}${statusStr} â€¢ ðŸ“… ${dtStr}`);
+      const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
+      const pitcherStr = (p.pitcher_name || p.pitcher) ? ` • SP: ${p.pitcher_name || p.pitcher}` : '';
+      const statusStr = p.lineup_status ? ` • ${p.is_confirmed_lineup ? '✓ ' : ''}${p.lineup_status} (#${p.order})` : '';
+      safeSet('modalSub', 'innerText', `${escapeHtml(p.team)} ${p.is_home ? 'vs' : (p.is_home === false ? '@' : 'vs')} ${escapeHtml(p.opponent)}${pitcherStr}${statusStr} • 📅 ${dtStr}`);
       safeSet('modalWinProb', 'innerText', `${p.win_prob}%`);
       
       const isPitcher = p.pos === 'SP' || p.k_line;
@@ -1087,11 +1101,11 @@ window.currentAsset = "BTC";
       renderGameLog(p, isPitcher);
 
       const weather = p.weather || {
-        venue: p.venue || "Stadium", temp: "75Â°F", wind: "Pitcher-Friendly", run_factor: isPitcher ? "-6% Runs" : "+10% Runs", status: "FAVORABLE"
+        venue: p.venue || "Stadium", temp: "75°F", wind: "Pitcher-Friendly", run_factor: isPitcher ? "-6% Runs" : "+10% Runs", status: "FAVORABLE"
       };
-      safeSet('modalWeatherVenue', 'innerText', `ðŸŒ¤ï¸ ${weather.venue || p.venue} Conditions`);
+      safeSet('modalWeatherVenue', 'innerText', `🌤️ ${weather.venue || p.venue} Conditions`);
       safeSet('modalWeatherStatus', 'innerText', weather.status || "FAVORABLE");
-      safeSet('modalWeatherTemp', 'innerText', weather.temp || "75Â°F");
+      safeSet('modalWeatherTemp', 'innerText', weather.temp || "75°F");
       safeSet('modalWeatherWind', 'innerText', weather.wind || "8 mph");
       safeSet('modalWeatherRunImpact', 'innerText', weather.run_factor || "+10%");
 
@@ -1100,7 +1114,7 @@ window.currentAsset = "BTC";
         "Favorable pitch sequencing and strike zone discipline",
         "High implied win equity based on 5,000 Monte Carlo simulations"
       ];
-      safeHtml('modalCatalysts', catalysts.map(c => `<li>â€¢ ${c}</li>`).join(''));
+      safeHtml('modalCatalysts', catalysts.map(c => `<li>• ${c}</li>`).join(''));
       if (document.getElementById('modalDkBtn')) {
         document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
@@ -1120,8 +1134,8 @@ window.currentAsset = "BTC";
         mHs.src = p.headshot;
       }
       safeSet('modalPlayerName', 'innerText', p.name);
-      const dtStr = p.game_date ? `${p.game_date} â€¢ ${p.game_time}` : (p.game_datetime || 'Today â€¢ 7:05 PM ET');
-      safeSet('modalSub', 'innerText', `${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} â€¢ Probable Starter (${p.era || '3.50'} ERA) â€¢ ðŸ“… ${dtStr}`);
+      const dtStr = p.game_date ? `${p.game_date} • ${p.game_time}` : (p.game_datetime || 'Today • 7:05 PM ET');
+      safeSet('modalSub', 'innerText', `${escapeHtml(p.team)} ${p.is_home ? 'vs' : '@'} ${escapeHtml(p.opponent)} • Probable Starter (${p.era || '3.50'} ERA) • 📅 ${dtStr}`);
       safeSet('modalWinProb', 'innerText', `${p.win_prob}%`);
       safeSet('modalMetricLabel', 'innerText', "Projected Ks");
       safeSet('modalProjScore', 'innerText', `${p.proj_k || p.proj_total} Ks`);
@@ -1146,13 +1160,13 @@ window.currentAsset = "BTC";
 
       renderGameLog(p, true);
 
-      safeSet('modalWeatherVenue', 'innerText', `ðŸŸï¸ ${p.venue || 'Stadium'} Pitching Conditions`);
+      safeSet('modalWeatherVenue', 'innerText', `🏟️ ${p.venue || 'Stadium'} Pitching Conditions`);
       safeSet('modalWeatherStatus', 'innerText', "OPTIMAL");
-      safeSet('modalWeatherTemp', 'innerText', "72Â°F");
+      safeSet('modalWeatherTemp', 'innerText', "72°F");
       safeSet('modalWeatherWind', 'innerText', "Pitcher-Friendly");
       safeSet('modalWeatherRunImpact', 'innerText', "-8% Contact");
 
-      safeHtml('modalCatalysts', (p.catalysts || []).map(c => `<li>â€¢ ${c}</li>`).join(''));
+      safeHtml('modalCatalysts', (p.catalysts || []).map(c => `<li>• ${c}</li>`).join(''));
       if (document.getElementById('modalDkBtn')) {
         document.getElementById('modalDkBtn').href = p.dk_deep_link || p.dk_link || 'dksb://sb/addbet';
       }
@@ -1267,7 +1281,7 @@ window.currentAsset = "BTC";
         } catch(e) { tf = "1m"; }
       }
       btcCurrentTimeframe = tf;
-      const container = document.getElementById("tradingview_btc_chart");
+      const container = document.getElementById("lw-chart-container");
       if (!container) return;
       
       const tfMap = {
@@ -1367,10 +1381,6 @@ window.currentAsset = "BTC";
 
         fetchChartData();
         
-        // Start live polling if not already started
-        if (window.chartRefreshInterval) clearInterval(window.chartRefreshInterval);
-        window.chartRefreshInterval = setInterval(fetchChartData, 1500);
-
       } catch (err) {
         console.error("Institutional chart init error:", err);
       }
@@ -1448,10 +1458,10 @@ window.currentAsset = "BTC";
       btcAudioEnabled = !btcAudioEnabled;
       const icon = document.getElementById("btcAudioIcon");
       if (btcAudioEnabled) {
-        if (icon) icon.innerText = "ðŸ”Š";
+        if (icon) icon.innerText = "🔊";
         playBtcAlertSound(true);
       } else {
-        if (icon) icon.innerText = "ðŸ”‡";
+        if (icon) icon.innerText = "🔇";
       }
     }
 
@@ -1569,7 +1579,7 @@ window.currentAsset = "BTC";
 
       let pred = null;
       let grade = "GRADE C / PASS";
-      let badge = "âšª PASS (CHOP)";
+      let badge = "⚪ PASS (CHOP)";
       let prob = 50;
       const catalysts = [];
 
@@ -1577,14 +1587,14 @@ window.currentAsset = "BTC";
       if (cHigh >= bbUpper && upperWick >= 0.35 && rsi >= 62) {
         pred = "BID DOWN (BELOW TARGET)";
         grade = "GRADE A+ SETUP";
-        badge = "ðŸ”¥ 5-STAR A+ (78%)";
+        badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
         catalysts.push(`Upper Bollinger Rejection: Heavy upper wick pin (${Math.round(upperWick*100)}% of range)`);
         catalysts.push(`Overbought Exhaustion: RSI at ${(isNaN(rsi) ? 0 : rsi).toFixed(1)} rejected off band ceiling`);
       } else if (cLow <= bbLower && lowerWick >= 0.35 && rsi <= 38) {
         pred = "BID UP (ABOVE TARGET)";
         grade = "GRADE A+ SETUP";
-        badge = "ðŸ”¥ 5-STAR A+ (78%)";
+        badge = "🔥 5-STAR A+ (78%)";
         prob = 78;
         catalysts.push(`Lower Bollinger Absorption: Long lower wick hammer (${Math.round(lowerWick*100)}% of range)`);
         catalysts.push(`Oversold Spring: RSI at ${(isNaN(rsi) ? 0 : rsi).toFixed(1)} reclaimed off band floor`);
@@ -1601,14 +1611,14 @@ window.currentAsset = "BTC";
         if (cLow < low4 && cClose > low4 && cClose >= cOpen) {
           pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE A+ SETUP";
-          badge = "ðŸ”¥ 5-STAR A+ (76%)";
+          badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
           catalysts.push(`Bullish Liquidity Sweep: Reclaimed 4-bar low ($${Math.round(low4).toLocaleString()})`);
           catalysts.push("Institutional Stop Hunt complete: Sellers trapped on dip");
         } else if (cHigh > high4 && cClose < high4 && cClose <= cOpen) {
           pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE A+ SETUP";
-          badge = "ðŸ”¥ 5-STAR A+ (76%)";
+          badge = "🔥 5-STAR A+ (76%)";
           prob = 76;
           catalysts.push(`Bearish Liquidity Sweep: Rejected 4-bar high ($${Math.round(high4).toLocaleString()})`);
           catalysts.push("Overhead Supply Capping: Buyers trapped on spike");
@@ -1620,14 +1630,14 @@ window.currentAsset = "BTC";
         if (cClose > cOpen && pClose > pOpen && p2Close > p2Open && rsi >= 64) {
           pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE A SETUP";
-          badge = "âš¡ 4-STAR A (72%)";
+          badge = "⚡ 4-STAR A (72%)";
           prob = 72;
           catalysts.push("Triple Green Climax: 3 consecutive bull candles into resistance");
           catalysts.push(`Momentum Deceleration: RSI at ${(isNaN(rsi) ? 0 : rsi).toFixed(1)} signals high pullback probability`);
         } else if (cClose < cOpen && pClose < pOpen && p2Close < p2Open && rsi <= 36) {
           pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE A SETUP";
-          badge = "âš¡ 4-STAR A (72%)";
+          badge = "⚡ 4-STAR A (72%)";
           prob = 72;
           catalysts.push("Triple Red Climax: 3 consecutive bear candles deeply oversold");
           catalysts.push(`Exhaustion Spring: RSI at ${(isNaN(rsi) ? 0 : rsi).toFixed(1)} signals strong mean-reversion bounce`);
@@ -1639,13 +1649,13 @@ window.currentAsset = "BTC";
         if (cClose > cOpen && pClose > pOpen && rsi >= 58) {
           pred = "BID DOWN (BELOW TARGET)";
           grade = "GRADE B SETUP";
-          badge = "âš ï¸ 3-STAR B (63%)";
+          badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
           catalysts.push("Dual Green Surge: Consecutive bullish closes approaching mean reversion");
         } else if (cClose < cOpen && pClose < pOpen && rsi <= 42) {
           pred = "BID UP (ABOVE TARGET)";
           grade = "GRADE B SETUP";
-          badge = "âš ï¸ 3-STAR B (63%)";
+          badge = "⚠️ 3-STAR B (63%)";
           prob = 63;
           catalysts.push("Dual Red Dip: Consecutive bearish closes approaching oversold rebound");
         }
@@ -1655,7 +1665,7 @@ window.currentAsset = "BTC";
       if (!pred) {
         pred = "PASS / NO BID (CHOP)";
         grade = "GRADE C / PASS";
-        badge = "âšª PASS (CHOP)";
+        badge = "⚪ PASS (CHOP)";
         prob = 50;
         catalysts.push("Consolidation Chop: Market rotational, no asymmetric directional edge");
         catalysts.push("Capital Preservation: Skipping low-conviction setup to protect bankroll");
@@ -1707,9 +1717,9 @@ window.currentAsset = "BTC";
         const isFx = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
         let simpleText;
         if (isFx) {
-          simpleText = isAbove ? "â–² BUY / LONG" : (isBelow ? "â–¼ SELL / SHORT" : "âšª HOLD");
+          simpleText = isAbove ? "▲ BUY / LONG" : (isBelow ? "▼ SELL / SHORT" : "⚪ HOLD");
         } else {
-          simpleText = isAbove ? "â¬† UP" : (isBelow ? "â¬‡ DOWN" : "âšª PASS");
+          simpleText = isAbove ? "⬆ UP" : (isBelow ? "⬇ DOWN" : "⚪ PASS");
         }
         outcomeText.innerText = simpleText;
         if (isAbove) {
@@ -2296,18 +2306,18 @@ window.currentAsset = "BTC";
               time: cTimeStr,
               price: closeP,
               direction: isUp ? "HIGHER" : "LOWER",
-              arrow: isUp ? "â–²" : "â–¼",
+              arrow: isUp ? "▲" : "▼",
               delta: delta,
               delta_pct: deltaPct
             };
           });
 
           if (higherCount > 1) {
-            window.cachedBtcStreak = `ðŸ”¥ ${higherCount} consecutive HIGHER closes`;
+            window.cachedBtcStreak = `🔥 ${higherCount} consecutive HIGHER closes`;
           } else if (lowerCount > 1) {
-            window.cachedBtcStreak = `â„ï¸ ${lowerCount} consecutive LOWER closes`;
+            window.cachedBtcStreak = `❄️ ${lowerCount} consecutive LOWER closes`;
           } else {
-            window.cachedBtcStreak = "âš¡ Neutral Interval Bias";
+            window.cachedBtcStreak = "⚡ Neutral Interval Bias";
           }
 
           renderBtcTrendBox(window.cachedBtcLast5Targets, window.cachedBtcStreak);
@@ -2365,7 +2375,7 @@ window.currentAsset = "BTC";
         const confTag = document.getElementById("btcPredConfidenceTag");
         const lockIcon = document.getElementById("btcPredLockIcon");
         if (outcomeText) {
-          outcomeText.innerText = "â³ 30S SCAN";
+          outcomeText.innerText = "⏳ 30S SCAN";
           outcomeText.className = "text-xs sm:text-sm font-black tracking-tight text-amber-300 font-mono leading-none truncate";
         }
         if (probText) probText.innerText = `${Math.max(0, SCAN_TIME - elapsed)}s`;
@@ -2387,7 +2397,7 @@ window.currentAsset = "BTC";
         
         let isPass = (dir === "PASS");
         let prob = (fc && fc.probability_percent) ? fc.probability_percent : 50;
-        let badge = (fc && fc.conviction_badge) ? fc.conviction_badge : (isPass ? "âšª NO EDGE" : "MODERATE EDGE");
+        let badge = (fc && fc.conviction_badge) ? fc.conviction_badge : (isPass ? "⚪ NO EDGE" : "MODERATE EDGE");
         let grade = (fc && fc.conviction_grade) ? fc.conviction_grade : (isPass ? "CHOPPY MARKET" : "GRADE A SETUP");
         let edge = (fc && fc.primary_edge) ? fc.primary_edge : (isPass ? "Awaiting clearer setup" : "Pattern support");
         
@@ -2396,7 +2406,7 @@ window.currentAsset = "BTC";
           lockedAt: nowSec,
           direction: dir,
           outcome: isPass ? "NO CLEAR EDGE DETECTED" : (dir === "ABOVE" ? "LIKELY TO CLOSE ABOVE TARGET" : "LIKELY TO CLOSE BELOW TARGET"),
-          outcomeText: isPass ? "âšª PASS" : (dir === "ABOVE" ? "â–² UP" : "â–¼ DOWN"),
+          outcomeText: isPass ? "⚪ PASS" : (dir === "ABOVE" ? "▲ UP" : "▼ DOWN"),
           probability_percent: prob,
           confidence_badge: badge,
           conviction_grade: grade,
@@ -2442,11 +2452,11 @@ window.currentAsset = "BTC";
       const bubble = document.getElementById("kalshiMLStatusBubble");
       if (bubble) {
         if (locked.direction === "pass" || locked.direction === "PASS") {
-          bubble.innerText = "âšª PASS";
+          bubble.innerText = "⚪ PASS";
           bubble.className = "px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-slate-800 text-slate-400 border border-slate-600 whitespace-nowrap cursor-pointer hover:scale-105 transition-transform";
         } else {
           const prob = locked.probability_percent || 50;
-          const label = locked.direction === "ABOVE" ? `â–² UP Â· ${prob}%` : `â–¼ DOWN Â· ${prob}%`;
+          const label = locked.direction === "ABOVE" ? `▲ UP · ${prob}%` : `▼ DOWN · ${prob}%`;
           bubble.innerText = label;
           bubble.className = locked.direction === "ABOVE"
             ? "px-1.5 py-0.5 text-[8px] font-bold uppercase rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 animate-pulse whitespace-nowrap cursor-pointer hover:scale-105 transition-transform"
@@ -2492,7 +2502,7 @@ window.currentAsset = "BTC";
         const delta = price - target;
         const deltaPct = (delta / target) * 100;
         const isAbove = delta >= 0;
-        const arrow = isAbove ? "â–²" : "â–¼";
+        const arrow = isAbove ? "▲" : "▼";
         const sign = isAbove ? "+" : "-";
         const absDelta = Math.abs(delta);
         const absPct = Math.abs(deltaPct);
@@ -3343,7 +3353,7 @@ window.currentAsset = "BTC";
         const isFxStatus = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset);
         if (isFxStatus) {
           const pairFmt = `${window.currentAsset.slice(0, 3)}/${window.currentAsset.slice(3)}`;
-          if (tickerEl) tickerEl.innerText = `${pairFmt} Â· SPOT FX`;
+          if (tickerEl) tickerEl.innerText = `${pairFmt} · SPOT FX`;
           if (typeof window.updateTradingUiForAsset === 'function') {
             window.updateTradingUiForAsset(window.currentAsset);
           }
@@ -3374,7 +3384,7 @@ window.currentAsset = "BTC";
           pnlEl.className = pnl > 0 ? "font-bold text-emerald-400" : (pnl < 0 ? "font-bold text-red-400" : "font-bold text-white");
         }
 
-        // Live P/L of Open Trades â€” prefer server-calculated open_pnl_dollars
+        // Live P/L of Open Trades — prefer server-calculated open_pnl_dollars
         const livePnlContainer = document.getElementById("topBarLivePnlContainer");
         const livePnlText = document.getElementById("topBarLivePnlText");
         if (livePnlContainer && livePnlText) {
@@ -3459,7 +3469,7 @@ window.currentAsset = "BTC";
       // 2. Execution Origin Pill (AUTO vs MANUAL)
       const isManual = t.is_manual === true || src.includes("MANUAL") || rec.includes("MANUAL") || grade.includes("MANUAL");
       if (isManual) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Manually Executed by Trader">ðŸ– MANUAL</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Manually Executed by Trader">🖐 MANUAL</span>`);
       } else {
         const styleRaw = String(t.trading_style || "").toUpperCase();
         const isSurfer = src.includes("MOMENTUM_SURFER") || styleRaw.includes("MOMENTUM_SURFER");
@@ -3469,16 +3479,16 @@ window.currentAsset = "BTC";
         const isChop = src.includes("CHOP") || styleRaw.includes("CHOP");
         const isAutoD = src.includes("AUTO") || styleRaw === "AUTO";
         
-        let autoLabel = "âš¡ AUTO";
-        let icon = "âš¡";
+        let autoLabel = "⚡ AUTO";
+        let icon = "⚡";
         let styleName = "AUTO";
         
-        if (isSurfer) { icon = "ðŸŒŠ"; styleName = "AUTO (SURFER)"; }
-        else if (isAmbush) { icon = "ðŸ¥·"; styleName = "AUTO (AMBUSH)"; }
-        else if (isSniper) { icon = "ðŸŽ¯"; styleName = "AUTO (SNIPER)"; }
-        else if (isPrediction) { icon = "ðŸ”®"; styleName = "AUTO (PREDICTION)"; }
-        else if (isChop) { icon = "ðŸª“"; styleName = "AUTO (CHOP)"; }
-        else if (isAutoD) { icon = "âš™ï¸"; styleName = "AUTO (DYNAMIC)"; }
+        if (isSurfer) { icon = "🌊"; styleName = "AUTO (SURFER)"; }
+        else if (isAmbush) { icon = "🥷"; styleName = "AUTO (AMBUSH)"; }
+        else if (isSniper) { icon = "🎯"; styleName = "AUTO (SNIPER)"; }
+        else if (isPrediction) { icon = "🔮"; styleName = "AUTO (PREDICTION)"; }
+        else if (isChop) { icon = "🪓"; styleName = "AUTO (CHOP)"; }
+        else if (isAutoD) { icon = "⚙️"; styleName = "AUTO (DYNAMIC)"; }
         
         pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-cyan-500/15 text-cyan-300 border border-cyan-500/35" title="Autonomous AI Execution (${styleName})">${icon} ${styleName}</span>`);
       }
@@ -3486,22 +3496,22 @@ window.currentAsset = "BTC";
       // 3. Scalp Pill
       const isScalp = t.is_scalp === true || src.includes("SCALP") || rec.includes("SCALP") || grade.includes("SCALP") || catalysts.some(c => c.includes("SCALP")) || exitReason.includes("SCALP");
       if (isScalp) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/40" title="Rapid Scalper Trade">âš¡ SCALP</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/40" title="Rapid Scalper Trade">⚡ SCALP</span>`);
       }
 
       // 4. Reverse Pill
       const isReverse = t.is_reverse === true || src.includes("REVERSE") || rec.includes("REVERSE") || badge.includes("REVERSE") || catalysts.some(c => c.includes("REVERSE"));
       if (isReverse) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-indigo-500/15 text-indigo-300 border border-indigo-500/40" title="CVD Divergence Reversal Setup">ðŸ”„ REVERSE</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-indigo-500/15 text-indigo-300 border border-indigo-500/40" title="CVD Divergence Reversal Setup">🔄 REVERSE</span>`);
       }
 
       // 5. Exit Reason Pill (when closed early before expiry)
       if (exitReason.includes("SCALP_TP") || exitReason.includes("TAKE_PROFIT")) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Take-Profit Target Reached">âœ… TP EXIT</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" title="Take-Profit Target Reached">✅ TP EXIT</span>`);
       } else if (exitReason.includes("SCALP_SL") || exitReason.includes("STOP_LOSS")) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40" title="Stop-Loss Triggered">ðŸ›‘ SL EXIT</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40" title="Stop-Loss Triggered">🛑 SL EXIT</span>`);
       } else if (exitReason.includes("MANUAL")) {
-        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Trader Manually Closed Position">âœ‹ MANUAL EXIT</span>`);
+        pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35" title="Trader Manually Closed Position">✋ MANUAL EXIT</span>`);
       }
 
       // 6. Signal / Conviction Badge Pill
@@ -3510,7 +3520,7 @@ window.currentAsset = "BTC";
         // Remove emoji if it already exists, we will style it cleanly
         let cleanBadge = badgeRaw.replace(/^[^\w\s]+/g, '').trim(); 
         if (cleanBadge.length > 0 && !isManual) {
-           pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Execution Signal">ðŸ“¡ ${cleanBadge}</span>`);
+           pills.push(`<span class="text-[8px] font-bold px-1.5 py-0.2 rounded uppercase bg-purple-500/15 text-purple-300 border border-purple-500/30" title="Execution Signal">📡 ${cleanBadge}</span>`);
         }
       }
 
@@ -3554,7 +3564,7 @@ window.currentAsset = "BTC";
         let pnlText = "Pending";
 
         if (!isClosed && t.entry_price) {
-            // Live PNL â€” prefer server-annotated live_pnl
+            // Live PNL — prefer server-annotated live_pnl
             if (t.live_pnl != null) {
                 pnlNum = parseFloat(t.live_pnl);
                 pnlText = pnlNum >= 0 ? `+$${(isNaN(pnlNum) ? 0 : pnlNum).toFixed(2)}` : `-$${(isNaN(Math.abs(pnlNum)) ? 0 : Math.abs(pnlNum)).toFixed(2)}`;
@@ -3609,14 +3619,14 @@ window.currentAsset = "BTC";
         const sideStr = String(t.side || t.direction || "").toUpperCase();
         const isUpDirection = sideStr.includes("UP") || sideStr.includes("ABOVE") || sideStr.includes("YES") || sideStr.includes("BUY");
         const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || String(t.ticker || "").includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
-        const directionArrow = isUpDirection ? "â–²" : "â–¼";
+        const directionArrow = isUpDirection ? "▲" : "▼";
         const directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
         const directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
 
         let tradeSizeDisplay = "";
         if (isFxTrade) {
           const lotsStr = t.count || (t.lots ? `${t.lots} Lots` : '0.10 Lots');
-          const pipsStr = t.pips != null ? ` Â· ${t.pips >= 0 ? '+' : ''}${t.pips} pips` : '';
+          const pipsStr = t.pips != null ? ` · ${t.pips >= 0 ? '+' : ''}${t.pips} pips` : '';
           const entryStr = (parseFloat(t.entry_price || 0) || 0).toFixed(window.currentAsset === 'USDJPY' ? 3 : 5);
           tradeSizeDisplay = `<span class="text-slate-400">(${lotsStr} @ ${entryStr}${pipsStr})</span>`;
         } else {
@@ -3634,7 +3644,7 @@ window.currentAsset = "BTC";
                 ${tradeSizeDisplay}
                 ${pillsHtml}
               </div>
-              <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` Â· Settled: ${settledAt}` : ""}</span>
+              <span class="text-[7px] text-slate-500">Opened: ${openedAt}${settledAt ? ` · Settled: ${settledAt}` : ""}</span>
             </div>
             <div class="flex items-center gap-1 font-bold">
               <span>${statusBadge}</span>
@@ -3663,7 +3673,7 @@ window.currentAsset = "BTC";
           return;
         }
 
-        iconEl.innerText = icon || "âš¡";
+        iconEl.innerText = icon || "⚡";
         iconWrapper.className = `w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 ${iconBg || "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40"}`;
         titleEl.innerText = title || "Notification";
         badgeEl.innerText = badge || "SHADOWTRADE AI";
@@ -3702,11 +3712,11 @@ window.currentAsset = "BTC";
       if (!container) return;
       const toast = document.createElement("div");
       const config = {
-        success: { border: "border-emerald-500/50", iconBg: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400", icon: "âœ“", textCol: "text-emerald-400" },
-        error: { border: "border-red-500/50", iconBg: "bg-red-500/20 border-red-500/40 text-red-400", icon: "âœ•", textCol: "text-red-400" },
-        warning: { border: "border-amber-500/50", iconBg: "bg-amber-500/20 border-amber-500/40 text-amber-400", icon: "âš ï¸", textCol: "text-amber-300" },
-        info: { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "â„¹ï¸", textCol: "text-cyan-400" }
-      }[type] || { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "âœ“", textCol: "text-cyan-400" };
+        success: { border: "border-emerald-500/50", iconBg: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400", icon: "✓", textCol: "text-emerald-400" },
+        error: { border: "border-red-500/50", iconBg: "bg-red-500/20 border-red-500/40 text-red-400", icon: "✕", textCol: "text-red-400" },
+        warning: { border: "border-amber-500/50", iconBg: "bg-amber-500/20 border-amber-500/40 text-amber-400", icon: "⚠️", textCol: "text-amber-300" },
+        info: { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "ℹ️", textCol: "text-cyan-400" }
+      }[type] || { border: "border-cyan-500/50", iconBg: "bg-cyan-500/20 border-cyan-500/40 text-cyan-400", icon: "✓", textCol: "text-cyan-400" };
 
       toast.className = `bg-slate-900/95 border ${config.border} rounded-xl p-2.5 sm:p-3 shadow-2xl flex items-center gap-2.5 pointer-events-auto backdrop-blur-md transform transition-all duration-300 translate-y-0 opacity-100 mb-1.5`;
       toast.innerHTML = `
@@ -3751,7 +3761,7 @@ window.currentAsset = "BTC";
         const confirmed = await showAppModal({
           title: "Enable Auto-Trader",
           badge: "REAL FUNDS WARNING",
-          icon: "âš ï¸",
+          icon: "⚠️",
           iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
           body: `You are about to enable <span class="text-red-400 font-bold">LIVE AUTONOMOUS TRADING</span> with real funds.<br><br>Trades will execute automatically whenever high conviction signals occur. Proceed?`,
           confirmText: "Enable Live Auto",
@@ -3813,7 +3823,7 @@ window.currentAsset = "BTC";
         showAppModal({
           title: "Toggle Failed",
           badge: "COMMUNICATION ERROR",
-          icon: "âš ï¸",
+          icon: "⚠️",
           iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
           body: `Cannot reach backend server at ${getKalshiApiBase() || window.location.origin}.<br><br>Auto-Trader state has not changed.`,
           confirmText: "Understood",
@@ -3838,7 +3848,7 @@ window.currentAsset = "BTC";
         const confirmed = await showAppModal({
           title: "Switch to Live Trading",
           badge: "REAL FUNDS NOTICE",
-          icon: "âš ï¸",
+          icon: "⚠️",
           iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
           body: `Switch to <span class="text-red-400 font-bold">LIVE TRADING MODE</span>?<br><br>Real orders will be submitted to Kalshi using your funded account balance.`,
           confirmText: "Switch to Live",
@@ -3944,7 +3954,7 @@ window.currentAsset = "BTC";
         const confirmed = await showAppModal({
           title: "Confirm Live Order",
           badge: "1-CLICK SUBMISSION",
-          icon: "âš¡",
+          icon: "⚡",
           iconBg: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40",
           body: `Submit order to Kalshi?<br><br>Contract: <span class="text-white font-bold">15-Min Bitcoin</span><br>Action: <span class="font-bold ${sideColor}">BUY ${kalshiCurrentContracts} ${sideText}</span><br>Mode: <span class="text-red-400 font-bold">REAL FUNDS</span>`,
           confirmText: "Submit Order",
@@ -3959,7 +3969,7 @@ window.currentAsset = "BTC";
         if (data.success) {
           showAppToast(
             `Trade Executed (${kalshiTradingMode})`,
-            `${data.trade ? data.trade.recommendation : 'Filled'} â€¢ ${kalshiCurrentContracts} contract(s)`,
+            `${data.trade ? data.trade.recommendation : 'Filled'} • ${kalshiCurrentContracts} contract(s)`,
             "success"
           );
           pollKalshiTradingStatus();
@@ -3967,7 +3977,7 @@ window.currentAsset = "BTC";
           showAppModal({
             title: "Order Rejected",
             badge: "KALSHI NOTICE",
-            icon: "âœ•",
+            icon: "✕",
             iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
             body: data.error || "Failed to submit order.",
             confirmText: "Dismiss",
@@ -3986,7 +3996,7 @@ window.currentAsset = "BTC";
         const confirmed = await showAppModal({
           title: "Reverse Active Position",
           badge: "1-CLICK REVERSE",
-          icon: "ðŸ”„",
+          icon: "🔄",
           iconBg: "bg-indigo-500/20 text-indigo-400 border border-indigo-500/40",
           body: `Instantly close your active trade and flip to the opposite side?`,
           confirmText: "Reverse Position",
@@ -4014,7 +4024,7 @@ window.currentAsset = "BTC";
         const confirmed = await showAppModal({
           title: "Close Active Position",
           badge: "1-CLICK EXIT",
-          icon: "âœ•",
+          icon: "✕",
           iconBg: "bg-amber-500/20 text-amber-400 border border-amber-500/40",
           body: `Exit all active trade(s) at current market price and realize P&L immediately?`,
           confirmText: "Close Now",
@@ -4040,7 +4050,7 @@ window.currentAsset = "BTC";
     // =========================================================================
     
       // Auto-save event listeners
-      if(!window.__domLoadedAppJs_2) { window.__domLoadedAppJs_2 = true; document.addEventListener('DOMContentLoaded', () => {
+      if(!window.__domLoadedAppJs_2) { /* __expose_block_async__ */ [["setConvictionFilter", setConvictionFilter], ["saveKalshiSettings", saveKalshiSettings], ["loadKalshiSettingsFromStorage", loadKalshiSettingsFromStorage], ["toggleMasterBroadcast", toggleMasterBroadcast], ["loadScalpSettingsFromStorage", loadScalpSettingsFromStorage], ["loadScalpConfigUI", loadScalpConfigUI], ["saveScalpSettings", saveScalpSettings], ["pollGlobalTicker", pollGlobalTicker]].forEach(([n, f]) => { if (typeof window[n] === "undefined") window[n] = f; }); window.__domLoadedAppJs_2 = true; document.addEventListener('DOMContentLoaded', () => {
         const settingMaxCap = document.getElementById("settingMaxCap");
         const settingMaxContracts = document.getElementById("settingMaxContracts");
         
@@ -4393,7 +4403,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
       const confirmed = await showAppModal({
         title: "Reset Paper Balance",
         badge: "PAPER TRADING",
-        icon: "âš ï¸",
+        icon: "⚠️",
         iconBg: "bg-red-500/20 text-red-400 border border-red-500/40",
         body: `Are you sure you want to reset your paper trading balance back to $500.00?`,
         confirmText: "Reset Balance",
@@ -4627,7 +4637,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
           const pnlColor = pnlVal >= 0 ? "text-emerald-400" : "text-red-400";
           const settledAt = tr.settled_at || "Recent Settle";
 
-          const headerIcon = isCorrect ? "âœ“" : "âœ—";
+          const headerIcon = isCorrect ? "✓" : "✗";
           const headerText = isCorrect ? "CORRECT PREDICTION" : "INCORRECT PREDICTION";
           const headerColor = isCorrect ? "text-emerald-400" : "text-red-400";
           const badgeBg = isCorrect ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300";
@@ -4679,7 +4689,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         if (!target) return;
 
         // Completely ignore chart container and TradingView widget tooltips
-        if (target.closest("#btc-chart-container, #tradingview_btc_chart")) {
+        if (target.closest("#btc-chart-container, #lw-chart-container")) {
           target.removeAttribute("title");
           target.removeAttribute("data-tooltip");
           if (activeTarget) {
@@ -4885,7 +4895,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         const factors = locked.decision_factors || locked.catalysts || [];
         let factorsListHtml = "";
         if (factors && factors.length > 0) {
-          factorsListHtml = factors.map(f => `<li class="flex items-start gap-1.5"><span class="text-cyan-400">â€¢</span> <span>${f}</span></li>`).join("");
+          factorsListHtml = factors.map(f => `<li class="flex items-start gap-1.5"><span class="text-cyan-400">•</span> <span>${f}</span></li>`).join("");
         } else {
           factorsListHtml = `<li class="text-slate-400 italic">No specific signal catalysts flagged yet. Monitoring real-time orderbook & momentum.</li>`;
         }
@@ -4974,7 +4984,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         if (!t1 || !t2) return;
 
         let html = '';
-        const symbols = { "BTC": "â‚¿", "ETH": "Îž", "GOLD": "ðŸ¥‡" };
+        const symbols = { "BTC": "₿", "ETH": "Ξ", "GOLD": "🥇" };
         
         assets.forEach((asset, idx) => {
            const price = results[idx]?.price || 0;
@@ -5099,7 +5109,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
           </button>
           
           <div class="flex items-center gap-2 mb-3">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 text-xs shrink-0">ðŸ“‹</div>
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 text-xs shrink-0">📋</div>
             <div class="font-bold uppercase tracking-wider text-xs text-white">Trade Details</div>
           </div>
           
@@ -5122,7 +5132,7 @@ window.updateTradingUiForAsset = function(asset) {
 
     // 2. Active Market Ticker
     const tickerEl = document.getElementById("kalshiActiveTicker");
-    if (tickerEl) tickerEl.innerText = isFx ? `${pairFmt} Â· SPOT FX` : `KX${asset}15M-ACTIVE`;
+    if (tickerEl) tickerEl.innerText = isFx ? `${pairFmt} · SPOT FX` : `KX${asset}15M-ACTIVE`;
 
     // 3. Top Bar Live Price Label
     const livePriceLabel = document.getElementById("topBarLivePriceLabel");
@@ -5138,17 +5148,17 @@ window.updateTradingUiForAsset = function(asset) {
 
     // 6. Balance Icon
     const balIcon = document.getElementById("topBarBalanceIcon");
-    if (balIcon) balIcon.innerText = isFx ? "ðŸŒ" : "â‚¿";
+    if (balIcon) balIcon.innerText = isFx ? "🌐" : "₿";
 
     // 7. Mobile / iPhone 17 Header Labels
     const ipTargetLabel = document.getElementById("iphone17TargetLabel");
     if (ipTargetLabel) ipTargetLabel.innerText = isFx ? "Take Profit (TP)" : "Target";
     const ipIntervalTime = document.getElementById("iphone17IntervalTime");
-    if (ipIntervalTime && isFx) ipIntervalTime.innerText = "Spot FX Â· 15M Candle";
+    if (ipIntervalTime && isFx) ipIntervalTime.innerText = "Spot FX · 15M Candle";
 
     // 8. Conviction Pill
     const convPill = document.getElementById("kalshiConvictionPill");
-    if (convPill) convPill.innerText = isFx ? "Spot FX Â· No Expiry" : "Min: A+, A & B+";
+    if (convPill) convPill.innerText = isFx ? "Spot FX · No Expiry" : "Min: A+, A & B+";
 
     // 9. Sizing Controls
     const sizeLabel = document.getElementById("traderSizeLabel");
@@ -5206,7 +5216,7 @@ window.updateTradingUiForAsset = function(asset) {
     // 11. Reverse & Close Buttons
     const btnReverseText = document.getElementById("btnReverseText");
     const btnCloseText = document.getElementById("btnCloseText");
-    if (btnReverseText) btnReverseText.innerText = isFx ? "1-Click Reverse (Long â†” Short)" : "1-Click Reverse";
+    if (btnReverseText) btnReverseText.innerText = isFx ? "1-Click Reverse (Long ↔ Short)" : "1-Click Reverse";
     if (btnCloseText) btnCloseText.innerText = isFx ? "Close Spot Position" : "Close Active Trade";
 
     // 12. Synthetic Badges
@@ -5281,7 +5291,7 @@ window.switchAsset = function(asset) {
     window.tvWidget = null;
     window.currentTvAsset = null;
     window.currentTvInterval = null;
-    const tvContainer = document.getElementById("tradingview_btc_chart");
+    const tvContainer = document.getElementById("lw-chart-container");
     if (tvContainer) tvContainer.innerHTML = "";
     if (typeof initTradingViewChart !== "undefined") {
         initTradingViewChart();
@@ -5309,7 +5319,7 @@ if(!window.__domLoadedAppJs_3) { window.__domLoadedAppJs_3 = true; document.addE
     }
 });
 
-// â”€â”€ Guest Mode UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Guest Mode UI ────────────────────────────────────────────────────
 ;(function initGuestModeUI() {
   if (!window.guestToken) return;
 
@@ -5317,7 +5327,7 @@ if(!window.__domLoadedAppJs_3) { window.__domLoadedAppJs_3 = true; document.addE
     // 1. Add a "Guest Mode" badge
     const badge = document.createElement("div");
     badge.id = "guestModeBadge";
-    badge.innerHTML = `<span style="font-size: 14px;">ðŸ‘¤</span> Guest Mode`;
+    badge.innerHTML = `<span style="font-size: 14px;">👤</span> Guest Mode`;
     document.body.appendChild(badge);
 
     // 2. Hide owner-only controls and style the badge responsively
@@ -5474,3 +5484,115 @@ if(window.matrixTelemetryIntervalId) clearInterval(window.matrixTelemetryInterva
 
 
 
+
+// --- Wallet Transfer Functionality ---
+async function executeWalletTransfer() {
+    const btn = document.getElementById('transfer-btn');
+    const amountInput = document.getElementById('transfer-amount');
+    const directionSelect = document.getElementById('transfer-direction');
+    const statusDiv = document.getElementById('transfer-status');
+    
+    if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
+        statusDiv.textContent = 'Please enter a valid amount.';
+        statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        statusDiv.classList.remove('hidden');
+        return;
+    }
+    
+    const amount = parseFloat(amountInput.value);
+    const direction = directionSelect.value;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-pulse">Transferring...</span>';
+    statusDiv.classList.add('hidden');
+    
+    try {
+        const resp = await fetch(getKalshiApiBase() + '/api/engine/btc/kalshi/transfer', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + (localStorage.getItem('saas_token') || '')
+            },
+            body: JSON.stringify({ direction: direction, amount: amount })
+        });
+        
+        const data = await resp.json();
+        
+        if (data.success) {
+            statusDiv.textContent = 'Transfer successful! ($' + data.amount_dollars.toFixed(2) + ')';
+            statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            amountInput.value = '';
+            // Refresh balances
+            if (typeof fetchSettings === 'function') fetchSettings();
+            if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+        } else {
+            statusDiv.textContent = data.error || 'Transfer failed.';
+            statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        }
+    } catch (err) {
+        console.error('Transfer error:', err);
+        statusDiv.textContent = 'Network error during transfer.';
+        statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+    } finally {
+        statusDiv.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = 'Transfer';
+    }
+}
+window.executeWalletTransfer = executeWalletTransfer;
+
+// --- Wallet Balances Fetching ---
+window.refreshWalletBalances = async function refreshWalletBalances() {
+    const mainBalEl = document.getElementById('wallet-main-bal');
+    const cryptoBalEl = document.getElementById('wallet-crypto-bal');
+    
+    if (mainBalEl) mainBalEl.innerHTML = '<span class="animate-pulse">Loading...</span>';
+    if (cryptoBalEl) cryptoBalEl.innerHTML = '<span class="animate-pulse">Loading...</span>';
+    
+    try {
+        const resp = await fetch(getKalshiApiBase() + '/api/engine/btc/kalshi/exchanges', {
+            headers: {
+                'Authorization': 'Bearer ' + (localStorage.getItem('saas_token') || '')
+            }
+        });
+        
+        const data = await resp.json();
+        
+        if (data.success && data.exchanges) {
+            let mainBal = 0.0;
+            let cryptoBal = 0.0;
+            
+            data.exchanges.forEach(ex => {
+                if (ex.exchange_index === 0) {
+                    mainBal = parseFloat(ex.balance) || 0.0;
+                } else if (ex.exchange_index === 2) {
+                    cryptoBal = parseFloat(ex.balance) || 0.0;
+                }
+            });
+            
+            if (mainBalEl) mainBalEl.textContent = '$' + mainBal.toFixed(2);
+            if (cryptoBalEl) cryptoBalEl.textContent = '$' + cryptoBal.toFixed(2);
+        } else {
+            if (mainBalEl) mainBalEl.textContent = 'Error';
+            if (cryptoBalEl) cryptoBalEl.textContent = 'Error';
+        }
+    } catch (err) {
+        console.error('Failed to refresh wallet balances:', err);
+        if (mainBalEl) mainBalEl.textContent = '--';
+        if (cryptoBalEl) cryptoBalEl.textContent = '--';
+    }
+}
+// --- Dock Asset Selector Bar ---
+window.addEventListener('load', () => {
+    const header = document.getElementById('main-header');
+    const assetBar = document.getElementById('assetSelectorBar');
+    if (header && assetBar) {
+        const h = header.getBoundingClientRect().height;
+        assetBar.style.top = h + 'px';
+        
+        // Update on resize too
+        window.addEventListener('resize', () => {
+            assetBar.style.top = header.getBoundingClientRect().height + 'px';
+        });
+    }
+});

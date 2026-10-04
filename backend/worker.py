@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.core.registry import get_auto_executor
 from backend.database.models import init_db
 from backend.forex.auto_executor import start_forex_executor
+from backend.sports_bridge.executor import SportsBridgeExecutor
 from backend.saas_settler import (archive_old_trades, fast_exit_check,
                                   settle_saas_trades)
 
@@ -57,15 +58,21 @@ def run_worker():
 
     threading.Thread(target=_fast_exit_loop, daemon=True, name="FastExitWatcher").start()
 
+    sports_bridge = SportsBridgeExecutor()
     settle_tick = 0
     while True:
         try:
-            for asset in ["BTC", "ETH", "GOLD"]:
+            # Throttle routine loop logs to DEBUG; emit periodic heartbeat every 60 seconds
+            if settle_tick % 30 == 0:
+                logger.info(f"[Worker] Heartbeat: background worker running (cycle {settle_tick})")
+
+            for asset in ["BTC", "ETH", "GOLD", "SOL", "DOGE", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NDQ"]:
                 try:
-                    logger.info(f"[Worker] Running loop for {asset}")
+                    logger.debug(f"[Worker] Running loop for {asset}")
                     ae = get_auto_executor(asset)
                     ae.check_and_execute_rollover()
                     ae.evaluate_and_execute_saas_users()
+                    time.sleep(0.5)
                 except Exception as e:
                     logger.error(f"[Worker] AutoExecutor error for {asset}: {e}")
                     traceback.print_exc()
@@ -77,7 +84,7 @@ def run_worker():
                 traceback.print_exc()
                 
             settle_tick += 1
-            if settle_tick % 60 == 0:  # Every 60 seconds
+            if settle_tick % 30 == 0:  # Every 60 seconds (with 2.0s sleep)
                 try:
                     archive_old_trades()
                 except Exception as e:
@@ -86,7 +93,12 @@ def run_worker():
         except Exception as e:
             logger.error(f"[Worker] Global loop error: {e}")
             
-        time.sleep(1)
+        try:
+            sports_bridge.run_cycle()
+        except Exception as e:
+            logger.error(f"[Worker] Sports Bridge error: {e}")
+
+        time.sleep(2.0)
 
 if __name__ == "__main__":
     run_worker()

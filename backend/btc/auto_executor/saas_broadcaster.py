@@ -2,7 +2,7 @@ from backend.btc.data_fetcher import get_candle_countdown
 
 import logging
 
-from backend.btc.fees import entry_edge_cents, kalshi_order_fee, net_pnl
+from backend.btc.fees import calculate_realized_edge_cents, kalshi_order_fee, net_pnl
 
 logger = logging.getLogger(__name__)
 import os
@@ -56,7 +56,7 @@ from .shared import (
     classify_auto_regime,
 )
 
-# â”€â”€ Per-user signal snapshot (read by the dashboard's AI Intelligence panel) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Per-user signal snapshot (read by the dashboard's AI Intelligence panel) ──────────
 # The worker evaluates each (trading_style, signal_source) combination that users run.
 # The latest result per combination is saved so the web server can show every user the
 # same forecast that will drive their own trades.
@@ -358,8 +358,9 @@ class SaasBroadcasterMixin:
                 sec_left = countdown_info.get("seconds_left", 900)
                 sec_elapsed = 900 - sec_left
                 
-                # Expiration Safety Guard: Never enter brand new trades within 180s (3 minutes) of expiration
-                if sec_left < 15:
+                from backend.btc.auto_executor.remediations import is_entry_timing_valid
+                timing_res = is_entry_timing_valid(sec_left)
+                if not timing_res.get("valid"):
                     return
                     
                 # Allow synthetic markets so PAPER trading works for ETH and GOLD
@@ -376,7 +377,7 @@ class SaasBroadcasterMixin:
                     strike = 0.0
                 if strike <= 0: return
     
-                # â”€â”€ P1: Cached active-users (15s TTL) â€” avoids new DB connection every 4s â”€â”€
+                # ── P1: Cached active-users (15s TTL) — avoids new DB connection every 4s ──
                 _now = time.time()
                 with _saas_users_cache_lock:
                     if _saas_users_cache["users"] is None or (_now - _saas_users_cache["ts"]) > _SAAS_USERS_TTL:
@@ -461,7 +462,7 @@ class SaasBroadcasterMixin:
                     required_evals.add((u_style, u_source))
                 required_evals |= snapshot_combos
     
-                # â”€â”€ P1: Cached 15m candle data (8s TTL per asset) â€” avoids Coinbase HTTP hit every 4s â”€â”€
+                # ── P1: Cached 15m candle data (8s TTL per asset) — avoids Coinbase HTTP hit every 4s ──
                 _now2 = time.time()
                 with _saas_candle_cache_lock:
                     entry = _saas_candle_cache.get(self.asset)
@@ -526,7 +527,7 @@ class SaasBroadcasterMixin:
                                 "pre_gate_prob": 50.0,
                                 "pre_gate_grade": "GRADE C / PASS",
                                 "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
-                                "conviction_badge": "ðŸ›¡ï¸ CAPITAL GUARD (PASS)",
+                                "conviction_badge": "🛡️ CAPITAL GUARD (PASS)",
                                 "target_settlement_zone": "--",
                                 "primary_edge": "Low-volatility compression deadzone (ADX < 18, Vol < 0.85). Preserving capital for high-edge expansion.",
                                 "catalysts": ["Capital Guard active: zero edge detected"],
@@ -572,6 +573,11 @@ class SaasBroadcasterMixin:
                 # 3. Route to users in parallel for maximum execution speed and zero slippage
                 def _execute_single_user_trade(user):
                     try:
+                        # Fix A: a synthetic (_SYNTH) market has fabricated 50c prices and no real
+                        # contract to settle against, so paper trades on it can't mirror live.
+                        # Skip it in every mode, exactly like LIVE always has.
+                        if active_m.get("is_synthetic") or "_SYNTH" in str(active_m.get("ticker", "")).upper():
+                            return
                         u_style = str(user.get('trading_style', 'AUTO')).upper()
                         u_source = str(user.get('signal_source', 'RL_DQN')).upper()
 
@@ -693,8 +699,8 @@ class SaasBroadcasterMixin:
 
                         min_conf = 60.0
                         if eff_style == "MOMENTUM_SURFER" and not is_user_rl:
-                            if sec_left < 240:
-                                # Time Decay block
+                            if sec_left < 240 and not (is_auto_force or is_ignore_pass_tech or is_one_shot):
+                                # Time Decay block (unless force trade is active)
                                 return
                             min_conf = 60.0 if sec_elapsed <= 60 else 75.0
                             conf = max(conf, 100.0 - conf)
@@ -723,8 +729,8 @@ class SaasBroadcasterMixin:
                         consume_one_shot = False
                         # Check user override preferences if market evaluation resulted in PASS
                         if not side:
-                            if eff_style == "CAPITAL_GUARD":
-                                logger.info(f"[SaaS Broadcast] User {user.get('username')} skipping: CAPITAL GUARD strictly blocks overrides.")
+                            if eff_style == "CAPITAL_GUARD" and not (is_auto_force or is_one_shot):
+                                logger.info(f"[SaaS Broadcast] User {user.get('username')} skipping: CAPITAL GUARD strictly blocks trades (force override not active).")
                                 return
                             
                             if is_auto_force or is_one_shot:
@@ -745,13 +751,17 @@ class SaasBroadcasterMixin:
                                         conf = float(forecast.get("pre_gate_prob", 51.0))
                                     else:
                                         # Extreme fallback: look at physical chart trend and short-term momentum
-                                        trend = str(forecast.get("raw_features", {}).get("trend_1h", "UP")).upper()
-                                        ema_9 = float(forecast.get("raw_features", {}).get("ema_9", 0))
-                                        ema_21 = float(forecast.get("raw_features", {}).get("ema_21", 0))
+                                        c_eval = df_ind_target.iloc[-1]
+                                        c_close = float(c_eval["close"])
+                                        ema_9 = float(c_eval.get("ema_9", c_close))
+                                        ema_21 = float(c_eval.get("ema_21", c_close))
+                                        trend = str(c_eval.get("trend_1h", "FLAT")).upper()
                                         if trend in ["UP", "BULLISH"] or (ema_9 > ema_21 and ema_21 > 0):
                                             side = "yes"
-                                        else:
+                                        elif trend in ["DOWN", "BEARISH"] or (ema_9 < ema_21 and ema_21 > 0):
                                             side = "no"
+                                        else:
+                                            side = None  # Blocked by 60% conviction filter (Fix 5)
                                         conf = 51.0
                                         
                                 # The 1-shot is used up just before the order, once every check has passed
@@ -774,8 +784,17 @@ class SaasBroadcasterMixin:
                                         side = "no"
                                         conf = max(55.0, (1.0 - raw_ml_prob) * 100.0)
                                     else:
-                                        trend = str(forecast.get("raw_features", {}).get("trend_1h", "UP")).upper()
-                                        side = "yes" if trend in ["UP", "BULLISH"] else "no"
+                                        c_eval = df_ind_target.iloc[-1]
+                                        c_close = float(c_eval["close"])
+                                        ema_9 = float(c_eval.get("ema_9", c_close))
+                                        ema_21 = float(c_eval.get("ema_21", c_close))
+                                        trend = str(c_eval.get("trend_1h", "FLAT")).upper()
+                                        if trend in ["UP", "BULLISH"] or (ema_9 > ema_21 and ema_21 > 0):
+                                            side = "yes"
+                                        elif trend in ["DOWN", "BEARISH"] or (ema_9 < ema_21 and ema_21 > 0):
+                                            side = "no"
+                                        else:
+                                            side = None  # Blocked by 60% conviction filter (Fix 5)
                                         conf = 55.0
                         if not side:
                             logger.info(f"[SaaS Broadcast] User {user.get('username')} skipping: direction is {direction} (conf: {conf}%)")
@@ -803,10 +822,10 @@ class SaasBroadcasterMixin:
     
                         if chart_conflict:
                             if is_ignore_pass_tech or is_auto_force or is_one_shot:
-                                logger.info(f"[SaaS Multitenant] âš ï¸ User {user.get('username')} bypassed chart conflict ({conflict_reason}) due to force_trade setting.")
+                                logger.info(f"[SaaS Multitenant] ⚠️ User {user.get('username')} bypassed chart conflict ({conflict_reason}) due to force_trade setting.")
                             else:
                                 logger.warning(
-                                    f"[SaaS Multitenant] ðŸ›‘ User {user.get('username')} trade blocked: Side {side.upper()} conflicts with physical chart trend ({conflict_reason})."
+                                    f"[SaaS Multitenant] 🛑 User {user.get('username')} trade blocked: Side {side.upper()} conflicts with physical chart trend ({conflict_reason})."
                                 )
                                 return
                             
@@ -825,7 +844,7 @@ class SaasBroadcasterMixin:
                                 logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped re-entry #{entry_num}: ask ${market_price:.2f} exceeds re-entry cap ${reentry_max_ask:.2f}")
                                 return
 
-                            if sec_left < 210:
+                            if sec_left < 210 and not (is_auto_force or is_ignore_pass_tech or is_one_shot):
                                 logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped re-entry #{entry_num}: only {sec_left/60.0:.1f}m left in candle (< 3.5m min)")
                                 return
 
@@ -833,20 +852,36 @@ class SaasBroadcasterMixin:
                             last_exit_price = float(last_trade.get("exit_price") or last_trade.get("entry_price") or 0.50)
                             last_pnl = float(last_trade.get("pnl") or 0.0)
                             last_reason = str(last_trade.get("exit_reason") or last_trade.get("reason") or "").upper()
-                            was_profit = ("TAKE_PROFIT" in last_reason) or ("TRAILING_STOP" in last_reason) or (last_pnl > 0 and "STOP_LOSS" not in last_reason)
-
-                            if was_profit:
-                                if market_price > (last_exit_price - 0.03):
-                                    logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped re-entry #{entry_num}: ask ${market_price:.2f} has not pulled back >= 3Â¢ below scalp exit ${last_exit_price:.2f}")
+                            last_side = last_trade.get("side", "").upper()
+                            
+                            # Reversal check: if user manually closed or stopped out, only re-enter if AI has flipped its direction!
+                            is_manual_or_stopped = "MANUAL" in last_reason or "SYNC_CLOSED" in last_reason or "STOP_LOSS" in last_reason
+                            if is_manual_or_stopped:
+                                if side.upper() == last_side:
+                                    logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped re-entry #{entry_num}: Prior {last_side} was stopped/closed. Not re-entering same direction.")
                                     return
+                                else:
+                                    logger.info(f"[SaaS Multitenant] User {user.get('username')} REVERSAL: Prior {last_side} was stopped/closed. Executing reversed forecast: {side.upper()}.")
+                                    # Skip DCA logic since this is a fresh directional reversal
+                                    pass
                             else:
-                                initial_entry_price = float(prior_entries[-1].get("entry_price") or 0.50)
-                                dca_target_max = initial_entry_price * 0.85
-                                if market_price > dca_target_max:
-                                    logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped DCA re-entry #{entry_num}: ask ${market_price:.2f} is not discounted >= 15% from initial entry ${initial_entry_price:.2f} (max ${dca_target_max:.2f})")
-                                    return
-
-                        # Daily limits (user settings max_daily_trades / max_daily_risk)
+                                # Normal DCA / Scalp pullback logic for SAME-SIDE re-entries
+                                if side.upper() != last_side:
+                                    pass # Reversal, skip DCA logic
+                                else:
+                                    was_profit = ("TAKE_PROFIT" in last_reason) or ("TRAILING_STOP" in last_reason) or (last_pnl > 0 and "STOP_LOSS" not in last_reason)
+                                    if was_profit:
+                                        if market_price > (last_exit_price - 0.03) and not (is_auto_force or is_one_shot):
+                                            logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped re-entry #{entry_num}: ask ${market_price:.2f} has not pulled back >= 3 cents below scalp exit ${last_exit_price:.2f}")
+                                            return
+                                    else:
+                                        initial_entry_price = float(prior_entries[-1].get("entry_price") or 0.50)
+                                        dca_target_max = initial_entry_price * 0.85
+                                        if market_price > dca_target_max:
+                                            logger.info(f"[SaaS Multitenant] User {user.get('username')} skipped DCA re-entry #{entry_num}: ask ${market_price:.2f} is not discounted >= 15% from initial entry ${initial_entry_price:.2f} (max ${dca_target_max:.2f})")
+                                            return
+                                            
+                          # Daily limits (user settings max_daily_trades / max_daily_risk)
                         from backend.database.trade_store import \
                             daily_limit_reason
                         limit_reason = daily_limit_reason(user, user.get('trading_mode', 'PAPER'))
@@ -862,7 +897,7 @@ class SaasBroadcasterMixin:
                         # The RL scalper decides by action, not probability, so it is exempt.
                         if not is_auto_force and not is_one_shot and u_source != "RL_SCALPER" and bool(user.get("edge_gate_enabled", 1)):
                             min_edge = float(user.get("min_edge_cents", 0.0) or 0.0)
-                            edge = entry_edge_cents(conf, market_price)
+                            edge = calculate_realized_edge_cents(conf, market_price)
                             if edge <= min_edge:
                                 logger.info(
                                     f"[SaaS Multitenant] Edge Guard: {user.get('username')} skipped {side.upper()} @ {market_price:.2f} "
@@ -953,11 +988,24 @@ class SaasBroadcasterMixin:
                             if intent_key:
                                 order_intents.settle_outcome(intent_key, intent_ticker, res)
                             if not res.get('success'):
+                                err_msg = str(res.get('error', ''))
+                                is_429 = '429' in err_msg or 'rate limit' in err_msg.lower()
+                                is_rejected = 'rejected' in err_msg.lower() or 'not open' in err_msg.lower() or 'paused' in err_msg.lower()
+
                                 if res.get('ambiguous'):
                                     inflight_orders.mark_ambiguous(user['id'], current_interval_id, side)
                                     # It may have filled: treat this interval as traded for this user.
                                     with _user_last_traded_lock:
                                         _user_last_traded_cache[(user['id'], self.asset)] = current_interval_id
+                                elif is_429 or is_rejected:
+                                    inflight_orders.clear(user['id'], current_interval_id, side)
+                                    # Prevent runaway loop on 429 or non-retryable rejection
+                                    with _user_last_traded_lock:
+                                        _user_last_traded_cache[(user['id'], self.asset)] = current_interval_id
+                                    logger.warning(
+                                        f"[SaaS Multitenant] User {user.get('username')} LIVE order failed (429/rejected): {res.get('error')}. "
+                                        f"Recording interval as attempted to halt retry loop for {current_interval_id}."
+                                    )
                                 else:
                                     inflight_orders.clear(user['id'], current_interval_id, side)
                                 logger.error(f"[SaaS Multitenant] User {user.get('username')} LIVE order rejected by Kalshi: {res.get('error')} | Payload was: contracts={contracts}, price={market_price}, side={side}")
@@ -1024,7 +1072,7 @@ class SaasBroadcasterMixin:
                                 "confidence": conf,
                                 "conviction_grade": forecast.get("conviction_grade"),
                                 "primary_edge": forecast.get("primary_edge"),
-                                "raw_features": forecast.get("raw_features", {})
+                                "raw_features": forecast.get("raw_features") if isinstance(forecast.get("raw_features"), dict) else {}
                             }
 
                         prior_entries = [t for t in user_hist_cache.get(user['id'], (None, []))[1] if t.get("ticker") == current_interval_id]
@@ -1064,7 +1112,7 @@ class SaasBroadcasterMixin:
                             "market_snapshot": json.dumps(market_snapshot)
                         }
 
-                        # â”€â”€ PRIMARY: Insert into SQLite TradeStore so Recent Executions UI shows live trades â”€â”€
+                        # ── PRIMARY: Insert into SQLite TradeStore so Recent Executions UI shows live trades ──
                         try:
                             from backend.database.trade_store import TradeStore
                             TradeStore.insert_trade(user['id'], trade_record)
@@ -1074,7 +1122,7 @@ class SaasBroadcasterMixin:
                             if user_mode == 'LIVE':
                                 inflight_orders.clear(user['id'], current_interval_id, side)
 
-                        # â”€â”€ SECONDARY: Also write to legacy JSON history file â”€â”€
+                        # ── SECONDARY: Also write to legacy JSON history file ──
                         _hist_path = os.path.join(DATA_DIR, 'users', str(user['id']), 'trades_history.json')
                         with get_user_lock(user['id']):
                             hist = []
@@ -1108,6 +1156,7 @@ class SaasBroadcasterMixin:
                         self._saas_eval_lock.release()
                     except Exception:
                         pass
+
 
 
 

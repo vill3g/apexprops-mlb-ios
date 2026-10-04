@@ -70,7 +70,7 @@ def test_manual_live_trade_records_filled_count_not_requested(live_user):
     headers = {"Authorization": f"Bearer {create_jwt_token(live_user, 'partial')}"}
     with patch("backend.btc.kalshi_client.get_kalshi_15m_market", return_value=market), \
          patch("backend.auth.security.decrypt_kalshi_key", return_value="dummy_pem"), \
-         patch("backend.btc.kalshi_trader.KalshiTrader", return_value=mock_kt):
+         patch("backend.auth.routes.KalshiTrader", return_value=mock_kt):
         resp = client.post("/api/auth/trade/manual", json={"direction": "YES", "amount_dollars": 10.0},
                            headers=headers)
 

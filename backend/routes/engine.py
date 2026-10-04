@@ -702,9 +702,19 @@ def api_btc_trade_config_get(asset: str, request: Request = None):
     """Retrieve the full current configuration from the server (source of truth)."""
     user_id = getattr(request.state, "user_id", None) if request else None
     is_owner = getattr(request.state, "is_owner", False) or (request and caller_has_owner_access(request))
-    guest_id = None if is_owner else (_get_guest_id(request) if request else None)
+    raw_guest_id = getattr(request.state, "guest_id", None) if request else None
 
-    ex = get_auto_executor(asset, guest_id=guest_id)
+    if is_owner:
+        target_id = None
+        is_guest = False
+    elif user_id:
+        target_id = str(user_id)
+        is_guest = False
+    else:
+        target_id = raw_guest_id
+        is_guest = bool(raw_guest_id)
+
+    ex = get_auto_executor(asset, guest_id=target_id)
 
     user_mode = ex.mode
     user_enabled = ex.enabled
@@ -721,7 +731,7 @@ def api_btc_trade_config_get(asset: str, request: Request = None):
             logger.warning(f"Error getting user: {e}")
 
     return JSONResponse({
-        "mode": "PAPER" if guest_id else user_mode,
+        "mode": "PAPER" if is_guest else user_mode,
         "prediction_mode": ex.prediction_mode,
         "max_daily_risk": ex.max_daily_risk,
         "max_daily_trades": ex.max_daily_trades,
@@ -729,7 +739,7 @@ def api_btc_trade_config_get(asset: str, request: Request = None):
         "max_contracts": ex.max_contracts,
         "enabled": user_enabled,
         "ai_settings": ex.ai_settings,
-        "is_guest": bool(guest_id),
+        "is_guest": is_guest,
     })
 
 @router.post("/api/engine/{asset}/trade/config", dependencies=[Depends(require_auth)])
@@ -800,8 +810,9 @@ async def api_btc_trade_config_post(asset: str, request: Request, background_tas
 def api_btc_trade_ai_settings_get(asset: str, request: Request = None):
     """Retrieve the current AI settings from the server (source of truth)."""
     user_id = getattr(request.state, "user_id", None) if request else None
-    guest_id = _get_guest_id(request) if request else None
-    target_id = str(user_id) if user_id else guest_id
+    is_owner = getattr(request.state, "is_owner", False) or (request and caller_has_owner_access(request))
+    raw_guest_id = getattr(request.state, "guest_id", None) if request else None
+    target_id = None if is_owner else (str(user_id) if user_id else raw_guest_id)
 
     return JSONResponse(get_auto_executor(asset, guest_id=target_id).ai_settings)
 
@@ -1074,6 +1085,58 @@ def api_btc_paper_balance_reset(asset: str, request: Request = None):
     new_bal = reset_balance(guest_id=guest_id)
     return JSONResponse({"balance": new_bal, "pnl": 0.0})
 
+
+@router.get("/api/engine/{asset}/kalshi/exchanges", dependencies=[Depends(require_auth)])
+def api_kalshi_exchanges(asset: str, request: Request = None):
+    try:
+        target_user_id = getattr(request.state, "user_id", None) if request else None
+        if not target_user_id:
+            return JSONResponse({"success": False, "error": "Not authenticated"}, status_code=401)
+            
+        from backend.database.models import get_user_by_id
+        user = get_user_by_id(target_user_id)
+        if not user:
+            return JSONResponse({"success": False, "error": "User not found"})
+            
+        from backend.btc.auto_executor.saas_broadcaster import get_user_kalshi_trader
+        kt = get_user_kalshi_trader(user)
+        if not kt:
+            return JSONResponse({"success": False, "error": "Kalshi configuration incomplete"})
+            
+        res = kt.get_exchange_breakdown(force_refresh=True)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)})
+
+@router.post("/api/engine/{asset}/kalshi/transfer", dependencies=[Depends(require_auth)])
+def api_kalshi_transfer(asset: str, payload: dict, request: Request = None):
+    try:
+        direction = payload.get("direction")
+        amount = float(payload.get("amount", 0.0))
+        
+        target_user_id = getattr(request.state, "user_id", None) if request else None
+        if not target_user_id:
+            return JSONResponse({"success": False, "error": "Not authenticated"}, status_code=401)
+            
+        from backend.database.models import get_user_by_id
+        user = get_user_by_id(target_user_id)
+        if not user:
+            return JSONResponse({"success": False, "error": "User not found"})
+            
+        from backend.btc.auto_executor.saas_broadcaster import get_user_kalshi_trader
+        kt = get_user_kalshi_trader(user)
+        if not kt:
+            return JSONResponse({"success": False, "error": "Kalshi configuration incomplete"})
+            
+        src = 0 if direction == "main_to_crypto" else 2
+        dst = 2 if direction == "main_to_crypto" else 0
+        
+        res = kt.transfer_between_exchanges(source_exchange=src, destination_exchange=dst, amount_dollars=amount)
+        return JSONResponse(res)
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)})
+
+
 @router.get("/api/engine/{asset}/candles")
 def api_btc_candles(asset: str, timeframe: str = "15m"):
     """
@@ -1178,3 +1241,105 @@ def api_btc_candles(asset: str, timeframe: str = "15m"):
             except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
                 logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/api/engine/{asset}/tpsl/recommendations", dependencies=[Depends(require_auth)])
+def api_tpsl_recommendations(asset: str, request: Request):
+    """Return AI-recommended TP% and SL% for the authenticated user based on their trade history."""
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        return JSONResponse({"recommended_tp": None, "recommended_sl": None})
+    try:
+        from backend.btc.tpsl_optimizer import get_recommended_tpsl
+        rec = get_recommended_tpsl(int(user_id))
+        if rec is None:
+            return JSONResponse({"recommended_tp": None, "recommended_sl": None})
+        return JSONResponse(rec)
+    except Exception as e:
+        logger.warning(f"[TPSL Recommendations] Error: {e}")
+        return JSONResponse({"recommended_tp": None, "recommended_sl": None})
+
+
+
+# ---------------------------------------------------------------------------
+# AI Backtesting Engine ("Time Machine")
+# ---------------------------------------------------------------------------
+def _bt_bool(v, default=False):
+    if v is None:
+        return default
+    if isinstance(v, str):
+        return v.strip().lower() in ("1", "true", "yes", "on")
+    return bool(v)
+
+
+@_engine_root_router.get("/api/backtest/defaults", dependencies=[Depends(require_auth)])
+def api_backtest_defaults(request: Request):
+    """Current risk settings for the authenticated user, used to pre-fill the Time Machine form."""
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    from backend.database.models import get_db_connection
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT take_profit_pct, take_profit_enabled, stop_loss_pct, stop_loss_enabled, "
+            "use_kelly_criterion, model_choice, trading_mode, trade_size_dollars, paper_trade_size_dollars "
+            "FROM users WHERE id = ?", (int(user_id),)).fetchone()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    u = dict(row) if row else {}
+    paper = str(u.get("trading_mode") or "PAPER").upper() == "PAPER"
+    return {
+        "tp_pct": float(u.get("take_profit_pct") or 20.0),
+        "tp_enabled": _bt_bool(u.get("take_profit_enabled"), True),
+        "sl_pct": float(u.get("stop_loss_pct") or 50.0),
+        "sl_enabled": _bt_bool(u.get("stop_loss_enabled"), True),
+        "use_kelly": _bt_bool(u.get("use_kelly_criterion"), False),
+        "model": u.get("model_choice") or "ALL",
+        "trade_size_dollars": float((u.get("paper_trade_size_dollars") if paper else u.get("trade_size_dollars")) or 0) or None,
+    }
+
+
+@_engine_root_router.post("/api/backtest/run", dependencies=[Depends(require_auth)])
+async def api_backtest_run(request: Request):
+    """Replay the user's real closed trades (last N days) under alternate TP/SL/Kelly settings."""
+    user_id = getattr(request.state, "user_id", None)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        body = await request.json()
+        if not isinstance(body, dict):
+            body = {}
+    except Exception:
+        body = {}
+    assets = body.get("assets") or []
+    if isinstance(assets, str):
+        assets = [a for a in assets.split(",") if a.strip()]
+    try:
+        from backend.btc.backtester import run_backtest
+        from starlette.concurrency import run_in_threadpool
+        result = await run_in_threadpool(
+            run_backtest,
+            int(user_id),
+            days=int(body.get("days") or 30),
+            tp_pct=float(body.get("tp_pct") or 20.0),
+            sl_pct=float(body.get("sl_pct") or 50.0),
+            tp_enabled=_bt_bool(body.get("tp_enabled"), True),
+            sl_enabled=_bt_bool(body.get("sl_enabled"), True),
+            use_kelly=_bt_bool(body.get("use_kelly"), False),
+            model=str(body.get("model") or "ALL"),
+            assets=[str(a).upper().strip() for a in assets][:20],
+            include_manual=_bt_bool(body.get("include_manual"), False),
+            trade_size_dollars=body.get("trade_size_dollars"),
+            optimize=_bt_bool(body.get("optimize"), True),
+        )
+        return JSONResponse(result)
+    except (TypeError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid backtest parameters: {e}")
+    except Exception as e:
+        logger.error(f"[Backtest] Failed for user {user_id}: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Backtest failed; see server log")

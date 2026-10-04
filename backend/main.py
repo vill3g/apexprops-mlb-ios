@@ -120,6 +120,9 @@ app = FastAPI(
     redoc_url="/redoc" if _API_DOCS else None,
     openapi_url="/openapi.json" if _API_DOCS else None,
 )
+from fastapi.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 from collections import defaultdict
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -356,6 +359,26 @@ async def refresh_legacy_session_token(request: Request, call_next):
         logger.warning(f"[Auth] Legacy token refresh skipped: {e}")
     return response
 
+
+# ── PWA freshness ─────────────────────────────────────────────────────
+# StaticFiles sends no Cache-Control, so iOS Safari / home-screen PWAs cache
+# HTML/JS/CSS heuristically and keep showing an old UI after a fix is deployed.
+# "no-cache" makes the browser revalidate every load (cheap 304 via ETag).
+_NO_CACHE_EXTS = (".html", ".js", ".css", ".json", ".webmanifest")
+
+
+@app.middleware("http")
+async def pwa_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path.lower()
+    if (path.endswith(_NO_CACHE_EXTS) or path == "/") and not path.startswith("/api/"):
+        # If the request has a '?v=' query param, cache it aggressively (1 year)
+        if "v" in request.query_params:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
 def _get_guest_id(request: Request) -> Optional[str]:
     """Helper to extract guest_id from request.state (set by GuestMiddleware)."""
     return getattr(request.state, "guest_id", None)
@@ -479,8 +502,29 @@ def start_background_tasks():
 
 # Mount static directory and route index
 
+@app.api_route("/sw.js", methods=["GET", "HEAD"])
+@app.api_route("/static/sw.js", methods=["GET", "HEAD"])
+def serve_service_worker():
+    sw_path = os.path.join(STATIC_DIR, "sw.js")
+    if os.path.exists(sw_path):
+        return FileResponse(
+            sw_path,
+            media_type="application/javascript",
+            headers={
+                "Service-Worker-Allowed": "/",
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+            },
+        )
+    raise HTTPException(status_code=404, detail="Service worker not found")
+
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    
+    # Mount subdirectories at root to support relative paths (./assets, ./js) for PWA/Capacitor parity
+    for sub in ["assets", "js", "css"]:
+        sub_dir = os.path.join(STATIC_DIR, sub)
+        if os.path.exists(sub_dir):
+            app.mount(f"/{sub}", StaticFiles(directory=sub_dir), name=sub)
 
 from backend.database.models import DATA_DIR as _USERS_DATA_DIR
 import logging

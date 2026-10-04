@@ -209,7 +209,7 @@ class TradeStore:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 """
-                SELECT pnl, side, trading_style, reason, exit_reason, signal_source,
+                SELECT pnl, side, ticker, trading_style, reason, exit_reason, signal_source,
                        entry_price, exit_price, mode, COALESCE(settled_at, timestamp, 0) as ts
                 FROM trades
                 WHERE user_id = ? AND status != 'OPEN'
@@ -321,6 +321,40 @@ class TradeStore:
             })
         style_matrix.sort(key=lambda x: x["pnl"], reverse=True)
 
+        # Asset matrix for all trades
+        _known_assets = ("BTC", "ETH", "SOL", "DOGE", "GOLD", "NDQ", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD")
+
+        def _asset_of(t):
+            tk = str(t.get("ticker") or "").upper()
+            series = tk.split("-", 1)[0].replace("_SYNTH", "")
+            if series.startswith("KX"):
+                series = series[2:]
+            if series.endswith("15M"):
+                series = series[:-3]
+            if series in _known_assets:
+                return series
+            for a in _known_assets:
+                if a in tk:
+                    return a
+            return "OTHER"
+
+        asset_map = {}
+        for t in all_trades:
+            asset_map.setdefault(_asset_of(t), []).append(t)
+
+        asset_matrix = []
+        for a_name, a_trades in asset_map.items():
+            st = calc_stats(a_trades)
+            asset_matrix.append({
+                "asset": a_name,
+                "total": st["total"],
+                "wins": st["wins"],
+                "win_rate": st["win_rate"],
+                "pnl": st["pnl"],
+                "avg_pnl": round(st["pnl"] / st["total"], 2) if st["total"] else 0.0
+            })
+        asset_matrix.sort(key=lambda x: x["pnl"], reverse=True)
+
         # Generate Actionable Profit Improvement Recommendations
         recommendations = []
         
@@ -404,6 +438,7 @@ class TradeStore:
             "user_stats": user_stats,
             "bot_stats": bot_stats,
             "styles": style_matrix,
+            "assets": asset_matrix,
             "recommendations": recommendations
         }
 

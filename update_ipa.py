@@ -37,9 +37,13 @@ def pack_ipa():
         target_root = os.path.join(public_dir, rel) if rel != '.' else public_dir
         os.makedirs(target_root, exist_ok=True)
         for f in files:
+            # Exclude dead 8.3 MB ai_avatar.gif to optimize iOS IPA bundle size
+            if f.lower() == 'ai_avatar.gif':
+                continue
             src_file = os.path.join(root, f)
             dest_file = os.path.join(target_root, f)
             shutil.copy2(src_file, dest_file)
+
 
     targets = [
         'Kalshi_AiTrader.ipa',

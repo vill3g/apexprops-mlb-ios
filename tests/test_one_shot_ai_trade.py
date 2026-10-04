@@ -45,7 +45,7 @@ class TestOneShotAiPredictionTrade(unittest.TestCase):
 
     @patch("backend.btc.ml_engine.get_ml_engine")
     @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
     @patch("backend.btc.auto_executor.fetch_candles")
     @patch("backend.btc.auto_executor.add_all_indicators")
     @patch("backend.btc.auto_executor.get_candle_countdown")
@@ -105,7 +105,7 @@ class TestOneShotAiPredictionTrade(unittest.TestCase):
 
     @patch("backend.btc.ml_engine.get_ml_engine")
     @patch("backend.btc.auto_executor.kalshi_trader")
-    @patch("backend.btc.auto_executor.evaluate_next_15m_contract")
+    @patch("backend.btc.auto_executor.executor.evaluate_next_15m_contract")
     @patch("backend.btc.auto_executor.fetch_candles")
     @patch("backend.btc.auto_executor.add_all_indicators")
     @patch("backend.btc.auto_executor.get_candle_countdown")

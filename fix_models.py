@@ -1,27 +1,36 @@
-import re
-
-model_path = "backend/database/models.py"
-with open(model_path, "r", encoding="utf-8") as f:
+﻿import re
+with open('backend/database/models.py', 'r', encoding='utf-8') as f:
     code = f.read()
 
-# 1. Add to USERS_SCHEMA
-code = re.sub(r'("take_profit_pct": "REAL DEFAULT 50\.0",)', r'\1\n    "take_profit_enabled": "BOOLEAN DEFAULT 1",', code)
+# Add to function signature
+sig_old = '''    use_kelly_criterion: bool = False
+):'''
+sig_new = '''    use_kelly_criterion: bool = False,
+    trading_universe: str = "FINANCIAL",
+    min_sports_confidence: float = 70.0
+):'''
+code = code.replace(sig_old, sig_new)
 
-# 2. Add to allowed_cols
-code = re.sub(r'("take_profit_pct",)', r'\1 "take_profit_enabled",', code)
+# Add to SQL query
+sql_old = '''            use_kelly_criterion = ?
+        WHERE id = ?'''
+sql_new = '''            use_kelly_criterion = ?,
+            trading_universe = ?,
+            min_sports_confidence = ?
+        WHERE id = ?'''
+code = code.replace(sql_old, sql_new)
 
-# 3. Add to update_user_config definition
-code = re.sub(r'(take_profit_pct: float = 50\.0,)', r'\1\n    take_profit_enabled: bool = True,', code)
+# Add to SQL parameters
+param_old = '''            int(use_kelly_criterion),
+            user_id
+        )'''
+param_new = '''            int(use_kelly_criterion),
+            trading_universe,
+            min_sports_confidence,
+            user_id
+        )'''
+code = code.replace(param_old, param_new)
 
-# 4. Add to update_user_config SQL UPDATE
-code = re.sub(r'(trading_style = \?, signal_source = \?, take_profit_pct = \?, max_daily_trades = \?,)', r'\1 take_profit_enabled = ?,', code)
-
-# 5. Add to update_user_config values
-code = re.sub(r'(trading_style, signal_source, take_profit_pct, max_daily_trades,)', r'\1 1 if take_profit_enabled else 0,', code)
-
-# 6. Add to copy_fields
-code = re.sub(r'("take_profit_pct": float\(source_user\.get\("take_profit_pct", 50\.0\)\),)', r'\1\n        "take_profit_enabled": int(bool(source_user.get("take_profit_enabled", 1))),', code)
-
-with open(model_path, "w", encoding="utf-8") as f:
+with open('backend/database/models.py', 'w', encoding='utf-8') as f:
     f.write(code)
-print("Updated models.py with take_profit_enabled!")
+print('Updated update_user_config')
