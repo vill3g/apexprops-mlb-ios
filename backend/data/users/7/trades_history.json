@@ -8503,7 +8503,7 @@
         ],
         "strike": 86008.37,
         "market_snapshot": "{\"price\": 86010.59, \"target\": 86008.37, \"confidence\": 51.0, \"conviction_grade\": null, \"primary_edge\": \"Spot $86,010.24 is within $1.9 of strike $86,008.37 under low ATR ($45.7). Skipping coin-flip.\", \"raw_features\": {}}",
-        "min_seen_bid": 0.35
+        "min_seen_bid": 0.04
     },
     {
         "id": "b976c86e-5413-4976-839b-c6691c5e2b5f",
@@ -8563,7 +8563,7 @@
         ],
         "strike": 0.096544,
         "market_snapshot": "{\"price\": 0.0965211, \"target\": 0.096544, \"confidence\": 66.75, \"conviction_grade\": \"GRADE C / PASS\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 79.68170120487709, \"bb_upper\": 0.09675661269353747, \"bb_lower\": 0.09557502730646253, \"ema_9\": 0.09642402107219102, \"ema_21\": 0.09620148869429943, \"ema_50\": 0.09591699707380597, \"atr\": 9.741935761253084e-05, \"price_vs_vwap\": 0.0013375175411871887, \"cvd_value\": 2640651.4869845924, \"delta_to_target\": -0.023719754723241473, \"heuristic_score\": 0.0, \"news_sentiment_score\": 0.0, \"fng_value\": 65.0, \"high_24h\": 0.0966337, \"low_24h\": 0.0939956, \"volume_24h\": 6965852.8525711205, \"orderbook_imbalance\": -3.19, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 1.0, \"hour_of_day\": 17.0, \"volume_15m_ratio\": 0.08211581802427317, \"upper_wick_ratio\": 0.0, \"lower_wick_ratio\": 0.14497041420124418, \"body_to_range\": 0.8550295857987559, \"range_24h_pos\": 0.0025255, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 14.666666666666666, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": -0.01408819833697006, \"roc_1h\": 0.06292737745230426, \"roc_4h\": 0.7253772462588515, \"cvd_divergence\": 24582640835.645355, \"vol_regime_percentile\": 0.9583333333333334, \"bb_percent_b_lag_4\": 1.0222149584310345, \"rsi_lag_4\": 0.8674602142244194, \"volume_15m_ratio_lag_4\": 7.804501181105966, \"roc_15m_lag_4\": 0.011603968971818368, \"cvd_divergence_lag_4\": 24476618850.22718, \"bb_percent_b_lag_3\": 0.9042215209764203, \"rsi_lag_3\": 0.7979805914295182, \"volume_15m_ratio_lag_3\": 0.09912318324729527, \"roc_15m_lag_3\": -0.07199841707077326, \"cvd_divergence_lag_3\": 24229798060.424168, \"bb_percent_b_lag_2\": 0.8820511170923632, \"rsi_lag_2\": 0.8044366797564636, \"volume_15m_ratio_lag_2\": 0.7519838701038869, \"roc_15m_lag_2\": 0.027576083035119048, \"cvd_divergence_lag_2\": 24639818432.55179, \"bb_percent_b_lag_1\": 0.8822298304338589, \"rsi_lag_1\": 0.8168313504639574, \"volume_15m_ratio_lag_1\": 0.8681194236911426, \"roc_15m_lag_1\": 0.05420419331101378, \"cvd_divergence_lag_1\": 23141926426.114033, \"bb_percent_b_lag_0\": 0.8432104924929696, \"rsi_lag_0\": 0.8119568041644263, \"volume_15m_ratio_lag_0\": 0.00477839472530461, \"roc_15m_lag_0\": -0.004764898854658917, \"cvd_divergence_lag_0\": 24253459531.221325}}",
-        "min_seen_bid": 0.21
+        "min_seen_bid": 0.04
     },
     {
         "id": "3f184e5d-5b5b-4055-bbe6-3b4fd3429c9c",
@@ -8592,6 +8592,6 @@
         ],
         "strike": 2707.03,
         "market_snapshot": "{\"price\": 2706.82, \"target\": 2707.03, \"confidence\": 51.0, \"conviction_grade\": null, \"primary_edge\": \"Spot $2,706.79 is within $0.2 of strike $2,707.03 under low ATR ($0.8). Skipping coin-flip.\", \"raw_features\": {}}",
-        "min_seen_bid": 0.47
+        "min_seen_bid": 0.03
     }
 ]

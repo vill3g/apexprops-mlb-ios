@@ -1,12 +1,12 @@
 {
-  "updated": 1791148624.2429745,
+  "updated": 1791149189.3011692,
   "results": {
-    "AUTO|AI_ONLY": {
-      "ts": 1791148624.2429745,
-      "asset": "AUDUSD",
-      "ticker": "KXAUDUSD15M_SYNTH",
-      "strike": 86008.37,
-      "sec_left": 778,
+    "AUTO|RL_DQN": {
+      "ts": 1791149189.3011692,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT041730-30",
+      "strike": 157.731,
+      "sec_left": 211,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -19,19 +19,44 @@
         "Capital Guard active: zero edge detected"
       ],
       "chart": {
-        "open": 0.6957489848136902,
-        "close": 0.6957489848136902,
-        "ema9": 0.6957856533463362,
-        "ema21": 0.6957079086182352,
+        "open": 157.8300018310547,
+        "close": 157.8300018310547,
+        "ema9": 157.82249441259697,
+        "ema21": 157.79656510807018,
+        "flow": 0.0
+      }
+    },
+    "AUTO|AI_ONLY": {
+      "ts": 1791149189.3011692,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT041730-30",
+      "strike": 157.731,
+      "sec_left": 211,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
+      "catalysts": [
+        "Capital Guard active: zero edge detected"
+      ],
+      "chart": {
+        "open": 157.8300018310547,
+        "close": 157.8300018310547,
+        "ema9": 157.82249441259697,
+        "ema21": 157.79656510807018,
         "flow": 0.0
       }
     },
     "AUTO|BLEND": {
-      "ts": 1791148624.2429745,
-      "asset": "AUDUSD",
-      "ticker": "KXAUDUSD15M_SYNTH",
-      "strike": 86008.37,
-      "sec_left": 778,
+      "ts": 1791149189.3011692,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT041730-30",
+      "strike": 157.731,
+      "sec_left": 211,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -44,35 +69,10 @@
         "Capital Guard active: zero edge detected"
       ],
       "chart": {
-        "open": 0.6957489848136902,
-        "close": 0.6957489848136902,
-        "ema9": 0.6957856533463362,
-        "ema21": 0.6957079086182352,
-        "flow": 0.0
-      }
-    },
-    "AUTO|RL_DQN": {
-      "ts": 1791148624.2429745,
-      "asset": "AUDUSD",
-      "ticker": "KXAUDUSD15M_SYNTH",
-      "strike": 86008.37,
-      "sec_left": 778,
-      "effective_style": "CAPITAL_GUARD",
-      "direction": "PASS",
-      "probability_percent": 50.0,
-      "ml_prob": 0.5,
-      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
-      "pre_gate_direction": "PASS",
-      "pre_gate_prob": 50.0,
-      "pre_gate_grade": "GRADE C / PASS",
-      "catalysts": [
-        "Capital Guard active: zero edge detected"
-      ],
-      "chart": {
-        "open": 0.6957489848136902,
-        "close": 0.6957489848136902,
-        "ema9": 0.6957856533463362,
-        "ema21": 0.6957079086182352,
+        "open": 157.8300018310547,
+        "close": 157.8300018310547,
+        "ema9": 157.82249441259697,
+        "ema21": 157.79656510807018,
         "flow": 0.0
       }
     }

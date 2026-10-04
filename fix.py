@@ -1,18 +1,59 @@
+﻿import re
 
-import re
-with open("static/saas_dashboard.html", "r", encoding="utf-8") as f:
-    content = f.read()
+with open('static/saas_dashboard.html', 'r', encoding='utf-8') as f:
+    html = f.read()
 
-bad_str = """toast.className = \fex items-center gap-3 w-full max-w-sm p-3.5 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl border \\ transition-all duration-500 ease-out translate-y-[-150%] opacity-0\\;"""
-good_str = "toast.className = `flex items-center gap-3 w-full max-w-sm p-3.5 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl border ${bg} transition-all duration-500 ease-out translate-y-[-150%] opacity-0`;"
+pattern = re.compile(r'async\s*\n\s*async function loadSportsEvents\(\) \{.*?\n\s*\}\n\s*function selectDashboardAsset\(asset\)', re.DOTALL)
 
-content = content.replace("toast.className = \fex", "toast.className = `flex")
-content = content.replace("backdrop-blur-xl border \\ transition-all", "backdrop-blur-xl border ${bg} transition-all")
-content = content.replace("opacity-0\\;", "opacity-0`;")
-content = content.replace("toast.innerHTML = \\", "toast.innerHTML = `")
-content = content.replace("</div>\\;", "</div>`;")
-content = content.replace("??", "?") # Emojis were broken
+correct_js = '''
+        async function loadSportsEvents() {
+            const container = document.getElementById('sports-events-container');
+            container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Scanning Kalshi APIs for active games...</div>';
+            try {
+                const res = await fetch((window.API_BASE_URL||'') + '/api/engine/sports/events');
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+                
+                if (!data.events || data.events.length === 0) {
+                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No active AI picks found for Kalshi markets currently.</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                data.events.forEach(evt => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 hover:border-cyan-500/30 transition-colors';
+                    el.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-black text-gray-400 bg-gray-800 px-2 py-0.5 rounded">${evt.sport}</span>
+                            <span class="text-xs font-mono text-cyan-400">AI Edge: ${evt.edge_pct}%</span>
+                        </div>
+                        <div class="text-sm font-bold text-white mt-1">${evt.game}</div>
+                        <div class="text-xs text-gray-400">Prediction: <span class="text-emerald-400 font-bold">${evt.predicted_team}</span></div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] text-gray-500 uppercase">Confidence</span>
+                                <span class="text-xs font-mono font-bold text-white">${evt.confidence_pct}%</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[9px] text-gray-500 uppercase">Implied Odds</span>
+                                <span class="text-xs font-mono font-bold text-gray-300">${evt.implied_odds_pct}%</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch(e) {
+                container.innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Failed to load events: ' + e.message + '</div>';
+            }
+        }
+        function selectDashboardAsset(asset)'''
 
-with open("static/saas_dashboard.html", "w", encoding="utf-8") as f:
-    f.write(content)
+if pattern.search(html):
+    html = pattern.sub(correct_js, html)
+else:
+    print('Failed to match regex')
 
+with open('static/saas_dashboard.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print("done")

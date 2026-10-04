@@ -3469,9 +3469,9 @@
         "entry_price": 0.5,
         "count": 4,
         "requested_count": 4,
-        "status": "OPEN",
+        "status": "CLOSED",
         "mode": "PAPER",
-        "pnl": 0.0,
+        "pnl": 1.54,
         "reason": "AI_COPY (SNIPER)",
         "is_second_entry": false,
         "is_third_entry": false,
@@ -3487,7 +3487,10 @@
         ],
         "strike": 121.5195,
         "market_snapshot": "{\"price\": 121.51, \"target\": 121.5195, \"confidence\": 53.52, \"conviction_grade\": \"GRADE C / PASS\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 54.141324070091365, \"bb_upper\": 121.92989398287382, \"bb_lower\": 120.86810601712618, \"ema_9\": 121.2423772961753, \"ema_21\": 121.33558980192474, \"ema_50\": 121.27241328744097, \"atr\": 0.2918377577819062, \"price_vs_vwap\": 0.21646633677640637, \"cvd_value\": 5030.1858759391025, \"delta_to_target\": -0.016046807302526455, \"heuristic_score\": 74.0, \"news_sentiment_score\": 0.0, \"fng_value\": 65.0, \"high_24h\": 123.74, \"low_24h\": 116.7, \"volume_24h\": 192419.61599927998, \"orderbook_imbalance\": -3.19, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 1.0, \"hour_of_day\": 17.0, \"volume_15m_ratio\": 1.2643341778797785, \"upper_wick_ratio\": 0.05882352941175487, \"lower_wick_ratio\": 0.20588235294116294, \"body_to_range\": 0.7352941176470822, \"range_24h_pos\": 0.6818181818181822, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 14.683333333333334, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": 0.00823045267490663, \"roc_1h\": 0.5378123448618322, \"roc_4h\": -0.1889272219484095, \"cvd_divergence\": 17235.65023822486, \"vol_regime_percentile\": 0.90625, \"bb_percent_b_lag_4\": -0.22344485753630175, \"rsi_lag_4\": 0.33733062976468986, \"volume_15m_ratio_lag_4\": 1.7495999449600779, \"roc_15m_lag_4\": -0.1734390485629289, \"cvd_divergence_lag_4\": -3141.4164922091536, \"bb_percent_b_lag_3\": -0.08639250529858993, \"rsi_lag_3\": 0.335321840250114, \"volume_15m_ratio_lag_3\": 0.5606393197085416, \"roc_15m_lag_3\": -0.008273351534715534, \"cvd_divergence_lag_3\": -3508.775019387571, \"bb_percent_b_lag_2\": 0.09842364997914867, \"rsi_lag_2\": 0.3864713564280878, \"volume_15m_ratio_lag_2\": 1.5037352312804146, \"roc_15m_lag_2\": 0.10756246897236643, \"cvd_divergence_lag_2\": 1622.045499744117, \"bb_percent_b_lag_1\": 0.3483050309454968, \"rsi_lag_1\": 0.4708094100494652, \"volume_15m_ratio_lag_1\": 1.052517099411579, \"roc_15m_lag_1\": 0.20662864699561023, \"cvd_divergence_lag_1\": 7876.7751699253695, \"bb_percent_b_lag_0\": 0.5951225699086555, \"rsi_lag_0\": 0.5414132407009137, \"volume_15m_ratio_lag_0\": 1.2643341778797785, \"roc_15m_lag_0\": 0.21445067634444648, \"cvd_divergence_lag_0\": 17104.509060317912}}",
-        "min_seen_bid": 0.43
+        "min_seen_bid": 0.43,
+        "exit_reason": "TAKE_PROFIT (+78.0%)",
+        "exit_price": 0.91,
+        "settled_at": 1791148931.8890774
     },
     {
         "id": "754617b9-a394-4994-bc6c-49ad6d0c6fc9",
@@ -3563,8 +3566,8 @@
         "prediction_direction": "YES",
         "count": 18,
         "entry_price": 0.49,
-        "status": "OPEN",
-        "pnl": 0.0,
+        "status": "CLOSED",
+        "pnl": -8.3,
         "timestamp": "2026-10-04T17:15:43.538428-04:00",
         "mode": "PAPER",
         "reason": "SECOND_ENTRY_SCALP",
@@ -3580,7 +3583,10 @@
         "catalysts": [
             "Tactical pullback re-entry #2 after profitable scalp (14.3m left)"
         ],
-        "min_seen_bid": 0.35
+        "min_seen_bid": 0.07,
+        "exit_reason": "STOP_LOSS (-87.4%)",
+        "exit_price": 0.05,
+        "settled_at": 1791148932.375603
     },
     {
         "id": "a214dda3-97a9-48be-abc4-e203c57ea728",
@@ -3593,9 +3599,9 @@
         "entry_price": 0.42,
         "count": 5,
         "requested_count": 5,
-        "status": "OPEN",
+        "status": "CLOSED",
         "mode": "PAPER",
-        "pnl": 0.0,
+        "pnl": -2.15,
         "reason": "AI_COPY (CAPITAL_GUARD)",
         "is_second_entry": false,
         "is_third_entry": false,
@@ -3609,7 +3615,10 @@
         ],
         "strike": 157.731,
         "market_snapshot": "{\"price\": 157.8300018310547, \"target\": 157.731, \"confidence\": 51.0, \"conviction_grade\": \"PASS / CHOP DEADZONE (CAPITAL GUARD)\", \"primary_edge\": \"Low-volatility compression deadzone (ADX < 18, Vol < 0.85). Preserving capital for high-edge expansion.\", \"raw_features\": {}}",
-        "min_seen_bid": 0.03
+        "min_seen_bid": 0.01,
+        "exit_reason": "STOP_LOSS (-61.9%)",
+        "exit_price": 0.01,
+        "settled_at": 1791149069.81856
     },
     {
         "id": "a4f49a34-ffb7-450a-a949-5be9d63b453b",
@@ -3619,8 +3628,8 @@
         "prediction_direction": "YES",
         "count": 14,
         "entry_price": 0.66,
-        "status": "OPEN",
-        "pnl": 0.0,
+        "status": "CLOSED",
+        "pnl": -8.94,
         "timestamp": "2026-10-04T17:18:27.140568-04:00",
         "mode": "PAPER",
         "reason": "SECOND_ENTRY_SCALP",
@@ -3636,6 +3645,78 @@
         "catalysts": [
             "Tactical pullback re-entry #2 after profitable scalp (11.5m left)"
         ],
-        "min_seen_bid": 0.66
+        "min_seen_bid": 0.05,
+        "exit_reason": "STOP_LOSS (-90.8%)",
+        "exit_price": 0.04,
+        "settled_at": 1791148938.86149
+    },
+    {
+        "id": "b5ef9ddb-1f8e-4bc8-9b1b-fba5320ada42",
+        "timestamp": "2026-10-04 05:22:21 PM ET",
+        "ticker": "KXDOGE15M-26OCT041730-30",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 81.28999999999999,
+        "entry_price": 0.46,
+        "count": 6,
+        "requested_count": 6,
+        "status": "CLOSED",
+        "mode": "PAPER",
+        "pnl": 0.62,
+        "reason": "SECOND_ENTRY_SCALP (MOMENTUM_SURFER)",
+        "is_second_entry": true,
+        "is_third_entry": false,
+        "is_profit_reentry": true,
+        "reentry_index": 2,
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\udee1\ufe0f Weekend Chop Filter: Momentum breakout blocked due to lack of strong volume confirmation (typical weekend fake-out).",
+            "ML Conviction: No chart setup fired, falling back to ML signal (81.0%).",
+            "Primary Driver: God-Tier PyTorch Ensemble predicts UP (81% Edge). ML Reasoning: Prediction driven primarily by Volume 15M Ratio Lag 2, Bb Lower, Cvd Divergence Lag 4."
+        ],
+        "strike": 0.096544,
+        "market_snapshot": "{\"price\": 0.0965416, \"target\": 0.096544, \"confidence\": 81.28999999999999, \"conviction_grade\": \"GRADE C / PASS\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 61.31017322420742, \"bb_upper\": 0.09697641549612518, \"bb_lower\": 0.09594722450387483, \"ema_9\": 0.0966080313902948, \"ema_21\": 0.09643540204921827, \"ema_50\": 0.09610691690873546, \"atr\": 0.0001242039331149988, \"price_vs_vwap\": 0.001220323911548915, \"cvd_value\": 2070494.5633223003, \"delta_to_target\": -0.002485913158766598, \"heuristic_score\": 0.0, \"news_sentiment_score\": 0.0, \"fng_value\": 65.0, \"high_24h\": 0.0968654, \"low_24h\": 0.0940123, \"volume_24h\": 8406036.90552199, \"orderbook_imbalance\": -0.66, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 1.0, \"hour_of_day\": 17.0, \"volume_15m_ratio\": 0.6079173176334877, \"upper_wick_ratio\": 0.105793450881517, \"lower_wick_ratio\": 0.0, \"body_to_range\": 0.894206549118483, \"range_24h_pos\": 0.002529300000000012, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 7.65, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": -0.14408223340907078, \"roc_1h\": -0.16762543728936485, \"roc_4h\": 0.486812755597521, \"cvd_divergence\": 15427972305.0151, \"vol_regime_percentile\": 1.0, \"bb_percent_b_lag_4\": 0.8702152562741846, \"rsi_lag_4\": 0.8500170993318568, \"volume_15m_ratio_lag_4\": 0.7047225742462468, \"roc_15m_lag_4\": -0.008680528644200436, \"cvd_divergence_lag_4\": 19124140196.289482, \"bb_percent_b_lag_3\": 0.7989684205141158, \"rsi_lag_3\": 0.792234247575818, \"volume_15m_ratio_lag_3\": 0.38963565823983204, \"roc_15m_lag_3\": -0.05808191203173774, \"cvd_divergence_lag_3\": 19333267986.671497, \"bb_percent_b_lag_2\": 0.7515884308842629, \"rsi_lag_2\": 0.7609127705061453, \"volume_15m_ratio_lag_2\": 4.659013118806897, \"roc_15m_lag_2\": -0.032677136448766575, \"cvd_divergence_lag_2\": 17841973153.81429, \"bb_percent_b_lag_1\": 0.67290117400388, \"rsi_lag_1\": 0.692858194856324, \"volume_15m_ratio_lag_1\": 5.738936589568701, \"roc_15m_lag_1\": -0.07540955456641907, \"cvd_divergence_lag_1\": 15647634757.393963, \"bb_percent_b_lag_0\": 0.7212985441517091, \"rsi_lag_0\": 0.7227822671109919, \"volume_15m_ratio_lag_0\": 0.2789407001332016, \"roc_15m_lag_0\": 0.08457626978277677, \"cvd_divergence_lag_0\": 15881888070.62056}}",
+        "min_seen_bid": 0.42,
+        "exit_reason": "TAKE_PROFIT (+32.6%)",
+        "exit_price": 0.6,
+        "settled_at": 1791148987.160407
+    },
+    {
+        "id": "f2052b49-51ad-4c0e-9970-499b74dacc3e",
+        "timestamp": "2026-10-04 05:23:36 PM ET",
+        "ticker": "KXDOGE15M-26OCT041730-30",
+        "direction": "YES",
+        "side": "YES",
+        "prediction_direction": "YES",
+        "probability_percent": 77.14,
+        "entry_price": 0.71,
+        "count": 3,
+        "requested_count": 3,
+        "status": "CLOSED",
+        "mode": "PAPER",
+        "pnl": 0.593,
+        "reason": "THIRD_ENTRY_SCALP (MOMENTUM_SURFER)",
+        "is_second_entry": false,
+        "is_third_entry": true,
+        "is_profit_reentry": true,
+        "reentry_index": 3,
+        "trading_style": "MOMENTUM_SURFER",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "catalysts": [
+            "\ud83d\udee1\ufe0f Weekend Chop Filter: Momentum breakout blocked due to lack of strong volume confirmation (typical weekend fake-out).",
+            "Market Implied Bullish Edge: Order book odds favor YES (0.7%)",
+            "Institutional Order Flow: Net bid depth imbalance (+0.0%)",
+            "\ud83e\udde0 ML Confirmation: Model agrees with BID YES (ABOVE TARGET) (77.1%), blended confidence 71.9%"
+        ],
+        "strike": 0.096544,
+        "market_snapshot": "{\"price\": 0.0966273, \"target\": 0.096544, \"confidence\": 77.14, \"conviction_grade\": \"GRADE C / PASS\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 64.6009101011523, \"bb_upper\": 0.09696568437959528, \"bb_lower\": 0.0960182656204047, \"ema_9\": 0.09661039711223583, \"ema_21\": 0.09645207872242982, \"ema_50\": 0.09612697370999349, \"atr\": 0.00012416844809656774, \"price_vs_vwap\": 0.0013048639547684482, \"cvd_value\": 2071488.168830532, \"delta_to_target\": 0.08628190255219846, \"heuristic_score\": 64.0, \"news_sentiment_score\": 0.0, \"fng_value\": 65.0, \"high_24h\": 0.0968654, \"low_24h\": 0.0940123, \"volume_24h\": 8305922.456097301, \"orderbook_imbalance\": -0.52, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 1.0, \"hour_of_day\": 17.0, \"volume_15m_ratio\": 0.22523517275980148, \"upper_wick_ratio\": 0.6293929712459667, \"lower_wick_ratio\": 0.0, \"body_to_range\": 0.3706070287540333, \"range_24h_pos\": 0.002615000000000006, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 6.416666666666667, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": 0.0984126556603293, \"roc_1h\": -0.046342222833684055, \"roc_4h\": 0.559267935547858, \"cvd_divergence\": 15439458369.076302, \"vol_regime_percentile\": 0.9895833333333334, \"bb_percent_b_lag_4\": 0.7989684205141201, \"rsi_lag_4\": 0.7922342475751674, \"volume_15m_ratio_lag_4\": 0.38923300675550837, \"roc_15m_lag_4\": -0.05808191203173774, \"cvd_divergence_lag_4\": 19333267986.674362, \"bb_percent_b_lag_3\": 0.7515884308842629, \"rsi_lag_3\": 0.7609127705054263, \"volume_15m_ratio_lag_3\": 4.654198470793812, \"roc_15m_lag_3\": -0.032677136448766575, \"cvd_divergence_lag_3\": 17841973153.81663, \"bb_percent_b_lag_2\": 0.67290117400388, \"rsi_lag_2\": 0.6928581948554831, \"volume_15m_ratio_lag_2\": 5.733005943111269, \"roc_15m_lag_2\": -0.07540955456641907, \"cvd_divergence_lag_2\": 15647634757.39579, \"bb_percent_b_lag_1\": 0.7212985441517091, \"rsi_lag_1\": 0.722782267110307, \"volume_15m_ratio_lag_1\": 0.27865244138539014, \"roc_15m_lag_1\": 0.08457626978277677, \"cvd_divergence_lag_1\": 15881888070.622293, \"bb_percent_b_lag_0\": 0.5689712252649607, \"rsi_lag_0\": 0.6069526766118556, \"volume_15m_ratio_lag_0\": 0.6810793989817822, \"roc_15m_lag_0\": -0.1537015067091807, \"cvd_divergence_lag_0\": 15307696853.868376}}",
+        "min_seen_bid": 0.63,
+        "exit_reason": "TAKE_PROFIT (+30.6%)",
+        "exit_price": 0.931,
+        "settled_at": 1791149104.3222358
     }
 ]
