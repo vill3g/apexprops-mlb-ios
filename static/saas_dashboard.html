@@ -729,6 +729,15 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-2.5">
                 
                 <!-- Lightweight Chart & Live Bids -->
+                    <div id="sports-event-list" class="hidden absolute inset-0 z-20 w-full h-full overflow-y-auto p-4 bg-[#0b101a] text-gray-300">
+                        <div class="flex items-center justify-between mb-4 sticky top-0 bg-[#0b101a] z-30 pb-2 border-b border-white/5">
+                            <h2 class="text-sm font-bold text-gray-200 uppercase tracking-widest">Active Predictions</h2>
+                            <button onclick="loadSportsEvents()" class="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs transition-colors">REFRESH</button>
+                        </div>
+                        <div id="sports-events-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <!-- Events populated here -->
+                        </div>
+                    </div>
                 <div class="relative w-full h-[280px] lg:h-[350px] bg-transparent border-b lg:border border-white/5 lg:border-b-0 lg:rounded-t-2xl overflow-hidden shrink-0 shadow-lg">
                     <div id="lw-chart-container" class="absolute inset-0"></div>
                     
@@ -750,7 +759,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
 
                 <!-- SUB-CHART INFO: Contract Strike, Spot & Countdown -->
                 <div class="w-full -mt-2.5">
-                    <div class="bg-[#0e1626] border-b lg:border lg:border-y-0 lg:border-kalshi-border lg:rounded-none border-white/5 px-2.5 py-2 sm:p-3 shadow-md flex items-center justify-between">
+                    <div id="stats-bar-target" class="bg-[#0e1626] border-b lg:border lg:border-y-0 lg:border-kalshi-border lg:rounded-none border-white/5 px-2.5 py-2 sm:p-3 shadow-md flex items-center justify-between">
                         <!-- Target (Strike) -->
                         <div class="flex flex-col shrink-0 min-w-0">
                             <div class="text-[10px] sm:text-[11px] text-gray-400 tracking-wide mb-0.5 font-medium whitespace-nowrap">Target Strike</div>
@@ -3231,7 +3240,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                 if (sportsConf) sportsConf.classList.remove('hidden');
                 
                 document.getElementById('lw-chart-container').style.display = 'none';
-                document.getElementById('stats-bar').style.display = 'none';
+                document.getElementById('stats-bar-target').style.display = 'none';
                 document.getElementById('sports-event-list').style.display = 'block';
                 document.getElementById('sports-event-list').classList.remove('hidden');
                 loadSportsEvents();
@@ -3251,7 +3260,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                 if (sportsConf) sportsConf.classList.add('hidden');
                 
                 document.getElementById('lw-chart-container').style.display = 'block';
-                document.getElementById('stats-bar').style.display = 'flex';
+                document.getElementById('stats-bar-target').style.display = 'flex';
                 document.getElementById('sports-event-list').style.display = 'none';
                 
                 if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');

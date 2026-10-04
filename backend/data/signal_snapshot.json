@@ -1,12 +1,12 @@
 {
-  "updated": 1791149189.3011692,
+  "updated": 1791149519.270102,
   "results": {
     "AUTO|RL_DQN": {
-      "ts": 1791149189.3011692,
+      "ts": 1791149519.270102,
       "asset": "USDJPY",
-      "ticker": "KXUSDJPY15M-26OCT041730-30",
-      "strike": 157.731,
-      "sec_left": 211,
+      "ticker": "KXUSDJPY15M-26OCT041745-30",
+      "strike": 157.827,
+      "sec_left": 781,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -27,11 +27,11 @@
       }
     },
     "AUTO|AI_ONLY": {
-      "ts": 1791149189.3011692,
+      "ts": 1791149519.270102,
       "asset": "USDJPY",
-      "ticker": "KXUSDJPY15M-26OCT041730-30",
-      "strike": 157.731,
-      "sec_left": 211,
+      "ticker": "KXUSDJPY15M-26OCT041745-30",
+      "strike": 157.827,
+      "sec_left": 781,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
@@ -52,11 +52,11 @@
       }
     },
     "AUTO|BLEND": {
-      "ts": 1791149189.3011692,
+      "ts": 1791149519.270102,
       "asset": "USDJPY",
-      "ticker": "KXUSDJPY15M-26OCT041730-30",
-      "strike": 157.731,
-      "sec_left": 211,
+      "ticker": "KXUSDJPY15M-26OCT041745-30",
+      "strike": 157.827,
+      "sec_left": 781,
       "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
       "probability_percent": 50.0,
