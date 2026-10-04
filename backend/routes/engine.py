@@ -25,6 +25,7 @@ from typing import Optional
 
 import requests.exceptions
 from fastapi.responses import JSONResponse
+from backend.sports_bridge.prediction_client import SportsPredictionClient
 
 logger = logging.getLogger(__name__)
 
@@ -1347,3 +1348,9 @@ async def api_backtest_run(request: Request):
     except Exception as e:
         logger.error(f"[Backtest] Failed for user {user_id}: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail="Backtest failed; see server log")
+
+@router.get("/api/engine/sports/events")
+def api_sports_events():
+    client = SportsPredictionClient()
+    picks = client.fetch_latest_picks()
+    return {"status": "ok", "events": picks}

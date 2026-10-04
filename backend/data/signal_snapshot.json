@@ -1,82 +1,79 @@
 {
-  "updated": 1791146851.4719267,
+  "updated": 1791148624.2429745,
   "results": {
     "AUTO|AI_ONLY": {
-      "ts": 1791146851.4719267,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT041700-00",
-      "strike": 0.095467,
-      "sec_left": 749,
-      "effective_style": "MOMENTUM_SURFER",
+      "ts": 1791148624.2429745,
+      "asset": "AUDUSD",
+      "ticker": "KXAUDUSD15M_SYNTH",
+      "strike": 86008.37,
+      "sec_left": 778,
+      "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
-      "probability_percent": 50,
+      "probability_percent": 50.0,
       "ml_prob": 0.5,
-      "conviction_grade": "PASS",
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
       "pre_gate_direction": "PASS",
       "pre_gate_prob": 50.0,
-      "pre_gate_grade": "PASS",
+      "pre_gate_grade": "GRADE C / PASS",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 50.0%"
+        "Capital Guard active: zero edge detected"
       ],
       "chart": {
-        "open": 0.0953504,
-        "close": 0.0956996,
-        "ema9": 0.09550500471224865,
-        "ema21": 0.0955078633608224,
-        "flow": 0.837
-      }
-    },
-    "AUTO|RL_DQN": {
-      "ts": 1791146851.4719267,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT041700-00",
-      "strike": 0.095467,
-      "sec_left": 749,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4716,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 52.84,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\udee1\ufe0f Weekend Chop Filter: Rejecting setup under 62% confidence due to low-volume weekend environment.",
-        "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 52.8%"
-      ],
-      "chart": {
-        "open": 0.0953504,
-        "close": 0.0956996,
-        "ema9": 0.09550500471224865,
-        "ema21": 0.0955078633608224,
-        "flow": 0.837
+        "open": 0.6957489848136902,
+        "close": 0.6957489848136902,
+        "ema9": 0.6957856533463362,
+        "ema21": 0.6957079086182352,
+        "flow": 0.0
       }
     },
     "AUTO|BLEND": {
-      "ts": 1791146851.4719267,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT041700-00",
-      "strike": 0.095467,
-      "sec_left": 749,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "YES",
-      "probability_percent": 64,
+      "ts": 1791148624.2429745,
+      "asset": "AUDUSD",
+      "ticker": "KXAUDUSD15M_SYNTH",
+      "strike": 86008.37,
+      "sec_left": 778,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
       "ml_prob": 0.5,
-      "conviction_grade": "GRADE B+ SETUP",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 64.0,
-      "pre_gate_grade": "GRADE B+ SETUP",
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
       "catalysts": [
-        "Market Implied Bullish Edge: Order book odds favor YES (0.8%)",
-        "Institutional Order Flow: Net bid depth imbalance (+0.0%)",
-        "\u2696\ufe0f ML Neutral: Model has no directional edge (50.0%), relying on technical chart confluence (64% edge)"
+        "Capital Guard active: zero edge detected"
       ],
       "chart": {
-        "open": 0.0953504,
-        "close": 0.0956996,
-        "ema9": 0.09550500471224865,
-        "ema21": 0.0955078633608224,
-        "flow": 0.837
+        "open": 0.6957489848136902,
+        "close": 0.6957489848136902,
+        "ema9": 0.6957856533463362,
+        "ema21": 0.6957079086182352,
+        "flow": 0.0
+      }
+    },
+    "AUTO|RL_DQN": {
+      "ts": 1791148624.2429745,
+      "asset": "AUDUSD",
+      "ticker": "KXAUDUSD15M_SYNTH",
+      "strike": 86008.37,
+      "sec_left": 778,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
+      "catalysts": [
+        "Capital Guard active: zero edge detected"
+      ],
+      "chart": {
+        "open": 0.6957489848136902,
+        "close": 0.6957489848136902,
+        "ema9": 0.6957856533463362,
+        "ema21": 0.6957079086182352,
+        "flow": 0.0
       }
     }
   }

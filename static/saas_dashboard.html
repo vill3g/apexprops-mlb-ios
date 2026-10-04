@@ -648,12 +648,26 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
 
         <!-- Asset Selector Bar (Replaced Live User Activity Feed) -->
         <div id="assetSelectorBar" class="sticky z-40 bg-[#0b101d] border-b border-white/5 px-2 py-1 flex items-center justify-between gap-2 shadow-inner" style="top: calc(3.6rem + env(safe-area-inset-top, 0px));">
-            <div class="flex items-center gap-2 shrink-0">
+            <div class="relative flex items-center gap-2 shrink-0 cursor-pointer" onclick="toggleUniverseDropdown(event)">
                 <span class="flex h-2 w-2 relative">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                 </span>
-                <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Market</span>
+                <div class="flex items-center gap-1">
+                    <span id="market-universe-label" class="text-[10px] font-black uppercase tracking-wider text-gray-400">MARKETS</span>
+                    <span class="text-[8px] text-gray-500">▼</span>
+                </div>
+                <!-- Dropdown Menu -->
+                <div id="universe-dropdown" class="absolute left-0 top-full mt-2 w-32 bg-[#0b101a]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.9)] overflow-hidden hidden z-[500] transform opacity-0 scale-95 transition-all origin-top-left">
+                    <div class="p-1.5 flex flex-col gap-1">
+                        <button type="button" onclick="selectUniverse('FINANCIAL');" class="py-2 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full uppercase tracking-wider">
+                            <span>📈</span> FINANCIALS
+                        </button>
+                        <button type="button" onclick="selectUniverse('SPORTS');" class="py-2 px-3 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2 border cursor-pointer bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200 text-left w-full uppercase tracking-wider">
+                            <span>🏈</span> SPORTS
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Selectable Asset Buttons (Left to Right) -->
@@ -1573,7 +1587,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                     xgb_learning_rate: xgbLR,
                     use_kelly_criterion: document.getElementById('kelly-criterion-toggle') ? document.getElementById('kelly-criterion-toggle').checked : false,
                     atr_risk_enabled: document.getElementById('atr-risk-toggle') ? document.getElementById('atr-risk-toggle').checked : false,
-                    trading_universe: document.getElementById('universe-select') ? document.getElementById('universe-select').value : 'FINANCIAL',
+                    trading_universe: window.currentUniverse || 'FINANCIAL',
                     min_sports_confidence: document.getElementById('sports-conf-slider') ? parseFloat(document.getElementById('sports-conf-slider').value) : 70.0
                 };
 
@@ -1817,9 +1831,8 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                     }
                 }
             }
-            if (s.trading_universe !== undefined && document.getElementById('universe-select')) {
-                document.getElementById('universe-select').value = s.trading_universe;
-                if (typeof toggleUniverse === 'function') toggleUniverse();
+            if (s.trading_universe !== undefined) {
+                if (typeof selectUniverse === 'function') selectUniverse(s.trading_universe);
             }
             if (s.min_sports_confidence !== undefined && document.getElementById('sports-conf-slider')) {
                 document.getElementById('sports-conf-slider').value = s.min_sports_confidence;
@@ -3159,27 +3172,139 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             }
         }
 
-        function toggleUniverse() {
-    const universe = document.getElementById('universe-select').value;
-    const finAssets = document.querySelectorAll('.asset-btn-financial');
-    const sportsAssets = document.querySelectorAll('.asset-btn-sports');
-    const stopLossDiv = document.getElementById('stop-loss-container');
-    const sportsConfDiv = document.getElementById('sports-confidence-container');
-    
-    if(universe === 'SPORTS') {
-        finAssets.forEach(el => el.classList.add('hidden'));
-        sportsAssets.forEach(el => el.classList.remove('hidden'));
-        if(stopLossDiv) stopLossDiv.classList.add('hidden');
-        if(sportsConfDiv) sportsConfDiv.classList.remove('hidden');
-    } else {
-        finAssets.forEach(el => el.classList.remove('hidden'));
-        sportsAssets.forEach(el => el.classList.add('hidden'));
-        if(stopLossDiv) stopLossDiv.classList.remove('hidden');
-        if(sportsConfDiv) sportsConfDiv.classList.add('hidden');
-    }
-}
+        window.currentUniverse = 'FINANCIAL';
+        
+        window.toggleUniverseDropdown = function(e) {
+            e.stopPropagation();
+            const dd = document.getElementById('universe-dropdown');
+            if (dd.classList.contains('hidden')) {
+                dd.classList.remove('hidden');
+                setTimeout(() => {
+                    dd.classList.remove('opacity-0', 'scale-95');
+                }, 10);
+            } else {
+                dd.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    dd.classList.add('hidden');
+                }, 200);
+            }
+        };
+        
+        document.addEventListener('click', (e) => {
+            const dd = document.getElementById('universe-dropdown');
+            if (dd && !dd.classList.contains('hidden') && !e.target.closest('#universe-dropdown') && !e.target.closest('[onclick="toggleUniverseDropdown(event)"]')) {
+                dd.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    dd.classList.add('hidden');
+                }, 200);
+            }
+        });
 
-async function selectDashboardAsset(asset) {
+        window.selectUniverse = function(universe) {
+            window.currentUniverse = universe;
+            const label = document.getElementById('market-universe-label');
+            if (label) label.innerText = universe === 'SPORTS' ? 'SPORTS' : 'MARKETS';
+            
+            const dd = document.getElementById('universe-dropdown');
+            if (dd) {
+                dd.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    dd.classList.add('hidden');
+                }, 200);
+            }
+            
+            const finAssets = document.querySelectorAll('#btn-asset-btc, #btn-asset-eth, #btn-asset-gold');
+            const moreAssetsWrapper = document.getElementById('btn-asset-more') ? document.getElementById('btn-asset-more').parentElement : null;
+            const sportsAssets = document.querySelectorAll('.asset-btn-sports');
+            
+
+            if(universe === 'SPORTS') {
+                finAssets.forEach(el => { el.style.display = 'none'; });
+                if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'none';
+                sportsAssets.forEach(el => { el.style.display = 'inline-block'; el.classList.remove('hidden'); });
+
+                
+                const slRows = document.querySelectorAll('.stop-loss-row');
+                slRows.forEach(el => el.classList.add('hidden'));
+                
+                const sportsConf = document.getElementById('sports-confidence-container');
+                if (sportsConf) sportsConf.classList.remove('hidden');
+                
+                document.getElementById('lw-chart-container').style.display = 'none';
+                document.getElementById('stats-bar').style.display = 'none';
+                document.getElementById('sports-event-list').style.display = 'block';
+                document.getElementById('sports-event-list').classList.remove('hidden');
+                loadSportsEvents();
+                
+                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('NFL');
+
+            } else {
+                finAssets.forEach(el => { el.style.display = ''; el.classList.remove('hidden'); });
+                if (moreAssetsWrapper) moreAssetsWrapper.style.display = '';
+                sportsAssets.forEach(el => { el.style.display = 'none'; });
+
+                
+                const slRows = document.querySelectorAll('.stop-loss-row');
+                slRows.forEach(el => el.classList.remove('hidden'));
+                
+                const sportsConf = document.getElementById('sports-confidence-container');
+                if (sportsConf) sportsConf.classList.add('hidden');
+                
+                document.getElementById('lw-chart-container').style.display = 'block';
+                document.getElementById('stats-bar').style.display = 'flex';
+                document.getElementById('sports-event-list').style.display = 'none';
+                
+                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
+            }
+            if (typeof saveUserConfig === 'function') saveUserConfig();
+        };
+        
+
+
+async 
+        async function loadSportsEvents() {
+            const container = document.getElementById('sports-events-container');
+            container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Scanning Kalshi APIs for active games...</div>';
+            try {
+                const res = await fetch((window.API_BASE_URL||'') + '/api/engine/sports/events');
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+                
+                if (!data.events || data.events.length === 0) {
+                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No active AI picks found for Kalshi markets currently.</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                data.events.forEach(evt => {
+                    const el = document.createElement('div');
+                    el.className = 'bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 hover:border-cyan-500/30 transition-colors';
+                    el.innerHTML = 
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-black text-gray-400 bg-gray-800 px-2 py-0.5 rounded"></span>
+                            <span class="text-xs font-mono text-cyan-400">AI Edge: %</span>
+                        </div>
+                        <div class="text-sm font-bold text-white mt-1"></div>
+                        <div class="text-xs text-gray-400">Prediction: <span class="text-emerald-400 font-bold"></span></div>
+                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] text-gray-500 uppercase">Confidence</span>
+                                <span class="text-xs font-mono font-bold text-white">%</span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[9px] text-gray-500 uppercase">Implied Odds</span>
+                                <span class="text-xs font-mono font-bold text-gray-300">%</span>
+                            </div>
+                        </div>
+                    ;
+                    container.appendChild(el);
+                });
+            } catch(e) {
+                container.innerHTML = <div class="col-span-full text-center text-red-500 py-10">Failed to load events: </div>;
+            }
+        }
+
+        function selectDashboardAsset(asset) {
             asset = (asset || 'BTC').toUpperCase();
             if (window.currentAsset === asset && window.lastCandle && document.querySelector('#lw-chart-container canvas')) {
                 return;
@@ -5899,7 +6024,7 @@ async function selectDashboardAsset(asset) {
                         </div>
                     </div>
                     <!-- Row: Stop Loss -->
-                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors stop-loss-row">
                         <div class="flex items-start gap-2.5 min-w-0">
                             <div class="w-7 h-7 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
                                 🛑
@@ -5923,7 +6048,7 @@ async function selectDashboardAsset(asset) {
                     </div>
 
                     <!-- Row: Re-entry After Stop Loss -->
-                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
+                    <div class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors stop-loss-row">
                         <div class="flex items-start gap-2.5 min-w-0">
                             <div class="w-7 h-7 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">
                                 🔂
@@ -6010,6 +6135,22 @@ async function selectDashboardAsset(asset) {
                                     <span class="text-[10px] text-gray-400 font-bold ml-0.5">%</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    
+                    <!-- Row: Sports Confidence (Hidden by default) -->
+                    <div id="sports-confidence-container" class="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors hidden">
+                        <div class="flex items-start gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5">🏈</div>
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-xs font-semibold text-white tracking-tight">Minimum Pick Confidence (%)</span>
+                                <span class="text-[10px] text-gray-400 leading-snug mt-0.5">Only take sports bets where AI confidence is at or above this value.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <input type="range" id="sports-conf-slider" min="50" max="95" step="1" value="70" onchange="if(typeof saveUserConfig === 'function') saveUserConfig(); document.getElementById('sports-conf-val').innerText = this.value + '.0%';" class="w-20">
+                            <span id="sports-conf-val" class="text-xs font-bold font-mono text-emerald-400 w-10 text-right">70.0%</span>
                         </div>
                     </div>
 
