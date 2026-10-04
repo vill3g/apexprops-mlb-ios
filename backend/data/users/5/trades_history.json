@@ -7286,8 +7286,8 @@
         "prediction_direction": "NO",
         "count": 20,
         "entry_price": 0.33,
-        "status": "OPEN",
-        "pnl": 0.0,
+        "status": "CLOSED",
+        "pnl": 2.34,
         "timestamp": "2026-10-04T17:30:34.189035-04:00",
         "mode": "PAPER",
         "reason": "SECOND_ENTRY_SCALP",
@@ -7303,7 +7303,10 @@
         "catalysts": [
             "Tactical pullback re-entry #2 after profitable scalp (14.4m left)"
         ],
-        "min_seen_bid": 0.33
+        "min_seen_bid": 0.33,
+        "exit_reason": "TAKE_PROFIT (+39.4%)",
+        "exit_price": 0.48,
+        "settled_at": 1791149530.0151649
     },
     {
         "id": "c70aec0f-594b-439c-83b8-6d04c35b2bcc",
@@ -7348,9 +7351,9 @@
         "entry_price": 0.64,
         "count": 14,
         "requested_count": 14,
-        "status": "OPEN",
+        "status": "CLOSED",
         "mode": "PAPER",
-        "pnl": 0.0,
+        "pnl": -2.02,
         "reason": "AI_COPY (CAPITAL_GUARD)",
         "is_second_entry": false,
         "is_third_entry": false,
@@ -7364,6 +7367,9 @@
         ],
         "strike": 157.827,
         "market_snapshot": "{\"price\": 157.8300018310547, \"target\": 157.827, \"confidence\": 51.0, \"conviction_grade\": \"PASS / CHOP DEADZONE (CAPITAL GUARD)\", \"primary_edge\": \"Low-volatility compression deadzone (ADX < 18, Vol < 0.85). Preserving capital for high-edge expansion.\", \"raw_features\": {}}",
-        "min_seen_bid": 0.59
+        "min_seen_bid": 0.51,
+        "exit_reason": "STOP_LOSS (-16.4%)",
+        "exit_price": 0.53,
+        "settled_at": 1791149613.4930449
     }
 ]

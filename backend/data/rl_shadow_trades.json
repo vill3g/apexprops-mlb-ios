@@ -47330,8 +47330,8 @@
     "entry_price": 0.53,
     "entry_time": 1791148535.5496197,
     "close_time": "2026-10-04T21:30:00Z",
-    "status": "OPEN",
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "pnl": 88.36,
     "rl_epsilon": 0.355,
     "state_vector": [
       65.16665941206398,
@@ -47411,7 +47411,9 @@
     "model_p_yes": 0.47661461770025026,
     "edge_yes": -0.0353,
     "edge_no": -0.0096,
-    "live_policy_action": 0
+    "live_policy_action": 0,
+    "official_result": "NO",
+    "unit_pnl": 0.47
   },
   {
     "id": "shadow_60b5aef879b8",
@@ -47424,8 +47426,8 @@
     "entry_price": 0.49,
     "entry_time": 1791148538.056022,
     "close_time": "2026-10-04T21:30:00Z",
-    "status": "OPEN",
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "pnl": 104.04,
     "rl_epsilon": 0.355,
     "state_vector": [
       54.14132406999518,
@@ -47505,7 +47507,9 @@
     "model_p_yes": 0.48017693917666854,
     "edge_yes": -0.0317,
     "edge_no": -0.0132,
-    "live_policy_action": 0
+    "live_policy_action": 0,
+    "official_result": "NO",
+    "unit_pnl": 0.51
   },
   {
     "id": "shadow_ed4caa818e42",
@@ -47518,8 +47522,8 @@
     "entry_price": 0.55,
     "entry_time": 1791148539.0741746,
     "close_time": "2026-10-04T21:30:00Z",
-    "status": "OPEN",
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "pnl": -99.55,
     "rl_epsilon": 0.355,
     "state_vector": [
       75.20940286543272,
@@ -47599,7 +47603,9 @@
     "model_p_yes": 0.48103349569472503,
     "edge_yes": -0.0308,
     "edge_no": -0.0139,
-    "live_policy_action": 0
+    "live_policy_action": 0,
+    "official_result": "YES",
+    "unit_pnl": -0.55
   },
   {
     "id": "shadow_5d0518931bd3",
@@ -47612,8 +47618,8 @@
     "entry_price": 0.939,
     "entry_time": 1791148972.7489522,
     "close_time": "2026-10-04T21:30:00Z",
-    "status": "OPEN",
-    "pnl": 0.0,
+    "status": "SETTLED",
+    "pnl": 6.47,
     "rl_epsilon": 0.349,
     "state_vector": [
       40.08141872018765,
@@ -47693,7 +47699,9 @@
     "model_p_yes": 0.4830826873319202,
     "edge_yes": -0.0109,
     "edge_no": 0.0018,
-    "live_policy_action": 0
+    "live_policy_action": 0,
+    "official_result": "NO",
+    "unit_pnl": 0.061
   },
   {
     "id": "shadow_784d3a1f84fb",

@@ -3782,7 +3782,7 @@
         ],
         "strike": 121.3757,
         "market_snapshot": "{\"price\": 121.44, \"target\": 121.3757, \"confidence\": 52.94, \"conviction_grade\": \"GRADE C / PASS\", \"primary_edge\": \"Moderate Confluence Setup\", \"raw_features\": {\"rsi\": 50.51247045581381, \"bb_upper\": 121.9247422485093, \"bb_lower\": 120.86425775149068, \"ema_9\": 121.26790183694025, \"ema_21\": 121.33871800174975, \"ema_50\": 121.27624030373066, \"atr\": 0.2974207750829648, \"price_vs_vwap\": 0.08487174449746249, \"cvd_value\": 4078.621548075158, \"delta_to_target\": -0.004696162411413709, \"heuristic_score\": 80.0, \"news_sentiment_score\": 0.0, \"fng_value\": 65.0, \"high_24h\": 123.74, \"low_24h\": 116.7, \"volume_24h\": 193885.44253201, \"orderbook_imbalance\": -4.31, \"funding_rate\": 0.0, \"open_interest\": 0.0, \"is_weekend\": 1.0, \"hour_of_day\": 17.0, \"volume_15m_ratio\": 0.7901874251112134, \"upper_wick_ratio\": 0.35135135135137313, \"lower_wick_ratio\": 0.3243243243243326, \"body_to_range\": 0.3243243243242942, \"range_24h_pos\": 0.6633522727272737, \"trend_1h\": \"BULLISH\", \"minutes_remaining\": 14.65, \"kalshi_yes_prob\": 50.0, \"kalshi_book_imbalance\": 0.0, \"roc_15m\": 0.05767487847079256, \"roc_1h\": 0.3719315645921206, \"roc_4h\": -0.1890359168241984, \"cvd_divergence\": 13712.84308739563, \"vol_regime_percentile\": 0.90625, \"bb_percent_b_lag_4\": -0.08639250529865596, \"rsi_lag_4\": 0.33532184023640427, \"volume_15m_ratio_lag_4\": 0.5605099489529737, \"roc_15m_lag_4\": -0.008273351534715534, \"cvd_divergence_lag_4\": -4201.4265173328085, \"bb_percent_b_lag_3\": 0.0984236499791031, \"rsi_lag_3\": 0.3864713564144983, \"volume_15m_ratio_lag_3\": 1.5033882357055302, \"roc_15m_lag_3\": 0.10756246897236643, \"cvd_divergence_lag_3\": 949.3504886539413, \"bb_percent_b_lag_2\": 0.3483050309454847, \"rsi_lag_2\": 0.47080941003641436, \"volume_15m_ratio_lag_2\": 1.0522742250222656, \"roc_15m_lag_2\": 0.20662864699561023, \"cvd_divergence_lag_2\": 7231.3529964330955, \"bb_percent_b_lag_1\": 0.5951225699086632, \"rsi_lag_1\": 0.5414132406886395, \"volume_15m_ratio_lag_1\": 1.2640424254783098, \"roc_15m_lag_1\": 0.21445067634444648, \"cvd_divergence_lag_1\": 16467.28003607298, \"bb_percent_b_lag_0\": 0.4768973520415745, \"rsi_lag_0\": 0.5051247045581381, \"volume_15m_ratio_lag_0\": 0.7901874251112134, \"roc_15m_lag_0\": -0.10699588477366406, \"cvd_divergence_lag_0\": 13634.503155478696}}",
-        "min_seen_bid": 0.26
+        "min_seen_bid": 0.2
     },
     {
         "id": "d59652a6-7f6b-4b81-98f3-42f39296d649",
@@ -3824,8 +3824,8 @@
         "prediction_direction": "NO",
         "count": 20,
         "entry_price": 0.32,
-        "status": "OPEN",
-        "pnl": 0.0,
+        "status": "CLOSED",
+        "pnl": 1.94,
         "timestamp": "2026-10-04T17:30:31.909854-04:00",
         "mode": "PAPER",
         "reason": "SECOND_ENTRY_SCALP",
@@ -3841,7 +3841,10 @@
         "catalysts": [
             "Tactical pullback re-entry #2 after profitable scalp (14.5m left)"
         ],
-        "min_seen_bid": 0.32
+        "min_seen_bid": 0.32,
+        "exit_reason": "TAKE_PROFIT (+28.1%)",
+        "exit_price": 0.45,
+        "settled_at": 1791149521.4999697
     },
     {
         "id": "5c5bf4c3-f9d7-4b31-9363-22a60199572c",
@@ -3870,6 +3873,36 @@
         ],
         "strike": 1.12606,
         "market_snapshot": "{\"price\": 1.1257457733154297, \"target\": 1.12606, \"confidence\": 51.0, \"conviction_grade\": \"PASS / CHOP DEADZONE (CAPITAL GUARD)\", \"primary_edge\": \"Low-volatility compression deadzone (ADX < 18, Vol < 0.85). Preserving capital for high-edge expansion.\", \"raw_features\": {}}",
-        "min_seen_bid": 0.45
+        "min_seen_bid": 0.35
+    },
+    {
+        "id": "026130ac-f616-441e-ab06-5cb909d1158c",
+        "ticker": "KXBTC15M-26OCT041745-45",
+        "side": "NO",
+        "direction": "NO",
+        "prediction_direction": "NO",
+        "count": 19,
+        "entry_price": 0.48,
+        "status": "CLOSED",
+        "pnl": -7.15,
+        "timestamp": "2026-10-04T17:32:01.529117-04:00",
+        "mode": "PAPER",
+        "reason": "THIRD_ENTRY_SCALP",
+        "is_second_entry": false,
+        "is_third_entry": true,
+        "is_stop_loss_reentry": false,
+        "reentry_flipped": false,
+        "reentry_index": 3,
+        "trading_style": "THIRD_ENTRY",
+        "signal_source": "BLEND",
+        "model_choice": "Swarm",
+        "probability_percent": 51.0,
+        "catalysts": [
+            "Tactical pullback re-entry #3 after profitable scalp (13.0m left)"
+        ],
+        "min_seen_bid": 0.14,
+        "exit_reason": "STOP_LOSS (-69.8%)",
+        "exit_price": 0.13,
+        "settled_at": 1791149753.55653
     }
 ]
