@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 class SportsPredictionClient:
     def __init__(self, endpoint_url="http://127.0.0.1:8057/api/bot-bridge/predictions"):
         self.endpoint_url = endpoint_url
-        self.client = httpx.Client(timeout=10.0)
+        self.client = httpx.Client(timeout=60.0)
 
     def fetch_latest_picks(self) -> List[Dict]:
         try:

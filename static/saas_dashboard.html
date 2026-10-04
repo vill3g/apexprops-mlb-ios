@@ -681,7 +681,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                         <button id="btn-asset-nfl" onclick="filterSportsEvents('NFL')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏈 NFL</button>
 <button id="btn-asset-mlb" onclick="filterSportsEvents('MLB')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">⚾ MLB</button>
 <button id="btn-asset-nhl" onclick="filterSportsEvents('NHL')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏒 NHL</button>
-<button id="btn-asset-nba" onclick="filterSportsEvents('NBA')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🏀 NBA</button>
+<button id="btn-asset-npb" onclick="filterSportsEvents(\'NPB\')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">⚾ NPB/KBO</button>
 <button id="btn-asset-soccer" onclick="filterSportsEvents('SOCCER')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">⚽ SOC</button>
 <button id="btn-asset-ufc" onclick="filterSportsEvents('UFC')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🥊 UFC</button>
 <button id="btn-asset-tennis" onclick="filterSportsEvents('TENNIS')" class="asset-btn-sports hidden px-2 py-1 rounded-md text-[11px] font-bold transition-all bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5">🎾 TEN</button>
@@ -3278,7 +3278,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
 
         window.sportsFilter = window.sportsFilter || 'ALL';
         window.__sportsEventsCache = window.__sportsEventsCache || [];
-        const SPORT_ICONS = { NFL: '🏈', MLB: '⚾', NHL: '🏒', NBA: '🏀', SOCCER: '⚽', UFC: '🥊', TENNIS: '🎾' };
+        const SPORT_ICONS = { NFL: '🏈', MLB: '⚾', NHL: '🏒', NPB: '🇯🇵', SOCCER: '⚽', UFC: '🥊', TENNIS: '🎾' };
 
         window.filterSportsEvents = function(sport) {
             window.sportsFilter = (window.sportsFilter === sport) ? 'ALL' : sport;
@@ -3332,7 +3332,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                         </div>
                     </div>
                     <div class="flex items-center justify-between gap-2 mt-0.5 text-[9.5px] text-gray-500">
-                        <span class="truncate">${sport}${matchup ? ' · ' + matchup : ''}${when ? ' · ' + when : ''}</span>
+                        <span class="truncate">${md.league_label || md.league || md.tournament || sport}${matchup ? ' · ' + matchup : ''}${when ? ' · ' + when : ''}</span>
                         <span class="shrink-0 uppercase tracking-wider">${odds ? 'Odds ' + odds + ' · ' : ''}Conf / Edge</span>
                     </div>
                 `;
@@ -4472,7 +4472,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
             const container = document.getElementById('activePositionHud');
             if (!container) return;
 
-            const __sportsList = ['NFL', 'MLB', 'NHL', 'NBA', 'SOCCER', 'UFC', 'TENNIS'];
+            const __sportsList = ['NFL', 'MLB', 'NHL', 'NPB', 'SOCCER', 'UFC', 'TENNIS'];
             const __isSportTrade = (t) => {
                 const a = String(t.asset || '').toUpperCase();
                 const tk = String(t.ticker || '').toUpperCase();
@@ -4497,7 +4497,7 @@ body:has(#backtestModal:not(.hidden)) #dynamic-island { opacity: 0 !important; v
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Position Scanner:</span>
                             <span class="text-[10px] font-mono text-emerald-400 font-bold">${__inSports ? 'READY · Watching AI Picks' : 'READY · Bot Scanning Active'}</span>
                         </div>
-                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${__inSports ? 'SPORTS · NFL · MLB · NHL · NBA · SOCCER · UFC · TENNIS' : (s.trading_style || 'AUTO') + ' · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)'}</span>
+                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${__inSports ? 'SPORTS · NFL · MLB · NHL · SOCCER · UFC · TENNIS · NPB/KBO' : (s.trading_style || 'AUTO') + ' · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)'}</span>
                     </div>
                 `;
                 return;
