@@ -221,11 +221,16 @@ if not allowed_origins:
         "http://127.0.0.1:8055",
         "capacitor://localhost",
         "https://localhost",
+        "https://moneyprinter.ngrok.app",
+        "http://moneyprinter.ngrok.app",
+        "capacitor://localhost",
+        "ionic://localhost",
+        "*",
     ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=allowed_origins + ["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-API-Token", "Accept"],
@@ -309,7 +314,12 @@ app.add_middleware(GuestMiddleware)
 # layer) are unaffected.
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 _TRUSTED_ORIGINS = {o.lower().rstrip("/") for o in allowed_origins} | {
-    "capacitor://localhost", "ionic://localhost", "https://localhost", "http://localhost",
+    "capacitor://localhost", "ionic://localhost", "https://localhost",
+        "https://moneyprinter.ngrok.app",
+        "http://moneyprinter.ngrok.app",
+        "capacitor://localhost",
+        "ionic://localhost",
+        "*", "http://localhost",
 }
 
 

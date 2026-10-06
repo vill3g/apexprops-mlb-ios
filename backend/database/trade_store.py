@@ -53,7 +53,15 @@ class TradeStore:
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT raw_json FROM trades WHERE user_id = ? AND status = 'OPEN' ORDER BY rowid DESC", (user_id,))
-            return [json.loads(row[0]) for row in cursor.fetchall()]
+            results = []
+            for row in cursor.fetchall():
+                try:
+                    parsed = json.loads(row[0])
+                    if isinstance(parsed, dict):
+                        results.append(parsed)
+                except Exception:
+                    pass
+            return results
         except Exception as e:
             logger.warning(f"TradeStore get_open_trades error: {e}")
             return []
@@ -68,7 +76,15 @@ class TradeStore:
             # Sort by rowid (insertion order) — timestamp column stores mixed types
             # (ISO strings, ET strings, floats) that SQLite cannot sort reliably
             cursor.execute("SELECT raw_json FROM trades WHERE user_id = ? ORDER BY rowid DESC LIMIT ?", (user_id, limit))
-            return [json.loads(row[0]) for row in cursor.fetchall()]
+            results = []
+            for row in cursor.fetchall():
+                try:
+                    parsed = json.loads(row[0])
+                    if isinstance(parsed, dict):
+                        results.append(parsed)
+                except Exception:
+                    pass
+            return results
         except Exception as e:
             logger.warning(f"TradeStore get_recent_trades error: {e}")
             return []

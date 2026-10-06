@@ -428,7 +428,12 @@
             
             const doAction = async () => {
                 try {
-                    const payload = { direction: direction, amount_dollars: parseFloat(amt) };
+                    const payload = { direction: direction, amount_dollars: parseFloat(amt) ,
+                min_sports_confidence: document.getElementById('sports-conf-slider') ? parseInt(document.getElementById('sports-conf-slider').value) : 70,
+                min_sports_edge: document.getElementById('sports-edge-slider') ? parseInt(document.getElementById('sports-edge-slider').value) : 3,
+                sports_max_wager: document.getElementById('sports-wager-dollars') ? parseInt(document.getElementById('sports-wager-dollars').value) : 10,
+                sports_include_live: document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false
+        };
                     if (overrideAsset) payload.asset = overrideAsset;
                     const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/manual', {
                         method: "POST",
@@ -730,7 +735,10 @@
                     use_kelly_criterion: document.getElementById('kelly-criterion-toggle') ? document.getElementById('kelly-criterion-toggle').checked : false,
                     atr_risk_enabled: document.getElementById('atr-risk-toggle') ? document.getElementById('atr-risk-toggle').checked : false,
                     trading_universe: window.currentUniverse || 'FINANCIAL',
-                    min_sports_confidence: document.getElementById('sports-conf-slider') ? parseFloat(document.getElementById('sports-conf-slider').value) : 70.0
+                    min_sports_confidence: document.getElementById('sports-conf-slider') ? parseFloat(document.getElementById('sports-conf-slider').value) : 70.0,
+                    min_sports_edge: document.getElementById('sports-edge-slider') ? parseFloat(document.getElementById('sports-edge-slider').value) : 3.0,
+                    sports_max_wager: document.getElementById('sports-wager-dollars') ? parseFloat(document.getElementById('sports-wager-dollars').value) : 10.0,
+                    sports_include_live: document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false
                 };
 
                 // Immediately update local cache so background polling doesn't fight this
@@ -981,6 +989,18 @@
                 if (document.getElementById('sports-conf-val')) {
                     document.getElementById('sports-conf-val').innerText = s.min_sports_confidence + '.0%';
                 }
+            }
+            if (s.min_sports_edge !== undefined && document.getElementById('sports-edge-slider')) {
+                document.getElementById('sports-edge-slider').value = s.min_sports_edge;
+                if (document.getElementById('sports-edge-val')) {
+                    document.getElementById('sports-edge-val').innerText = '+' + s.min_sports_edge + '.0%';
+                }
+            }
+            if (s.sports_max_wager !== undefined && document.getElementById('sports-wager-dollars')) {
+                document.getElementById('sports-wager-dollars').value = s.sports_max_wager;
+            }
+            if (s.sports_include_live !== undefined && document.getElementById('sports-include-live-toggle')) {
+                document.getElementById('sports-include-live-toggle').checked = !!s.sports_include_live;
             }
             if (s.paper_trade_size_dollars !== undefined && document.getElementById('paper-trade-size-dollars')) {
                 if (document.activeElement.id !== 'paper-trade-size-dollars') {
@@ -1740,9 +1760,22 @@
                 populateUserSettings(s);
 
                 // Recent trades
-                
-                      const container = document.getElementById('tradesContainer');
-                    const recent = (s.recent_trades || []).slice(0, 15);
+                    const container = document.getElementById('tradesContainer');
+                    const __isSportTrade = (t) => {
+                        const a = String(t.asset || '').toUpperCase();
+                        const tk = String(t.ticker || '').toUpperCase();
+                        let meta = t.metadata;
+                        if (typeof meta === 'string') {
+                            try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+                        }
+                        const hasSportProp = t.sport || (meta && (meta.sport || meta.league));
+                        const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tk) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tk) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(a);
+                        const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+                        return isSportsStyle || hasSportProp || isSportsTicker;
+                    };
+                    const __inSports = window.currentUniverse === 'SPORTS';
+                    let universeFiltered = (s.recent_trades || []).filter(t => __inSports ? __isSportTrade(t) : !__isSportTrade(t));
+                    const recent = universeFiltered.slice(0, 15);
                     if (recent.length === 0) {
                         container.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 font-mono bg-[#131b2c] rounded-xl border border-kalshi-border">No recent trades found</div>';
                     } else {
@@ -2344,6 +2377,7 @@
 
         window.selectUniverse = function(universe) {
             window.currentUniverse = universe;
+            document.body.classList.toggle('universe-sports', universe === 'SPORTS');
             const label = document.getElementById('market-universe-label');
             if (label) label.innerText = universe === 'SPORTS' ? 'SPORTS' : 'MARKETS';
             
@@ -2359,90 +2393,388 @@
             const moreAssetsWrapper = document.getElementById('btn-asset-more') ? document.getElementById('btn-asset-more').parentElement : null;
             const sportsAssets = document.querySelectorAll('.asset-btn-sports');
             
+            const fAs = document.getElementById('finance-asset-settings');
+            const fRs = document.getElementById('finance-risk-settings');
+            const sRs = document.getElementById('sports-risk-settings');
 
             if(universe === 'SPORTS') {
                 finAssets.forEach(el => { el.style.display = 'none'; });
                 if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'none';
                 sportsAssets.forEach(el => { el.style.display = 'inline-block'; el.classList.remove('hidden'); });
+                
+                if(fAs) fAs.classList.add('hidden');
+                if(fRs) fRs.classList.add('hidden');
+                if(sRs) sRs.classList.remove('hidden');
 
-                
-                const slRows = document.querySelectorAll('.stop-loss-row');
-                slRows.forEach(el => el.classList.add('hidden'));
-                
-                const sportsConf = document.getElementById('sports-confidence-container');
-                if (sportsConf) sportsConf.classList.remove('hidden');
-                
                 document.getElementById('lw-chart-container').style.display = 'none';
-                document.getElementById('stats-bar').style.display = 'none';
+                document.getElementById('stats-bar-target').style.display = 'none';
                 document.getElementById('sports-event-list').style.display = 'block';
                 document.getElementById('sports-event-list').classList.remove('hidden');
-                loadSportsEvents();
                 
-                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('NFL');
-
+                if (window.activeSportsEventMarket) {
+                    const found = Array.from(sportsAssets).find(b => b.innerText.includes(window.activeSportsEventMarket));
+                    if(found) found.click();
+                    else filterSportsEvents('NFL');
+                } else {
+                    filterSportsEvents('NFL');
+                }
             } else {
                 finAssets.forEach(el => { el.style.display = ''; el.classList.remove('hidden'); });
                 if (moreAssetsWrapper) moreAssetsWrapper.style.display = '';
-                sportsAssets.forEach(el => { el.style.display = 'none'; });
+                sportsAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                
+                if(fAs) fAs.classList.remove('hidden');
+                if(fRs) fRs.classList.remove('hidden');
+                if(sRs) sRs.classList.add('hidden');
 
-                
-                const slRows = document.querySelectorAll('.stop-loss-row');
-                slRows.forEach(el => el.classList.remove('hidden'));
-                
-                const sportsConf = document.getElementById('sports-confidence-container');
-                if (sportsConf) sportsConf.classList.add('hidden');
-                
                 document.getElementById('lw-chart-container').style.display = 'block';
-                document.getElementById('stats-bar').style.display = 'flex';
+                document.getElementById('stats-bar-target').style.display = 'flex';
                 document.getElementById('sports-event-list').style.display = 'none';
-                
-                if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
+                document.getElementById('sports-event-list').classList.add('hidden');
+
+                const found = Array.from(finAssets).find(b => b.innerText.includes(window.activeAsset));
+                if(found) found.click();
+                else if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
             }
-            if (typeof saveUserConfig === 'function') saveUserConfig();
         };
-        
 
+        const SPORT_ICONS = {
+            'NFL': '🏈',
+            'MLB': '⚾',
+            'NHL': '🏒',
+            'NPB': '⚾',
+            'KBO': '⚾',
+            'NPB/KBO': '⚾',
+            'NPB_KBO': '⚾',
+            'SOC': '⚽',
+            'SOCCER': '⚽',
+            'UFC': '🥊',
+            'MMA': '🥊',
+            'TEN': '🎾',
+            'TENNIS': '🎾'
+        };
 
+        window.filterSportsEvents = function(sport) {
+            window.sportsFilter = (window.sportsFilter === sport) ? 'ALL' : sport;
+            const normFilter = String(window.sportsFilter || 'ALL').toUpperCase();
+            document.querySelectorAll('.asset-btn-sports').forEach(btn => {
+                const id = btn.id.replace('btn-asset-', '').toUpperCase();
+                let on = false;
+                if (normFilter === 'ALL') {
+                    on = false;
+                } else if ((normFilter === 'NPB/KBO' || normFilter === 'NPB_KBO' || normFilter === 'NPB' || normFilter === 'KBO') && (id.includes('NPB') || id.includes('KBO'))) {
+                    on = true;
+                } else if ((normFilter === 'SOC' || normFilter === 'SOCCER') && (id === 'SOC' || id === 'SOCCER')) {
+                    on = true;
+                } else if ((normFilter === 'TEN' || normFilter === 'TENNIS') && (id === 'TEN' || id === 'TENNIS')) {
+                    on = true;
+                } else if ((normFilter === 'UFC' || normFilter === 'MMA') && (id === 'UFC' || id === 'MMA')) {
+                    on = true;
+                } else if (normFilter === id) {
+                    on = true;
+                }
+                btn.classList.toggle('bg-cyan-500/25', on);
+                btn.classList.toggle('text-cyan-300', on);
+                btn.classList.toggle('border-cyan-500/50', on);
+            });
+            // Immediately render any cached events for the selected sport and kick off fetch
+            renderSportsEvents();
+            loadSportsEvents(window.sportsFilter);
+        };
 
-        async function loadSportsEvents() {
+        function isSportMatch(evt, f) {
+            if (!f || f === 'ALL') return true;
+            const filterNorm = f.toUpperCase();
+            const eSport = String(evt.sport || '').toUpperCase();
+            const eLeague = String(evt.league || evt.metadata?.league || '').toUpperCase();
+            const eSeries = String(evt.series_ticker || evt.metadata?.series_ticker || '').toUpperCase();
+
+            if (filterNorm === 'NPB/KBO' || filterNorm === 'NPB_KBO' || filterNorm === 'NPB-KBO' || filterNorm === 'NPB' || filterNorm === 'KBO') {
+                return eSport.includes('NPB') || eSport.includes('KBO') ||
+                       eLeague.includes('NPB') || eLeague.includes('KBO') ||
+                       eSeries.includes('NPB') || eSeries.includes('KBO');
+            }
+            if (filterNorm === 'SOC' || filterNorm === 'SOCCER') {
+                return eSport === 'SOC' || eSport === 'SOCCER' || eLeague === 'SOC' || eSeries.includes('EPL') || eSeries.includes('MLS') || eSeries.includes('UEFA') || eSeries.includes('WC');
+            }
+            if (filterNorm === 'TEN' || filterNorm === 'TENNIS') {
+                return eSport === 'TEN' || eSport === 'TENNIS' || eLeague === 'TEN' || eSeries.includes('ATP') || eSeries.includes('WTA');
+            }
+            if (filterNorm === 'UFC' || filterNorm === 'MMA') {
+                return eSport === 'UFC' || eSport === 'MMA' || eLeague === 'UFC' || eSeries.includes('UFC');
+            }
+            return eSport === filterNorm || eLeague === filterNorm || eSeries.includes(filterNorm);
+        }
+
+        window.__sportsLoading = false;
+        window.__sportsReqId = 0;
+
+        function renderSportsEvents() {
             const container = document.getElementById('sports-events-container');
-            container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">Scanning Kalshi APIs for active games...</div>';
-            try {
-                const res = await fetch((window.API_BASE_URL||'') + '/api/engine/sports/events');
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const data = await res.json();
+            if (!container) return;
+            const all = window.__sportsEventsCache || [];
+            const f = window.sportsFilter || 'ALL';
+            const list = all.filter(e => isSportMatch(e, f));
+            const label = f === 'ALL' ? 'any sport' : f;
+
+            if (list.length === 0) {
+                if (window.__sportsLoading) {
+                    container.innerHTML = '<div class="col-span-full text-center text-cyan-400 text-xs py-6 animate-pulse">⚡ Loading ' + label + ' AI picks...</div>';
+                } else {
+                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 text-xs py-6">No active AI picks for ' + label + ' right now.</div>';
+                }
+                return;
+            }
+            container.innerHTML = '';
+            list.forEach(evt => {
+                const md = evt.metadata || {};
+                const sport = String(evt.sport || '').toUpperCase();
+                const league = String(evt.league || md.league || sport).toUpperCase();
+                const icon = SPORT_ICONS[sport] || SPORT_ICONS[league] || '🏟️';
+                const name = evt.predicted_team || md.name || md.player_or_team || 'Unknown';
+                const pick = md.line || md.target_desc || evt.market_type || 'Game Winner';
                 
-                if (!data.events || data.events.length === 0) {
-                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">No active AI picks found for Kalshi markets currently.</div>';
-                    return;
+                let matchup = md.matchup || evt.opponent || '';
+                if (matchup && name !== 'Unknown') {
+                    let parts = matchup.split(/\s*(?:vs\.?|@|v)\s*/i);
+                    if (parts.length === 2) {
+                        if (name.toLowerCase().includes(parts[0].toLowerCase()) || parts[0].toLowerCase().includes(name.toLowerCase())) {
+                            matchup = 'vs ' + parts[1];
+                        } else if (name.toLowerCase().includes(parts[1].toLowerCase()) || parts[1].toLowerCase().includes(name.toLowerCase())) {
+                            matchup = 'vs ' + parts[0];
+                        }
+                    }
                 }
                 
-                container.innerHTML = '';
-                data.events.forEach(evt => {
-                    const el = document.createElement('div');
-                    el.className = 'bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col gap-2 hover:border-cyan-500/30 transition-colors';
-                    el.innerHTML = `
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs font-black text-gray-400 bg-gray-800 px-2 py-0.5 rounded">${evt.sport}</span>
-                            <span class="text-xs font-mono text-cyan-400">AI Edge: ${evt.edge_pct}%</span>
+                const when = md.start_label || md.game_time || evt.game_time || evt.start_time || '';
+                const edge = parseFloat(evt.edge_pct) || 0;
+                const conf = parseFloat(evt.confidence_pct) || 0;
+                const edgeCls = edge > 0 ? 'text-emerald-400' : 'text-gray-500';
+                const confCls = conf >= 65 ? 'text-emerald-400' : (conf >= 55 ? 'text-amber-300' : 'text-gray-300');
+
+                const el = document.createElement('div');
+                el.className = 'bg-black/40 border border-white/5 rounded-lg px-2.5 py-2 hover:border-cyan-500/30 transition-colors cursor-pointer group';
+                el.onclick = () => querySportsAI(evt.event_ticker || md.name || '', evt);
+                el.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="text-[11px] shrink-0">${icon}</span>
+                            <span class="text-[12px] font-bold text-white truncate">${name}</span>
+                            <span class="text-[10px] font-semibold text-cyan-300 truncate">${pick}</span>
                         </div>
-                        <div class="text-sm font-bold text-white mt-1">${evt.game}</div>
-                        <div class="text-xs text-gray-400">Prediction: <span class="text-emerald-400 font-bold">${evt.predicted_team}</span></div>
-                        <div class="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-                            <div class="flex flex-col">
-                                <span class="text-[9px] text-gray-500 uppercase">Confidence</span>
-                                <span class="text-xs font-mono font-bold text-white">${evt.confidence_pct}%</span>
+                        <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+                            <span class="${confCls} font-bold">${conf > 0 ? conf.toFixed(0) + '%' : 'AI Ready'}</span>
+                            ${edge > 0 ? `<span class="${edgeCls}">+${edge.toFixed(1)}%</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 mt-0.5 text-[9.5px] text-gray-500">
+                        <span class="truncate">
+                            <span class="px-1 py-0.2 bg-white/10 text-cyan-300 rounded font-semibold text-[9px] mr-1">${league}</span>
+                            ${matchup || ''}${matchup && when ? ' · ' : ''}${when || ''}
+                        </span>
+                        <span class="shrink-0 uppercase tracking-wider font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">⚡ AI Predict & Trade</span>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // Global Trade Slip state
+        window.sportsTradeSlip = [];
+
+        function renderTradeSlip() {
+            let panel = document.getElementById('sports-trade-slip-panel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'sports-trade-slip-panel';
+                panel.className = 'fixed right-4 bottom-20 w-80 bg-[#0c0c10]/95 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.8)] z-[100] hidden flex-col';
+                document.body.appendChild(panel);
+            }
+            if (window.sportsTradeSlip.length === 0) {
+                panel.classList.add('hidden');
+                panel.classList.remove('flex');
+                return;
+            }
+            panel.classList.remove('hidden');
+            panel.classList.add('flex');
+            
+            let html = `
+                <div class="p-3 border-b border-white/10 bg-gradient-to-r from-cyan-900/30 to-transparent flex justify-between items-center rounded-t-2xl">
+                    <div class="text-xs font-black text-cyan-300 uppercase tracking-wider">🧾 Trade Slip (${window.sportsTradeSlip.length})</div>
+                    <button onclick="window.sportsTradeSlip=[]; renderTradeSlip();" class="text-gray-400 hover:text-white">✖</button>
+                </div>
+                <div class="p-3 space-y-2 max-h-60 overflow-y-auto">
+            `;
+            window.sportsTradeSlip.forEach((item, index) => {
+                html += `
+                    <div class="p-2 bg-black/40 border border-white/5 rounded relative group">
+                        <button onclick="window.sportsTradeSlip.splice(${index}, 1); renderTradeSlip();" class="absolute top-1 right-1 text-gray-500 hover:text-rose-400 hidden group-hover:block">✖</button>
+                        <div class="text-[10px] text-gray-400 truncate">${item.ticker}</div>
+                        <div class="text-xs font-bold text-white">${item.team}</div>
+                        <div class="text-[9px] text-emerald-400 mt-1">Conf: ${item.conf}% | Edge: ${item.edge}%</div>
+                    </div>
+                `;
+            });
+            html += `
+                </div>
+                <div class="p-3 border-t border-white/10">
+                    <button onclick="executeTradeSlip()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors" id="btn-execute-slip">Approve & Execute Trades</button>
+                </div>
+            `;
+            panel.innerHTML = html;
+        }
+
+        async function executeTradeSlip() {
+            const btn = document.getElementById('btn-execute-slip');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'EXECUTING...';
+            }
+            
+            for (const item of window.sportsTradeSlip) {
+                try {
+                    const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/execute?event_ticker=' + encodeURIComponent(item.ticker), { method: 'POST' });
+                    const data = await res.json();
+                    if (!res.ok) console.error("Trade failed", data);
+                } catch(e) {
+                    console.error("Execution error", e);
+                }
+            }
+            
+            window.sportsTradeSlip = [];
+            renderTradeSlip();
+            
+            // Reload the events to clear processing states
+            loadSportsEvents(window.sportsFilter);
+            
+            // Re-fetch trades
+            if (typeof fetchKalshiTrades === 'function') {
+                setTimeout(fetchKalshiTrades, 1500);
+            }
+        }
+
+        function closeSportsAIPopup() {
+            const popup = document.getElementById('sports-ai-popup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+
+        function addPredictionToSlip(ticker, team, conf, edge) {
+            window.sportsTradeSlip.push({ ticker, team, conf, edge });
+            renderTradeSlip();
+            closeSportsAIPopup();
+        }
+
+        async function querySportsAI(ticker, evt) {
+            if (!ticker) return;
+            
+            closeSportsAIPopup();
+            
+            const popup = document.createElement('div');
+            popup.id = 'sports-ai-popup';
+            popup.className = 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-[#0c0c10]/95 backdrop-blur-3xl border border-cyan-500/50 rounded-2xl shadow-[0_20px_70px_rgba(0,200,255,0.15)] z-[9999] overflow-hidden flex flex-col';
+            popup.innerHTML = `
+                <div class="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-900/40 to-transparent flex justify-between items-center">
+                    <div class="text-sm font-black text-white flex items-center gap-2">
+                        <span class="animate-pulse">🤖</span> AI Engine Query
+                    </div>
+                    <button onclick="closeSportsAIPopup()" class="text-gray-400 hover:text-white cursor-pointer">✖</button>
+                </div>
+                <div class="p-6 text-center" id="sports-ai-popup-content">
+                    <div class="text-cyan-400 text-sm animate-pulse font-mono mb-2">Analyzing market data...</div>
+                    <div class="text-[10px] text-gray-500">Connecting to Local AI (Port 8057)</div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            
+            try {
+                const titleParam = evt && (evt.predicted_team || (evt.metadata && evt.metadata.name)) ? '&title=' + encodeURIComponent(evt.predicted_team || evt.metadata.name) : '';
+                const sportParam = evt && (evt.sport || evt.league) ? '&sport=' + encodeURIComponent(evt.sport || evt.league) : '';
+                // Note: execute=false since we just want prediction data
+                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/predict?event_ticker=' + encodeURIComponent(ticker) + '&execute=false' + titleParam + sportParam);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                
+                const pred = data.prediction || {};
+                const team = pred.predicted_team || ticker;
+                const conf = pred.confidence_pct != null ? pred.confidence_pct : 'N/A';
+                const edge = pred.edge_pct != null ? pred.edge_pct : 'N/A';
+                
+                const content = document.getElementById('sports-ai-popup-content');
+                if (content) {
+                    content.innerHTML = \`
+                        <div class="mb-4 text-left space-y-3">
+                            <div>
+                                <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Recommended Pick</div>
+                                <div class="text-lg font-black text-white leading-tight">\${team}</div>
                             </div>
-                            <div class="flex flex-col text-right">
-                                <span class="text-[9px] text-gray-500 uppercase">Implied Odds</span>
-                                <span class="text-xs font-mono font-bold text-gray-300">${evt.implied_odds_pct}%</span>
+                            <div class="grid grid-cols-2 gap-3 p-3 bg-black/40 rounded-lg border border-white/5">
+                                <div>
+                                    <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Confidence</div>
+                                    <div class="text-sm font-bold \${parseFloat(conf) > 60 ? 'text-emerald-400' : 'text-amber-400'}">\${conf}%</div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Calculated Edge</div>
+                                    <div class="text-sm font-bold text-cyan-400">\${edge}%</div>
+                                </div>
                             </div>
                         </div>
-                    `;
-                    container.appendChild(el);
-                });
-            } catch(e) {
-                container.innerHTML = '<div class="col-span-full text-center text-red-500 py-10">Failed to load events: ' + e.message + '</div>';
+                        <button onclick="addPredictionToSlip('\${ticker}', '\${team.replace(/'/g, "\\'")}', '\${conf}', '\${edge}')" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                            Add to Trade Slip
+                        </button>
+                    \`;
+                }
+            } catch (e) {
+                const content = document.getElementById('sports-ai-popup-content');
+                if (content) {
+                    content.innerHTML = \`
+                        <div class="text-rose-400 text-sm mb-4">Error querying AI: \${e.message}</div>
+                        <button onclick="closeSportsAIPopup()" class="py-2 px-4 bg-gray-800 text-white rounded">Close</button>
+                    \`;
+                }
+            }
+        }
+
+        async function loadSportsEvents(sport = null) {
+            const container = document.getElementById('sports-events-container');
+            if (!container) return;
+            const reqId = ++window.__sportsReqId;
+            const targetSport = sport || window.sportsFilter || 'ALL';
+            window.__sportsLoading = true;
+
+            const currentCache = window.__sportsEventsCache || [];
+            const hasExisting = currentCache.some(e => isSportMatch(e, targetSport));
+            if (!hasExisting) {
+                renderSportsEvents();
+            }
+
+            try {
+                const sportParam = targetSport && targetSport !== 'ALL' ? '&sport=' + encodeURIComponent(targetSport) : '';
+                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/events?t=' + Date.now() + sportParam, {cache: 'no-store'});
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+
+                // If another tab switch occurred while waiting, ignore stale response
+                if (reqId !== window.__sportsReqId) return;
+
+                const newEvents = Array.isArray(data.events) ? data.events : [];
+                if (targetSport && targetSport !== 'ALL') {
+                    const otherEvents = (window.__sportsEventsCache || []).filter(e => !isSportMatch(e, targetSport));
+                    window.__sportsEventsCache = [...otherEvents, ...newEvents];
+                } else {
+                    window.__sportsEventsCache = newEvents;
+                }
+                window.__sportsLoading = false;
+                renderSportsEvents();
+            } catch (e) {
+                if (reqId !== window.__sportsReqId) return;
+                window.__sportsLoading = false;
+                if (!window.__sportsEventsCache || !window.__sportsEventsCache.length) {
+                    container.innerHTML = '<div class="col-span-full text-center text-red-400 text-xs py-6">Failed to load picks: ' + e.message + '</div>';
+                } else {
+                    renderSportsEvents();
+                }
             }
         }
         async function selectDashboardAsset(asset) {
@@ -3561,7 +3893,22 @@
             const container = document.getElementById('activePositionHud');
             if (!container) return;
 
-            const openTrades = (s.recent_trades || []).filter(t => String(t.status || '').toUpperCase() === 'OPEN');
+            const __isSportTrade = (t) => {
+                const a = String(t.asset || '').toUpperCase();
+                const tk = String(t.ticker || '').toUpperCase();
+                let meta = t.metadata;
+                if (typeof meta === 'string') {
+                    try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+                }
+                const hasSportProp = t.sport || (meta && (meta.sport || meta.league));
+                const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tk) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tk) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(a);
+                const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+                return isSportsStyle || hasSportProp || isSportsTicker;
+            };
+            const __inSports = window.currentUniverse === 'SPORTS';
+            const openTrades = (s.recent_trades || [])
+                .filter(t => String(t.status || '').toUpperCase() === 'OPEN')
+                .filter(t => __inSports ? __isSportTrade(t) : !__isSportTrade(t));
             
             // Audio trigger on newly opened trade
             if (openTrades.length > previousOpenTradeCount && previousOpenTradeCount === 0) {
@@ -3575,9 +3922,9 @@
                         <div class="flex items-center gap-2.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Position Scanner:</span>
-                            <span class="text-[10px] font-mono text-emerald-400 font-bold">READY · Bot Scanning Active</span>
+                            <span class="text-[10px] font-mono text-emerald-400 font-bold">${__inSports ? 'READY · Watching AI Picks' : 'READY · Bot Scanning Active'}</span>
                         </div>
-                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${s.trading_style || 'AUTO'} · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)</span>
+                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${__inSports ? 'SPORTS · NFL · MLB · NHL · SOCCER · UFC · TENNIS · NPB/KBO' : (s.trading_style || 'AUTO') + ' · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)'}</span>
                     </div>
                 `;
                 return;
@@ -3842,7 +4189,7 @@
             document.body.style.overflow = 'hidden';
 
             try {
-                const res = await fetch((window.API_BASE_URL||'')+'/api/auth/user/equity', {
+                const res = await fetch((window.API_BASE_URL||'')+'/api/engine/analytics/equity', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (!res.ok) throw new Error('Failed to fetch equity');
@@ -4044,49 +4391,44 @@
             renderEquitySvgChart(chartSeries);
         };
 
-        function renderEquitySvgChart(points) {
+                function renderEquitySvgChart(points) {
             const wrapper = document.getElementById('equity-chart-wrapper');
             if (!wrapper) return;
             if (points.length < 2) {
                 wrapper.innerHTML = '<div class="text-[10px] text-gray-500 font-mono">Need at least 2 closed trades to chart equity curve</div>';
                 return;
             }
-
-            const width = wrapper.clientWidth || 550;
-            const height = 240;
-            const padX = 20;
-            const padY = 25;
-
-            const vals = points.map(p => p.pnl);
-            const minVal = Math.min(...vals, 0);
-            const maxVal = Math.max(...vals, 1);
-            const range = (maxVal - minVal) || 1;
-
-            const getX = (idx) => padX + (idx / (points.length - 1)) * (width - 2 * padX);
-            const getY = (val) => height - padY - ((val - minVal) / range) * (height - 2 * padY);
-
-            const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${getX(i).toFixed(1)} ${getY(p.pnl).toFixed(1)}`).join(' ');
-            const areaD = `${pathD} L ${getX(points.length - 1).toFixed(1)} ${height - padY} L ${getX(0).toFixed(1)} ${height - padY} Z`;
-
-            const zeroY = getY(0).toFixed(1);
-            const strokeColor = points[points.length - 1].pnl >= 0 ? '#10b981' : '#f43f5e';
-            const gradId = 'equityGrad-' + Math.random().toString(36).substring(7);
-
-            wrapper.innerHTML = `
-                <svg width="${width}" height="${height}" class="w-full h-full overflow-visible">
-                    <defs>
-                        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="${strokeColor}" stop-opacity="0.35"/>
-                            <stop offset="100%" stop-color="${strokeColor}" stop-opacity="0.0"/>
-                        </linearGradient>
-                    </defs>
-                    <line x1="${padX}" y1="${zeroY}" x2="${width - padX}" y2="${zeroY}" stroke="#334155" stroke-dasharray="3,3" stroke-width="1"/>
-                    <path d="${areaD}" fill="url(#${gradId})" />
-                    <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-                    <circle cx="${getX(points.length - 1)}" cy="${getY(points[points.length - 1].pnl)}" r="4.5" fill="${strokeColor}" stroke="#ffffff" stroke-width="1.5"/>
-                </svg>
-            `;
+            wrapper.innerHTML = '';
+            
+            const chart = LightweightCharts.createChart(wrapper, {
+                width: wrapper.clientWidth,
+                height: 240,
+                layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#9ca3af' },
+                grid: { vertLines: { color: 'rgba(255, 255, 255, 0.05)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
+                rightPriceScale: { borderVisible: false },
+                timeScale: { borderVisible: false, timeVisible: true }
+            });
+            const lineSeries = chart.addAreaSeries({
+                lineColor: points[points.length-1].pnl >= 0 ? '#10b981' : '#f43f5e',
+                topColor: points[points.length-1].pnl >= 0 ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.4)',
+                bottomColor: 'rgba(0, 0, 0, 0.0)',
+                lineWidth: 2
+            });
+            
+            const data = [];
+            let lastTime = 0;
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+                let ts = p.ts ? Math.floor(p.ts) : (Math.floor(Date.now() / 1000) - (points.length - i) * 60);
+                if (ts <= lastTime) { ts = lastTime + 1; }
+                data.push({ time: ts, value: p.pnl });
+                lastTime = ts;
+            }
+            lineSeries.setData(data);
+            chart.timeScale().fitContent();
         }
+
+
 
         // Update execution panel from status data
         function updateExecPanel(s) {

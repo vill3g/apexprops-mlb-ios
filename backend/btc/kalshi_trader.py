@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 import base64
 import json
+import math
 import os
 import threading
 import time
@@ -165,9 +166,10 @@ def paper_exit_price(ticker: str, side: str, count: float, best_bid: float, cush
 
 
 class KalshiTrader:
-    def __init__(self, key_id: Optional[str] = None, private_key_pem: Optional[str] = None):
+    def __init__(self, key_id: Optional[str] = None, private_key_pem: Optional[str] = None, fail_fast: bool = False):
         self.key_id = key_id or os.environ.get("KALSHI_KEY_ID")
         self.private_key_pem = private_key_pem or os.environ.get("KALSHI_PRIVATE_KEY")
+        self.fail_fast = fail_fast
         self._private_key_obj = None
         self._order_submit_lock = threading.Lock()
 
@@ -236,24 +238,34 @@ class KalshiTrader:
             "Accept": "application/json"
         }
 
-    def get_balance(self, force_refresh: bool = False) -> Dict[str, Any]:
+    def get_balance(self, force_refresh: bool = False, fail_fast: Optional[bool] = None) -> Dict[str, Any]:
         """
         Retrieves live portfolio balance and dollar breakdown (cached for 4.0s for sub-ms polling).
-        Protected with exponential backoff on HTTP 429 and network errors.
+        Protected with exponential backoff on HTTP 429 and network errors, or immediate fail-fast.
         """
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
         now = time.time()
         with self._lock:
             if not force_refresh and self._cached_balance and (now - self._cached_balance_time < 4.0):
                 return self._cached_balance
 
         path = "/trade-api/v2/portfolio/balance"
-        max_attempts = 3
+        max_attempts = 1 if use_fail_fast else 3
         backoff = 1.0
         for attempt in range(1, max_attempts + 1):
             try:
                 headers = self._sign_headers("GET", path)
                 resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
                 if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if resp.status_code == 429 and use_fail_fast:
+                        logger.warning("[KalshiTrader] get_balance received HTTP 429 (fail_fast=True). Failing fast without sleep.")
+                        return {
+                            "success": False,
+                            "error": f"Kalshi 429 rate limit exceeded: {resp.text}",
+                            "status_code": 429,
+                            "balance_dollars": 0.0,
+                            "balance_cents": 0
+                        }
                     if attempt < max_attempts:
                         logger.warning(
                             f"[KalshiTrader] get_balance received HTTP {resp.status_code}, "
@@ -287,6 +299,14 @@ class KalshiTrader:
                     "balance_cents": 0
                 }
             except (requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if use_fail_fast:
+                    logger.warning(f"[KalshiTrader] get_balance network error ({e}) with fail_fast=True. Failing fast without sleep.")
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "balance_dollars": 0.0,
+                        "balance_cents": 0
+                    }
                 if attempt < max_attempts:
                     logger.warning(
                         f"[KalshiTrader] get_balance network error ({e}), "
@@ -649,9 +669,15 @@ class KalshiTrader:
 
         path = f"/trade-api/v2/markets/{quote(clean_ticker, safe='')}"
         try:
+            headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
+            if self.is_authenticated():
+                try:
+                    headers = self._sign_headers("GET", path)
+                except Exception:
+                    pass
             resp = self.session.get(
                 f"{BASE_URL}{path}",
-                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
+                headers=headers,
                 timeout=5.0,
             )
             if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
@@ -914,19 +940,23 @@ class KalshiTrader:
         except Exception as e:
             return {"success": False, "error": f"Kalshi close request failed: {e}"}
 
-    def get_positions(self) -> Dict[str, Any]:
+    def get_positions(self, fail_fast: Optional[bool] = None) -> Dict[str, Any]:
         """
         Fetch current portfolio open positions.
-        Protected with exponential backoff on HTTP 429 and network errors.
+        Protected with exponential backoff on HTTP 429 and network errors, or immediate fail-fast.
         """
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
         path = "/trade-api/v2/portfolio/positions"
-        max_attempts = 3
+        max_attempts = 1 if use_fail_fast else 3
         backoff = 1.0
         for attempt in range(1, max_attempts + 1):
             try:
                 headers = self._sign_headers("GET", path)
                 resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
                 if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if resp.status_code == 429 and use_fail_fast:
+                        logger.warning("[KalshiTrader] get_positions received HTTP 429 (fail_fast=True). Failing fast without sleep.")
+                        return {"success": False, "error": f"Kalshi 429 rate limit exceeded: {resp.text}", "status_code": 429, "positions": []}
                     if attempt < max_attempts:
                         logger.warning(
                             f"[KalshiTrader] get_positions received HTTP {resp.status_code}, "
@@ -940,6 +970,9 @@ class KalshiTrader:
                     return {"success": True, "positions": data.get("market_positions", [])}
                 return {"success": False, "error": resp.text, "positions": []}
             except (requests.exceptions.RequestException, requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if use_fail_fast:
+                    logger.warning(f"[KalshiTrader] get_positions network error ({e}) with fail_fast=True. Failing fast without sleep.")
+                    return {"success": False, "error": str(e), "positions": []}
                 if attempt < max_attempts:
                     logger.warning(
                         f"[KalshiTrader] get_positions network error ({e}), "
@@ -1180,7 +1213,8 @@ class KalshiTrader:
             if reconciled is not None:
                 return reconciled
             if attempt == 0:
-                time.sleep(1.5)
+                if not getattr(self, "fail_fast", False):
+                    time.sleep(1.5)
         logger.error(f"[KalshiTrader] BUY outcome UNKNOWN for {ticker} (client_order_id={client_order_id}): {err}")
         return {
             "success": False,
@@ -1194,6 +1228,428 @@ class KalshiTrader:
         with self._order_submit_lock:
             return self._place_order_internal(*args, **kwargs)
 
+    def place_sports_order(self, *args, **kwargs) -> Dict[str, Any]:
+        with self._order_submit_lock:
+            return self._place_sports_order_internal(*args, **kwargs)
+
+    def _place_sports_order_internal(
+        self,
+        ticker: str,
+        side: str,  # 'yes' or 'no'
+        count: int = 1,
+        limit_price_dollars: Optional[float] = None,
+        dry_run: bool = True,
+        order_type: str = "limit",
+        slippage_buffer_dollars: Optional[float] = None,
+        available_balance: Optional[float] = None,
+        fail_fast: Optional[bool] = None
+    ) -> Dict[str, Any]:
+        """
+        Executes an order on an exact Kalshi sports market contract (e.g. KXNFLGAME-..., KXATPMATCH-..., KXMLB-...).
+        In dry_run=True, simulates fill against live quote or provided price.
+        In dry_run=False, verifies the exact market on Kalshi, checks balance on Exchange 0 (Main/Cash),
+        signs and submits an IOC limit order to Kalshi's V2 trade API.
+        """
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
+        try:
+            if not isinstance(count, (int, float)) or count <= 0:
+                return {"success": False, "error": f"Invalid order count: {count}. Must be a positive whole integer."}
+            if isinstance(count, float) and not count.is_integer():
+                return {"success": False, "error": f"Invalid fractional contract count: {count}. Kalshi event contracts require whole integers."}
+            count_int = int(count)
+        except Exception:
+            return {"success": False, "error": f"Invalid order count: {count}."}
+
+        clean_ticker = str(ticker or "").strip()
+        if not clean_ticker:
+            return {"success": False, "error": "Missing sports market ticker."}
+
+        side_clean = str(side or "").lower().strip()
+        if side_clean not in ["yes", "no"]:
+            return {"success": False, "error": f"Invalid side: {side}. Must be 'yes' or 'no'."}
+
+        client_order_id = str(uuid.uuid4())
+        buf = 0.04
+        if slippage_buffer_dollars is not None:
+            try:
+                buf = max(0.0, min(float(slippage_buffer_dollars), 0.15))
+            except (ValueError, TypeError):
+                buf = 0.04
+
+        # 1. Check for dummy/paper synthetic tickers
+        is_dummy = (
+            clean_ticker.startswith("KALSHI-") or
+            clean_ticker.endswith("-MKT") or
+            clean_ticker.endswith("_SYNTH") or
+            not clean_ticker.startswith("KX")
+        )
+
+        if dry_run:
+            sim_price = float(limit_price_dollars) if (limit_price_dollars is not None and 0.01 <= float(limit_price_dollars) <= 0.99) else 0.50
+            if not is_dummy:
+                try:
+                    q = self.get_market_quote(clean_ticker)
+                    if q.get("success"):
+                        m_obj = q.get("market", {})
+                        if side_clean == "yes":
+                            ask_val = m_obj.get("yes_ask_dollars") or (float(m_obj.get("yes_ask", 0)) / 100.0 if m_obj.get("yes_ask") else None) or m_obj.get("last_price_dollars")
+                        else:
+                            ask_val = m_obj.get("no_ask_dollars") or (float(m_obj.get("no_ask", 0)) / 100.0 if m_obj.get("no_ask") else None) or (1.0 - float(m_obj.get("last_price_dollars", 0.5)))
+                        if ask_val is not None and 0.01 <= float(ask_val) <= 0.99:
+                            sim_price = round(float(ask_val), 4)
+                except Exception:
+                    pass
+
+            cost = round(sim_price * count_int, 4)
+            return {
+                "success": True,
+                "mode": "PAPER",
+                "order_id": f"sim_sports_{int(time.time())}_{uuid.uuid4().hex[:8]}",
+                "client_order_id": client_order_id,
+                "ticker": clean_ticker,
+                "side": side_clean.upper(),
+                "action": "BUY",
+                "count": count_int,
+                "requested_count": count_int,
+                "requested_price": sim_price,
+                "filled_price": sim_price,
+                "total_cost": cost,
+                "slippage_buffer": buf,
+                "status": "FILLED (SIMULATED)",
+                "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                "message": f"Simulated sports BUY of {count_int} {side_clean.upper()} on {clean_ticker} @ ${sim_price:.2f}"
+            }
+
+        # 2. LIVE order execution
+        if is_dummy:
+            return {
+                "success": False,
+                "error": f"Cannot execute live order on synthetic or non-Kalshi ticker '{clean_ticker}'."
+            }
+
+        if not self.is_authenticated():
+            return {
+                "success": False,
+                "error": "Kalshi API credentials not configured or private key invalid."
+            }
+
+        quote_res = self.get_market_quote(clean_ticker)
+        if not quote_res.get("success"):
+            # Clean ticker might be an event ticker (e.g. KXATPMATCH-26OCT05BELMUL) rather than a market ticker.
+            # Attempt event lookup to resolve market ticker.
+            try:
+                ev_path = f"/trade-api/v2/events/{quote(clean_ticker, safe='')}"
+                headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
+                if self.is_authenticated():
+                    try:
+                        headers = self._sign_headers("GET", ev_path)
+                    except Exception:
+                        pass
+                ev_resp = self.session.get(
+                    f"{BASE_URL}{ev_path}",
+                    params={"with_nested_markets": True},
+                    headers=headers,
+                    timeout=5.0
+                )
+                if ev_resp.status_code == 200:
+                    ev_data = ev_resp.json().get("event", {})
+                    ev_markets = ev_data.get("markets", [])
+                    if ev_markets:
+                        open_markets = [m for m in ev_markets if str(m.get("status") or "").lower() in ("active", "open")]
+                        cand_markets = open_markets if open_markets else ev_markets
+                        chosen_m = cand_markets[0]
+                        resolved_ticker = chosen_m.get("ticker")
+                        if resolved_ticker:
+                            logger.info(f"[KalshiTrader] Resolved event ticker '{clean_ticker}' to market ticker '{resolved_ticker}'")
+                            clean_ticker = resolved_ticker
+                            quote_res = self.get_market_quote(clean_ticker)
+            except Exception as ev_err:
+                logger.warning(f"[KalshiTrader] Failed event fallback lookup for {clean_ticker}: {ev_err}")
+
+        if not quote_res.get("success"):
+            return {
+                "success": False,
+                "error": f"Market '{clean_ticker}' verification failed: {quote_res.get('error', 'Market not open')}"
+            }
+
+        market_info = quote_res.get("market", {})
+        close_time_str = market_info.get("close_time")
+        if close_time_str:
+            try:
+                ct = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                sec_left = (ct - datetime.now(timezone.utc)).total_seconds()
+                if sec_left < 30:
+                    return {
+                        "success": False,
+                        "error": f"Sports market '{clean_ticker}' expires in {int(sec_left)}s (< 30s remaining). Order rejected."
+                    }
+            except Exception as e:
+                logger.debug(f"close_time parse error: {e}")
+
+        if side_clean == "yes":
+            m_ask = market_info.get("yes_ask_dollars")
+            if m_ask is None and market_info.get("yes_ask") is not None:
+                m_ask = float(market_info.get("yes_ask")) / 100.0
+            if m_ask is None:
+                m_ask = market_info.get("last_price_dollars")
+        else:
+            m_ask = market_info.get("no_ask_dollars")
+            if m_ask is None and market_info.get("no_ask") is not None:
+                m_ask = float(market_info.get("no_ask")) / 100.0
+            if m_ask is None and market_info.get("last_price_dollars") is not None:
+                m_ask = round(1.0 - float(market_info.get("last_price_dollars")), 4)
+
+        try:
+            market_ask_flt = float(m_ask) if m_ask is not None else 0.50
+        except (ValueError, TypeError):
+            market_ask_flt = 0.50
+
+        if limit_price_dollars is not None and 0.01 <= float(limit_price_dollars) <= 0.99:
+            raw_price = float(limit_price_dollars)
+        else:
+            raw_price = market_ask_flt
+
+        outcome_price = max(0.01, min(raw_price + buf, 0.99))
+
+        bal_res = self.get_balance(force_refresh=True)
+        if not bal_res.get("success"):
+            return {
+                "success": False,
+                "error": f"Unable to verify Kalshi live balance: {bal_res.get('error', 'Balance error')}"
+            }
+
+        target_ex = market_info.get("exchange_index")
+        if target_ex is None:
+            target_ex = 0
+        else:
+            try:
+                target_ex = int(target_ex)
+            except (ValueError, TypeError):
+                target_ex = 0
+
+        raw_bal = bal_res.get("raw", {})
+        breakdown = raw_bal.get("balance_breakdown", [])
+
+        total_live_bal = float(bal_res.get("balance_dollars", 0.0))
+        ex0_bal = total_live_bal
+        shard_bal = total_live_bal if target_ex == 0 else 0.0
+
+        for b_item in breakdown:
+            try:
+                b_idx = int(b_item.get("exchange_index", 0))
+                b_val = float(b_item.get("balance", 0.0))
+                if b_idx == 0:
+                    ex0_bal = b_val
+                if b_idx == target_ex:
+                    shard_bal = b_val
+            except (ValueError, TypeError):
+                pass
+
+        est_cost = outcome_price * count_int
+
+        # If order is on a non-zero exchange shard and balance on that shard is insufficient,
+        # automatically transfer required funds from Exchange 0 (Main/Cash)
+        if target_ex != 0 and shard_bal < est_cost:
+            needed = round(math.ceil((est_cost - shard_bal) * 100) / 100.0, 2)
+            if ex0_bal < needed:
+                return {
+                    "success": False,
+                    "error": f"Insufficient funds on Exchange {target_ex} (${shard_bal:.2f}) and Exchange 0 (${ex0_bal:.2f}) to cover required ${est_cost:.2f}."
+                }
+            logger.info(f"[KalshiTrader] Auto-transferring ${needed:.2f} from Exchange 0 to Exchange {target_ex} for sports order...")
+            transfer_res = self.transfer_between_exchanges(
+                source_exchange=0,
+                destination_exchange=target_ex,
+                amount_dollars=needed
+            )
+            if not transfer_res.get("success"):
+                return {
+                    "success": False,
+                    "error": f"Auto-transfer of ${needed:.2f} to Exchange {target_ex} failed: {transfer_res.get('error')}"
+                }
+            shard_bal = round(shard_bal + needed, 2)
+
+        live_balance = shard_bal if target_ex != 0 else ex0_bal
+        if live_balance < est_cost:
+            return {
+                "success": False,
+                "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
+            }
+
+        v2_side = "bid" if side_clean == "yes" else "ask"
+        book_price = outcome_price if side_clean == "yes" else (1.0 - outcome_price)
+        v2_payload = {
+            "ticker": clean_ticker,
+            "client_order_id": client_order_id,
+            "side": v2_side,
+            "count": f"{count_int}.00",
+            "price": f"{book_price:.4f}",
+            "time_in_force": "immediate_or_cancel",
+            "self_trade_prevention_type": "taker_at_cross",
+            "post_only": False,
+            "cancel_order_on_pause": True,
+            "reduce_only": False,
+        }
+        if target_ex is not None:
+            v2_payload["exchange_index"] = target_ex
+
+        pre_positions = []
+        try:
+            pre_res = self.get_positions()
+            if pre_res.get("success"):
+                pre_positions = pre_res.get("positions", [])
+        except Exception as pre_err:
+            logger.warning(f"[KalshiTrader] Failed to snapshot pre-order positions: {pre_err}")
+
+        path = "/trade-api/v2/portfolio/events/orders"
+        sent_cid = None
+        sent_price = outcome_price
+        max_order_attempts = 1 if use_fail_fast else 3
+        order_backoff = 1.0
+
+        try:
+            for order_attempt in range(1, max_order_attempts + 1):
+                headers = self._sign_headers("POST", path)
+                sent_cid = client_order_id
+                resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
+                if resp.status_code == 429:
+                    if use_fail_fast:
+                        logger.warning("[KalshiTrader] place_sports_order received HTTP 429 (fail_fast=True). Failing fast without sleep.")
+                        return {
+                            "success": False,
+                            "error": f"Kalshi 429 rate limit exceeded: {resp.text}",
+                            "status_code": 429,
+                            "ambiguous": False
+                        }
+                    if order_attempt < max_order_attempts:
+                        logger.warning(f"[KalshiTrader] place_sports_order received HTTP 429, backing off {order_backoff:.1f}s...")
+                        time.sleep(order_backoff)
+                        order_backoff *= 2.0
+                        continue
+                break
+
+            if resp.status_code in [200, 201]:
+                self._cached_balance_time = 0.0
+                res_data = resp.json()
+                fill_count = float(res_data.get("fill_count", "0") or "0")
+                if fill_count == 0:
+                    try:
+                        fresh_q = self.get_market_quote(clean_ticker)
+                        if fresh_q.get("success"):
+                            fresh_m = fresh_q.get("market", {})
+                            if side_clean == "yes":
+                                fresh_ask = fresh_m.get("yes_ask_dollars") or (float(fresh_m.get("yes_ask", 0)) / 100.0 if fresh_m.get("yes_ask") else None)
+                            else:
+                                fresh_ask = fresh_m.get("no_ask_dollars") or (float(fresh_m.get("no_ask", 0)) / 100.0 if fresh_m.get("no_ask") else None)
+                            if fresh_ask is not None:
+                                f_ask = float(fresh_ask)
+                                if 0.02 <= f_ask <= 0.95 and abs(f_ask - raw_price) <= 0.06:
+                                    retry_price = max(0.01, min(f_ask + buf, 0.99))
+                                    retry_bp = retry_price if side_clean == "yes" else (1.0 - retry_price)
+                                    retry_cid = str(uuid.uuid4())
+                                    new_payload = dict(v2_payload)
+                                    new_payload["client_order_id"] = retry_cid
+                                    new_payload["price"] = f"{retry_bp:.4f}"
+                                    sent_cid = retry_cid
+                                    sent_price = retry_price
+                                    retry_resp = self.order_session.post(f"{BASE_URL}{path}", json=new_payload, headers=self._sign_headers("POST", path), timeout=5.0)
+                                    if retry_resp.status_code in [200, 201]:
+                                        retry_data = retry_resp.json()
+                                        retry_fill = float(retry_data.get("fill_count", "0") or "0")
+                                        if retry_fill > 0:
+                                            avg_r_fill = float(retry_data.get("average_fill_price", str(retry_bp)) or str(retry_bp))
+                                            avg_r_outcome = round(avg_r_fill if side_clean == "yes" else (1.0 - avg_r_fill), 4)
+                                            return {
+                                                "success": True,
+                                                "mode": "LIVE",
+                                                "order_id": retry_data.get("order_id", retry_cid),
+                                                "client_order_id": retry_data.get("client_order_id", retry_cid),
+                                                "ticker": clean_ticker,
+                                                "side": side_clean.upper(),
+                                                "action": "BUY",
+                                                "count": retry_fill,
+                                                "requested_count": count_int,
+                                                "requested_price": f_ask,
+                                                "filled_price": avg_r_outcome,
+                                                "total_cost": round(avg_r_outcome * retry_fill, 4),
+                                                "slippage_buffer": buf,
+                                                "status": "FILLED",
+                                                "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                                                "raw_response": retry_data
+                                            }
+                    except Exception as retry_err:
+                        logger.warning(f"[KalshiTrader] Sports IOC retry error: {retry_err}")
+                        if sent_cid != client_order_id:
+                            return self._resolve_uncertain_buy(
+                                ticker=clean_ticker, client_order_id=sent_cid, side=side_clean,
+                                pre_positions=pre_positions, requested_count=float(count_int),
+                                price=sent_price, slippage_buffer=buf, err=retry_err,
+                            )
+                    return {
+                        "success": False,
+                        "error": "Kalshi Order Unfilled: IOC limit order did not cross the book due to price movement or low liquidity.",
+                        "raw_response": res_data
+                    }
+
+                avg_book_fill = float(res_data.get("average_fill_price", str(book_price)) or str(book_price))
+                avg_outcome_fill = round(avg_book_fill if side_clean == "yes" else (1.0 - avg_book_fill), 4)
+                return {
+                    "success": True,
+                    "mode": "LIVE",
+                    "order_id": res_data.get("order_id", client_order_id),
+                    "client_order_id": res_data.get("client_order_id", client_order_id),
+                    "ticker": clean_ticker,
+                    "side": side_clean.upper(),
+                    "action": "BUY",
+                    "count": fill_count,
+                    "requested_count": count_int,
+                    "requested_price": raw_price,
+                    "filled_price": avg_outcome_fill,
+                    "total_cost": round(avg_outcome_fill * fill_count, 4),
+                    "slippage_buffer": buf,
+                    "status": "FILLED",
+                    "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                    "raw_response": res_data
+                }
+            else:
+                err_text = resp.text
+                user_msg = err_text
+                try:
+                    err_json = resp.json()
+                    user_msg = err_json.get("error", {}).get("message") or err_json.get("message") or err_text
+                except Exception:
+                    pass
+                return {
+                    "success": False,
+                    "order_id": "",
+                    "ambiguous": False,
+                    "error": f"Kalshi Order Rejected (HTTP {resp.status_code}): {user_msg}",
+                    "payload_sent": v2_payload
+                }
+        except requests.exceptions.ConnectTimeout as e:
+            return {
+                "success": False,
+                "order_id": "",
+                "ambiguous": False,
+                "error": f"Could not reach Kalshi (connect timeout); order not sent: {e}"
+            }
+        except Exception as e:
+            if sent_cid is None:
+                return {
+                    "success": False,
+                    "order_id": "",
+                    "ambiguous": False,
+                    "error": f"Order execution exception before sending: {str(e)}"
+                }
+            logger.warning(
+                f"[KalshiTrader] Lost response for sports order {sent_cid} on {clean_ticker} ({type(e).__name__}: {e}). Checking for fill..."
+            )
+            return self._resolve_uncertain_buy(
+                ticker=clean_ticker, client_order_id=sent_cid, side=side_clean,
+                pre_positions=pre_positions, requested_count=float(count_int),
+                price=sent_price, slippage_buffer=buf, err=e,
+            )
+
     def _place_order_internal(
         self,
         ticker: str,
@@ -1203,8 +1659,10 @@ class KalshiTrader:
         dry_run: bool = True,
         order_type: str = "limit",
         slippage_buffer_dollars: Optional[float] = None,
-        available_balance: Optional[float] = None
+        available_balance: Optional[float] = None,
+        fail_fast: Optional[bool] = None
     ) -> Dict[str, Any]:
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
         """
         Executes a buy order on the specified contract side (YES = above target, NO = below target).
         In dry_run=True, simulates the trade against the same real-market constraints a live order
@@ -1344,6 +1802,18 @@ class KalshiTrader:
         if ticker and ticker.startswith("KX"):
             series_t = ticker.split("-")[0]
 
+        # Non-15M contracts (such as sports markets) route to sports order handler
+        if not series_t.endswith("15M"):
+            return self._place_sports_order_internal(
+                ticker=ticker,
+                side=side,
+                count=count,
+                limit_price_dollars=limit_price_dollars,
+                dry_run=dry_run,
+                slippage_buffer_dollars=slippage_buffer_dollars,
+                available_balance=available_balance
+            )
+
         # Fast-Path: Use active market (from cache or fast fetch) without redundant GET roundtrips
         # Requires at least 30s before expiration to prevent entering dying contracts
         verified_market = self.get_active_15m_market(series_ticker=series_t, allow_synthetic=False, force_refresh=False, min_seconds_left=30)
@@ -1445,7 +1915,7 @@ class KalshiTrader:
         # failure is resolved as "confirmed fill" or "ambiguous", never as a clean rejection.
         sent_cid = None
         sent_price = outcome_price
-        max_order_attempts = 3
+        max_order_attempts = 1 if use_fail_fast else 3
         order_backoff = 1.0
         try:
             for order_attempt in range(1, max_order_attempts + 1):
@@ -1455,6 +1925,16 @@ class KalshiTrader:
                 resp = self.order_session.post(f"{BASE_URL}{path}", json=v2_payload, headers=headers, timeout=5.0)
 
                 if resp.status_code == 429:
+                    if use_fail_fast:
+                        logger.warning(
+                            f"[KalshiTrader] place_order received HTTP 429 (fail_fast=True). Failing fast without sleep."
+                        )
+                        return {
+                            "success": False,
+                            "error": f"Kalshi 429 rate limit exceeded: {resp.text}",
+                            "status_code": 429,
+                            "ambiguous": False
+                        }
                     if order_attempt < max_order_attempts:
                         logger.warning(
                             f"[KalshiTrader] place_order received HTTP 429, backing off for {order_backoff:.1f}s "
@@ -1625,4 +2105,28 @@ def filled_count(order_res: Dict[str, Any], fallback):
 kalshi_trader = KalshiTrader()
 
 
-
+def get_authenticated_trader_for_user(user_or_id, fail_fast: bool = False) -> Optional[KalshiTrader]:
+    """
+    Returns an authenticated KalshiTrader instance using the user's RSA keys stored in users.db,
+    or None if credentials are missing or invalid.
+    """
+    try:
+        from backend.database.models import get_user_by_id
+        from backend.auth.security import decrypt_kalshi_key
+        user = get_user_by_id(user_or_id) if isinstance(user_or_id, int) else user_or_id
+        if not user:
+            return None
+        key_id = user.get("kalshi_key_id")
+        enc_priv = user.get("kalshi_priv_key_encrypted")
+        if not key_id or not enc_priv:
+            return None
+        priv_pem = decrypt_kalshi_key(enc_priv)
+        if not priv_pem:
+            return None
+        kt = KalshiTrader(key_id=key_id, private_key_pem=priv_pem, fail_fast=fail_fast)
+        if kt.is_authenticated():
+            return kt
+        return None
+    except Exception as e:
+        logger.error(f"[KalshiTrader] Error resolving authenticated trader for user: {e}")
+        return None

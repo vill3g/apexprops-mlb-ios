@@ -22,7 +22,7 @@ from backend.btc.kalshi_trader import filled_count as _filled_count
 
 logger = logging.getLogger(__name__)
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class CloseTradeRequest(BaseModel):
@@ -63,8 +63,34 @@ class UserConfigRequest(BaseModel):
     class_weight: Optional[str] = None
     xgb_estimators: Optional[int] = None
     xgb_max_depth: Optional[int] = None
+    ai_enabled: Optional[bool] = None
     trading_universe: Optional[str] = None
+
+    @field_validator("trading_universe")
+    @classmethod
+    def validate_trading_universe(cls, v):
+        if v is not None:
+            norm = str(v).strip().upper()
+            if norm not in {"FINANCIAL", "SPORTS", "BOTH", "ALL"}:
+                raise ValueError(f"Invalid trading_universe '{v}'. Allowed: 'FINANCIAL', 'SPORTS', 'BOTH', 'ALL'")
+            return norm
+        return v
     min_sports_confidence: Optional[float] = None
+    min_sports_edge: Optional[float] = None
+    sports_max_wager: Optional[float] = None
+    sports_trade_size_dollars: Optional[float] = None
+    sports_trade_size: Optional[float] = None
+    sports_include_live: Optional[bool] = None
+    sports_active_leagues: Optional[str] = None
+    sports_min_price: Optional[float] = None
+    sports_max_price: Optional[float] = None
+    sports_max_daily_trades: Optional[int] = None
+    sports_max_open_trades: Optional[int] = None
+    sports_max_daily_risk: Optional[float] = None
+    sports_tp_enabled: Optional[bool] = None
+    sports_tp_pct: Optional[float] = None
+    sports_use_kelly: Optional[bool] = None
+    sports_market_types: Optional[str] = None
     xgb_learning_rate: Optional[float] = None
     ignore_pass_technical: Optional[bool] = None
     one_shot_ai: Optional[bool] = None
@@ -540,13 +566,32 @@ def _market_finished(ticker):
 
 
 _KNOWN_ASSETS = ("BTC", "ETH", "GOLD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "NDQ", "SOL", "DOGE")
+_SPORTS_LIST = ("NFL", "MLB", "NBA", "NHL", "NPB", "KBO", "NPB/KBO", "NPB_KBO", "SOC", "SOCCER", "UFC", "MMA", "TEN", "TENNIS", "SPORTS")
+
+
+def _sport_from_ticker(ticker: str) -> Optional[str]:
+    tk = str(ticker or "").upper()
+    if tk.startswith("KALSHI-"):
+        parts = tk.split("-")
+        if len(parts) > 1 and parts[1] in _SPORTS_LIST:
+            return parts[1]
+    for sp in ("NFL", "MLB", "NBA", "NHL", "NPB", "KBO", "SOC", "UFC", "TEN"):
+        if f"KX{sp}" in tk or f"-{sp}-" in tk or tk.startswith(f"{sp}-"):
+            return sp
+    return None
 
 
 def _asset_from_ticker(ticker, stored=None) -> str:
-    """Resolve a trade's asset. 'KXSOL15M-26OCT030530-30' -> 'SOL', 'KXEURUSD15M_SYNTH' -> 'EURUSD'.
+    """Resolve a trade's asset. 'KXSOL15M-26OCT030530-30' -> 'SOL', 'KXEURUSD15M_SYNTH' -> 'EURUSD', sports tickers -> sport name.
     The ticker's series prefix is the source of truth; a stored asset is used only when the
     ticker can't be parsed; then a substring match; then 'OTHER' (never silently 'BTC')."""
+    s = str(stored or "").upper().strip()
+    if s in _SPORTS_LIST or s in _KNOWN_ASSETS:
+        return s
     tk = str(ticker or "").upper()
+    sp = _sport_from_ticker(tk)
+    if sp:
+        return sp
     series = tk.split("-", 1)[0].replace("_SYNTH", "")
     if series.startswith("KX"):
         series = series[2:]
@@ -554,9 +599,6 @@ def _asset_from_ticker(ticker, stored=None) -> str:
         series = series[:-3]
     if series in _KNOWN_ASSETS:
         return series
-    s = str(stored or "").upper().strip()
-    if s in _KNOWN_ASSETS:
-        return s
     for a in _KNOWN_ASSETS:
         if a in tk:
             return a
@@ -568,7 +610,15 @@ from fastapi import Request
 def get_dashboard_stats(request: Request, response: Response, current_user: dict = Depends(get_current_user)):
     
     user_id = current_user['id']
-    trades = TradeStore.get_recent_trades(user_id, limit=100)
+    open_trades = TradeStore.get_open_trades(user_id)
+    recent = TradeStore.get_recent_trades(user_id, limit=200)
+    
+    trades = []
+    seen = set()
+    for t in open_trades + recent:
+        if t.get("id") not in seen:
+            seen.add(t.get("id"))
+            trades.append(t)
     
     trading_mode = current_user.get('trading_mode', 'PAPER')
     
@@ -595,9 +645,17 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
 
         if t.get("status") == "OPEN":
             series = tk.split("-")[0] if "-" in tk else f"KX{t['asset']}15M"
-            if series not in market_by_series:
-                market_by_series[series] = get_kalshi_15m_market(series_ticker=series)
-            m = market_by_series.get(series)
+            if tk not in market_by_series:
+                m_direct = get_kalshi_market_by_ticker(tk)
+                if m_direct:
+                    market_by_series[tk] = m_direct
+                else:
+                    # Fallback
+                    if series not in market_by_series:
+                        market_by_series[series] = get_kalshi_15m_market(series_ticker=series)
+                    market_by_series[tk] = market_by_series.get(series)
+
+            m = market_by_series.get(tk)
 
             side = str(t.get("side") or "YES").upper()
             entry = float(t.get("entry_price") or 0.5)
@@ -617,10 +675,16 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
                         else:
                             exit_price = float(m.get("yes_bid", entry) if side == "YES" else m.get("no_bid", entry))
                     else:
-                        exit_price = float(m.get("yes_bid", entry) if side == "YES" else m.get("no_bid", entry))
-                        if exit_price <= 0:
-                            prob = float(m.get("yes_prob" if side == "YES" else "no_prob", 50.0)) / 100.0
-                            exit_price = prob if prob > 0 else entry
+                        bid = float(m.get("yes_bid") or 0.0) if side == "YES" else float(m.get("no_bid") or 0.0)
+                        if bid > 0:
+                            exit_price = bid
+                        else:
+                            # If no bid, estimate from ask or default to entry to avoid showing arbitrary huge losses
+                            ask = float(m.get("yes_ask") or 0.0) if side == "YES" else float(m.get("no_ask") or 0.0)
+                            if ask > 0.05:
+                                exit_price = ask - 0.05
+                            else:
+                                exit_price = entry
                 else:
                     exit_price = entry
             else:
@@ -661,7 +725,7 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
             try:
                 priv = decrypt_kalshi_key(current_user['kalshi_priv_key_encrypted'])
                 if priv:
-                    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv)
+                    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv, fail_fast=True)
                     if kt.is_authenticated():
                         bal = kt.get_balance()
                         if bal.get('success'):
@@ -876,6 +940,27 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
                 logger.warning(f"Failed to parse exit_price {exit_p}: {e}")
                 exit_p = None
 
+        ml_data = t.get("ml_reasoning")
+        if isinstance(ml_data, str) and ml_data.strip():
+            try:
+                ml_data = json.loads(ml_data)
+            except Exception:
+                ml_data = {}
+        if not isinstance(ml_data, dict):
+            ml_data = {}
+
+        trade_sport = t.get("sport") or ml_data.get("sport") or _sport_from_ticker(ticker)
+        trade_team = t.get("predicted_team") or t.get("team") or ml_data.get("predicted_team")
+        if not trade_team and reason.startswith("AI Edge:"):
+            import re
+            m = re.search(r"AI Edge:\s*([^(]+)", reason)
+            if m:
+                trade_team = m.group(1).strip()
+        if not trade_team and ticker.startswith("KALSHI-"):
+            parts = ticker.split("-")
+            if len(parts) > 2:
+                trade_team = parts[2]
+
         formatted_trades.append({
             "id": t.get("id"),
             "time": time_str,
@@ -910,7 +995,10 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
             "market_regime": t.get("market_regime") or t.get("regime") or "",
             "direction": t.get("direction") or t.get("prediction_direction") or t.get("side", ""),
             "asset": _asset_from_ticker(ticker, t.get("asset")),
-            "live_pnl": t.get("live_pnl", pnl)
+            "live_pnl": t.get("live_pnl", pnl),
+            "sport": trade_sport,
+            "predicted_team": trade_team,
+            "team": trade_team
         })
 
     ret = {
@@ -961,6 +1049,22 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         "min_edge_cents": float(current_user.get("min_edge_cents", 0.0) or 0.0),
         "use_kelly_criterion": bool(current_user.get("use_kelly_criterion", 0)),
         "atr_risk_enabled": bool(current_user.get("atr_risk_enabled", 0)),
+        "trading_universe": current_user.get("trading_universe", "FINANCIAL"),
+        "min_sports_confidence": float(current_user.get("min_sports_confidence", 70.0)),
+        "min_sports_edge": float(current_user.get("min_sports_edge", 3.0)),
+        "sports_max_wager": float(current_user.get("sports_trade_size_dollars") or current_user.get("sports_max_wager", 10.0)),
+        "sports_trade_size_dollars": float(current_user.get("sports_trade_size_dollars") or current_user.get("sports_max_wager", 10.0)),
+        "sports_include_live": bool(current_user.get("sports_include_live", 0)),
+        "sports_active_leagues": current_user.get("sports_active_leagues") or 'NFL,MLB,NPB/KBO,SOC,UFC,TEN,NHL',
+        "sports_min_price": float(current_user.get("sports_min_price") if current_user.get("sports_min_price") is not None else 0.20),
+        "sports_max_price": float(current_user.get("sports_max_price") if current_user.get("sports_max_price") is not None else 0.80),
+        "sports_max_daily_trades": int(current_user.get("sports_max_daily_trades") if current_user.get("sports_max_daily_trades") is not None else 10),
+        "sports_max_open_trades": int(current_user.get("sports_max_open_trades") if current_user.get("sports_max_open_trades") is not None else 5),
+        "sports_max_daily_risk": float(current_user.get("sports_max_daily_risk") if current_user.get("sports_max_daily_risk") is not None else 100.0),
+        "sports_tp_enabled": bool(current_user.get("sports_tp_enabled", 0)),
+        "sports_tp_pct": float(current_user.get("sports_tp_pct") if current_user.get("sports_tp_pct") is not None else 35.0),
+        "sports_use_kelly": bool(current_user.get("sports_use_kelly", 0)),
+        "sports_market_types": current_user.get("sports_market_types") or 'GAME,SPREAD,TOTAL',
         "total_pnl": round(total_pnl, 2),
         "total_pnl_pct": total_pnl_pct,
         "live_open_pnl": round(live_open_pnl, 2),
@@ -1003,9 +1107,12 @@ def update_trade_config(req: TradingModeRequest, current_user: dict = Depends(ge
     if mode == "LIVE":
         has_keys = bool(current_user.get('kalshi_key_id') and current_user.get('kalshi_priv_key_encrypted'))
         if not has_keys and is_owner:
-            from backend.btc.kalshi_trader import _kt
-            if _kt.is_authenticated():
-                has_keys = True
+            try:
+                from backend.btc.kalshi_trader import kalshi_trader
+                if kalshi_trader and kalshi_trader.is_authenticated():
+                    has_keys = True
+            except Exception:
+                pass
                 
         if not has_keys:
             raise HTTPException(
@@ -1099,7 +1206,7 @@ def manual_trade(req: ManualTradeRequest, current_user: dict = Depends(get_curre
             
         priv = decrypt_kalshi_key(current_user['kalshi_priv_key_encrypted'])
         if not priv: raise HTTPException(status_code=400, detail="Invalid kalshi keys.")
-        kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv)
+        kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv, fail_fast=True)
         if not kt.is_authenticated(): raise HTTPException(status_code=400, detail="Failed to auth with Kalshi.")
         
         bal_res = kt.get_balance()
@@ -1182,7 +1289,7 @@ def close_all_trades(current_user: dict = Depends(get_current_user)):
     if mode == 'LIVE':
         priv = decrypt_kalshi_key(current_user.get('kalshi_priv_key_encrypted', ''))
         if not priv: raise HTTPException(status_code=400, detail="Invalid kalshi keys.")
-        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv)
+        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv, fail_fast=True)
         if not kt.is_authenticated(): raise HTTPException(status_code=400, detail="Failed to auth with Kalshi.")
         
         # Map of (ticker, side) -> exit_price
@@ -1248,7 +1355,7 @@ def close_all_trades(current_user: dict = Depends(get_current_user)):
     # 2. PAPER Close
     else:
         total_credit = 0.0
-        kt_pub = KalshiTrader()
+        kt_pub = KalshiTrader(fail_fast=True)
         for t in trades:
             if t.get("status") == "OPEN" and t.get("mode", "PAPER") == "PAPER":
                 entry = float(t.get("entry_price", 0.5))
@@ -1340,7 +1447,7 @@ def close_individual_trade(
     if mode == 'LIVE':
         priv = decrypt_kalshi_key(current_user.get('kalshi_priv_key_encrypted', ''))
         if not priv: raise HTTPException(status_code=400, detail="Invalid kalshi keys.")
-        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv)
+        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv, fail_fast=True)
         if not kt.is_authenticated(): raise HTTPException(status_code=400, detail="Failed to auth with Kalshi.")
         
         if count > 0:
@@ -1365,7 +1472,7 @@ def close_individual_trade(
         if market and market.get("status") == "active" and market.get("ticker") == ticker:
             raw_exit = market.get("yes_bid") if side.upper() == "YES" else market.get("no_bid")
         else:
-            kt_pub = KalshiTrader()
+            kt_pub = KalshiTrader(fail_fast=True)
             quote_data = kt_pub.get_market_quote(ticker)
             if quote_data.get("success"):
                 raw_exit = quote_data.get("yes_bid") if side.upper() == "YES" else quote_data.get("no_bid")
@@ -1376,9 +1483,12 @@ def close_individual_trade(
                     raw_exit = 1.0 if win else 0.0
 
         if raw_exit is None or float(raw_exit) < 0:
-            raise HTTPException(status_code=400, detail="Cannot close: No bids available on orderbook.")
-
-        exit_price = float(raw_exit)
+            if mode == "PAPER":
+                exit_price = entry  # Graceful cancel/refund for paper position
+            else:
+                raise HTTPException(status_code=400, detail="Cannot close: No bids available on orderbook.")
+        else:
+            exit_price = float(raw_exit)
         if 0.0 < exit_price < 1.0:  # still trading (not a $1/$0 settlement) -> Fix D book pricing
             try:
                 from backend.btc.kalshi_trader import paper_exit_price
@@ -1502,6 +1612,27 @@ def take_profit_individual_trade(trade_id: str, current_user: dict = Depends(get
 
 @router.post("/user/config")
 def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_current_user)):
+    sports_wager_val = req.sports_trade_size_dollars if req.sports_trade_size_dollars is not None else (
+        req.sports_trade_size if req.sports_trade_size is not None else (
+            req.sports_max_wager if req.sports_max_wager is not None else float(
+                current_user.get("sports_trade_size_dollars") or current_user.get("sports_max_wager", 10.0)
+            )
+        )
+    )
+
+    if req.ai_enabled is not None:
+        try:
+            update_user_ai_enabled(current_user["id"], req.ai_enabled)
+        except Exception as e:
+            logger.warning(f"Failed to update ai_enabled in set_user_config: {e}")
+
+    if req.trading_universe is not None:
+        try:
+            from backend.database.models import update_user_trading_universe
+            update_user_trading_universe(current_user["id"], req.trading_universe)
+        except Exception as e:
+            logger.warning(f"Failed to update trading_universe in set_user_config: {e}")
+
     update_user_config(
         current_user["id"], 
         req.trade_size_dollars if req.trade_size_dollars is not None else float(current_user.get("trade_size_dollars", 5.0)),
@@ -1536,7 +1667,21 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
         req.notify_market_trends if req.notify_market_trends is not None else bool(current_user.get("notify_market_trends", 1)),
         req.use_kelly_criterion if req.use_kelly_criterion is not None else bool(current_user.get("use_kelly_criterion", 0)),
         req.trading_universe if req.trading_universe is not None else current_user.get("trading_universe", "FINANCIAL"),
-        req.min_sports_confidence if req.min_sports_confidence is not None else float(current_user.get("min_sports_confidence", 70.0))
+        req.min_sports_confidence if req.min_sports_confidence is not None else float(current_user.get("min_sports_confidence", 70.0)),
+        req.min_sports_edge if req.min_sports_edge is not None else float(current_user.get("min_sports_edge", 3.0)),
+        sports_wager_val,
+        req.sports_include_live if req.sports_include_live is not None else bool(current_user.get("sports_include_live", 0)),
+        sports_wager_val,
+        sports_active_leagues=req.sports_active_leagues,
+        sports_min_price=req.sports_min_price,
+        sports_max_price=req.sports_max_price,
+        sports_max_daily_trades=req.sports_max_daily_trades,
+        sports_max_open_trades=req.sports_max_open_trades,
+        sports_max_daily_risk=req.sports_max_daily_risk,
+        sports_tp_enabled=req.sports_tp_enabled,
+        sports_tp_pct=req.sports_tp_pct,
+        sports_use_kelly=req.sports_use_kelly,
+        sports_market_types=req.sports_market_types
     )
 
     if req.edge_gate_enabled is not None or req.min_edge_cents is not None:
@@ -1706,7 +1851,7 @@ def force_ml_trade(current_user: dict = Depends(get_current_user)):
         if not current_user.get('kalshi_key_id') or not current_user.get('kalshi_priv_key_encrypted'):
             raise HTTPException(status_code=400, detail="No Kalshi credentials linked.")
         priv = decrypt_kalshi_key(current_user['kalshi_priv_key_encrypted'])
-        kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv)
+        kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv, fail_fast=True)
         if not kt.is_authenticated():
             raise HTTPException(status_code=400, detail="Kalshi authentication failed.")
             
@@ -1858,7 +2003,7 @@ def reverse_trade(current_user: dict = Depends(get_current_user)):
         priv = decrypt_kalshi_key(current_user.get('kalshi_priv_key_encrypted', ''))
         if not priv:
             raise HTTPException(status_code=400, detail="Invalid kalshi keys for live reversal.")
-        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv)
+        kt = KalshiTrader(key_id=current_user.get('kalshi_key_id'), private_key_pem=priv, fail_fast=True)
         if not kt.is_authenticated():
             raise HTTPException(status_code=400, detail="Kalshi authentication failed.")
 
@@ -2213,7 +2358,7 @@ def get_kalshi_exchange_balances(current_user: dict = Depends(get_current_user))
     priv = decrypt_kalshi_key(current_user['kalshi_priv_key_encrypted'])
     if not priv:
         raise HTTPException(status_code=400, detail="Could not decrypt Kalshi private key.")
-    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv)
+    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv, fail_fast=True)
     if not kt.is_authenticated():
         raise HTTPException(status_code=400, detail="Kalshi authentication failed. Check your API credentials.")
     
@@ -2228,7 +2373,7 @@ def transfer_kalshi_exchange_funds(req: ExchangeTransferRequest, current_user: d
     priv = decrypt_kalshi_key(current_user['kalshi_priv_key_encrypted'])
     if not priv:
         raise HTTPException(status_code=400, detail="Could not decrypt Kalshi private key.")
-    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv)
+    kt = KalshiTrader(key_id=current_user['kalshi_key_id'], private_key_pem=priv, fail_fast=True)
     if not kt.is_authenticated():
         raise HTTPException(status_code=400, detail="Kalshi authentication failed.")
     
@@ -2252,7 +2397,7 @@ from backend.database.trade_store import daily_limit_reason
 import json as _json
 from backend.database.trade_store import _trade_epoch
 from backend.btc.auto_executor.saas_broadcaster import SIGNAL_SNAPSHOT_PATH, _snapshot_key
-from backend.btc.kalshi_client import get_kalshi_15m_market
+from backend.btc.kalshi_client import get_kalshi_15m_market, get_kalshi_market_by_ticker
 from backend.database.trade_store import TradeStore
 from backend.btc.fees import calculate_realized_edge_cents
 from backend.auth.security import decrypt_kalshi_key

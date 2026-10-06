@@ -167,3 +167,108 @@ Produce a comprehensive evaluation report artifact containing concrete, actionab
 - [ ] A reviewer agent confirms the report identifies at least two specific mathematical or logical flaws in the current interval or multiple-entry strategy.
 - [ ] A reviewer agent verifies the report cites exact file paths and specific functions where the problematic logic resides.
 - [ ] A reviewer agent confirms the report provides concrete, actionable pseudocode or code snippets to fix the identified issues, rather than vague conceptual advice.
+
+
+## 2026-10-05T09:54:52Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Small, focused team
+
+This is a single self-contained fix; keep it small and focused. Fix the `kalshi-ai-trader` sports dashboard to reliably display available Kalshi events for each active sport tab (especially ensuring NPB and KBO are combined correctly) and wire the UI so the AI prediction engine evaluates and executes trades on those specific events.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: development
+
+## Requirements
+
+### R1. Display Kalshi Events by Sport
+The backend and frontend must correctly filter and display available Kalshi events based on the currently selected sports tab (NFL, MLB, NHL, NPB/KBO, SOC, UFC, TEN). The NPB/KBO tab specifically must combine both Japan (NPB) and Korea (KBO) Kalshi events. The frontend must not aggressively cache empty responses.
+
+### R2. On-Demand AI Prediction & Execution
+When an event is available and selected, the system must query the local AI prediction engine (`http://127.0.0.1:8057`) for that specific event, evaluate the edge/confidence, and execute the trade if the criteria are met.
+
+## Acceptance Criteria
+
+### API & Logic Verification (Agent-as-Judge)
+- [ ] A reviewer agent confirms that querying the `/api/engine/sports/events` endpoint with the NPB/KBO filter successfully queries and returns events from both leagues.
+- [ ] A reviewer agent verifies the frontend correctly handles the API response and renders the events without getting stuck on "No active AI picks".
+
+### End-to-End Verification
+- [ ] A reviewer agent successfully verifies the end-to-end flow by executing a test paper trade on an active Kalshi event using the on-demand AI prediction logic.
+
+
+## 2026-10-05T10:47:30Z
+
+The user asked to resume with a new model. Please check the state of your SWE Light subagent (teamwork_preview_swe_2) and its reviewer. If any child agent has errored (e.g. RESOURCE_EXHAUSTED/429 quota) or stalled, restart/resume it and continue from where Round 1 review left off (implementation done, 6/6 tests in tests/test_sports_dashboard.py passing). Reply with a brief current status.
+
+
+## 2026-10-05T21:08:35Z
+
+# Teamwork Project Prompt
+
+> Status: Launched
+> Requested team: Small, focused team
+
+This is a single self-contained fix; keep it small and focused. Fix the UI bug preventing open sports trades from displaying correctly in the SaaS dashboard, add a configurable trade size setting for sports trades, and fix minor scrolling/spacing UI bugs on the sports page.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: development
+
+## Requirements
+
+### R1. Display Open Sports Trades
+Investigate and fix the frontend rendering logic in the SaaS dashboard to ensure open sports trades are fully visible in the Recent Executions panel and active trades list, properly styled with sports badges and team names rather than defaulting to crypto UI fallbacks.
+
+### R2. Add Sports Trade Size Setting
+Add a numeric input for "Sports Trade Size ($)" in the settings drawer that is visible only when the Sports universe is active. Ensure it correctly saves to the user's database configuration and is utilized by both the manual Trade Slip executor and the backend Sports AI auto-executor.
+
+### R3. Sports UI/UX Tweaks
+Fix the "pull to refresh" issue on mobile/touch interfaces by preventing overscroll on the active predictions list (e.g., using `overscroll-behavior-y: contain`). Also, reduce the vertical spacing (margin/padding) between the sport selector tabs and the active prediction bar below it.
+
+## Acceptance Criteria
+
+### Frontend Verification (Agent-as-Judge)
+- [ ] A reviewer agent verifies that executing a sports paper trade results in the trade correctly appearing in the UI without being hidden or improperly formatted.
+- [ ] A reviewer agent confirms the new Sports Trade Size setting is visible in the settings menu, can be modified, and persists across page reloads.
+- [ ] A reviewer agent verifies the CSS tweaks successfully prevent pull-to-refresh overscroll in the predictions container and that the gap between the sport selector and predictions has been reduced.
+
+
+## 2026-10-06T21:30:06Z
+
+# Teamwork Project Prompt
+
+> Status: Launched
+> Requested team: Full team
+
+Execute the A+ grade implementation plan for ShadowTrader AI to fix security vulnerabilities, enable simultaneous universe trading, handle Kalshi rate limits, and standardize database timestamps.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: development
+
+## Requirements
+
+### R1. Secure Sports Routes & Localhost Bypass
+Add `require_auth` to the FastAPI dependencies for all sports trading routes in `backend/routes/engine.py`. Update `_is_local_client` in `backend/auth/dependencies.py` to reject requests containing an `X-Forwarded-For` header to close the ngrok reverse-proxy vulnerability.
+
+### R2. Simultaneous Multi-Universe Auto-Trading
+Update the user config schema and `update_user_trading_universe` logic to support 'BOTH' and 'ALL' as valid trading universes. Modify the financial auto-executor (`saas_broadcaster.py`) and sports auto-executor (`executor.py`) user filters to evaluate trades if the user's universe is set to their respective universe OR 'BOTH'/'ALL'.
+
+### R3. Decouple UI Tab-Switching
+Remove the backend API call that implicitly changes a user's `trading_universe` whenever they switch tabs in `saas_dashboard.html`/`app.js`. Add an explicit settings toggle in the UI drawer to control the auto-trading universe.
+
+### R4. Kalshi Rate Limit Handling
+Implement exponential backoff in the frontend `fetchLiveBids` interval (in `saas_dashboard.html`) when HTTP 429 responses are received. Remove thread-blocking synchronous `time.sleep` calls in `kalshi_trader.py` when executed from synchronous FastAPI routes, failing fast instead.
+
+### R5. Standardize Timestamps
+Update sports trade insertions in `sports_bridge/executor.py` and `engine.py` to use the ISO-8601 string format `datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")` instead of epoch floats.
+
+## Acceptance Criteria
+
+### Codebase & Logic Verification (Agent-as-Judge)
+- [ ] A reviewer agent verifies that calling the sports endpoints without authentication now correctly returns a 401/403 status code.
+- [ ] A reviewer agent confirms that a user with `trading_universe` set to 'BOTH' is successfully processed by both the financial and sports auto-executors.
+- [ ] A reviewer agent verifies the frontend polling interval exponentially increases upon receiving HTTP 429s.
+- [ ] A reviewer agent confirms new sports trades are stored in the database with the exact string timestamp format used by BTC trades.

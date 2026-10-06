@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "mode": "PAPER",
+  "mode": "LIVE",
   "min_conviction": "GRADE A+ SETUP",
   "max_contracts": 7,
   "prediction_mode": true,

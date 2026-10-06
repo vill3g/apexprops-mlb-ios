@@ -25,7 +25,26 @@ def _get_guest_id(request: Request) -> Optional[str]:
 
 
 def _is_local_client(request) -> bool:
-    host = request.client.host if request.client else ""
+    headers = getattr(request, "headers", None)
+    if headers:
+        # Reject requests arriving through reverse proxies (e.g., ngrok) to close localhost bypass
+        try:
+            for k in headers:
+                if str(k).strip().lower() == "x-forwarded-for":
+                    return False
+        except (TypeError, Exception):
+            pass
+        try:
+            if hasattr(headers, "get"):
+                val = headers.get("x-forwarded-for")
+                if val is None:
+                    val = headers.get("X-Forwarded-For")
+                if isinstance(val, (str, bytes)):
+                    return False
+        except Exception:
+            pass
+    client = getattr(request, "client", None)
+    host = getattr(client, "host", "") if client else ""
     return host in _LOOPBACK or any(host.startswith(p) for p in _LAN_PREFIXES)
 
 

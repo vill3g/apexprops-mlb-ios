@@ -3532,7 +3532,28 @@ window.currentAsset = "BTC";
       if (!container) return;
       window._kalshiTradesData = trades;
 
-      const filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+      let filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+
+      const isSportsUniverse = (window.currentUniverse === 'SPORTS');
+      filteredTrades = filteredTrades.filter(t => {
+          const tTicker = String(t.ticker || "").toUpperCase();
+          let parsedMeta = t.metadata;
+          if (typeof parsedMeta === 'string') {
+              try { parsedMeta = JSON.parse(parsedMeta); } catch(e) { parsedMeta = {}; }
+          }
+          const hasSportProp = t.sport || (parsedMeta && (parsedMeta.sport || parsedMeta.league));
+          const tAsset = String(t.asset || '').toUpperCase();
+          const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tTicker) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tTicker) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(tAsset);
+          const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+          const isSportsTrade = hasSportProp || isSportsTicker || isSportsStyle;
+          const isFinancial = !isSportsTrade;
+          
+          if (isSportsUniverse) {
+              return isSportsTrade;
+          } else {
+              return isFinancial;
+          }
+      });
 
       const marketKey = activeMarket ? `${activeMarket.yes_bid}_${activeMarket.no_bid}` : "no_market";
       const tradesKey = JSON.stringify(filteredTrades.slice(0, 10).map(t => [
@@ -3618,12 +3639,40 @@ window.currentAsset = "BTC";
         // Trade type / direction label (mirrors the dedicated Trade List page)
         const sideStr = String(t.side || t.direction || "").toUpperCase();
         const isUpDirection = sideStr.includes("UP") || sideStr.includes("ABOVE") || sideStr.includes("YES") || sideStr.includes("BUY");
-        const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || String(t.ticker || "").includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
-        const directionArrow = isUpDirection ? "▲" : "▼";
-        const directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
-        const directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
+        const tTicker = String(t.ticker || "").toUpperCase();
+        const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || tTicker.includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
+        const hasSportProp = t.sport || (t.metadata && (t.metadata.sport || t.metadata.league));
+        const tAsset = String(t.asset || '').toUpperCase();
+            const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tTicker) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tTicker) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(tAsset);
+        const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+          const isSportsTrade = hasSportProp || isSportsTicker || isSportsStyle;
 
+        let directionArrow = isUpDirection ? "▲" : "▼";
+        let directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
+        let directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
         let tradeSizeDisplay = "";
+
+        if (isSportsTrade) {
+            const sport = String(t.sport || (t.metadata && t.metadata.sport) || "").toUpperCase();
+            const sportIcons = { 'NFL': '🏈', 'NCAAF': '🏈', 'MLB': '⚾', 'NHL': '🏒', 'NBA': '🏀', 'NCAAB': '🏀', 'SOC': '⚽', 'SOCCER': '⚽', 'UFC': '🥊', 'MMA': '🥊', 'TEN': '🎾', 'TENNIS': '🎾', 'NPB': '⚾', 'KBO': '⚾' };
+            const icon = sportIcons[sport] || '🏟️';
+            const pick = (t.metadata && (t.metadata.name || t.metadata.player_or_team)) || t.predicted_team || t.ticker || "Sports Pick";
+            let line = (t.metadata && (t.metadata.line || t.metadata.target_desc)) || t.line || t.market_type || (isUpDirection ? 'YES' : 'NO');
+            if (line && /^\d+\+?$/.test(String(line).trim())) {
+                const tk = String(t.ticker || '').toUpperCase();
+                let statUnit = 'Goals';
+                if (tk.includes('SHOT') || tk.includes('SOG')) statUnit = 'Shots';
+                else if (tk.includes('HR')) statUnit = 'Home Runs';
+                else if (tk.includes('KS') || tk.includes('STRIKEOUT')) statUnit = 'Strikeouts';
+                else if (tk.includes('TD')) statUnit = 'Touchdowns';
+                line = `${String(line).trim()} ${statUnit}`;
+            }
+            
+            directionArrow = icon;
+            directionLabel = `${pick} (${line})`;
+            directionColor = "text-white";
+        }
+
         if (isFxTrade) {
           const lotsStr = t.count || (t.lots ? `${t.lots} Lots` : '0.10 Lots');
           const pipsStr = t.pips != null ? ` · ${t.pips >= 0 ? '+' : ''}${t.pips} pips` : '';
@@ -3783,7 +3832,8 @@ window.currentAsset = "BTC";
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         let res;
         try {
-          res = await authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/toggle?enabled=${nextState}`, {
+          const curAsset = (window.currentUniverse === 'SPORTS') ? 'SPORTS' : String(window.currentAsset || 'BTC').replace(/\//g, '_');
+          res = await authFetch(`${apiBase}/api/engine/${curAsset}/trade/toggle?enabled=${nextState}`, {
             method: "POST",
             signal: controller.signal
           });

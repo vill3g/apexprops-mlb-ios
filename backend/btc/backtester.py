@@ -397,3 +397,67 @@ def run_backtest(
         "assets_available": assets_available,
         "elapsed_ms": int((time.time() - started) * 1000),
     }
+
+from backend.database.trade_store import TradeStore
+
+def run_simulation(user_id: int, tp_pct: float, sl_pct: float) -> dict:
+    trades = TradeStore.get_recent_trades(user_id, limit=500)
+    simulated_net_pnl = 0.0
+    wins = 0
+    total = 0
+    points = []
+    
+    tp_decimal = tp_pct / 100.0 if tp_pct > 0 else 0.0
+    sl_decimal = sl_pct / 100.0 if sl_pct > 0 else 0.0
+
+    # Sort trades ascending by timestamp if we want to simulate properly, get_recent_trades returns DESC by rowid.
+    trades = list(reversed(trades))
+
+    for t in trades:
+        entry = t.get("entry_price")
+        exit_p = t.get("exit_price")
+        if not entry or not exit_p:
+            continue
+        
+        entry = float(entry)
+        exit_p = float(exit_p)
+        count = float(t.get("count", 1))
+        
+        if entry <= 0:
+            continue
+            
+        roi = (exit_p - entry) / entry
+        side = t.get("side", "YES").upper()
+        if side == "NO":
+            roi = (entry - exit_p) / entry # Approximation
+            
+        is_win = False
+        pnl = 0.0
+        
+        # Mock linear simulation
+        if tp_decimal > 0 and roi >= tp_decimal:
+            is_win = True
+            pnl = entry * tp_decimal * count
+        elif sl_decimal > 0 and roi <= -sl_decimal:
+            is_win = False
+            pnl = entry * -sl_decimal * count
+        else:
+            is_win = roi > 0
+            pnl = entry * roi * count
+            
+        simulated_net_pnl += pnl
+        if is_win:
+            wins += 1
+        total += 1
+        
+        points.append({
+            "pnl": round(simulated_net_pnl, 2),
+            "ts": t.get("timestamp") or t.get("settled_at") or 0
+        })
+        
+    win_rate = (wins / total * 100) if total > 0 else 0.0
+    return {
+        "net_pnl": round(simulated_net_pnl, 2),
+        "win_rate": round(win_rate, 2),
+        "points": points
+    }

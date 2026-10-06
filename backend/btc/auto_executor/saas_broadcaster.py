@@ -174,6 +174,7 @@ class SaasBroadcasterMixin:
                 def execute_for_user(user):
                     try:
                         if not user.get('ai_enabled', 1): return
+                        if (user.get('trading_universe') or 'FINANCIAL').upper() not in ('FINANCIAL', 'BOTH', 'ALL'): return
                         user_mode = user.get('trading_mode', 'PAPER')
                         
                         
@@ -385,7 +386,12 @@ class SaasBroadcasterMixin:
                         _saas_users_cache["ts"] = _now
                     users = list(_saas_users_cache["users"])
     
-                active_users = [u for u in users if u.get('ai_enabled', 1) and self.asset.upper() in [x.strip() for x in u.get('target_asset', 'BTC').upper().split(',')]]
+                active_users = [
+                    u for u in users
+                    if u.get('ai_enabled', 1)
+                    and (u.get('trading_universe') or 'FINANCIAL').upper() in ('FINANCIAL', 'BOTH', 'ALL')
+                    and self.asset.upper() in [x.strip() for x in u.get('target_asset', 'BTC').upper().split(',')]
+                ]
                 if not users: return  # users with AUTO off still get a dashboard forecast (no trades)
     
                 # 1. Filter out users who have ALREADY traded this interval.

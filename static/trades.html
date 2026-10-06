@@ -113,6 +113,152 @@
             }
         }
 
+        window.__isSportTrade = function(t) {
+            if (!t) return false;
+            const a = String(t.asset || '').toUpperCase();
+            const tk = String(t.ticker || '').toUpperCase();
+            let meta = t.metadata;
+            if (typeof meta === 'string') {
+                try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+            }
+            let ml = t.ml_reasoning;
+            if (typeof ml === 'string') {
+                try { ml = JSON.parse(ml); } catch(e) { ml = {}; }
+            }
+            const hasSportProp = Boolean(t.sport || t.predicted_team || (meta && (meta.sport || meta.league)) || (ml && (ml.sport || ml.predicted_team)));
+            const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tk) ||
+                                   /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN)-/.test(tk) ||
+                                   tk.startsWith('KALSHI-') ||
+                                   ['NFL','MLB','NBA','NCAAF','NCAAB','WNBA','NPB','KBO','NPB/KBO','NPB_KBO','NHL','SOC','UFC','TEN','MMA','SPORTS'].includes(a);
+            const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+            return isSportsStyle || hasSportProp || isSportsTicker;
+        };
+
+        window.__getSportInfo = function(t) {
+            if (!t) return { sport: 'SPORTS', team: 'Team', icon: '🏆' };
+            let sport = t.sport || '';
+            let team = t.predicted_team || t.team || '';
+            let meta = t.metadata;
+            if (typeof meta === 'string') {
+                try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+            }
+            if (!sport && meta) {
+                sport = meta.sport || meta.league || '';
+            }
+            if (!team && meta) {
+                team = meta.predicted_team || meta.team || meta.name || '';
+            }
+            let ml = t.ml_reasoning;
+            if (typeof ml === 'string') {
+                try { ml = JSON.parse(ml); } catch(e) { ml = {}; }
+            }
+            if (!sport && ml) {
+                sport = ml.sport || '';
+            }
+            if (!team && ml) {
+                team = ml.predicted_team || ml.team || '';
+            }
+            const tk = String(t.ticker || '').toUpperCase();
+            if (!sport) {
+                const m = tk.match(/^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|NPB|KBO|SOC|UFC|MMA|TEN)/) ||
+                          tk.match(/^KX([A-Z]{3,5}?)(?:GAME|-|$)/) ||
+                          tk.match(/^KX([A-Z]{3,5})/);
+                if (m) sport = m[1];
+                else if (tk.startsWith('KALSHI-')) {
+                    const parts = tk.split('-');
+                    if (parts.length > 1) sport = parts[1];
+                    if (!team && parts.length > 2) team = parts[2];
+                }
+            }
+            if (!sport && t.asset && ['NFL','MLB','NBA','NCAAF','NCAAB','WNBA','NPB','KBO','NPB/KBO','NPB_KBO','NHL','SOC','UFC','TEN','MMA','SPORTS'].includes(String(t.asset).toUpperCase())) {
+                sport = String(t.asset).toUpperCase();
+            }
+            sport = (sport || 'SPORTS').toUpperCase();
+            if (sport === 'SOCCER') sport = 'SOC';
+            if (sport === 'TENNIS') sport = 'TEN';
+            if (sport === 'MMA') sport = 'UFC';
+            if (sport === 'NPB_KBO') sport = 'NPB/KBO';
+
+            let propType = t.prop_type || (meta && meta.prop_type) || (ml && ml.prop_type) || '';
+            let line = t.line || (meta && meta.line) || (ml && ml.line) || '';
+            let strikeDetails = t.strike_details || (meta && meta.strike_details) || (ml && ml.strike_details) || '';
+
+            const mPlayer = (strikeDetails + ' ' + (t.reason || '')).match(/([A-Z][a-zA-Z\.\'\-\s]{2,35}?):\s*(\d+\+?|\d+\.\d+|\d+)\s*([a-zA-Z\s]*)/);
+            if (mPlayer) {
+                const pName = mPlayer[1].trim();
+                if (!/^(total|totals|over|under|spread|run line|puck line|moneyline|game|winner|match)/i.test(pName)) {
+                    if (!team || team.includes('/') || team.includes('vs') || team.length <= 4) {
+                        team = pName;
+                    }
+                    propType = 'Player Prop';
+                    const pLineNum = mPlayer[2].trim();
+                    let pStat = (mPlayer[3] || '').trim();
+                    if (!pStat) {
+                        if (tk.includes('GOAL')) pStat = 'Goals';
+                        else if (tk.includes('SHOT') || tk.includes('SOG')) pStat = 'Shots';
+                        else if (tk.includes('HR')) pStat = 'Home Runs';
+                        else if (tk.includes('KS') || tk.includes('STRIKEOUT')) pStat = 'Strikeouts';
+                        else if (tk.includes('TD')) pStat = 'Touchdowns';
+                        else pStat = 'Props';
+                    } else {
+                        pStat = pStat.charAt(0).toUpperCase() + pStat.slice(1);
+                    }
+                    line = `${pLineNum} ${pStat}`;
+                    strikeDetails = `${pName}: ${line}`;
+                }
+            } else if (['KXNHLGOAL', 'KXNHLSHOT', 'KXMLBHR', 'KXMLBKS', 'KXNFLTD', 'PROP', 'GOAL', 'SHOT'].some(k => tk.includes(k))) {
+                propType = 'Player Prop';
+            }
+
+            if (!propType) {
+                if (tk.includes('SPREAD') || tk.includes('RUNLINE')) propType = 'Spread';
+                else if (tk.includes('TOTAL') || tk.includes('OVER') || tk.includes('UNDER')) propType = 'Total (O/U)';
+                else propType = 'Moneyline';
+            }
+
+            if (!team && t.reason) {
+                const mEdge = t.reason.match(/AI Edge:\s*([^(]+)/i);
+                if (mEdge) team = mEdge[1].trim();
+            }
+            if (!team && tk.startsWith('KALSHI-')) {
+                const parts = tk.split('-');
+                if (parts.length > 2) team = parts[2];
+            }
+            if (!team) {
+                team = t.side || 'YES';
+            }
+
+            const iconMap = {
+                'NFL': '🏈',
+                'NCAAF': '🏈',
+                'MLB': '⚾',
+                'NBA': '🏀',
+                'NCAAB': '🏀',
+                'WNBA': '🏀',
+                'NHL': '🏒',
+                'NPB': '⚾',
+                'KBO': '⚾',
+                'NPB/KBO': '⚾',
+                'NPB_KBO': '⚾',
+                'SOC': '⚽',
+                'SOCCER': '⚽',
+                'UFC': '🥊',
+                'MMA': '🥊',
+                'TEN': '🎾',
+                'TENNIS': '🎾'
+            };
+            const icon = iconMap[sport] || '🏆';
+
+            return {
+                sport: sport,
+                team: team,
+                icon: icon,
+                propType: propType,
+                line: line,
+                strikeDetails: strikeDetails
+            };
+        };
+
         function getTradeIdentifierPills(t) {
             const pills = [];
             const mode = String(t.mode || "PAPER").toUpperCase();
@@ -135,6 +281,8 @@
                     pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-sky-500/20 text-sky-300 border border-sky-500/35">🏄 MOMENTUM</span>');
                 } else if (rawStyle.includes("SNIPER")) {
                     pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/35">🎯 SNIPER</span>');
+                } else if (rawStyle.includes("SPORTS")) {
+                    pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/35">🏈 SPORTS AI</span>');
                 } else if (rawStyle.includes("PREDICTION")) {
                     pills.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-purple-500/20 text-purple-300 border border-purple-500/35">🔮 PREDICTION</span>');
                 } else if (rawStyle.includes("AMBUSH")) {
@@ -252,30 +400,49 @@
                     }
                 }
 
+                const isSport = window.__isSportTrade ? window.__isSportTrade(t) : false;
+                const sportInfo = isSport && window.__getSportInfo ? window.__getSportInfo(t) : null;
                 let assetType = String(t.asset || '').toUpperCase();
-                if (!assetType || assetType === 'NONE') {
-                    const tk = String(t.ticker || '').toUpperCase();
-                    if (tk.includes('BTC')) assetType = 'BTC';
-                    else if (tk.includes('ETH')) assetType = 'ETH';
-                    else if (tk.includes('GOLD')) assetType = 'GOLD';
-                    else if (tk.includes('EURUSD')) assetType = 'EUR/USD';
-                    else if (tk.includes('GBPUSD')) assetType = 'GBP/USD';
-                    else if (tk.includes('USDJPY')) assetType = 'USD/JPY';
-                    else assetType = 'BTC';
-                }
                 let assetBadgeClass = 'bg-gray-700 text-gray-300';
                 let assetIcon = '';
-                if (assetType === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40'; assetIcon = '₿ '; }
-                else if (assetType === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'; assetIcon = 'Ξ '; }
-                else if (assetType === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'; assetIcon = '🪙 '; }
+
+                if (isSport && sportInfo) {
+                    assetType = sportInfo.sport;
+                    assetBadgeClass = 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+                    assetIcon = sportInfo.icon + ' ';
+                } else {
+                    if (!assetType || assetType === 'NONE') {
+                        const tk = String(t.ticker || '').toUpperCase();
+                        if (tk.includes('BTC')) assetType = 'BTC';
+                        else if (tk.includes('ETH')) assetType = 'ETH';
+                        else if (tk.includes('GOLD')) assetType = 'GOLD';
+                        else if (tk.includes('EURUSD')) assetType = 'EUR/USD';
+                        else if (tk.includes('GBPUSD')) assetType = 'GBP/USD';
+                        else if (tk.includes('USDJPY')) assetType = 'USD/JPY';
+                        else assetType = 'BTC';
+                    }
+                    if (assetType === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40'; assetIcon = '₿ '; }
+                    else if (assetType === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'; assetIcon = 'Ξ '; }
+                    else if (assetType === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40'; assetIcon = '🪙 '; }
+                }
                 const assetBadge = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${assetBadgeClass}">${assetIcon}${assetType}</span>`;
+                let propBadge = '';
+                if (isSport && sportInfo && sportInfo.propType) {
+                    const pCls = sportInfo.propType === 'Player Prop' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                                 sportInfo.propType === 'Spread' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
+                                 sportInfo.propType.includes('Total') ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
+                                 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                    propBadge = `<span class="text-[8.5px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border ${pCls}">${sportInfo.propType}</span>`;
+                }
+                const tradeTitle = (isSport && sportInfo) ? (sportInfo.line && sportInfo.line !== 'Moneyline' ? `${sportInfo.team} • ${sportInfo.line}` : (sportInfo.team || t.ticker)) : (t.ticker ? escapeHtml(t.ticker) : escapeHtml(strike));
 
                 return `
                     <div onclick="openTradeDetailsModal('${tradeKey}')" class="bg-[#131b2c] hover:bg-[#152033] cursor-pointer rounded-xl p-3 shadow-lg border border-gray-800 hover:border-blue-500/60 transition-all ${borderClass} flex flex-col gap-2 group active:scale-[0.99]" title="Click for AI breakdown & full trade details">
                         <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 ${assetBadge}
-                                <span class="text-xs font-bold text-white">${t.ticker ? escapeHtml(t.ticker) : escapeHtml(strike)}</span>
+                                ${propBadge}
+                                <span class="text-xs font-bold text-white">${escapeHtml(tradeTitle)}</span>
                                 <span class="text-[10px] font-black ${dirColor}">${escapeHtml(dirText)}</span>
                             </div>
                             <div class="flex items-center gap-2">

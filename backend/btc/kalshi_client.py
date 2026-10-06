@@ -101,8 +101,13 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
 
         if not active_m:
             if allow_synthetic:
-                from backend.engine.multi_asset_fetcher import get_asset_ticker
-                cur_p = float(get_asset_ticker(series_ticker.replace("KX", "").replace("15M", "")).get("price", 0.0))
+                cur_p = 0.50
+                try:
+                    from backend.engine.multi_asset_fetcher import get_asset_ticker
+                    raw_asset = series_ticker.replace("KX", "").replace("15M", "")
+                    cur_p = float(get_asset_ticker(raw_asset).get("price", 0.50) or 0.50)
+                except Exception:
+                    cur_p = 0.50
                 synth = {
                     "target_price": cur_p,
                     "yes_prob": 50.0,
@@ -131,10 +136,19 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
             target_price = float(floor_strike)
         else:
             from backend.btc.data_fetcher import get_live_15m_target_data
-            from backend.engine.multi_asset_fetcher import get_asset_ticker
             asset = series_ticker.replace("KX", "").replace("15M", "")
-            target_data = get_live_15m_target_data(asset)
-            target_price = float(target_data.get("target_price") or get_asset_ticker(asset).get("price", 0.0))
+            target_data = {}
+            try:
+                target_data = get_live_15m_target_data(asset)
+            except Exception:
+                pass
+            asset_p = 0.0
+            try:
+                from backend.engine.multi_asset_fetcher import get_asset_ticker
+                asset_p = float(get_asset_ticker(asset).get("price", 0.0) or 0.0)
+            except Exception:
+                pass
+            target_price = float(target_data.get("target_price") or asset_p or 0.50)
         # Extract detailed top-of-book order metrics
         yes_bid = float(active_m.get("yes_bid_dollars") or (float(active_m.get("yes_bid") or 0) / 100.0))
         yes_ask = float(active_m.get("yes_ask_dollars") or (float(active_m.get("yes_ask") or 0) / 100.0))
@@ -190,10 +204,59 @@ def get_kalshi_15m_market(series_ticker: str = "KXBTC15M", allow_synthetic: bool
             _kalshi_cache_times[series_ticker] = time.time()
         return result
     except Exception as e:
-        logger.error(f"[Kalshi Client] Error fetching KXBTC15M: {e}")
+        logger.error(f"[Kalshi Client] Error fetching {series_ticker}: {e}")
 
     with _kalshi_cache_lock:
         return _kalshi_cache.get(series_ticker) or {}
+
+
+def get_kalshi_market_by_ticker(ticker: str):
+    """Fetch a specific Kalshi market by its exact ticker."""
+    now = time.time()
+    with _kalshi_cache_lock:
+        if ticker in _kalshi_cache and (now - _kalshi_cache_times.get(ticker, 0)) < CACHE_TTL_SEC:
+            return _kalshi_cache.get(ticker)
+        _kalshi_cache_times[ticker] = now
+
+    try:
+        resp = _safe_get(
+            KALSHI_API_URL + f"/{ticker}",
+            headers={"Accept": "application/json", "User-Agent": "ApexProps-Kalshi-Client/1.0"},
+            timeout=4.0
+        )
+        if resp.status_code == 200:
+            market = resp.json()
+            if "market" in market:
+                market = market["market"]
+            
+            y_bid = float(market.get("yes_bid_dollars") or market.get("yes_bid") or 0.0)
+            if y_bid > 1.0: y_bid /= 100.0
+            n_bid = float(market.get("no_bid_dollars") or market.get("no_bid") or 0.0)
+            if n_bid > 1.0: n_bid /= 100.0
+            
+            y_ask = float(market.get("yes_ask_dollars") or market.get("yes_ask") or 0.0)
+            if y_ask > 1.0: y_ask /= 100.0
+            n_ask = float(market.get("no_ask_dollars") or market.get("no_ask") or 0.0)
+            if n_ask > 1.0: n_ask /= 100.0
+
+            result = {
+                "ticker": market.get("ticker", ""),
+                "status": market.get("status", "active"),
+                "yes_bid": y_bid,
+                "no_bid": n_bid,
+                "yes_ask": y_ask,
+                "no_ask": n_ask,
+                "close_time": market.get("close_time", "")
+            }
+            with _kalshi_cache_lock:
+                _kalshi_cache[ticker] = result
+                _kalshi_cache_times[ticker] = time.time()
+            return result
+    except Exception as e:
+        logger.debug(f"[Kalshi Client] Error fetching market {ticker}: {e}")
+
+    with _kalshi_cache_lock:
+        return _kalshi_cache.get(ticker) or None
 
 
 

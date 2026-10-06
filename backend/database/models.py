@@ -5,6 +5,7 @@ import shutil
 import sqlite3
 import threading
 import time
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -155,6 +156,10 @@ REQUIRED_COLUMNS = {
         "xgb_max_depth": "INTEGER DEFAULT 5",
     "trading_universe": "TEXT DEFAULT 'FINANCIAL'",
     "min_sports_confidence": "REAL DEFAULT 70.0",
+    "min_sports_edge": "REAL DEFAULT 3.0",
+    "sports_max_wager": "REAL DEFAULT 10.0",
+    "sports_trade_size_dollars": "REAL DEFAULT 10.0",
+    "sports_include_live": "BOOLEAN DEFAULT 0",
     "xgb_learning_rate": "REAL DEFAULT 0.1",
     "ignore_pass_technical": "BOOLEAN DEFAULT 0",
     "one_shot_ai": "BOOLEAN DEFAULT 0",
@@ -171,6 +176,16 @@ REQUIRED_COLUMNS = {
     "use_kelly_criterion": "BOOLEAN DEFAULT 0",
     # Dynamic volatility-based risk: scale TP/SL % by the asset's current ATR vs its 24h norm
     "atr_risk_enabled": "BOOLEAN DEFAULT 0",
+    "sports_active_leagues": "TEXT DEFAULT 'NFL,MLB,NPB/KBO,SOC,UFC,TEN,NHL'",
+    "sports_min_price": "REAL DEFAULT 0.20",
+    "sports_max_price": "REAL DEFAULT 0.80",
+    "sports_max_daily_trades": "INTEGER DEFAULT 10",
+    "sports_max_open_trades": "INTEGER DEFAULT 5",
+    "sports_max_daily_risk": "REAL DEFAULT 100.0",
+    "sports_tp_enabled": "BOOLEAN DEFAULT 0",
+    "sports_tp_pct": "REAL DEFAULT 35.0",
+    "sports_use_kelly": "BOOLEAN DEFAULT 0",
+    "sports_market_types": "TEXT DEFAULT 'GAME,SPREAD,TOTAL,PROP'",
 }
 
 def init_db():
@@ -382,6 +397,25 @@ def update_user_ai_enabled(user_id: int, enabled: bool):
     try:
         c = conn.cursor()
         c.execute("UPDATE users SET ai_enabled = ? WHERE id = ?", (1 if enabled else 0, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        from backend.btc.auto_executor import invalidate_saas_users_cache
+        invalidate_saas_users_cache(user_id)
+    except Exception as e:
+        logger.warning(f"Failed to invalidate cache: {e}")
+
+VALID_TRADING_UNIVERSES = {"FINANCIAL", "SPORTS", "BOTH", "ALL"}
+
+def update_user_trading_universe(user_id: int, universe: str):
+    norm = str(universe).strip().upper()
+    if norm not in VALID_TRADING_UNIVERSES:
+        raise ValueError(f"Invalid trading_universe '{universe}'. Allowed: {sorted(list(VALID_TRADING_UNIVERSES))}")
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE users SET trading_universe = ? WHERE id = ?", (norm, user_id))
         conn.commit()
     finally:
         conn.close()
@@ -771,8 +805,32 @@ def update_user_config(
     notify_market_trends: bool = True,
     use_kelly_criterion: bool = False,
     trading_universe: str = "FINANCIAL",
-    min_sports_confidence: float = 70.0
+    min_sports_confidence: float = 70.0,
+    min_sports_edge: float = 3.0,
+    sports_max_wager: float = 10.0,
+    sports_include_live: bool = False,
+    sports_trade_size_dollars: Optional[float] = None,
+    sports_active_leagues: Optional[str] = None,
+    sports_min_price: Optional[float] = None,
+    sports_max_price: Optional[float] = None,
+    sports_max_daily_trades: Optional[int] = None,
+    sports_max_open_trades: Optional[int] = None,
+    sports_max_daily_risk: Optional[float] = None,
+    sports_tp_enabled: Optional[bool] = None,
+    sports_tp_pct: Optional[float] = None,
+    sports_use_kelly: Optional[bool] = None,
+    sports_market_types: Optional[str] = None
 ):
+    if sports_trade_size_dollars is not None:
+        sports_max_wager = float(sports_trade_size_dollars)
+    else:
+        sports_trade_size_dollars = float(sports_max_wager)
+
+    if trading_universe:
+        norm_universe = str(trading_universe).strip().upper()
+        if norm_universe in VALID_TRADING_UNIVERSES:
+            trading_universe = norm_universe
+
     conn = get_db_connection()
     try:
         c = conn.cursor()
@@ -785,7 +843,18 @@ def update_user_config(
                 model_choice = ?, train_window = ?, regularization_c = ?, class_weight = ?, 
                 xgb_estimators = ?, xgb_max_depth = ?, xgb_learning_rate = ?, 
                 ignore_pass_technical = ?, one_shot_ai = ?, notify_trade_results = ?, notify_market_trends = ?,
-                use_kelly_criterion = ?
+                use_kelly_criterion = ?, trading_universe = ?,
+                min_sports_confidence = ?, min_sports_edge = ?, sports_max_wager = ?, sports_trade_size_dollars = ?, sports_include_live = ?,
+                sports_active_leagues = COALESCE(?, sports_active_leagues, 'NFL,MLB,NPB/KBO,SOC,UFC,TEN,NHL'),
+                sports_min_price = COALESCE(?, sports_min_price, 0.20),
+                sports_max_price = COALESCE(?, sports_max_price, 0.80),
+                sports_max_daily_trades = COALESCE(?, sports_max_daily_trades, 10),
+                sports_max_open_trades = COALESCE(?, sports_max_open_trades, 5),
+                sports_max_daily_risk = COALESCE(?, sports_max_daily_risk, 100.0),
+                sports_tp_enabled = COALESCE(?, sports_tp_enabled, 0),
+                sports_tp_pct = COALESCE(?, sports_tp_pct, 35.0),
+                sports_use_kelly = COALESCE(?, sports_use_kelly, 0),
+                sports_market_types = COALESCE(?, sports_market_types, 'GAME,SPREAD,TOTAL,PROP')
             WHERE id = ?
         ''', (
             trade_size_dollars, paper_trade_size_dollars, stop_loss_pct, 1 if stop_loss_enabled else 0, 1 if one_click_trade else 0, 1 if auto_force_trade else 0, 
@@ -795,7 +864,19 @@ def update_user_config(
             model_choice, train_window, regularization_c, class_weight, 
             xgb_estimators, xgb_max_depth, xgb_learning_rate, 
             1 if ignore_pass_technical else 0, 1 if one_shot_ai else 0,  1 if notify_trade_results else 0, 1 if notify_market_trends else 0,
-            1 if use_kelly_criterion else 0, user_id
+            1 if use_kelly_criterion else 0, trading_universe,
+            min_sports_confidence, min_sports_edge, sports_max_wager, sports_trade_size_dollars, 1 if sports_include_live else 0,
+            sports_active_leagues,
+            sports_min_price,
+            sports_max_price,
+            sports_max_daily_trades,
+            sports_max_open_trades,
+            sports_max_daily_risk,
+            (1 if sports_tp_enabled else 0) if sports_tp_enabled is not None else None,
+            sports_tp_pct,
+            (1 if sports_use_kelly else 0) if sports_use_kelly is not None else None,
+            sports_market_types,
+            user_id
         ))
         conn.commit()
     finally:
@@ -854,7 +935,10 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "one_shot_ai": int(bool(source_user.get("one_shot_ai", 0))),
         "edge_gate_enabled": int(bool(source_user.get("edge_gate_enabled", 1))),
         "min_edge_cents": float(source_user.get("min_edge_cents", 0.0) or 0.0),
-        "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0)))
+        "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0))),
+        "min_sports_confidence": float(source_user.get("min_sports_confidence", 70.0)),
+        "min_sports_edge": float(source_user.get("min_sports_edge", 3.0)),
+        "sports_include_live": int(bool(source_user.get("sports_include_live", 0)))
     }
 
     set_clauses = [f"{col} = ?" for col in copy_fields.keys()]
@@ -897,7 +981,8 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "target_username": target_user.get("username"),
         "copied_settings": copy_fields,
         "preserved_trade_size_dollars": target_user.get("trade_size_dollars", 5.0),
-        "preserved_trade_size_pct": target_user.get("trade_size_pct", 20.0)
+        "preserved_trade_size_pct": target_user.get("trade_size_pct", 20.0),
+        "preserved_sports_trade_size_dollars": target_user.get("sports_trade_size_dollars") or target_user.get("sports_max_wager", 10.0)
     }
 
 

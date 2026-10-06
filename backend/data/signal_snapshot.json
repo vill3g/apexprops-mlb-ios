@@ -1,84 +1,104 @@
 {
-  "updated": 1791151081.0461166,
+  "updated": 1791330950.8782492,
   "results": {
     "AUTO|RL_DQN": {
-      "ts": 1791151081.0461166,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT041800-00",
-      "strike": 85964.27,
-      "sec_left": 120,
-      "effective_style": "SNIPER",
+      "ts": 1791330949.7325141,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT062000-30",
+      "strike": 158.26,
+      "sec_left": 251,
+      "effective_style": "CAPITAL_GUARD",
       "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4787,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 52.13,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\udee1\ufe0f Weekend Chop Filter: Rejecting setup under 62% confidence due to low-volume weekend environment.",
-        "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 52.1%"
-      ],
-      "chart": {
-        "open": 85978.11,
-        "close": 85947.0,
-        "ema9": 85775.61869783662,
-        "ema21": 85590.43417022911,
-        "flow": -0.231
-      }
-    },
-    "AUTO|AI_ONLY": {
-      "ts": 1791151081.0461166,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT041800-00",
-      "strike": 85964.27,
-      "sec_left": 120,
-      "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4787,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 52.13,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\udee1\ufe0f Weekend Chop Filter: Rejecting setup under 62% confidence due to low-volume weekend environment.",
-        "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 52.1%"
-      ],
-      "chart": {
-        "open": 85978.11,
-        "close": 85947.0,
-        "ema9": 85775.61869783662,
-        "ema21": 85590.43417022911,
-        "flow": -0.231
-      }
-    },
-    "AUTO|BLEND": {
-      "ts": 1791151081.0461166,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT041800-00",
-      "strike": 85964.27,
-      "sec_left": 120,
-      "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4787,
-      "conviction_grade": "GRADE C / PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
       "pre_gate_direction": "PASS",
       "pre_gate_prob": 50.0,
       "pre_gate_grade": "GRADE C / PASS",
       "catalysts": [
-        "\ud83d\udcc8 Ascending Triangle: Flat ceiling resistance near $86,052 pressured by consecutive higher lows. Upward breakout favored.",
-        "Breakout Pressure: Multiple higher lows pressing against ceiling aligned with 1H Bullish trend",
-        "Overbought Expansion: High RSI (71.5) riding upper BB limit",
-        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID YES (ABOVE TARGET) (80%) but ML model disagrees (47.9%). The ML Engine has vetoed this trade."
+        "Capital Guard active: zero edge detected"
       ],
       "chart": {
-        "open": 85978.11,
-        "close": 85947.0,
-        "ema9": 85775.61869783662,
-        "ema21": 85590.43417022911,
-        "flow": -0.231
+        "open": 158.26300048828125,
+        "close": 158.26800537109375,
+        "ema9": 158.19796772878317,
+        "ema21": 158.16313965521212,
+        "flow": 0.0
+      }
+    },
+    "AUTO|ML_ENSEMBLE": {
+      "ts": 1791330949.7325141,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT062000-30",
+      "strike": 158.26,
+      "sec_left": 251,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
+      "catalysts": [
+        "Capital Guard active: zero edge detected"
+      ],
+      "chart": {
+        "open": 158.26300048828125,
+        "close": 158.26800537109375,
+        "ema9": 158.19796772878317,
+        "ema21": 158.16313965521212,
+        "flow": 0.0
+      }
+    },
+    "CAPITAL_GUARD|AI_ONLY": {
+      "ts": 1791330950.8782492,
+      "asset": "AUDUSD",
+      "ticker": "KXAUDUSD15M_SYNTH",
+      "strike": 85556.64,
+      "sec_left": 250,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
+      "catalysts": [
+        "Capital Guard active: zero edge detected"
+      ],
+      "chart": {
+        "open": 0.6982752084732056,
+        "close": 0.6982752084732056,
+        "ema9": 0.6983817499450385,
+        "ema21": 0.6984559280822388,
+        "flow": 0.0
+      }
+    },
+    "AUTO|BLEND": {
+      "ts": 1791330949.7325141,
+      "asset": "USDJPY",
+      "ticker": "KXUSDJPY15M-26OCT062000-30",
+      "strike": 158.26,
+      "sec_left": 251,
+      "effective_style": "CAPITAL_GUARD",
+      "direction": "PASS",
+      "probability_percent": 50.0,
+      "ml_prob": 0.5,
+      "conviction_grade": "PASS / CHOP DEADZONE (CAPITAL GUARD)",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
+      "catalysts": [
+        "Capital Guard active: zero edge detected"
+      ],
+      "chart": {
+        "open": 158.26300048828125,
+        "close": 158.26800537109375,
+        "ema9": 158.19796772878317,
+        "ema21": 158.16313965521212,
+        "flow": 0.0
       }
     }
   }

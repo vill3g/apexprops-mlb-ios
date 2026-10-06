@@ -4,7 +4,11 @@ from typing import Any, Dict, Optional
 
 _executors: Dict[str, Any] = {}
 _guest_executors: Dict[str, Any] = {}
-SUPPORTED_ASSETS = {"BTC", "ETH", "GOLD", "NDQ", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "SOL", "DOGE", "NFL", "MLB", "NBA", "UFC", "NHL", "SOCCER", "TENNIS", "NPB"}
+SUPPORTED_ASSETS = {
+    "BTC", "ETH", "GOLD", "NDQ", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "SOL", "DOGE",
+    "NFL", "MLB", "NBA", "UFC", "NHL", "SOCCER", "SOC", "TENNIS", "TEN", "NPB", "KBO", "NPB_KBO", "NPB/KBO",
+    "SPORTS", "SPORT", "ALL"
+}
 
 def get_auto_executor(asset: str = "BTC", guest_id: Optional[str] = None) -> Any:
     """Return a singleton AutoExecutor for the given asset.
@@ -17,6 +21,8 @@ def get_auto_executor(asset: str = "BTC", guest_id: Optional[str] = None) -> Any
     # executor (with its own config file). Unknown assets are rejected instead of
     # creating a new executor (and config file) for any string in the URL.
     asset = str(asset or "BTC").upper().strip()
+    if asset in ("SPORTS", "SPORT", "ALL", "SOC", "TEN", "KBO", "NPB_KBO", "NPB/KBO"):
+        asset = "BTC"
     if asset not in SUPPORTED_ASSETS:
         raise ValueError(f"Unsupported asset '{asset}'")
 

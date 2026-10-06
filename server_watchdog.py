@@ -33,7 +33,76 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=log_handlers
 )
+logging.raiseExceptions = False
 logger = logging.getLogger("Watchdog")
+
+
+def run_sports_bridge():
+    bridge_dir = os.path.abspath(os.path.join(APP_DIR, '..', '..', '.gemini', 'antigravity', 'scratch', 'apexprops-mlb-ios'))
+    if not os.path.exists(bridge_dir):
+        logger.warning(f"[Watchdog] Sports bridge directory not found: {bridge_dir}")
+        return None
+
+    cmd = [
+        PYTHON_EXE,
+        "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8057"
+    ]
+    
+    flags = 0
+    if sys.platform == "win32":
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+
+    logger.info("Starting Sports Bridge Server process: %s", " ".join(cmd))
+    proc = subprocess.Popen(
+        cmd,
+        cwd=bridge_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+        creationflags=flags,
+        close_fds=True
+    )
+    return proc
+
+def _sports_bridge_monitor():
+    restart_count = 0
+    while True:
+        start_time = time.time()
+        try:
+            proc = run_sports_bridge()
+            if not proc:
+                logger.error("[Watchdog] Failed to start sports bridge. Retrying in 60s...")
+                time.sleep(60)
+                continue
+                
+            try:
+                for line in proc.stdout:
+                    line_str = line.strip()
+                    if line_str:
+                        logger.info("[SportsBridge] %s", line_str)
+            except Exception as stream_err:
+                logger.debug(f"[Watchdog] SportsBridge stream error: {stream_err}")
+
+            proc.wait()
+            exit_code = proc.returncode
+            uptime = round(time.time() - start_time, 1)
+
+            logger.warning(
+                f"[Watchdog] Sports bridge terminated with exit code {exit_code} (Uptime: {uptime}s)."
+            )
+
+            if uptime > 60:
+                restart_count = 0
+
+            restart_count += 1
+            backoff_delay = min(2.0 * (1.5 ** (min(restart_count, 15) - 1)), 60.0)
+            logger.info(f"[Watchdog] Automatically restarting sports bridge in {backoff_delay:.1f} seconds... (Attempt #{restart_count})")
+            time.sleep(backoff_delay)
+
+        except Exception as e:
+            logger.error(f"[Watchdog] Sports bridge supervisor error: {e}")
+            time.sleep(3)
 
 def run_server():
     cmd = [
@@ -132,14 +201,35 @@ def _release_watchdog_lock():
 
 atexit.register(_release_watchdog_lock)
 
+def _is_another_watchdog_running():
+    import psutil
+    current_pid = os.getpid()
+    parent_pid = os.getppid()
+    for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if p.info['pid'] in (current_pid, parent_pid):
+                continue
+            pname = str(p.info.get('name') or '').lower()
+            if not pname.startswith('python'):
+                continue
+            cmdline = p.info.get('cmdline') or []
+            if len(cmdline) >= 2 and os.path.basename(cmdline[1]).lower() == 'server_watchdog.py':
+                return True
+        except Exception:
+            pass
+    return False
+
 def _acquire_watchdog_lock():
     global _watchdog_mutex
     if sys.platform != "win32":
-        return True
+        return not _is_another_watchdog_running()
+    
     import ctypes
     mutex = ctypes.windll.kernel32.CreateMutexW(None, False, "KalshiAITraderWatchdogLock")
-    if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+    if ctypes.windll.kernel32.GetLastError() == 183: # ERROR_ALREADY_EXISTS
+        ctypes.windll.kernel32.CloseHandle(mutex)
         return None
+        
     _watchdog_mutex = mutex
     return mutex
 
@@ -147,9 +237,10 @@ def _terminate_conflicting_watchdogs():
     """If another watchdog or legacy instance is running, allow graceful takeover if requested."""
     import psutil
     current_pid = os.getpid()
+    parent_pid = os.getppid()
     for p in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
-            if p.info['pid'] == current_pid:
+            if p.info['pid'] in (current_pid, parent_pid):
                 continue
             cmdline = ' '.join(p.info['cmdline'] or [])
             if "server_watchdog.py" in cmdline:
@@ -192,6 +283,7 @@ def main():
     # Keep the ngrok tunnel up: checked now and every 60 s (restarted if it died)
     import threading
     threading.Thread(target=_ngrok_monitor, daemon=True, name="NgrokMonitor").start()
+    threading.Thread(target=_sports_bridge_monitor, daemon=True, name="SportsBridgeMonitor").start()
 
     restart_count = 0
 
@@ -200,10 +292,13 @@ def main():
         try:
             proc = run_server()
             
-            for line in proc.stdout:
-                line_str = line.strip()
-                if line_str:
-                    logger.info("[Server] %s", line_str)
+            try:
+                for line in proc.stdout:
+                    line_str = line.strip()
+                    if line_str:
+                        logger.info("[Server] %s", line_str)
+            except Exception as stream_err:
+                logger.debug(f"[Watchdog] Server stream error: {stream_err}")
 
             proc.wait()
             exit_code = proc.returncode

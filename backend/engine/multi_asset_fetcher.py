@@ -168,8 +168,15 @@ def get_asset_ticker(asset: str) -> dict:
         # Prevent stampede
         _multi_ticker_cache[asset]["timestamp"] = now + 5.0
 
-    df_1m = fetch_asset_candles(asset, "1m", limit=1)
-    df_1d = fetch_asset_candles(asset, "1d", limit=2)
+    try:
+        df_1m = fetch_asset_candles(asset, "1m", limit=1)
+        df_1d = fetch_asset_candles(asset, "1d", limit=2)
+    except Exception as e:
+        logger.debug(f"[MultiAssetFetcher] Asset {asset} candles unavailable: {e}")
+        res = {"price": 0.50, "change_24h": 0, "high_24h": 0, "low_24h": 0, "volume_24h": 0}
+        with _multi_ticker_lock:
+            _multi_ticker_cache[asset] = {"timestamp": time.time(), "data": res}
+        return res
     
     if df_1d.empty or len(df_1d) < 1:
         res = {"price": 0, "change_24h": 0, "high_24h": 0, "low_24h": 0, "volume_24h": 0}

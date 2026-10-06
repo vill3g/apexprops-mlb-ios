@@ -100,7 +100,14 @@ def get_login(request: Request):
 @router.get("/saas_dashboard.html")
 @router.get("/saas_dashboard")
 def get_saas_dashboard():
-    return FileResponse(os.path.join(STATIC_DIR, "saas_dashboard.html"))
+    return FileResponse(
+        os.path.join(STATIC_DIR, "saas_dashboard.html"),
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @router.get("/index.html")
 @router.get("/admin")

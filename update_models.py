@@ -1,30 +1,61 @@
-import re
+﻿import re
 
-path = "backend/database/models.py"
-with open(path, "r", encoding="utf-8") as f:
-    code = f.read()
+with open('backend/database/models.py', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-# Add to REQUIRED_COLUMNS
-req_cols_pattern = r'("one_shot_ai": "BOOLEAN DEFAULT 0",\s*)("profile_pic": "TEXT DEFAULT NULL",)'
-req_cols_repl = r'\1\2\n    "notify_trade_results": "BOOLEAN DEFAULT 1",\n    "notify_market_trends": "BOOLEAN DEFAULT 1",'
-code = re.sub(req_cols_pattern, req_cols_repl, code)
+old_req = '''    "min_sports_confidence": "REAL DEFAULT 70.0",'''
+new_req = '''    "min_sports_confidence": "REAL DEFAULT 70.0",
+    "min_sports_edge": "REAL DEFAULT 3.0",
+    "sports_max_wager": "REAL DEFAULT 10.0",
+    "sports_include_live": "BOOLEAN DEFAULT 0",'''
+if old_req in content:
+    content = content.replace(old_req, new_req)
 
-# Add to update_user_config signature
-sig_pattern = r'(ignore_pass_technical: bool = False, \s*one_shot_ai: bool = False)'
-sig_repl = r'\1,\n    notify_trade_results: bool = True,\n    notify_market_trends: bool = True'
-code = re.sub(sig_pattern, sig_repl, code)
+old_args = '''    use_kelly_criterion: bool = False,
+    trading_universe: str = "FINANCIAL",
+    min_sports_confidence: float = 70.0
+):'''
+new_args = '''    use_kelly_criterion: bool = False,
+    trading_universe: str = "FINANCIAL",
+    min_sports_confidence: float = 70.0,
+    min_sports_edge: float = 3.0,
+    sports_max_wager: float = 10.0,
+    sports_include_live: bool = False
+):'''
+if old_args in content:
+    content = content.replace(old_args, new_args)
 
-# Add to update_user_config SQL SET
-sql_pattern = r'(ignore_pass_technical = \?, one_shot_ai = \?)'
-sql_repl = r'\1, notify_trade_results = ?, notify_market_trends = ?'
-code = re.sub(sql_pattern, sql_repl, code)
+old_sql = """                use_kelly_criterion = ?
+            WHERE id = ?
+        ''', ("""
+new_sql = """                use_kelly_criterion = ?,
+                min_sports_edge = ?, sports_max_wager = ?, sports_include_live = ?
+            WHERE id = ?
+        ''', ("""
+if old_sql in content:
+    content = content.replace(old_sql, new_sql)
 
-# Add to update_user_config SQL values
-val_pattern = r'(1 if ignore_pass_technical else 0, 1 if one_shot_ai else 0, )(user_id)'
-val_repl = r'\1 1 if notify_trade_results else 0, 1 if notify_market_trends else 0, \2'
-code = re.sub(val_pattern, val_repl, code)
+old_tuple = '''            1 if use_kelly_criterion else 0, user_id
+        ))'''
+new_tuple = '''            1 if use_kelly_criterion else 0,
+            min_sports_edge, sports_max_wager, 1 if sports_include_live else 0, user_id
+        ))'''
+if old_tuple in content:
+    content = content.replace(old_tuple, new_tuple)
 
-with open(path, "w", encoding="utf-8") as f:
-    f.write(code)
+old_copy = '''        "min_edge_cents": float(source_user.get("min_edge_cents", 0.0) or 0.0),
+        "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0)))
+    }'''
+new_copy = '''        "min_edge_cents": float(source_user.get("min_edge_cents", 0.0) or 0.0),
+        "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0))),
+        "min_sports_confidence": float(source_user.get("min_sports_confidence", 70.0)),
+        "min_sports_edge": float(source_user.get("min_sports_edge", 3.0)),
+        "sports_max_wager": float(source_user.get("sports_max_wager", 10.0)),
+        "sports_include_live": int(bool(source_user.get("sports_include_live", 0)))
+    }'''
+if old_copy in content:
+    content = content.replace(old_copy, new_copy)
 
-print("Updated models.py for notifications")
+with open('backend/database/models.py', 'w', encoding='utf-8') as f:
+    f.write(content)
+print("Updated models.py")
