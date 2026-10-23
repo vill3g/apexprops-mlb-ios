@@ -119,6 +119,50 @@ def engine_root():
     """Health and capabilities endpoint for the trading engine."""
     return {"status": "ok", "assets": list(SUPPORTED_ASSETS)}
 
+def _dossier_trade_numbers(asset: str, decision: dict, panel: dict) -> dict:
+    """Live quotes, fee, break-even and calibrated edge for the dossier card, plus
+    the AI's recent record. Quotes come from the live market cache when available."""
+    import time as _time
+    from backend.btc.gemini_panel import call_stats, kalshi_taker_fee
+    from backend.btc.market_results import market_close_epoch
+
+    ticker = panel.get("ticker")
+    quotes = dict(panel.get("quotes_at_call") or {})
+    live = False
+    try:
+        from backend.engine.kalshi_market_cache import get_market_cache_instance
+        m = get_market_cache_instance().get_market(str(ticker or "").upper()) if ticker else None
+        if m and m.get("yes_ask"):
+            quotes = {k: m.get(k) for k in ("yes_ask", "yes_bid", "no_ask", "no_bid")}
+            live = True
+    except Exception as e:
+        logger.debug(f"[Dossier] live quote lookup failed: {e}")
+
+    stats = call_stats(asset, decision.get("confidence"))
+    win_rate = stats["band"]["win_rate"]
+    side = str(decision.get("direction") or "").upper()
+    ask = float(quotes.get(f"{side.lower()}_ask") or 0) if side in ("YES", "NO") else 0.0
+    fee = kalshi_taker_fee(ask)
+    break_even = round(ask + fee, 4) if ask else None
+    close = market_close_epoch(ticker)
+    return {
+        "quotes": quotes,
+        "quotes_live": live,
+        "seconds_left": max(0, round(close - _time.time())) if close else None,
+        "trade": {
+            "side": side if side in ("YES", "NO") else None,
+            "ask": ask or None,
+            "fee": fee if ask else None,
+            "break_even": break_even,
+            "calibrated_win_rate": win_rate,
+            "edge": round(win_rate - break_even, 4) if (win_rate is not None and break_even) else None,
+        },
+        "calibration": stats["band"],
+        "recent_calls": stats["recent"],
+        "recent_wins": stats["recent_wins"],
+    }
+
+
 @_engine_root_router.get("/api/engine/{asset}/gemini/live-dossier")
 def api_gemini_live_dossier(asset: str):
     """Returns the latest real-time Gemini Head Trader decision, conviction, and reasoning dossier."""
@@ -129,8 +173,9 @@ def api_gemini_live_dossier(asset: str):
             # Find the newest entry for this asset
             matches = [v for k, v in _MASTER_CACHE.items() if k[0] == a_norm]
         if matches:
-            latest = matches[-1]
-            return JSONResponse({
+            latest = max(matches, key=lambda v: v.get("timestamp") or v.get("ts") or 0)
+            panel = dict(latest.get("panel") or {})
+            return JSONResponse(sanitize_btc_json({
                 "status": "ok",
                 "asset": a_norm,
                 "has_decision": True,
@@ -138,9 +183,12 @@ def api_gemini_live_dossier(asset: str):
                 "confidence": latest.get("confidence"),
                 "reason": latest.get("reason"),
                 "model": latest.get("model"),
+                "latency_s": latest.get("latency_s"),
                 "timestamp": latest.get("timestamp") or latest.get("ts"),
-                "cached": True
-            })
+                "cached": True,
+                **panel,
+                **_dossier_trade_numbers(a_norm, latest, panel),
+            }))
         return JSONResponse({
             "status": "ok",
             "asset": a_norm,

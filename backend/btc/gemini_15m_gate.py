@@ -1948,6 +1948,18 @@ def _is_cached_decision_valid(cached: Optional[Dict[str, Any]], sec_elapsed: flo
 
 
 
+def _with_panel(res: Dict[str, Any], dossier: Dict[str, Any], asset: str, interval_id: str) -> Dict[str, Any]:
+    """Attach the dashboard card's dossier summary to a decision and log the call."""
+    try:
+        from backend.btc.gemini_panel import panel_summary, record_call
+        res = dict(res)
+        res["panel"] = panel_summary(dossier)
+        record_call(asset, interval_id, res.get("direction"), res.get("confidence"))
+    except Exception as e:
+        logger.debug(f"[Gemini15mGate] panel summary skipped: {e}")
+    return res
+
+
 def prefetch_master_decision_async(
 
     asset: str,
@@ -2025,6 +2037,7 @@ def prefetch_master_decision_async(
                 except Exception as e:
                     logger.debug(f"[Gemini15mGate] Dual model debate worker fallback: {e}")
                     res = _call_gemini_master_decision(dossier, allow_pass=allow_pass)
+                res = _with_panel(res, dossier, asset, interval_id)
 
                 with _CACHE_LOCK:
                     _MASTER_CACHE[cache_key] = res
@@ -2185,6 +2198,7 @@ def get_or_create_master_decision(
         except Exception as e:
             logger.debug(f"[Gemini15mGate] Dual model debate sync fallback: {e}")
             res = _call_gemini_master_decision(dossier, allow_pass=allow_pass)
+        res = _with_panel(res, dossier, asset, interval_id)
 
         with _CACHE_LOCK:
 

@@ -1196,29 +1196,83 @@ if (document.readyState === 'loading') {
                     </div>
                 </div>
 
-                <!-- 🧠 Gemini Live Reasoning Dossier Card (Financial Universe) -->
-                <div id="gemini-live-dossier-card" class="w-full bg-[#0d121f] border border-purple-500/30 rounded-none p-3.5 shadow-lg space-y-2.5 transition-all">
-                    <div class="flex items-center justify-between border-b border-white/5 pb-2">
-                        <div class="flex items-center gap-2">
+                <!-- 🧠 Gemini Head Trader Dossier Card (Financial Universe) — compact, same height as before;
+                     tap the footer for signals, warnings, recent calls and a stake calculator. -->
+                <style>
+                    #gemini-live-dossier-card { background:#0d121f; border:1px solid rgba(168,85,247,.3); padding:14px; box-shadow:0 10px 15px -3px rgba(0,0,0,.3); transition:all .2s; }
+                    #gemini-live-dossier-card .gd-mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
+                    #gemini-live-dossier-card .gd-head { display:flex; align-items:center; justify-content:space-between; gap:8px; border-bottom:1px solid rgba(255,255,255,.05); padding-bottom:8px; }
+                    #gemini-live-dossier-card .gd-row { display:flex; align-items:center; gap:6px; min-width:0; }
+                    #gemini-live-dossier-card .gd-title { font-size:12px; font-weight:900; letter-spacing:.05em; color:#d8b4fe; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+                    #gemini-live-dossier-card .gd-chip { font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,.05); color:#d1d5db; white-space:nowrap; }
+                    #gemini-live-dossier-card .gd-call { font-size:10px; font-weight:900; padding:2px 8px; border-radius:6px; border:1px solid rgba(168,85,247,.4); background:rgba(168,85,247,.2); color:#d8b4fe; white-space:nowrap; }
+                    #gemini-live-dossier-card .gd-call.yes { border-color:rgba(52,211,153,.4); background:rgba(16,185,129,.15); color:#6ee7b7; }
+                    #gemini-live-dossier-card .gd-call.no { border-color:rgba(248,113,113,.4); background:rgba(239,68,68,.15); color:#fca5a5; }
+                    #gemini-live-dossier-card .gd-call.pass { border-color:rgba(251,191,36,.4); background:rgba(245,158,11,.15); color:#fcd34d; }
+                    #gemini-live-dossier-card .gd-won { color:#fcd34d; background:rgba(245,158,11,.1); }
+                    #gemini-live-dossier-card .gd-reason { font-size:11px; line-height:1.625; color:#d1d5db; margin:10px 0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+                    #gemini-live-dossier-card details { border-top:1px solid rgba(255,255,255,.05); padding-top:4px; }
+                    #gemini-live-dossier-card summary { list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:9.5px; color:#9ca3af; white-space:nowrap; }
+                    #gemini-live-dossier-card summary::-webkit-details-marker { display:none; }
+                    #gemini-live-dossier-card .gd-chev { color:#6b7280; font-size:11px; transition:transform .15s; display:inline-block; }
+                    #gemini-live-dossier-card details[open] .gd-chev { transform:rotate(90deg); }
+                    #gemini-live-dossier-card .gd-muted { color:#6b7280; }
+                    #gemini-live-dossier-card .gd-white { color:#fff; font-weight:700; }
+                    #gemini-live-dossier-card .bull { color:#34d399; } #gemini-live-dossier-card .bear { color:#f87171; } #gemini-live-dossier-card .neut { color:#9ca3af; }
+                    #gemini-live-dossier-card .gd-dot { width:5px; height:5px; border-radius:9999px; display:inline-block; }
+                    #gemini-live-dossier-card .gd-body { margin-top:10px; display:flex; flex-direction:column; gap:10px; font-size:10.5px; }
+                    #gemini-live-dossier-card .gd-warn { display:flex; gap:6px; padding:4px 8px; border-radius:4px; }
+                    #gemini-live-dossier-card .gd-warn.amber { background:rgba(245,158,11,.1); color:#fde68a; }
+                    #gemini-live-dossier-card .gd-warn.red { background:rgba(239,68,68,.1); color:#fecaca; }
+                    #gemini-live-dossier-card .gd-warn.green { background:rgba(16,185,129,.1); color:#a7f3d0; }
+                    #gemini-live-dossier-card .gd-sig { display:flex; align-items:center; gap:8px; }
+                    #gemini-live-dossier-card .gd-bar { flex:1; height:10px; border-radius:1px; }
+                    #gemini-live-dossier-card .gd-tags { display:flex; flex-wrap:wrap; gap:4px; font-size:9.5px; }
+                    #gemini-live-dossier-card .gd-tag { padding:2px 6px; border-radius:4px; background:rgba(255,255,255,.05); color:#9ca3af; }
+                    #gemini-live-dossier-card .gd-tag.bull { background:rgba(16,185,129,.1); } #gemini-live-dossier-card .gd-tag.bear { background:rgba(239,68,68,.1); }
+                    #gemini-live-dossier-card input { width:56px; background:rgba(0,0,0,.3); border:1px solid rgba(255,255,255,.1); border-radius:4px; padding:2px 6px; color:#fff; font-size:10.5px; }
+                    #gemini-live-dossier-card input:focus { outline:none; border-color:rgba(192,132,252,.6); }
+                    @media (max-width:420px) { #gemini-live-dossier-card .gd-title { display:none; } }
+                </style>
+                <div id="gemini-live-dossier-card" class="w-full">
+                    <div class="gd-head">
+                        <div class="gd-row">
                             <span class="text-base">🧠</span>
-                            <span class="text-xs font-black tracking-wider text-purple-300 uppercase">Gemini Head Trader Dossier</span>
-                            <span id="gemini-dossier-model" class="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/35">GEMINI-3.5-FLASH</span>
+                            <span class="gd-title">Head Trader</span>
+                            <span id="gemini-dossier-countdown" class="gd-chip gd-mono" title="Time left in this 15-minute interval">--:--</span>
+                            <span id="gemini-dossier-warn-icon" class="hidden" style="font-size:11px;cursor:help">⚠️</span>
                         </div>
-                        <div class="flex items-center gap-1.5">
-                            <span id="gemini-dossier-dir-badge" class="text-[10px] font-black px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/40">EVALUATING</span>
-                            <span id="gemini-dossier-conf-badge" class="text-[10px] font-mono font-bold text-gray-300 bg-white/5 px-1.5 py-0.5 rounded">--%</span>
+                        <div class="gd-row" style="flex-shrink:0">
+                            <span id="gemini-dossier-dir-badge" class="gd-call">EVALUATING</span>
+                            <span id="gemini-dossier-conf-badge" class="gd-chip gd-mono" title="AI confidence">--%</span>
+                            <span id="gemini-dossier-won-badge" class="gd-chip gd-mono gd-won hidden"></span>
                         </div>
                     </div>
-                    <div class="text-[11px] text-gray-300 leading-relaxed font-sans" id="gemini-dossier-reason">
-                        Awaiting initial 15-minute interval telemetry analysis...
-                    </div>
-                    <div class="flex items-center justify-between text-[9.5px] font-mono text-gray-400 pt-1 border-t border-white/5">
-                        <span id="gemini-dossier-updated" class="flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                            Live Reasoning Active
-                        </span>
-                        <span class="text-purple-400/80">Every Interval Force Mode</span>
-                    </div>
+                    <div id="gemini-dossier-reason" class="gd-reason">Awaiting initial 15-minute interval telemetry analysis...</div>
+                    <details id="gemini-dossier-details">
+                        <summary>
+                            <span id="gemini-dossier-numbers" class="gd-row gd-mono" style="overflow:hidden;gap:8px">
+                                <span class="gd-muted">Live reasoning active</span>
+                            </span>
+                            <span class="gd-row gd-mono" style="flex-shrink:0">
+                                <span id="gemini-dossier-dots" class="gd-row" style="gap:2px" title="Signals: green supports YES, red supports NO"></span>
+                                <span id="gemini-dossier-record" style="color:#d1d5db" title="Recent AI calls on this asset that won"></span>
+                                <span class="gd-chev">›</span>
+                            </span>
+                        </summary>
+                        <div class="gd-body">
+                            <div id="gemini-dossier-warnings" style="display:flex;flex-direction:column;gap:4px"></div>
+                            <div id="gemini-dossier-signals" style="display:flex;flex-direction:column;gap:2px"></div>
+                            <div id="gemini-dossier-history-row" class="gd-sig gd-mono" style="font-size:9.5px"></div>
+                            <div id="gemini-dossier-models" class="gd-tags gd-mono"></div>
+                            <div id="gemini-dossier-stake-row" class="gd-sig gd-mono">
+                                <span class="gd-muted" style="flex-shrink:0">Stake $</span>
+                                <input id="gemini-dossier-stake" type="number" min="1" step="1" value="25" class="gd-mono">
+                                <span id="gemini-dossier-stake-out" style="color:#9ca3af;white-space:nowrap"></span>
+                            </div>
+                            <div id="gemini-dossier-meta" class="gd-mono gd-muted" style="font-size:9px;text-align:right"></div>
+                        </div>
+                    </details>
                 </div>
 
                 <!-- Active Position HUD (Audit Item 4) -->
@@ -4199,29 +4253,114 @@ if (document.readyState === 'loading') {
                 } else {
                     card.style.display = 'block';
                 }
-                if (data && data.has_decision) {
-                    const dirEl = document.getElementById('gemini-dossier-dir-badge');
-                    const confEl = document.getElementById('gemini-dossier-conf-badge');
-                    const reasonEl = document.getElementById('gemini-dossier-reason');
-                    const modelEl = document.getElementById('gemini-dossier-model');
-                    const dir = String(data.direction || 'PASS').toUpperCase();
-                    if (dirEl) {
-                        dirEl.textContent = dir;
-                        dirEl.className = dir === 'YES' ? 'text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : (dir === 'NO' ? 'text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40');
-                    }
-                    if (confEl && data.confidence) confEl.textContent = `${Math.round(data.confidence)}% Conviction`;
-                    if (reasonEl && data.reason) reasonEl.textContent = data.reason;
-                    if (modelEl && data.model) modelEl.textContent = String(data.model).toUpperCase();
-                    const updatedEl = document.getElementById('gemini-dossier-updated');
-                    if (updatedEl && data.timestamp) {
-                        const secAgo = Math.max(0, Math.round(Date.now() / 1000 - data.timestamp));
-                        updatedEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span> Evaluated ${secAgo}s ago`;
-                    }
-                }
+                if (data && data.has_decision) renderGeminiDossier(data);
             } catch(e) {
                 // non-blocking
             }
         }
+
+        // ── Head Trader Dossier card rendering ──
+        const _gdEsc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const _gdTone = { bull: '#34d399', bear: '#f87171', neut: '#4b5563' };
+        const _gdCents = v => `${Math.round(Number(v) * 100)}¢`;
+        let _gdLast = null, _gdCloseAt = null;
+
+        function renderGeminiDossier(d) {
+            _gdLast = d;
+            const $ = id => document.getElementById(id);
+            const dir = String(d.direction || 'PASS').toUpperCase();
+            const t = d.trade || {};
+
+            // Header
+            const badge = $('gemini-dossier-dir-badge');
+            badge.textContent = dir === 'YES' ? 'YES ↑' : dir === 'NO' ? 'NO ↓' : dir;
+            badge.className = 'gd-call ' + (dir === 'YES' ? 'yes' : dir === 'NO' ? 'no' : 'pass');
+            $('gemini-dossier-conf-badge').textContent = d.confidence != null ? `${Math.round(d.confidence)}%` : '--%';
+            const cal = d.calibration || {}, won = $('gemini-dossier-won-badge');
+            if (cal.win_rate != null) {
+                won.textContent = `won ${Math.round(cal.win_rate * 100)}%`;
+                won.title = `Past ${d.asset} calls at ${cal.low}–${cal.high}% confidence won ${cal.wins} of ${cal.n}`;
+                won.classList.remove('hidden');
+            } else if (cal.n != null) {
+                won.textContent = `won —`;
+                won.title = `Only ${cal.n} scored calls at ${cal.low}–${cal.high}% confidence so far; ${10} needed`;
+                won.classList.remove('hidden');
+            } else won.classList.add('hidden');
+            const warnings = d.warnings || [];
+            const warnIcon = $('gemini-dossier-warn-icon');
+            warnIcon.classList.toggle('hidden', !warnings.length);
+            warnIcon.title = warnings.map(w => w.text).join(' · ');
+            _gdCloseAt = d.seconds_left != null ? Date.now() + d.seconds_left * 1000 : null;
+            _gdTick();
+
+            $('gemini-dossier-reason').textContent = d.reason || '';
+
+            // Footer numbers
+            const parts = [];
+            if (d.spot_minus_strike != null) {
+                const diff = Number(d.spot_minus_strike);
+                parts.push(`<span class="${diff >= 0 ? 'bull' : 'bear'}" style="font-weight:700" title="Spot minus strike">${diff >= 0 ? '+' : '−'}$${Math.abs(diff).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`);
+            }
+            if (t.ask) parts.push(`<span title="${_gdEsc(t.side)} ask${d.quotes_live ? ' (live)' : ' (at time of call)'}"><span class="gd-muted">ask</span> <span class="gd-white">${_gdCents(t.ask)}</span></span>`);
+            if (t.break_even) parts.push(`<span title="Win rate needed to profit after the Kalshi fee (${_gdCents(t.fee)})"><span class="gd-muted">BE</span> <span class="gd-white">${Math.round(t.break_even * 100)}%</span></span>`);
+            if (t.edge != null) {
+                const e = Math.round(t.edge * 1000) / 10;
+                parts.push(`<span title="Historical win rate minus break-even, per contract"><span class="gd-muted">edge</span> <span class="${e > 1 ? 'bull' : e < 0 ? 'bear' : 'neut'}" style="font-weight:700">${e >= 0 ? '+' : '−'}${Math.abs(e).toFixed(Math.abs(e) < 10 ? 1 : 0)}¢</span></span>`);
+            }
+            $('gemini-dossier-numbers').innerHTML = parts.length ? parts.join('') : '<span class="gd-muted">Live reasoning active</span>';
+
+            const signals = d.signals || [];
+            const ups = signals.filter(s => s.tone === 'bull').length, downs = signals.filter(s => s.tone === 'bear').length;
+            $('gemini-dossier-dots').innerHTML = signals.map(s => `<span class="gd-dot" style="background:${_gdTone[s.tone] || _gdTone.neut}"></span>`).join('');
+            $('gemini-dossier-dots').title = `${ups} signals support YES, ${downs} support NO`;
+            const recent = d.recent_calls || [];
+            $('gemini-dossier-record').textContent = recent.length ? `${d.recent_wins}/${recent.length}` : '';
+
+            // Expanded details
+            $('gemini-dossier-warnings').innerHTML = warnings.map(w =>
+                `<div class="gd-warn ${_gdEsc(w.level)}"><span>${_gdEsc(w.icon)}</span><span>${_gdEsc(w.text)}</span></div>`).join('');
+            $('gemini-dossier-signals').innerHTML = signals.map(s =>
+                `<div class="gd-sig"><span class="gd-dot" style="background:${_gdTone[s.tone] || _gdTone.neut};flex-shrink:0"></span><span class="neut" style="flex:1">${_gdEsc(s.name)}</span><span class="gd-mono ${_gdEsc(s.tone)}">${_gdEsc(s.value)}</span></div>`).join('');
+            $('gemini-dossier-history-row').innerHTML = recent.length
+                ? `<span class="gd-muted">Last ${recent.length} calls</span><span class="gd-row" style="flex:1;gap:2px">${recent.map(c =>
+                    `<span class="gd-bar" style="background:${c.won ? '#34d399' : '#f87171'}" title="${_gdEsc(c.ticker)}: ${_gdEsc(c.direction)} at ${Math.round(c.confidence)}% — ${c.won ? 'won' : 'lost'}"></span>`).join('')}</span><span style="color:#d1d5db">${d.recent_wins}/${recent.length} won</span>`
+                : '<span class="gd-muted">No scored calls yet — results appear as markets settle.</span>';
+
+            const m = d.models || {}, tags = [];
+            const agree = side => side && dir !== 'PASS' && String(side).toUpperCase().includes(dir);
+            if (m.ml_prob_up_pct != null) {
+                const up = Number(m.ml_prob_up_pct), mlSide = up >= 50 ? 'YES' : 'NO';
+                tags.push(`<span class="gd-tag ${agree(mlSide) ? 'bull' : 'bear'}">ML ${Math.round(up)}% ↑ ${agree(mlSide) ? '✓' : '✗'}</span>`);
+            }
+            if (m.tech_gate_direction) tags.push(`<span class="gd-tag ${agree(m.tech_gate_direction) ? 'bull' : 'bear'}">Tech gate ${_gdEsc(m.tech_gate_direction)} ${agree(m.tech_gate_direction) ? '✓' : '✗'}</span>`);
+            if (m.voting_direction) tags.push(`<span class="gd-tag ${agree(m.voting_direction) ? 'bull' : 'bear'}">Voting ${_gdEsc(m.voting_direction)}${m.voting_agreement != null ? ` ${Math.round(m.voting_agreement * 100)}%` : ''} ${agree(m.voting_direction) ? '✓' : '✗'}</span>`);
+            if (d.strike != null && d.spot != null) tags.push(`<span class="gd-tag">Strike ${Number(d.strike).toLocaleString()} · spot ${Number(d.spot).toLocaleString()}</span>`);
+            $('gemini-dossier-models').innerHTML = tags.join('');
+
+            $('gemini-dossier-stake-row').style.display = t.ask ? '' : 'none';
+            _gdStake();
+            const ago = d.timestamp ? Math.max(0, Math.round(Date.now() / 1000 - d.timestamp)) : null;
+            $('gemini-dossier-meta').textContent = [d.model, d.latency_s ? `${d.latency_s}s` : null, ago != null ? `called ${ago}s ago` : null, 'not financial advice'].filter(Boolean).join(' · ');
+        }
+
+        function _gdStake() {
+            const t = (_gdLast && _gdLast.trade) || {}, out = document.getElementById('gemini-dossier-stake-out');
+            if (!out || !t.ask) return;
+            const cost = t.ask + (t.fee || 0), stake = Math.max(0, Number(document.getElementById('gemini-dossier-stake').value) || 0);
+            const q = Math.floor(stake / cost);
+            out.innerHTML = `<span class="gd-white">${q}</span> ${_gdEsc(t.side)} · win <span class="bull" style="font-weight:700">+$${(q * (1 - cost)).toFixed(2)}</span> · lose <span class="bear" style="font-weight:700">−$${(q * cost).toFixed(2)}</span>`;
+        }
+
+        function _gdTick() {
+            const el = document.getElementById('gemini-dossier-countdown');
+            if (!el) return;
+            if (_gdCloseAt == null) { el.textContent = '--:--'; return; }
+            const left = Math.max(0, Math.round((_gdCloseAt - Date.now()) / 1000));
+            el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        }
+
+        document.getElementById('gemini-dossier-stake')?.addEventListener('input', _gdStake);
+        setInterval(_gdTick, 1000);
         setInterval(updateGeminiLiveDossier, 10000);
         setTimeout(updateGeminiLiveDossier, 2500);
 
