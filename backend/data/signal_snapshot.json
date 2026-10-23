@@ -1,136 +1,115 @@
 {
-  "updated": 1792796957.0446925,
+  "updated": 1792799801.7688844,
   "results": {
-    "SNIPER|BLEND": {
-      "ts": 1792796616.2431777,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-ADV-SAAS-429",
-      "strike": 78000.0,
-      "sec_left": 870,
+    "AUTO|ML_ENSEMBLE": {
+      "ts": 1792799801.7688844,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232000-00",
+      "strike": 2377.85,
+      "sec_left": 186,
       "effective_style": "SNIPER",
-      "direction": "ABOVE",
-      "probability_percent": 85,
-      "ml_prob": null,
-      "conviction_grade": "GRADE A+",
-      "pre_gate_direction": "",
-      "pre_gate_prob": null,
-      "pre_gate_grade": "",
-      "catalysts": [],
-      "chart": {
-        "open": 77900.0,
-        "close": 78000.0,
-        "ema9": 78000.0,
-        "ema21": 78000.0,
-        "flow": 0.333
-      }
-    },
-    "AMBUSH|RL_DQN": {
-      "ts": 1792796841.0964785,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT231915-15",
-      "strike": 0.077887,
-      "sec_left": 446,
-      "effective_style": "AMBUSH",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.4916,
+      "ml_prob": 0.5266,
       "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 50.84,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 50.8%"
-      ],
-      "chart": {
-        "open": 0.0778728,
-        "close": 0.077679,
-        "ema9": 0.07859532500101071,
-        "ema21": 0.07899956208376951,
-        "flow": -0.574
-      }
-    },
-    "AUTO|RL_DQN": {
-      "ts": 1792796957.0446925,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT231915-15",
-      "strike": 0.077887,
-      "sec_left": 331,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4916,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 50.84,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\udde0 Signal Isolation: 100% Deep Q-Network (RL) active. Raw Prob: 50.8%"
-      ],
-      "chart": {
-        "open": 0.0775661,
-        "close": 0.0775365,
-        "ema9": 0.07774846587899016,
-        "ema21": 0.07787848335414217,
-        "flow": -0.141
-      }
-    },
-    "AUTO|RL_PPO": {
-      "ts": 1792796957.0446925,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT231915-15",
-      "strike": 0.077887,
-      "sec_left": 331,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.4916,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 62.0,
-      "pre_gate_grade": "GRADE B SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.5x depth ratio)",
-        "\ud83d\udcca Signal Isolation: 100% Chart Setup active, ignoring ML model."
-      ],
-      "chart": {
-        "open": 0.0775661,
-        "close": 0.0775365,
-        "ema9": 0.07774846587899016,
-        "ema21": 0.07787848335414217,
-        "flow": -0.141
-      }
-    },
-    "SNIPER|TECHNICAL_ONLY": {
-      "ts": 1792796937.5110946,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT231915-15",
-      "strike": 0.077887,
-      "sec_left": 350,
-      "effective_style": "SNIPER",
-      "direction": "YES",
-      "probability_percent": 75.0,
-      "ml_prob": 0.7031,
-      "conviction_grade": "TECHNICAL_ONLY",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 81.0,
-      "pre_gate_grade": "GRADE A+ SETUP",
+      "pre_gate_prob": 55.16,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.8x depth ratio)",
-        "Lower Bollinger Absorption: Long lower wick hammer (44% of range)",
-        "Oversold Spring: RSI at 21.5 reclaimed off band floor",
-        "\ud83d\ude80 Microstructure Confluence: Order book depth confirms aggressive institutional bidding.",
-        "\ud83d\udcca Signal Isolation: 100% Chart Setup active, ignoring ML model.",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 0)."
+        "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 52.7%",
+        "\ud83d\udcc8 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples)."
       ],
       "chart": {
-        "open": 0.0778728,
-        "close": 0.0775648,
-        "ema9": 0.07857248500101072,
-        "ema21": 0.0789891802655877,
-        "flow": -0.579
+        "open": 2377.73,
+        "close": 2384.16,
+        "ema9": 2380.9330895158114,
+        "ema21": 2387.572907194018,
+        "flow": 0.689
+      }
+    },
+    "GEMINI_REASONING|GEMINI_REASONING": {
+      "ts": 1792799801.7688844,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232000-00",
+      "strike": 2377.85,
+      "sec_left": 186,
+      "effective_style": "GEMINI_REASONING",
+      "direction": "NO",
+      "probability_percent": 69,
+      "ml_prob": 0.3433,
+      "conviction_grade": "GRADE A SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 66.5,
+      "pre_gate_grade": "GRADE A SETUP",
+      "catalysts": [
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.71%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (65.7%), blended confidence 69.0%",
+        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+4 edge points)."
+      ],
+      "chart": {
+        "open": 2377.73,
+        "close": 2384.16,
+        "ema9": 2380.9330895158114,
+        "ema21": 2387.572907194018,
+        "flow": 0.689
+      }
+    },
+    "PREDICTION|AI_ONLY": {
+      "ts": 1792799801.7688844,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232000-00",
+      "strike": 2377.85,
+      "sec_left": 186,
+      "effective_style": "PREDICTION",
+      "direction": "BELOW",
+      "probability_percent": 70,
+      "ml_prob": 0.3433,
+      "conviction_grade": "PREDICTION MODEL",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 63.17,
+      "pre_gate_grade": "GRADE B+ SETUP",
+      "catalysts": [
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 29.3%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 65.7%",
+        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)"
+      ],
+      "chart": {
+        "open": 2377.73,
+        "close": 2384.16,
+        "ema9": 2380.9330895158114,
+        "ema21": 2387.572907194018,
+        "flow": 0.689
+      }
+    },
+    "AUTO|AUTO": {
+      "ts": 1792799801.7688844,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232000-00",
+      "strike": 2377.85,
+      "sec_left": 186,
+      "effective_style": "SNIPER",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.5266,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 71.5,
+      "pre_gate_grade": "GRADE A SETUP",
+      "catalysts": [
+        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($2,384.1600) is above strike ($2,377.8500) with bullish live candle.",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.71%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
+        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)"
+      ],
+      "chart": {
+        "open": 2377.73,
+        "close": 2384.16,
+        "ema9": 2380.9330895158114,
+        "ema21": 2387.572907194018,
+        "flow": 0.689
       }
     }
   }
