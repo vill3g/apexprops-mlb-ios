@@ -344,7 +344,6 @@ def fast_exit_check() -> int:
         raw_m = t.get("raw_json") or {}
         if isinstance(raw_m, str):
             try:
-                import json
                 raw_m = json.loads(raw_m)
             except Exception:
                 raw_m = {}
