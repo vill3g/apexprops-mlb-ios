@@ -1,0 +1,747 @@
+{
+  "total_legs": 74,
+  "compounded_price": 0.023265679580692283,
+  "multiplier": 42.98176619048256,
+  "legs": [
+    {
+      "ticker": "KXEPLSPREAD-26OCT10ARSLEE-LEE3",
+      "event_ticker": "KXEPLSPREAD-26OCT10ARSLEE",
+      "title": "Leeds United wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.99,
+      "close_time": "2026-10-12T11:30:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10CHABRC-CHA3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10CHABRC",
+      "title": "Charlton wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-12T11:30:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10WBABC-BC3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10WBABC",
+      "title": "Birmingham wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.95,
+      "close_time": "2026-10-12T11:30:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10SWANOR-NOR3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10SWANOR",
+      "title": "Norwich wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T11:30:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RVCATH-RVC3",
+      "event_ticker": "KXLALIGASPREAD-26OCT10RVCATH",
+      "title": "Vallecano wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.94,
+      "close_time": "2026-10-12T12:00:00Z",
+      "series": "KXLALIGASPREAD"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10GENFIO-GEN3",
+      "event_ticker": "KXSERIEASPREAD-26OCT10GENFIO",
+      "title": "Genoa wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T13:00:00Z",
+      "series": "KXSERIEASPREAD"
+    },
+    {
+      "ticker": "KXCZEFLGAME-26OCT10HRKART-ART",
+      "event_ticker": "KXCZEFLGAME-26OCT10HRKART",
+      "title": "Artis wins",
+      "side": "no",
+      "price": 0.87,
+      "bid": 0.86,
+      "close_time": "2026-10-12T13:00:00Z",
+      "series": "KXCZEFLGAME"
+    },
+    {
+      "ticker": "KXCZEFLGAME-26OCT10VIKMLA-MLA",
+      "event_ticker": "KXCZEFLGAME-26OCT10VIKMLA",
+      "title": "Mlada Boleslav wins",
+      "side": "no",
+      "price": 0.86,
+      "bid": 0.85,
+      "close_time": "2026-10-12T13:00:00Z",
+      "series": "KXCZEFLGAME"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10FCABMU-FCA3",
+      "event_ticker": "KXBUNDESLIGASPREAD-26OCT10FCABMU",
+      "title": "Augsburg wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.99,
+      "close_time": "2026-10-12T13:30:00Z",
+      "series": "KXBUNDESLIGASPREAD"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10PADVFB-1",
+      "event_ticker": "KXBUNDESLIGATOTAL-26OCT10PADVFB",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-12T13:30:00Z",
+      "series": "KXBUNDESLIGATOTAL"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10TSGHSV-HSV3",
+      "event_ticker": "KXBUNDESLIGASPREAD-26OCT10TSGHSV",
+      "title": "Hamburg wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T13:30:00Z",
+      "series": "KXBUNDESLIGASPREAD"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10M05LEV-1",
+      "event_ticker": "KXBUNDESLIGATOTAL-26OCT10M05LEV",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T13:30:00Z",
+      "series": "KXBUNDESLIGATOTAL"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10UNISVE-1",
+      "event_ticker": "KXBUNDESLIGATOTAL-26OCT10UNISVE",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T13:30:00Z",
+      "series": "KXBUNDESLIGATOTAL"
+    },
+    {
+      "ticker": "KXSAUDIPLSPREAD-26OCT10HAZNEO-HAZ3",
+      "event_ticker": "KXSAUDIPLSPREAD-26OCT10HAZNEO",
+      "title": "Al-Hazm wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T13:50:00Z",
+      "series": "KXSAUDIPLSPREAD"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10CFCBOU-BOU3",
+      "event_ticker": "KXEPLSPREAD-26OCT10CFCBOU",
+      "title": "Bournemouth wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10SHULIC-LIC3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10SHULIC",
+      "title": "Lincoln wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10SUNBRI-SUN3",
+      "event_ticker": "KXEPLSPREAD-26OCT10SUNBRI",
+      "title": "Sunderland wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10MIDWOL-WOL3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10MIDWOL",
+      "title": "Wolverhampton wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXELITESERIENGAME-26OCT10BOGKBK-KBK",
+      "event_ticker": "KXELITESERIENGAME-26OCT10BOGKBK",
+      "title": "Kristiansund wins",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXELITESERIENGAME"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10PNEMIL-PNE3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10PNEMIL",
+      "title": "Preston wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10BOLSTK-BOL3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10BOLSTK",
+      "title": "Bolton wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.94,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPTOTAL-26OCT10BLACAR-1",
+      "event_ticker": "KXEFLCHAMPIONSHIPTOTAL-26OCT10BLACAR",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPTOTAL"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10DERWRE-DER3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10DERWRE",
+      "title": "Derby wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXSCOTTISHPREMGAME-26OCT10RFCKIL-KIL",
+      "event_ticker": "KXSCOTTISHPREMGAME-26OCT10RFCKIL",
+      "title": "Kilmarnock wins",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXSCOTTISHPREMGAME"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10IPSFUL-IPS3",
+      "event_ticker": "KXEPLSPREAD-26OCT10IPSFUL",
+      "title": "Ipswich Town wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.95,
+      "bid": 0.94,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10AVLBRE-AVL3",
+      "event_ticker": "KXEPLSPREAD-26OCT10AVLBRE",
+      "title": "Aston Villa wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.95,
+      "bid": 0.94,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10WATBUR-WAT3",
+      "event_ticker": "KXEFLCHAMPIONSHIPSPREAD-26OCT10WATBUR",
+      "title": "Watford wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.95,
+      "bid": 0.93,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXEFLCHAMPIONSHIPSPREAD"
+    },
+    {
+      "ticker": "KXSCOTTISHPREMGAME-26OCT10HOMMIR-MIR",
+      "event_ticker": "KXSCOTTISHPREMGAME-26OCT10HOMMIR",
+      "title": "St. Mirren wins",
+      "side": "no",
+      "price": 0.86,
+      "bid": 0.85,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXSCOTTISHPREMGAME"
+    },
+    {
+      "ticker": "KXURYPDGAME-26OCT10DEFCER-CER",
+      "event_ticker": "KXURYPDGAME-26OCT10DEFCER",
+      "title": "Cerro wins",
+      "side": "no",
+      "price": 0.81,
+      "bid": 0.8,
+      "close_time": "2026-10-12T14:00:00Z",
+      "series": "KXURYPDGAME"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10ALAATM-ALA3",
+      "event_ticker": "KXLALIGASPREAD-26OCT10ALAATM",
+      "title": "Alaves wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-12T14:15:00Z",
+      "series": "KXLALIGASPREAD"
+    },
+    {
+      "ticker": "KXSAUDIPLSPREAD-26OCT10ITTKHA-KHA3",
+      "event_ticker": "KXSAUDIPLSPREAD-26OCT10ITTKHA",
+      "title": "Al-Khaleej wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T14:55:00Z",
+      "series": "KXSAUDIPLSPREAD"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10LILHAC-HAC3",
+      "event_ticker": "KXLIGUE1SPREAD-26OCT10LILHAC",
+      "title": "Le Havre wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.98,
+      "close_time": "2026-10-12T15:15:00Z",
+      "series": "KXLIGUE1SPREAD"
+    },
+    {
+      "ticker": "KXEKSTRAKLASAGAME-26OCT10SLALPO-SLA",
+      "event_ticker": "KXEKSTRAKLASAGAME-26OCT10SLALPO",
+      "title": "Slask Wroclaw wins",
+      "side": "no",
+      "price": 0.83,
+      "bid": 0.81,
+      "close_time": "2026-10-12T15:30:00Z",
+      "series": "KXEKSTRAKLASAGAME"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10INTPAR-PAR2",
+      "event_ticker": "KXSERIEASPREAD-26OCT10INTPAR",
+      "title": "Parma Calcio wins by more than 1.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.98,
+      "close_time": "2026-10-12T16:00:00Z",
+      "series": "KXSERIEASPREAD"
+    },
+    {
+      "ticker": "KXELITESERIENGAME-26OCT10RBKSAN-SAN",
+      "event_ticker": "KXELITESERIENGAME-26OCT10RBKSAN",
+      "title": "Sandefjord wins",
+      "side": "no",
+      "price": 0.89,
+      "bid": 0.88,
+      "close_time": "2026-10-12T16:00:00Z",
+      "series": "KXELITESERIENGAME"
+    },
+    {
+      "ticker": "KXSUPERLIGGAME-26OCT10RIZFEN-RIZ",
+      "event_ticker": "KXSUPERLIGGAME-26OCT10RIZFEN",
+      "title": "Rizespor wins",
+      "side": "no",
+      "price": 0.8,
+      "bid": 0.79,
+      "close_time": "2026-10-12T16:00:00Z",
+      "series": "KXSUPERLIGGAME"
+    },
+    {
+      "ticker": "KXBELGIANPLGAME-26OCT10RAALBRU-RAAL",
+      "event_ticker": "KXBELGIANPLGAME-26OCT10RAALBRU",
+      "title": "La Louviere wins",
+      "side": "no",
+      "price": 0.89,
+      "bid": 0.88,
+      "close_time": "2026-10-12T16:15:00Z",
+      "series": "KXBELGIANPLGAME"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10BARGET-GET2",
+      "event_ticker": "KXLALIGASPREAD-26OCT10BARGET",
+      "title": "Getafe wins by more than 1.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.99,
+      "close_time": "2026-10-12T16:30:00Z",
+      "series": "KXLALIGASPREAD"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10RBLSGE-1",
+      "event_ticker": "KXBUNDESLIGATOTAL-26OCT10RBLSGE",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T16:30:00Z",
+      "series": "KXBUNDESLIGATOTAL"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10MUNTOT-TOT3",
+      "event_ticker": "KXEPLSPREAD-26OCT10MUNTOT",
+      "title": "Tottenham wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-12T16:30:00Z",
+      "series": "KXEPLSPREAD"
+    },
+    {
+      "ticker": "KXECULPGAME-26OCT10INDSDA-SDA",
+      "event_ticker": "KXECULPGAME-26OCT10INDSDA",
+      "title": "Aucas wins",
+      "side": "no",
+      "price": 0.86,
+      "bid": 0.85,
+      "close_time": "2026-10-12T16:30:00Z",
+      "series": "KXECULPGAME"
+    },
+    {
+      "ticker": "KXEREDIVISIEGAME-26OCT10FEYAZA-AZA",
+      "event_ticker": "KXEREDIVISIEGAME-26OCT10FEYAZA",
+      "title": "Alkmaar wins",
+      "side": "no",
+      "price": 0.81,
+      "bid": 0.8,
+      "close_time": "2026-10-12T16:45:00Z",
+      "series": "KXEREDIVISIEGAME"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10TORMTL-MTL3",
+      "event_ticker": "KXMLSSPREAD-26OCT10TORMTL",
+      "title": "Montreal wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T17:00:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXLIGAPORTUGALGAME-26OCT10CSMFCP-CSM",
+      "event_ticker": "KXLIGAPORTUGALGAME-26OCT10CSMFCP",
+      "title": "Madeira wins",
+      "side": "no",
+      "price": 0.93,
+      "bid": 0.92,
+      "close_time": "2026-10-12T17:00:00Z",
+      "series": "KXLIGAPORTUGALGAME"
+    },
+    {
+      "ticker": "KXSAUDIPLSPREAD-26OCT10HILITJ-ITJ3",
+      "event_ticker": "KXSAUDIPLSPREAD-26OCT10HILITJ",
+      "title": "Al-Ittihad wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.98,
+      "close_time": "2026-10-12T18:00:00Z",
+      "series": "KXSAUDIPLSPREAD"
+    },
+    {
+      "ticker": "KXEREDIVISIEGAME-26OCT10FORTWE-FOR",
+      "event_ticker": "KXEREDIVISIEGAME-26OCT10FORTWE",
+      "title": "Sittard wins",
+      "side": "no",
+      "price": 0.86,
+      "bid": 0.85,
+      "close_time": "2026-10-12T18:00:00Z",
+      "series": "KXEREDIVISIEGAME"
+    },
+    {
+      "ticker": "KXPERLIGA1GAME-26OCT10ASOCAJ-CAJ",
+      "event_ticker": "KXPERLIGA1GAME-26OCT10ASOCAJ",
+      "title": "FC Cajamarca wins",
+      "side": "no",
+      "price": 0.8,
+      "bid": 0.79,
+      "close_time": "2026-10-12T18:00:00Z",
+      "series": "KXPERLIGA1GAME"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10CHINYC-NYC3",
+      "event_ticker": "KXMLSSPREAD-26OCT10CHINYC",
+      "title": "New York City wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T18:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10PSGMAN-MAN2",
+      "event_ticker": "KXLIGUE1SPREAD-26OCT10PSGMAN",
+      "title": "Le Mans wins by more than 1.5 goals?",
+      "side": "no",
+      "price": 1.0,
+      "bid": 0.98,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXLIGUE1SPREAD"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10NAPFRO-FRO3",
+      "event_ticker": "KXSERIEASPREAD-26OCT10NAPFRO",
+      "title": "Frosinone wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXSERIEASPREAD"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10ASMTFC-TFC3",
+      "event_ticker": "KXLIGUE1SPREAD-26OCT10ASMTFC",
+      "title": "Toulouse wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXLIGUE1SPREAD"
+    },
+    {
+      "ticker": "KXARGPREMDIVTOTAL-26OCT10BARHUR-6",
+      "event_ticker": "KXARGPREMDIVTOTAL-26OCT10BARHUR",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXARGPREMDIVTOTAL"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10STBANG-ANG3",
+      "event_ticker": "KXLIGUE1SPREAD-26OCT10STBANG",
+      "title": "Angers wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXLIGUE1SPREAD"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10FCLPAR-FCL3",
+      "event_ticker": "KXLIGUE1SPREAD-26OCT10FCLPAR",
+      "title": "Lorient wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXLIGUE1SPREAD"
+    },
+    {
+      "ticker": "KXBELGIANPLGAME-26OCT10GENKOR-KOR",
+      "event_ticker": "KXBELGIANPLGAME-26OCT10GENKOR",
+      "title": "Kortrijk wins",
+      "side": "no",
+      "price": 0.88,
+      "bid": 0.87,
+      "close_time": "2026-10-12T18:45:00Z",
+      "series": "KXBELGIANPLGAME"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RMAVIL-VIL3",
+      "event_ticker": "KXLALIGASPREAD-26OCT10RMAVIL",
+      "title": "Villarreal wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T19:00:00Z",
+      "series": "KXLALIGASPREAD"
+    },
+    {
+      "ticker": "KXEREDIVISIEGAME-26OCT10AJANIJ-NIJ",
+      "event_ticker": "KXEREDIVISIEGAME-26OCT10AJANIJ",
+      "title": "Nijmegen wins",
+      "side": "no",
+      "price": 0.88,
+      "bid": 0.87,
+      "close_time": "2026-10-12T19:00:00Z",
+      "series": "KXEREDIVISIEGAME"
+    },
+    {
+      "ticker": "KXNCAAF1HTOTAL-26OCT10UCLAORE-3",
+      "event_ticker": "KXNCAAF1HTOTAL-26OCT10UCLAORE",
+      "title": "Over 2.5 1H points scored",
+      "side": "yes",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T19:30:00Z",
+      "series": "KXNCAAF1HTOTAL"
+    },
+    {
+      "ticker": "KXLIGAMXSPREAD-26OCT10QUEALA-ALA3",
+      "event_ticker": "KXLIGAMXSPREAD-26OCT10QUEALA",
+      "title": "Atlante wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-12T23:00:00Z",
+      "series": "KXLIGAMXSPREAD"
+    },
+    {
+      "ticker": "KXLIGAMXSPREAD-26OCT10JUATIJ-JUA3",
+      "event_ticker": "KXLIGAMXSPREAD-26OCT10JUATIJ",
+      "title": "Juarez wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T23:00:00Z",
+      "series": "KXLIGAMXSPREAD"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10PHIRSL-RSL3",
+      "event_ticker": "KXMLSSPREAD-26OCT10PHIRSL",
+      "title": "Salt Lake wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10MIADCU-DCU3",
+      "event_ticker": "KXMLSSPREAD-26OCT10MIADCU",
+      "title": "DC United wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXMLSTOTAL-26OCT10NYRBSD-1",
+      "event_ticker": "KXMLSTOTAL-26OCT10NYRBSD",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSTOTAL"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10NESEA-SEA3",
+      "event_ticker": "KXMLSSPREAD-26OCT10NESEA",
+      "title": "Seattle wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXMLSTOTAL-26OCT10ATLCIN-1",
+      "event_ticker": "KXMLSTOTAL-26OCT10ATLCIN",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSTOTAL"
+    },
+    {
+      "ticker": "KXMLSTOTAL-26OCT10ORLCLB-1",
+      "event_ticker": "KXMLSTOTAL-26OCT10ORLCLB",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSTOTAL"
+    },
+    {
+      "ticker": "KXMLSTOTAL-26OCT10CLTDAL-1",
+      "event_ticker": "KXMLSTOTAL-26OCT10CLTDAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-12T23:30:00Z",
+      "series": "KXMLSTOTAL"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10ATXNSH-ATX3",
+      "event_ticker": "KXMLSSPREAD-26OCT10ATXNSH",
+      "title": "Austin wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-13T00:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXMLSTOTAL-26OCT10SKCPOR-1",
+      "event_ticker": "KXMLSTOTAL-26OCT10SKCPOR",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "yes",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-13T00:30:00Z",
+      "series": "KXMLSTOTAL"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10MINHOU-HOU3",
+      "event_ticker": "KXMLSSPREAD-26OCT10MINHOU",
+      "title": "Houston wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-13T00:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXLIGAMXSPREAD-26OCT10ATLCDG-ATL3",
+      "event_ticker": "KXLIGAMXSPREAD-26OCT10ATLCDG",
+      "title": "Atlas wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.97,
+      "bid": 0.96,
+      "close_time": "2026-10-13T01:00:00Z",
+      "series": "KXLIGAMXSPREAD"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10COLSJ-SJ3",
+      "event_ticker": "KXMLSSPREAD-26OCT10COLSJ",
+      "title": "San Jose wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.96,
+      "close_time": "2026-10-13T01:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXMLSSPREAD-26OCT10LAFCVAN-VAN3",
+      "event_ticker": "KXMLSSPREAD-26OCT10LAFCVAN",
+      "title": "Vancouver wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.95,
+      "bid": 0.93,
+      "close_time": "2026-10-13T02:30:00Z",
+      "series": "KXMLSSPREAD"
+    },
+    {
+      "ticker": "KXLIGAMXSPREAD-26OCT10AMEMON-MON3",
+      "event_ticker": "KXLIGAMXSPREAD-26OCT10AMEMON",
+      "title": "Monterrey wins by more than 2.5 goals?",
+      "side": "no",
+      "price": 0.98,
+      "bid": 0.97,
+      "close_time": "2026-10-13T03:00:00Z",
+      "series": "KXLIGAMXSPREAD"
+    }
+  ]
+}

@@ -1,64 +1,61 @@
-# BRIEFING — 2026-10-02T17:52:00Z
+# BRIEFING — 2026-10-07T23:22:00Z
 
 ## Mission
-Execute Milestone M2: Frontend HTML/CSS Structure & iOS Smoothness across exclusively owned files (`static/saas_dashboard.html`, `static/trades.html`, `capacitor.config.json`, `static/css/dashboard.css`, `static/css/app.css`).
+Milestone 2: Decouple SaaS dashboard settings into dedicated #financialSettingsDrawer and #sportsSettingsDrawer, fix unclosed Market Types div, fix sportsActivePropsStr ReferenceError, sync BOTH selector across drawers, and fix sports trade size COALESCE in models.py.
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_worker
 - Roles: implementer, qa, specialist
-- Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m2
-- Original parent: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Milestone: M2 (Frontend HTML/CSS Structure & iOS Smoothness)
+- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m2
+- Original parent: 269a1b7a-33d9-4136-b7da-906e573af819
+- Milestone: M2 (Dedicated Dual Settings Menus in saas_dashboard.html)
 
 ## 🔒 Key Constraints
 - Exclusively owned files:
-  - static/saas_dashboard.html
-  - static/trades.html
-  - capacitor.config.json
-  - static/css/dashboard.css
-  - static/css/app.css
+  - `static/saas_dashboard.html`
+  - `static/css/mobile-polish.css`
+  - `backend/database/models.py` (for `sports_trade_size_dollars` COALESCE fix)
 - DO NOT CHEAT. All implementations must be genuine.
 - Zero unclosed tags or structural errors in saas_dashboard.html verified by HTML parser.
 - Minimal change principle.
 
 ## Current Parent
-- Conversation ID: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Updated: 2026-10-02T17:40:43Z
+- Conversation ID: 269a1b7a-33d9-4136-b7da-906e573af819
+- Updated: 2026-10-07T23:20:12Z
 
 ## Task Summary
-- **What to build**: Fix unclosed #settingsDrawer div; add iOS bottom safe area support; fix corrupted backdrop-blur tokens; retire obsolete #updateAlertModal and tv.js script; fix XML void meta tags; update trades.html viewport & safe area; update capacitor.config.json contentInset; link app.css / load safe area CSS.
-- **Success criteria**: Clean HTML tree with 0 unclosed tags, proper safe area styling, no broken icons or obsolete modals, verified via Python parser and test contracts.
-- **Interface contracts**: PROJECT.md
-- **Code layout**: PROJECT.md § Code Layout
+- **What to build**: Decouple #settingsDrawer into #financialSettingsDrawer and #sportsSettingsDrawer; fix Market Types unclosed div; fix sportsActivePropsStr ReferenceError in saveUserConfig(); synchronize BOTH selector across drawers; fix sports trade size COALESCE in models.py; remove window.lastDashboardStats.trading_universe mutation in selectUniverse; update openSettings/closeSettings/swipe gesture handlers; update mobile-polish.css.
+- **Success criteria**: All 50 tests in tests/test_saas_dashboard_decoupling_e2e.py pass.
+- **Interface contracts**: PROJECT.md / TEST_READY.md
+- **Code layout**: static/saas_dashboard.html, static/css/mobile-polish.css, backend/database/models.py
 
 ## Key Decisions Made
-- Consolidate update modal notifications into #updateAnnouncementModal and remove obsolete #updateAlertModal.
-- Provide bottom safe area styling on sticky buttons, drawer, and main container.
-- Update app.css body reset with :not(.overflow-y-auto) to allow smooth vertical scrolling on saas_dashboard.html while linking full safe area rules.
+- Separated settings UI into dedicated `#financialSettingsDrawer` and `#sportsSettingsDrawer` containers, maintaining a hidden `#settingsDrawer` anchor for backward compatibility.
+- Corrected tag balance in `#sportsSettingsDrawer` Market Types container (lines ~7502) and removed premature closing `</div>` in hyperparameters `<details>`.
+- Preserved `sports_trade_size_dollars` in `models.py` by setting default argument to `None` and using `COALESCE(?, sports_trade_size_dollars, sports_max_wager)`.
+- Collected `sportsActivePropsStr` directly from `.sports-prop-toggle:checked` in `saveUserConfig()` prior to constructing the payload.
+- Protected `window.lastDashboardStats.trading_universe` in `selectUniverse()` by removing local override mutation.
+- Extended `static/css/mobile-polish.css` selectors for dual drawers and panels.
 
 ## Artifact Index
-- static/saas_dashboard.html — Main dashboard HTML (repaired DOM structure, safe areas, backdrop blur)
-- static/trades.html — Mobile trade ledger (viewport-fit=cover and safe areas)
-- capacitor.config.json — Capacitor config (contentInset=automatic)
-- static/css/app.css — Safe-area utilities and app styles
-- static/css/dashboard.css — Dashboard styling with safe-area utilities
-- .agents/teamwork/worker_m2/verify_m2.py — 9-point verification script
-- .agents/teamwork/worker_m2/handoff.md — Final handoff report
+- `static/saas_dashboard.html` — Decoupled dual drawers, fixed scripts & event handlers
+- `static/css/mobile-polish.css` — Dual-drawer styling & iOS transition rules
+- `backend/database/models.py` — Fixed `update_user_config()` COALESCE logic
+- `tests/test_saas_dashboard_decoupling_e2e.py` — 50/50 tests passing
+- `.agents/teamwork/worker_m2/handoff.md` — 5-component handoff report
 
 ## Change Tracker
 - **Files modified**:
-  - `static/saas_dashboard.html`: Closed #settingsDrawer div, added iOS bottom safe area, restored backdrop-blur classes, retired #updateAlertModal & tv.js, fixed void meta tags, linked app.css.
-  - `static/trades.html`: Added viewport-fit=cover, top safe area to header & ptr-indicator, bottom safe area to body.
-  - `capacitor.config.json`: Updated contentInset from "always" to "automatic".
-  - `static/css/dashboard.css`: Added safe-area CSS custom properties and utility classes (.pt-safe, .pb-safe, .bottom-safe).
-  - `static/css/app.css`: Scoped body overflow-hidden to non-overflow-y-auto, added safe-area utility classes.
-- **Build status**: PASS (all 9 custom verification assertions pass, 0 HTML structure errors, contract tests pass with 0 regressions)
-- **Pending issues**: None for M2.
+  - `backend/database/models.py`: Added default `None` for `sports_max_wager` in `update_user_config()` and `COALESCE(?, sports_trade_size_dollars, sports_max_wager)`.
+  - `static/css/mobile-polish.css`: Extended selectors for `#financialSettingsDrawer`, `#sportsSettingsDrawer`, `#financialSettingsPanel`, `#sportsSettingsPanel`.
+  - `static/saas_dashboard.html`: Decoupled dual settings drawers, fixed Market Types tag closure, added BOTH universe selector with dual-drawer sync, fixed `sportsActivePropsStr` ReferenceError, updated `openSettings`/`closeSettings`/`initSettingsSwipeToClose`, protected `window.lastDashboardStats.trading_universe`.
+- **Build status**: 50/50 E2E tests passed, 30/30 regression tests passed.
+- **Pending issues**: None. All requirements fulfilled.
 
 ## Quality Status
-- **Build/test result**: 0 HTML errors on Python HTMLParser and BeautifulSoup. Pytest test_frontend_contracts.py: 11 passed, 6 failed (pre-existing legacy tests targeted for M5 realignment per PROJECT.md).
-- **Lint status**: 0 violations.
-- **Tests added/modified**: .agents/teamwork/worker_m2/verify_m2.py verifying all 9 M2 requirements.
+- **Build/test result**: 50 passed in `test_saas_dashboard_decoupling_e2e.py`; 30 passed in `test_frontend_contracts.py`, `test_m1_both_universe_persistence.py`, `test_m1_backend_stability.py`.
+- **Lint status**: clean. HTML tag balance 100%. No duplicate IDs.
+- **Tests added/modified**: Verified against comprehensive test suites.
 
 ## Loaded Skills
 None

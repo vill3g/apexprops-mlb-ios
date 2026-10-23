@@ -4,8 +4,8 @@
         (async function initApiBackend() {
             const isApp = window.location.protocol === "file:" || window.location.protocol.includes("capacitor");
             
-            // If we are hosted ON the internet (e.g. they opened the ngrok link directly), we just use relative URLs.
-            if (!isApp && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.startsWith("192.168.")) {
+            // If we are running in any standard web browser (http/https), always use same-origin relative API routes.
+            if (!isApp) {
                 console.log("Running in standard web browser, using relative API routes.");
                 return; 
             }
@@ -34,13 +34,14 @@
                 window.API_BASE_URL = remoteUrl;
             }
             
-            // Override global fetch to automatically prepend the chosen base URL
+            // Override global fetch to automatically prepend the chosen base URL while preserving existing fetch wrappers
+            const currentFetch = window.fetch;
             window.fetch = async function() {
                 let [resource, config] = arguments;
                 if (typeof resource === "string" && resource.startsWith("/api/")) {
                     resource = window.API_BASE_URL + resource;
                 }
-                return originalFetch(resource, config);
+                return currentFetch(resource, config);
             };
         })();
     

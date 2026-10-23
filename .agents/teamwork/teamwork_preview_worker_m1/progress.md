@@ -1,15 +1,41 @@
-# Progress — Worker M1 (Strategy & Risk Assessment)
+# Progress Log - teamwork_preview_worker_m1
 
-Last visited: 2026-09-30T19:22:10Z
+Last visited: 2026-10-09T15:10:00Z
 
-## Status: COMPLETE
-
-### Completed Steps:
-1. Received dispatch instructions and verified constraints.
-2. Ingested `ORIGINAL_REQUEST.md`, `PROJECT.md`, and `DISPATCH.md`.
-3. Read and synthesized all 3 Explorer Survey analysis reports.
-4. Initialized `DISPATCH.md` with UTC timestamp and created `BRIEFING.md`.
-5. Code-grounded verification of `backend/btc/fees.py`, `backend/btc/analyzer/contract_eval.py`, `backend/btc/ml_ensemble.py`, `backend/btc/dual_ml_engine.py`, `backend/btc/auto_executor/shared.py`, `backend/btc/auto_executor/risk_manager.py`, and `backend/btc/auto_executor/stop_manager.py`.
-6. Authored comprehensive, definitive Strategy & Risk Assessment report satisfying Requirement R1 and Acceptance Criterion 2 at `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reports\R1_strategy_risk_assessment.md`.
-7. Created self-contained 5-component `handoff.md`.
-8. Prepared to message `orchestrator_1`.
+- Initialized DISPATCH.md and BRIEFING.md
+- Inspected ORIGINAL_REQUEST.md, PROJECT.md, and survey reports 1, 2, 3
+- Applied all backend changes in `backend/routes/engine.py`:
+  - Relaxed `is_today` filter at line 3436 so upcoming open events across NFL, MLB, TEN, SOC, UFC, NPB/KBO are preserved
+  - Attached `ai_prediction` dictionary object at the top level and in `metadata` for both player prop and game events
+  - Extended Tennis date matching tolerance to 48 hours (`diff <= 2` days)
+  - Adjusted Tennis stale threshold to 2 days
+  - Added fallback player extraction in Tennis matching from `matchup` / `opponent`
+  - Added team aliases to `_SPORT_TEAM_MAP` for `SOC`, `NPB`, `KBO`
+  - Added `KXBUNDESLIGA` and `KXLALIGA` to `_SPORTS_SERIES_MAP["SOC"]`
+  - Refined title prefix regex to preserve team matchups before `: Spread` or `: Total Points`
+  - Normalized sport comparison in player prop matching loop using `_normalize_sport`
+  - Set `error_msg` when execution requested but trade not executed
+- Applied changes in `backend/sports_bridge/prediction_client.py`:
+  - Extended Tennis date window in `predict_for_event()` to 2 days (48 hours)
+  - Aligned simulated NPB/KBO team name with matchup names
+  - Added baseline fallback evaluation when simulation/AI engine is unreachable or returns 500
+- Applied changes in `backend/sports_bridge/executor.py`:
+  - Fixed line 126 to return 4-tuple: `None, 0.0, None, {}`
+- Applied frontend changes in `static/saas_dashboard.html`:
+  - Fixed loading pulse check to show loading pulse while `window.__sportsLoading` is true
+  - Expanded `isSportMatch()` to check event ticker prefixes and sport aliases
+  - Decoupled background auto-trading gate so `sportsEventAllowed` only restricts viewing `'ALL'` sports
+  - Fixed pull-to-refresh to call `loadSportsEvents(window.sportsFilter)`
+  - Updated `SPORT_ICONS` map with all sports and league aliases
+- Added test in `tests/test_sports_dashboard.py` verifying `ai_prediction` attachment
+- Verified test suite: `python -m pytest tests/test_sports_dashboard.py` -> 24 passed in 104.98s
+- Verified endpoint coverage across all sports:
+  - TEN: 47 events, 37 with active `ai_prediction` attached
+  - NHL: 111 events
+  - MLB: 24 events
+  - NFL: 117 events
+  - SOC: 70 events
+  - UFC: 15 events
+  - NPB/KBO: 36 events
+- Completed deliverables: `report.md` and `handoff.md`
+- Ready to send completion message to orchestrator parent.

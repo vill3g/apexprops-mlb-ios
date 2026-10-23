@@ -11,18 +11,12 @@ from backend.database.trade_store import TradeStore
 logger = logging.getLogger(__name__)
 
 def get_predictions() -> List[Dict[str, Any]]:
-    """Fetch current sports predictions from the bot-bridge."""
+    """Fetch current sports predictions natively in-process."""
     try:
-        resp = requests.get("http://127.0.0.1:8057/api/bot-bridge/predictions", timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        if isinstance(data, dict) and "predictions" in data:
-            return data["predictions"]
-        elif isinstance(data, list):
-            return data
-        return []
+        from backend.sports_engine import get_native_sports_client
+        return get_native_sports_client().fetch_latest_picks()
     except Exception as e:
-        logger.error(f"Failed to fetch sports predictions: {e}")
+        logger.error(f"Failed to fetch native sports predictions: {e}")
         return []
 
 def _generate_kalshi_ticker(prediction: dict) -> str:

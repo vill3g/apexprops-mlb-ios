@@ -3,27 +3,44 @@ import logging
 
 logger = logging.getLogger("Remediations")
 
-# Remediation 2
+# Remediation 2: Exit Discipline with Pre-Settlement Expiration Guard
 def evaluate_exit_discipline(trade: dict, current_bid: float, spot_price: float, strike_price: float, seconds_left: int) -> dict:
     entry_price = float(trade.get("entry_price", 0.50))
     direction = str(trade.get("direction", "ABOVE")).upper()
-    
+    side = str(trade.get("side", "")).upper()
+    is_yes = (direction in ["ABOVE", "YES"] or side == "YES")
+
+    # 1. High Conviction Hold: If contract is deeply in the money (bid >= 88c), let it settle to 100c
     if current_bid >= 0.88:
         return {
             "should_close": False,
             "reason": "HIGH_CONVICTION_HOLD_TO_SETTLEMENT",
             "exit_price": current_bid
         }
-    
-    spot_deficit = (strike_price - spot_price) if direction in ["ABOVE", "YES"] else (spot_price - strike_price)
-    
+
+    # Measure spot distance to strike
+    spot_cushion = (spot_price - strike_price) if is_yes else (strike_price - spot_price)
+    spot_deficit = -spot_cushion
+
+    # 2. Pre-Settlement Expiration Guard (T-90s to T-15s before expiry)
+    # Prevents holding dangerous coin-flips into a 0c settlement wipeout
+    if 15 <= seconds_left <= 90:
+        # If contract has low cushion (less than $20 spot cushion) or market bid is weak (< 65c)
+        if current_bid > 0.05 and (current_bid < 0.70 or spot_cushion < 25.0):
+            return {
+                "should_close": True,
+                "reason": f"PRE_SETTLEMENT_SALVAGE_GUARD (T-{seconds_left}s bid ${current_bid:.2f}, cushion ${spot_cushion:.1f})",
+                "exit_price": current_bid
+            }
+
+    # 3. Structural Mid-Interval Invalidation
     if spot_deficit > 75.0 and seconds_left > 300:
         return {
             "should_close": True,
             "reason": "STRUCTURAL_SPOT_INVALIDATION",
             "exit_price": current_bid
         }
-        
+
     return {"should_close": False, "reason": "HOLD_TO_SETTLEMENT"}
 
 # Remediation 3
@@ -42,10 +59,12 @@ def calculate_anti_whipsaw_trailing_stop(
     entry_price: float,
     max_seen_bid: float,
     current_bid: float,
-    ts_activation_pct: float = 40.0,
-    ts_distance_pct: float = 15.0,
-    min_buffer_cents: float = 0.12
+    ts_activation_pct: float = 35.0,
+    ts_distance_pct: float = 6.0,
+    min_buffer_cents: float = 0.02
 ) -> dict:
+    if entry_price <= 0:
+        return {"should_exit": False}
     profit_pct = ((max_seen_bid - entry_price) / entry_price) * 100.0
     
     if profit_pct < ts_activation_pct:
@@ -56,7 +75,8 @@ def calculate_anti_whipsaw_trailing_stop(
     
     stop_threshold = max_seen_bid - effective_trail_distance
     
-    breakeven_floor = entry_price + 0.04
+    # Guarantee at least break-even (or minimum profit floor of entry + 1 cent) once trailing stop activates
+    breakeven_floor = entry_price + 0.01
     stop_threshold = max(stop_threshold, breakeven_floor)
     
     if current_bid <= stop_threshold:
@@ -124,12 +144,6 @@ def is_entry_timing_valid(seconds_left: int, timeframe_seconds: int = 900) -> di
         return {
             "valid": False,
             "reason": f"TERMINAL_GAMMA_LOCK: {seconds_left}s remaining < 120s minimum corridor"
-        }
-        
-    if 3 <= minute_elapsed <= 6:
-        return {
-            "valid": False,
-            "reason": f"TOXIC_TIMING_WINDOW: Minute {minute_elapsed} (opening drive mean-reversion trap)"
         }
         
     return {"valid": True, "minute": minute_elapsed, "seconds_left": seconds_left}

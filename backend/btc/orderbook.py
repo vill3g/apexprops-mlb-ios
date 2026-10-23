@@ -6,15 +6,16 @@ logger = logging.getLogger(__name__)
 
 def fetch_coinbase_orderbook_imbalance(asset: str = "BTC") -> float:
     """
-    Fetches the Level 2 Orderbook from Coinbase for the given asset (e.g., 'BTC').
+    Fetches the Level 2 Orderbook from Coinbase for the given asset (e.g., 'BTC', 'ETH', 'SOL', 'DOGE').
     Returns an imbalance score between -1.0 and 1.0.
     Positive -> More buy pressure (Bids > Asks)
     Negative -> More sell pressure (Asks > Bids)
     """
-    if asset.upper() != "BTC":
-        return 0.0 # Only implementing BTC for now
+    a_up = str(asset or "BTC").upper().strip()
+    if a_up not in ("BTC", "ETH", "SOL", "DOGE"):
+        return 0.0
 
-    url = "https://api.exchange.coinbase.com/products/BTC-USD/book?level=2"
+    url = f"https://api.exchange.coinbase.com/products/{a_up}-USD/book?level=2"
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -40,5 +41,5 @@ def fetch_coinbase_orderbook_imbalance(asset: str = "BTC") -> float:
         return imbalance
 
     except Exception as e:
-        logger.warning(f"[Orderbook] Failed to fetch Coinbase L2 orderbook: {e}")
+        logger.warning(f"[Orderbook] Failed to fetch Coinbase L2 orderbook for {a_up}: {e}")
         return 0.0

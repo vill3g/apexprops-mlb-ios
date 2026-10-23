@@ -16,7 +16,7 @@ _stop_event = threading.Event()
 _is_running = False
 
 # Default Config
-ACTIVE_PAIRS = ["EURUSD", "GBPUSD", "USDJPY"]
+ACTIVE_PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD"]
 RISK_PCT = 1.0 # 1% risk per trade
 
 def forex_trading_loop():
@@ -71,7 +71,7 @@ def forex_trading_loop():
                     
                     sl_dist = abs(curr_price - sl)
                     pip_decimal = 0.01 if "JPY" in pair else 0.0001
-                    pips_to_sl = sl_dist / pip_decimal
+                    pips_to_sl = max(5.0, sl_dist / pip_decimal)
                     
                     if pips_to_sl > 0:
                         # Value of 1 standard unit (1 micro lot) in USD
@@ -81,6 +81,10 @@ def forex_trading_loop():
                         if pip_value_per_unit > 0:
                             # Formula: Units = Risk_Amount / (Pips * Pip_Value_per_Unit)
                             exact_units = risk_amount / (pips_to_sl * pip_value_per_unit)
+                            
+                            # Cap max position size at 100,000 units (1 standard lot, max ~$100k notional)
+                            max_units = 100_000
+                            exact_units = min(exact_units, max_units)
                             
                             # Round to nearest micro lot (1,000 units)
                             size = int(exact_units // 1000) * 1000

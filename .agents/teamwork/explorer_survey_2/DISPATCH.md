@@ -1,20 +1,22 @@
-# Explorer Survey 2 Dispatch
+## Survey Dispatch: Explorer 2 (Backend DB, Schemas, & Settings APIs)
 
-You are explorer_survey_2.
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_2
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Mandatory reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
+**Identity**: explorer_survey_2
+**Working Directory**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2
+**Parent Conversation ID**: 269a1b7a-33d9-4136-b7da-906e573af819
+**Original User Request**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
 
-Mission: Survey the codebase with a focus on Frontend UI/UX and iOS Smoothness (R2).
-Specifically investigate:
-- `static/saas_dashboard.html` and any other HTML templates: check for unclosed HTML tags, structural HTML errors, invalid attributes.
-- Frontend JavaScript files and embedded scripts: check for syntax errors, console errors, unhandled promise rejections, performance bottlenecks, expensive DOM queries or interval timers.
-- CSS files and responsive styles: inspect iOS safe area styling (env(safe-area-inset-*)), viewport meta tags, overflow bugs, overlapping UI elements, mobile viewport scaling.
-- Capacitor / iOS wrapper configurations: inspect capacitor.config.*, iOS project files if present, native bridge interactions.
+### Objective
+Investigate the backend database schemas, user settings storage, authentication, and API endpoints regarding the `trading_universe` setting (specifically persistence of "BOTH", "FINANCIAL", "SPORTS", etc.).
 
-Output:
-Write a comprehensive report to `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_2\survey_report.md` and `handoff.md`.
-Include:
-- Exact file paths, line numbers, and architectural findings.
-- Inventory of existing frontend/iOS issues/bugs found.
-- Concrete recommendations for fixes and verification.
+### Tasks
+1. Read `ORIGINAL_REQUEST.md` (latest section timestamp 2026-10-07T22:35:21Z).
+2. Deeply inspect backend models, database migrations/tables (SQLite/PostgreSQL/etc.), and routes handling user settings (e.g. `backend/routes/`, `saas_broadcaster.py`, `executor.py`, user config tables).
+3. Check how `trading_universe` is currently stored in the database, validated, updated via API, and returned to the dashboard.
+4. Verify if "BOTH" is already accepted or partially supported, and identify any backend constraints, enum validations, or gaps preventing smooth persistence and querying of "BOTH".
+5. Note all relevant API endpoints, request/response models, and database fields.
+6. Write your comprehensive findings and recommendations to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md`.
+7. Send a message to parent upon completion.
+
+
+## 2026-10-07T22:38:14Z
+You are explorer_survey_2. Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2. Read your dispatch at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\DISPATCH.md and ORIGINAL_REQUEST.md at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md. Investigate backend database schemas, user settings storage, authentication, and API endpoints regarding the trading_universe setting (persistence of "BOTH"). Write your detailed survey findings to C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md. When finished, send a message to parent (ID: 269a1b7a-33d9-4136-b7da-906e573af819).

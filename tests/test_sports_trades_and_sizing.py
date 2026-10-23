@@ -3,7 +3,7 @@ from starlette.testclient import TestClient
 from backend.main import app
 from backend.database.models import get_db_connection
 from backend.database.trade_store import TradeStore
-from backend.routes.engine import _get_user_sports_criteria
+from backend.routes.engine_sports import _get_user_sports_criteria
 from backend.auth.security import create_jwt_token
 
 @pytest.fixture

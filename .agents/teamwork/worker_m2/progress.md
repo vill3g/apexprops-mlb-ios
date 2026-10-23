@@ -1,16 +1,15 @@
 # Progress — worker_m2
 
-Last visited: 2026-10-02T17:52:00Z
-Status: All Milestone M2 tasks completed and verified.
+Last visited: 2026-10-07T23:22:00Z
+Status: Completed all Milestone M2 tasks. All 50/50 decoupling E2E tests and 30/30 regression tests passing.
 
 ## Tasks Breakdown
-- [x] Task 1: Fix unclosed `<div id="settingsDrawer">` in `static/saas_dashboard.html`
-- [x] Task 2: Add iOS bottom safe area support (`env(safe-area-inset-bottom)`) to sticky buttons, drawer, and `<main>`
-- [x] Task 3: Fix corrupted Tailwind CSS glassmorphism classes (`backdrop-blur-2xl`, etc.) in `static/saas_dashboard.html`
-- [x] Task 4: Remove/retire `#updateAlertModal` and unused `tv.js` in `static/saas_dashboard.html`
-- [x] Task 5: Fix void meta tags in `<head>` in `static/saas_dashboard.html`
-- [x] Task 6: Add `viewport-fit=cover` and safe-area top padding to `static/trades.html`
-- [x] Task 7: Change `"contentInset": "always"` to `"automatic"` in `capacitor.config.json`
-- [x] Task 8: Link `app.css` and ensure custom safe-area CSS utilities are loaded in `static/saas_dashboard.html`
-- [x] Verification: Parse HTML (0 errors), run test contracts, execute 9-check verification script
-- [x] Final handoff report & notification
+- [x] Task 1: Fix sports_trade_size_dollars COALESCE in `backend/database/models.py`
+- [x] Task 2: In `static/saas_dashboard.html`, decouple `#settingsDrawer` into `#financialSettingsDrawer` and `#sportsSettingsDrawer`
+- [x] Task 3: Fix unclosed `<div>` in Market Types section (100% tag balance achieved)
+- [x] Task 4: Fix `sportsActivePropsStr` ReferenceError in `saveUserConfig()`
+- [x] Task 5: Remove obsolete universe pills ("Show settings for: Financials Menu / Sports Menu") and add BOTH universe selector to both drawers
+- [x] Task 6: Synchronize BOTH selector in `setAutoTradingUniverse()`, update `openSettings()`, `closeSettings()`, `initSettingsSwipeToClose()`, and remove `window.lastDashboardStats.trading_universe = universe` state mutation
+- [x] Task 7: Update `static/css/mobile-polish.css` to extend selectors for `#financialSettingsDrawer`, `#sportsSettingsDrawer`, `#financialSettingsPanel`, `#sportsSettingsPanel`
+- [x] Task 8: Run pytest `tests/test_saas_dashboard_decoupling_e2e.py` (50/50 passed) and regression tests (30/30 passed)
+- [x] Task 9: Write handoff report and notify parent

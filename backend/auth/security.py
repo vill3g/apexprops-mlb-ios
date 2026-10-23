@@ -13,8 +13,14 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-_ENV_PATH = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
+_ENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
 _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Explicitly reload from the canonical project .env location
+if os.path.exists(_ENV_PATH):
+    load_dotenv(_ENV_PATH, override=True)
+else:
+    load_dotenv()
 
 # We need a robust encryption key for Fernet. If it doesn't exist, we will create one and save it to .env
 ENCRYPTION_KEY = os.environ.get("SAAS_ENCRYPTION_KEY")

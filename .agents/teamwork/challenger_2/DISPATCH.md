@@ -1,38 +1,54 @@
-# Task Assignment: Empirical Database & Trade Metric Adversarial Verification
+# Dispatch: challenger_2
 
-Working Directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\challenger_2
-Project Root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Authoritative Request: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md (see 2026-10-03T22:04:04Z entry)
-Scope Document: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\PROJECT.md
-Deliverable to Verify: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md
+## Objective
+Empirical Invariance, Dynamic Win Probability Calibration & Kelly Wager Math Verification.
 
-## Objective:
-Empirically verify the quantitative database metrics and citations in `EVALUATION_REPORT.md`:
-1. Query `backend/data/users.db` and verify the trade counts, settlement win rate (76%), stop loss net loss (-$5,021.44), and multiple entry metrics (Entry 2 avg loss -$10.41 vs Entry 1 -$4.60).
-2. Check the counterfactual stop-out analysis against `backend/data/market_results.json`.
-3. Check the intra-candle timing distributions (Minutes 3-6 loss concentration).
-4. Verify that the report's claims are completely grounded in real data and not hallucinated.
-5. Issue an explicit verdict: **APPROVE** or **REQUEST_CHANGES**.
-6. Write your findings to `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\challenger_2\challenge_report.md` and standard `handoff.md`.
+## Inputs
+- Project Root: `C:\Users\Vill3\Desktop\kalshi-ai-trader`
+- Original Request: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md`
+- Orchestrator Dispatch: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_9\DISPATCH.md`
+- Scope: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_9\SCOPE.md`
+- Worker Handoff: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_1\handoff.md`
+
+## Verification Scope
+1. Dynamic Invariance & Sensitivity Sweep:
+   - Compile strategies with `StrategyCoder.generate_code` and `StrategyCoder.compile_strategy`.
+   - Sweep across 50 distinct combinations of `cur_price` (from 0.05 to 0.95), `rsi` (from 10 to 90), and detected regimes.
+   - Assert mathematically that the returned `confidence`, `calibrated_win_prob`, and `kelly_fraction` are non-static and vary smoothly across inputs.
+   - Verify that NO output ever equals flat 75.0% unless coincidentally resulting from continuous math.
+2. Kelly Mathematical Bounds & Edge Gating:
+   - Verify that when model edge is negative ($P_{\text{win}} \le C_{\text{eff}}$), `kelly_fraction == 0.0` and `f_star == 0.0`.
+   - Verify that `kelly_fraction` is capped at 0.20 (20% bankroll cap) even when edge is large.
+   - Verify that Kalshi taker fee is properly accounted for in effective cost ($C_{\text{eff}}$).
+3. Regime Guard Verification:
+   - When a strategy specifies `target_regimes = ["COMPRESSION_MEAN_REVERSION"]`, test snapshots with `market_regime = "TREND_EXPANSION_MOMENTUM"` and confirm that `evaluate_signal` returns `action: "PASS"` with `reason: "regime_mismatch"`.
+   - Confirm that when the regime matches, the strategy executes `action: "BUY"`.
+4. Provide a clear, explicit verdict: `APPROVE` or `REQUEST_CHANGES`.
+
+## Output
+Write your report to: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\challenger_2\handoff.md`.
+Notify orchestrator via `send_message`.
 
 
-## 2026-10-03T22:26:47Z
-[Message] timestamp=2026-10-03T22:26:47Z sender=0b2ac47d-78c9-4393-ab2e-4e87b15afb01 priority=MESSAGE_PRIORITY_HIGH content=You are challenger_2.
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\challenger_2
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Read your task assignment at: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\challenger_2\DISPATCH.md
-Authoritative user request: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
-Scope document: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\PROJECT.md
-Deliverable to Verify: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md
+## 2026-10-13T03:46:16Z
+[Message] timestamp=2026-10-13T03:46:16Z sender=bc91cecc-5501-4832-bd5f-b7b2dd3a837a priority=MESSAGE_PRIORITY_HIGH
+content=You are challenger_2.
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\challenger_2
+Project root: C:\Users\Vill3\Desktop\kalshi-ai-trader
 
-Task:
-Empirically verify the quantitative database metrics and citations in `EVALUATION_REPORT.md`:
-1. Query `backend/data/users.db` and verify the trade counts, settlement win rate (76%), stop loss net loss (-$5,021.44), and multiple entry metrics (Entry 2 avg loss -$10.41 vs Entry 1 -$4.60).
-2. Check the counterfactual stop-out analysis against `backend/data/market_results.json`.
-3. Check the intra-candle timing distributions (Minutes 3-6 loss concentration).
-4. Verify that the report's claims are completely grounded in real data and not hallucinated.
-5. Issue an explicit verdict: APPROVE or REQUEST_CHANGES.
+MANDATORY: Read ORIGINAL_REQUEST.md at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
+before starting work.
 
-STRICT CONSTRAINT: Read-only verification. Do NOT modify any source files.
-Write your findings to: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\challenger_2\challenge_report.md
-Write your handoff.md and notify parent when complete.
+Read your dispatch instructions at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\challenger_2\DISPATCH.md
+And reference worker handoff at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_1\handoff.md
+
+Your role is Empirical Invariance & Kelly Math Verification:
+1. Run sensitivity sweeps across 50 combinations of market prices, indicators, and regimes. Prove mathematically that win probability and Kelly fractions are dynamic, continuous, and non-static.
+2. Verify Kelly math: confirm kelly_fraction == 0.0 when edge <= 0, and confirm kelly_fraction is capped at 0.20.
+3. Verify regime guards: confirm strategies PASS on conflicting regimes and BUY on matching regimes.
+4. Record findings and explicit verdict (APPROVE or REQUEST_CHANGES) in:
+   C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\challenger_2\handoff.md
+When done, notify orchestrator (conversation ID: bc91cecc-5501-4832-bd5f-b7b2dd3a837a) via send_message.

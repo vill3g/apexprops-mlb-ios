@@ -1,46 +1,60 @@
-# Dispatch: Worker M1 (Strategy & Risk Assessment)
+## 2026-10-09T14:52:35Z
 
-## 2026-09-30T19:19:17Z
+Read C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md first.
+You are teamwork_preview_worker_m1.
+Your working directory is: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_worker_m1
 
-## Identity & Role
-- Archetype: teamwork_preview_worker
-- Role: Strategy & Risk Assessment Worker
-- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_worker_m1
-- Parent Orchestrator: orchestrator_1 (conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a)
+MANDATORY INTEGRITY WARNING:
+> DO NOT CHEAT. All implementations must be genuine. DO NOT
+> hardcode test results, create dummy/facade implementations, or
+> circumvent the intended task. A teamwork_preview_auditor will independently
+> verify your work. Integrity violations WILL be detected and your
+> work WILL be rejected.
 
-## Mandatory Inputs (Read these first)
-1. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
-2. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\PROJECT.md
-3. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1\analysis.md
-4. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_2\analysis.md
-5. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_3\analysis.md
+Context & Scope:
+You are assigned Milestone 1: Multi-Sport Backend Matching & Frontend Display Implementation (R1 & R2).
+Project plan: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_8\PROJECT.md
+Examine the 3 survey reports for exact file paths, line numbers, and proposed code changes:
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1\report.md
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_2\report.md
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_3\report.md
 
-## Objective
-Author the definitive Strategy & Risk Assessment report satisfying Requirement R1 and Acceptance Criterion 2.
-Write the report to:
-`C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reports\R1_strategy_risk_assessment.md`
+Exclusive Write Ownership:
+- backend/routes/engine.py
+- backend/sports_bridge/prediction_client.py
+- backend/sports_bridge/executor.py
+- static/saas_dashboard.html
+- tests/test_sports_dashboard.py (if adding/updating tests)
 
-Your report MUST include:
-1. **Core Trading Styles Logic**:
-   - In-depth analysis of `SNIPER`, `CAPITAL_GUARD`, `AUTO`, `MOMENTUM_SURFER`, `AMBUSH`, `CHOP`, and `RL_SCALPER`.
-   - Entry/exit criteria, stop-loss / take-profit mechanisms, position sizing formulas (True Binary Half-Kelly), order types (IOC limit with buffer), and time-in-force.
-2. **Machine Learning Prediction Engine**:
-   - `GodTierEnsemble` (XGBoost, Random Forest, PyTorch LSTM, meta Logistic Regression), `DualMLEngine` (day/night dispatch), feature pipeline (52 features, normalization relative to EMA-50), and Platt probability calibration.
-   - Confluence blending (40% heuristic / 60% ML) and decision vetoes.
-3. **Theoretical Trading Edge & Expectancy**:
-   - Slippage assumptions ($0.04 buffer, paper latency tax, bid-ask spread).
-   - Fee structure (Kalshi 7% taker fee on risk: $0.07 * P * (1-P)).
-   - Required break-even win rate math (>52% held to settlement, >58-61% with early exit).
-4. **Market Regime Vulnerabilities & Edge Cases**:
-   - Identify and thoroughly explain at least 3 specific regime vulnerabilities:
-     a) Chop deadzones and false breakouts if CAPITAL_GUARD is bypassed.
-     b) Strike pinning noise ($|\Delta| \le \$18$, ATR $\le \$45$) turning expiration into a sub-second coin flip.
-     c) Night session accuracy degradation (drop to ~46.5% win rate between 00:00-06:59 ET).
-     d) Taker fee drag on scalping/early exits.
-     e) Absence of a cumulative multi-day equity drawdown circuit breaker.
+Detailed Implementation Tasks:
+1. Backend Changes (backend/routes/engine.py):
+   - Line ~3378: Remove or relax `kalshi_events = [e for e in kalshi_events if e.get("is_today")]` so all upcoming open events for all sports (NFL, MLB, TEN, SOC, UFC, NPB/KBO) are preserved while past events remain filtered by line 2821.
+   - Lines ~3265 & ~3325: Attach `"ai_prediction": best_pick if has_valid_pick else None` (and for props `matched_pick if has_ai_prediction else None`) to each returned event object at the top level and inside metadata.
+   - Lines ~2946-2950: Extend Tennis date matching tolerance to 48 hours (`diff <= 2` days; i.e. `if diff > 2: date_match = False`). Also adjust Tennis stale threshold in line 3153.
+   - Line ~2885: Add fallback player extraction in Tennis matching. If `p_away_raw` or `p_home_raw` is missing, parse `meta.get("matchup")` or `p.get("opponent")` by splitting on `\s+(?:vs\.?|at|@)\s+`.
+   - Add team aliases to `_SPORT_TEAM_MAP` for `SOC`, `NPB`, `KBO`.
+   - Add `KXBUNDESLIGA` and `KXLALIGA` to `_SPORTS_SERIES_MAP["SOC"]`.
+   - Line ~2854: Refine title prefix regex so team matchups before `: Spread` or `: Total Points` are preserved.
+   - Line ~3232: Normalize sport comparison in player prop matching loop using `_normalize_sport`.
 
-## Integrity Warning
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_preview_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+2. Backend Changes (backend/sports_bridge/prediction_client.py & executor.py):
+   - In `prediction_client.py` around line 546: extend Tennis date window in `predict_for_event()` from 1 day to 2 days (`if abs((ed - pd).days) > 2: continue`).
+   - In `executor.py` line 126: ensure `_generate_kalshi_market` returns a 4-tuple: `return None, 0.0, None, {}`.
 
-## Completion
-Write `R1_strategy_risk_assessment.md`, update your `progress.md`, write `handoff.md`, and send a completion message to orchestrator_1.
+3. Frontend Changes (static/saas_dashboard.html):
+   - Line ~4119: Fix loading pulse check so it displays loading indicator while `window.__sportsLoading` is true, preventing premature flash of "No active AI picks".
+   - Lines ~4061-4083: Expand `isSportMatch()` to check `event_ticker`/`ticker` prefixes (`KXATP*`, `KXWTA*`, `KXNFL*`, `KXMLB*`, `KXNHL*`, `KXEPL*`, `KXUFC*`, `KXNPB*`, `KXKBO*`) and sport aliases (`ATP`, `WTA`, `SOC`, `EPL`, `MLS`, `BASEBALL`, `FOOTBALL`, `HOCKEY`).
+   - Line ~4099: Decouple background settings gate so `sportsEventAllowed(e)` only filters when viewing `'ALL'` sports, allowing users to explicitly browse specific sports tabs.
+   - Line ~5715: Fix pull-to-refresh calling `loadSportsEvents(window.sportsFilter)` instead of `filterSportsEvents`.
+   - Update `SPORT_ICONS` map.
+
+4. Build and Test Verification:
+   - Run `pytest tests/test_sports_dashboard.py` and ensure all tests pass.
+   - Run verification script to query `/api/engine/sports/events?sport=TEN` and verify `ai_prediction` object is present on returned events.
+   - Verify that all sports (`NHL`, `MLB`, `NFL`, `TEN`, `SOC`, `UFC`, `NPB/KBO`) return events.
+   - Document all verification commands and outputs in your report.
+
+5. Deliverables:
+   - Write full report to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_worker_m1\report.md`
+   - Write handoff report to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_worker_m1\handoff.md`
+   - Send completion message to parent orchestrator.

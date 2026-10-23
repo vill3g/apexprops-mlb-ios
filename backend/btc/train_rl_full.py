@@ -39,7 +39,7 @@ def run_curriculum_training(
     final_epsilon: float = 0.05
 ):
     """
-    State-of-the-Art Curriculum Training for Dueling Double DQN with Prioritized Experience Replay.
+    Curriculum Training for PPO Time-Series Transformer Actor-Critic.
     Stages:
       1. Foundational Walkforward Learning on 60 Days of 15m Market Candles (Chronological Split)
          - ATR-scaled reward function with clear capital-preservation signals for PASS (Action 0).
@@ -50,10 +50,10 @@ def run_curriculum_training(
     """
     agent = get_rl_agent()
     logger.info("=" * 68)
-    logger.info("   INITIALIZING DUELING DOUBLE DQN CURRICULUM TRAINING")
+    logger.info("   INITIALIZING PPO TRANSFORMER CURRICULUM TRAINING")
     logger.info("=" * 68)
     logger.info(f"Agent Device: {agent.device} | State Dim: {agent.state_dim} | Action Dim: {agent.action_dim}")
-    logger.info(f"Policy Net Architecture: {agent.policy_net.__class__.__name__}")
+    logger.info(f"Architecture: {agent.actor_critic.__class__.__name__}")
 
     # -------------------------------------------------------------
     # STAGE 1: FOUNDATION TRAINING ON 60 DAYS OF MARKET PRICE ACTION
@@ -169,11 +169,11 @@ def run_curriculum_training(
                 epoch_steps += 1
         
         # Fast vectorized validation
-        agent.policy_net.eval()
+        agent.actor_critic.eval()
         with torch.no_grad():
-            preds = agent.policy_net(val_states_tensor).mean(dim=2).argmax(dim=1).cpu().numpy()
+            preds = agent.policy_net(val_states_tensor).argmax(dim=1).cpu().numpy()
             val_acc = (preds == val_actions_arr).mean() * 100.0
-        agent.policy_net.train()
+        agent.actor_critic.train()
 
         avg_loss = epoch_loss / max(1, epoch_steps)
         logger.info(f"Stage 1 Epoch {ep+1}/{stage1_epochs} complete | Train Loss: {avg_loss:.4f} | Val Accuracy: {val_acc:.1f}%")

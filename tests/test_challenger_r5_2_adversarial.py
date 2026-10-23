@@ -19,7 +19,7 @@ import pytest
 from backend.btc.kalshi_trader import KalshiTrader, get_authenticated_trader_for_user
 from backend.database.models import get_db_connection
 from backend.database.trade_store import TradeStore, _trade_epoch
-from backend.routes.engine import _execute_sports_trade, _fetch_kalshi_series_events
+from backend.routes.engine_sports import _execute_sports_trade, _fetch_kalshi_series_events
 from backend.sports_bridge.executor import SportsBridgeExecutor, _parse_trade_timestamp
 from backend.sports.sports_executor import run_sports_executor
 

@@ -1738,9 +1738,9 @@ window.currentAsset = "BTC";
     
 
     function calculatePositionSize() {
-
-      const riskDollar = account * (riskPct / 100);
-
+      const accountVal = (typeof account !== "undefined" ? account : (window.lastDashboardStats?.balance_dollars || 500));
+      const riskPctVal = (typeof riskPct !== "undefined" ? riskPct : 2);
+      const riskDollar = accountVal * (riskPctVal / 100);
 
       if (currentBtcSetup && currentBtcSetup.risk_amount && currentBtcSetup.risk_amount > 0) {
         const slDist = currentBtcSetup.risk_amount;
@@ -2052,9 +2052,9 @@ window.currentAsset = "BTC";
 
     let lastTrackedIntervalBucket = Math.floor(Date.now() / (15 * 60 * 1000));
 
-    // Server-Synced 1-second Countdown Timer with local fallback
+    // Server-Synced 1-second Countdown Timer with Kalshi clock offset calibration
     function updateBtcCountdownClock() {
-      const now = Date.now();
+      const now = Date.now() + (window._kalshiClockOffsetMs || 0);
       const nowSec = Math.floor(now / 1000);
       
       const tf = (btcCurrentTimeframe || "15m").toLowerCase();
@@ -2067,8 +2067,10 @@ window.currentAsset = "BTC";
       else if (tf === "1d") tfSeconds = 86400;
 
       let secondsLeft = 0;
-      if (window._btcServerNextCloseEpoch && window._btcServerNextCloseEpoch > now) {
-        secondsLeft = Math.floor((window._btcServerNextCloseEpoch - now) / 1000);
+      if (tf === "15m" && window._kalshiCloseEpochMs && window._kalshiCloseEpochMs > now && (window._kalshiCloseEpochMs - now) <= 960000) {
+        secondsLeft = Math.max(0, Math.floor(window._kalshiCloseEpochMs / 1000) - nowSec);
+      } else if (window._btcServerNextCloseEpoch && window._btcServerNextCloseEpoch > Date.now()) {
+        secondsLeft = Math.floor((window._btcServerNextCloseEpoch - Date.now()) / 1000);
       } else {
         const elapsed = nowSec % tfSeconds;
         secondsLeft = tfSeconds - elapsed;
@@ -2555,20 +2557,25 @@ window.currentAsset = "BTC";
         }
         if (res && res.ok) {
           const liveData = await res.json();
+          if (liveData.server_now_ms && liveData.server_now_ms > 0) {
+            window._kalshiClockOffsetMs = Number(liveData.server_now_ms) - Date.now();
+            window._kalshiClockSynced = true;
+          }
+          if (liveData.close_epoch_ms && liveData.close_epoch_ms > 0) {
+            window._kalshiCloseEpochMs = Number(liveData.close_epoch_ms);
+          }
           if (typeof liveData.seconds_left === 'number' && liveData.seconds_left > 0) {
-            // Only sync the epoch if we don't have one yet, or if it has expired,
-            // or if the server value differs from our local tracking by more than 3 seconds.
-            // This prevents the countdown from being reset on every 1s poll.
             const newEpoch = Date.now() + (liveData.seconds_left * 1000);
             const currentSecondsLeft = window._btcServerNextCloseEpoch
               ? Math.floor((window._btcServerNextCloseEpoch - Date.now()) / 1000)
               : -1;
             if (!window._btcServerNextCloseEpoch ||
                 window._btcServerNextCloseEpoch <= Date.now() ||
-                Math.abs(currentSecondsLeft - liveData.seconds_left) > 3) {
+                Math.abs(currentSecondsLeft - liveData.seconds_left) > 1) {
               window._btcServerNextCloseEpoch = newEpoch;
             }
           }
+          updateBtcCountdownClock();
           renderBtcHeroHud(liveData);
           if (liveData.target_price) {
             window.cachedBtcTargetPrice = liveData.target_price;
@@ -3198,7 +3205,7 @@ window.currentAsset = "BTC";
         const data = await res.json();
         if (!data) return;
 
-        verboseLog("Trade status poll response:", data);
+        if (typeof verboseLog === "function") verboseLog("Trade status poll response:", data);
 
         // Synchronize JS state variables with authoritative server state
         kalshiAutoTradeEnabled = !!data.enabled;
@@ -3532,7 +3539,28 @@ window.currentAsset = "BTC";
       if (!container) return;
       window._kalshiTradesData = trades;
 
-      const filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+      let filteredTrades = (trades || []).filter(t => (t.mode || "PAPER").toUpperCase() === kalshiTradingMode);
+
+      const isSportsUniverse = (window.currentUniverse === 'SPORTS');
+      filteredTrades = filteredTrades.filter(t => {
+          const tTicker = String(t.ticker || "").toUpperCase();
+          let parsedMeta = t.metadata;
+          if (typeof parsedMeta === 'string') {
+              try { parsedMeta = JSON.parse(parsedMeta); } catch(e) { parsedMeta = {}; }
+          }
+          const hasSportProp = t.sport || (parsedMeta && (parsedMeta.sport || parsedMeta.league));
+          const tAsset = String(t.asset || '').toUpperCase();
+          const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tTicker) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tTicker) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(tAsset);
+          const isSportsStyle = String(t.trading_style || '').toUpperCase().startsWith('SPORTS');
+          const isSportsTrade = hasSportProp || isSportsTicker || isSportsStyle;
+          const isFinancial = !isSportsTrade;
+          
+          if (isSportsUniverse) {
+              return isSportsTrade;
+          } else {
+              return isFinancial;
+          }
+      });
 
       const marketKey = activeMarket ? `${activeMarket.yes_bid}_${activeMarket.no_bid}` : "no_market";
       const tradesKey = JSON.stringify(filteredTrades.slice(0, 10).map(t => [
@@ -3608,8 +3636,7 @@ window.currentAsset = "BTC";
                 timeZone: 'America/New_York',
                 month: 'short', day: 'numeric', year: 'numeric',
                 hour: 'numeric', minute: '2-digit', hour12: true,
-                timeZoneName: 'short'
-              });
+                timeZoneName: 'short' }).replace(/(EDT|EST|EDT|EST|Eastern Daylight Time|Eastern Standard Time)/g, 'ET');
         };
         const openedAt = formatTradeDateTime(t.timestamp);
         const settledAt = isClosed ? formatTradeDateTime(t.settled_at) : "";
@@ -3618,12 +3645,40 @@ window.currentAsset = "BTC";
         // Trade type / direction label (mirrors the dedicated Trade List page)
         const sideStr = String(t.side || t.direction || "").toUpperCase();
         const isUpDirection = sideStr.includes("UP") || sideStr.includes("ABOVE") || sideStr.includes("YES") || sideStr.includes("BUY");
-        const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || String(t.ticker || "").includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
-        const directionArrow = isUpDirection ? "▲" : "▼";
-        const directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
-        const directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
+        const tTicker = String(t.ticker || "").toUpperCase();
+        const isFxTrade = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(window.currentAsset) || tTicker.includes("SPOT") || t.pips != null || String(t.count || "").includes("Lots");
+        const hasSportProp = t.sport || (t.metadata && (t.metadata.sport || t.metadata.league));
+        const tAsset = String(t.asset || '').toUpperCase();
+            const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tTicker) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tTicker) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(tAsset);
+        const isSportsStyle = String(t.trading_style || '').toUpperCase().startsWith('SPORTS');
+          const isSportsTrade = hasSportProp || isSportsTicker || isSportsStyle;
 
+        let directionArrow = isUpDirection ? "▲" : "▼";
+        let directionLabel = isFxTrade ? (isUpDirection ? "BUY / LONG" : "SELL / SHORT") : (isUpDirection ? "BID UP (YES)" : "BID DOWN (NO)");
+        let directionColor = isUpDirection ? "text-emerald-400" : "text-red-400";
         let tradeSizeDisplay = "";
+
+        if (isSportsTrade) {
+            const sport = String(t.sport || (t.metadata && t.metadata.sport) || "").toUpperCase();
+            const sportIcons = { 'NFL': '🏈', 'NCAAF': '🏈', 'MLB': '⚾', 'NHL': '🏒', 'NBA': '🏀', 'NCAAB': '🏀', 'SOC': '⚽', 'SOCCER': '⚽', 'UFC': '🥊', 'MMA': '🥊', 'TEN': '🎾', 'TENNIS': '🎾', 'NPB': '⚾', 'KBO': '⚾' };
+            const icon = sportIcons[sport] || '🏟️';
+            const pick = (t.metadata && (t.metadata.name || t.metadata.player_or_team)) || t.predicted_team || t.ticker || "Sports Pick";
+            let line = (t.metadata && (t.metadata.line || t.metadata.target_desc)) || t.line || t.market_type || (isUpDirection ? 'YES' : 'NO');
+            if (line && /^\d+\+?$/.test(String(line).trim())) {
+                const tk = String(t.ticker || '').toUpperCase();
+                let statUnit = 'Goals';
+                if (tk.includes('SHOT') || tk.includes('SOG')) statUnit = 'Shots';
+                else if (tk.includes('HR')) statUnit = 'Home Runs';
+                else if (tk.includes('KS') || tk.includes('STRIKEOUT')) statUnit = 'Strikeouts';
+                else if (tk.includes('TD')) statUnit = 'Touchdowns';
+                line = `${String(line).trim()} ${statUnit}`;
+            }
+            
+            directionArrow = icon;
+            directionLabel = `${pick} (${line})`;
+            directionColor = "text-white";
+        }
+
         if (isFxTrade) {
           const lotsStr = t.count || (t.lots ? `${t.lots} Lots` : '0.10 Lots');
           const pipsStr = t.pips != null ? ` · ${t.pips >= 0 ? '+' : ''}${t.pips} pips` : '';
@@ -3783,7 +3838,8 @@ window.currentAsset = "BTC";
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         let res;
         try {
-          res = await authFetch(`${apiBase}/api/engine/${window.currentAsset}/trade/toggle?enabled=${nextState}`, {
+          const curAsset = (window.currentUniverse === 'SPORTS') ? 'SPORTS' : String(window.currentAsset || 'BTC').replace(/\//g, '_');
+          res = await authFetch(`${apiBase}/api/engine/${curAsset}/trade/toggle?enabled=${nextState}`, {
             method: "POST",
             signal: controller.signal
           });
@@ -4683,8 +4739,27 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
     function initGlobalSleekTooltips() {
 
       let activeTarget = null;
+      // Shared tooltip element (styled in css/mobile-polish.css). Created on first use;
+      // it was referenced here but never existed, so every hover threw "tooltip is not defined".
+      let tooltipEl = null;
+      const getTooltip = () => {
+        if (tooltipEl && tooltipEl.isConnected) return tooltipEl;
+        tooltipEl = document.getElementById("globalSleekTooltip");
+        if (!tooltipEl) {
+          tooltipEl = document.createElement("div");
+          tooltipEl.id = "globalSleekTooltip";
+          tooltipEl.className = "hidden";
+          tooltipEl.setAttribute("role", "tooltip");
+          document.body.appendChild(tooltipEl);
+        }
+        return tooltipEl;
+      };
+      // Phones and tablets have no hover: iOS fires a fake mouseover on tap, which would
+      // leave a tooltip stuck on screen. Keep native behaviour there.
+      const canHover = !window.matchMedia || window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
       document.addEventListener("mouseover", (e) => {
+        if (!canHover) return;
         const target = e.target.closest("[title], [data-tooltip]");
         if (!target) return;
 
@@ -4725,7 +4800,8 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         // Format text with clean line breaks
         const formattedHtml = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
         
-        tooltip.innerHTML = `<div class="text-[11px] font-mono text-slate-200 leading-snug">${formattedHtml}</div>`;
+        const tooltip = getTooltip();
+        tooltip.innerHTML = `<div class="gst-body">${formattedHtml}</div>`;
         tooltip.classList.remove("hidden");
         tooltip.style.opacity = "1";
 
@@ -4736,6 +4812,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         const target = e.target.closest("[data-tooltip]");
         if (target && target === activeTarget) {
           activeTarget = null;
+          const tooltip = getTooltip();
           tooltip.style.opacity = "0";
           tooltip.classList.add("hidden");
         }
@@ -4749,6 +4826,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
       });
 
       function positionTooltip(e, target) {
+        const tooltip = getTooltip();
         const rect = target.getBoundingClientRect();
         let top = rect.bottom + 6;
         let left = rect.left;
@@ -4770,6 +4848,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         chartBox.addEventListener("mouseenter", () => {
           if (activeTarget) {
             activeTarget = null;
+            const tooltip = getTooltip();
             tooltip.style.opacity = "0";
             tooltip.classList.add("hidden");
           }
@@ -5020,7 +5099,7 @@ useFinbertNLP: document.getElementById("settingUseFinbertNLP")?.checked ?? true
         const raw = String(value).trim();
         if (/^\d{4}-\d{2}-\d{2}\s+/.test(raw)) return raw;
         const date = new Date(raw);
-        return Number.isNaN(date.getTime()) ? raw : date.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
+        return Number.isNaN(date.getTime()) ? raw : date.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' }).replace(/(EDT|EST|EDT|EST|Eastern Daylight Time|Eastern Standard Time)/g, 'ET');
       };
 
       const openedAt = formatTradeDateTime(trade.timestamp);
@@ -5485,26 +5564,55 @@ if(window.matrixTelemetryIntervalId) clearInterval(window.matrixTelemetryInterva
 
 
 
-// --- Wallet Transfer Functionality ---
-async function executeWalletTransfer() {
-    const btn = document.getElementById('transfer-btn');
-    const amountInput = document.getElementById('transfer-amount');
-    const directionSelect = document.getElementById('transfer-direction');
-    const statusDiv = document.getElementById('transfer-status');
+// --- Wallet Transfer Functionality (Kalshi Exchange Shards 0-3) ---
+async function executeWalletTransfer(prefix = '') {
+    const isSports = prefix === 'sports-' || prefix === 'sports';
+    const pfx = isSports ? 'sports-' : '';
+
+    const btn = document.getElementById(pfx + 'transfer-btn');
+    const amountInput = document.getElementById(pfx + 'transfer-amount');
+    const srcSelect = document.getElementById(pfx + 'transfer-src-exchange');
+    const dstSelect = document.getElementById(pfx + 'transfer-dst-exchange');
+    const legacyDirSelect = document.getElementById('transfer-direction');
+    const statusDiv = document.getElementById(pfx + 'transfer-status');
     
-    if (!amountInput.value || parseFloat(amountInput.value) <= 0) {
-        statusDiv.textContent = 'Please enter a valid amount.';
-        statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
-        statusDiv.classList.remove('hidden');
+    if (!amountInput || !amountInput.value || parseFloat(amountInput.value) <= 0) {
+        if (statusDiv) {
+            statusDiv.textContent = 'Please enter a valid transfer amount ($).';
+            statusDiv.className = 'text-[10px] mt-2 rounded p-2 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            statusDiv.classList.remove('hidden');
+        }
         return;
     }
     
     const amount = parseFloat(amountInput.value);
-    const direction = directionSelect.value;
+    const payload = { amount: amount };
+
+    if (srcSelect && dstSelect) {
+        const src = parseInt(srcSelect.value, 10);
+        const dst = parseInt(dstSelect.value, 10);
+        if (src === dst) {
+            if (statusDiv) {
+                statusDiv.textContent = 'Source and destination shards must be different.';
+                statusDiv.className = 'text-[10px] mt-2 rounded p-2 font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                statusDiv.classList.remove('hidden');
+            }
+            return;
+        }
+        payload.source_exchange = src;
+        payload.destination_exchange = dst;
+    } else if (legacyDirSelect) {
+        payload.direction = legacyDirSelect.value;
+    } else {
+        payload.source_exchange = 0;
+        payload.destination_exchange = isSports ? 3 : 2;
+    }
     
-    btn.disabled = true;
-    btn.innerHTML = '<span class="animate-pulse">Transferring...</span>';
-    statusDiv.classList.add('hidden');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="animate-pulse">Transferring Shards...</span>';
+    }
+    if (statusDiv) statusDiv.classList.add('hidden');
     
     try {
         const resp = await fetch(getKalshiApiBase() + '/api/engine/btc/kalshi/transfer', {
@@ -5513,41 +5621,74 @@ async function executeWalletTransfer() {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + (localStorage.getItem('saas_token') || '')
             },
-            body: JSON.stringify({ direction: direction, amount: amount })
+            body: JSON.stringify(payload)
         });
         
         const data = await resp.json();
         
         if (data.success) {
-            statusDiv.textContent = 'Transfer successful! ($' + data.amount_dollars.toFixed(2) + ')';
-            statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            const srcName = srcSelect ? srcSelect.options[srcSelect.selectedIndex].text.split('(')[0].trim() : `Exchange ${payload.source_exchange ?? 0}`;
+            const dstName = dstSelect ? dstSelect.options[dstSelect.selectedIndex].text.split('(')[0].trim() : `Exchange ${payload.destination_exchange ?? 2}`;
+            if (statusDiv) {
+                statusDiv.textContent = `✓ Successfully transferred $${amount.toFixed(2)} from ${srcName} to ${dstName}!`;
+                statusDiv.className = 'text-[10px] mt-2 rounded p-2 font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            }
             amountInput.value = '';
-            // Refresh balances
-            if (typeof fetchSettings === 'function') fetchSettings();
+            // Refresh balances across all panels
             if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+            if (typeof fetchSettings === 'function') fetchSettings();
         } else {
-            statusDiv.textContent = data.error || 'Transfer failed.';
-            statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            if (statusDiv) {
+                statusDiv.textContent = data.error || 'Transfer failed on Kalshi matching engine.';
+                statusDiv.className = 'text-[10px] mt-2 rounded p-2 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+            }
         }
     } catch (err) {
         console.error('Transfer error:', err);
-        statusDiv.textContent = 'Network error during transfer.';
-        statusDiv.className = 'text-[10px] mt-2 rounded p-1.5 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        if (statusDiv) {
+            statusDiv.textContent = 'Network error during exchange transfer.';
+            statusDiv.className = 'text-[10px] mt-2 rounded p-2 font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        }
     } finally {
-        statusDiv.classList.remove('hidden');
-        btn.disabled = false;
-        btn.innerHTML = 'Transfer';
+        if (statusDiv) statusDiv.classList.remove('hidden');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Transfer Funds';
+        }
     }
 }
 window.executeWalletTransfer = executeWalletTransfer;
 
-// --- Wallet Balances Fetching ---
+// Quick amount shortcut for exchange transfers
+window.setExchangeTransferAmount = function setExchangeTransferAmount(pct, pfx = '') {
+    const isSports = pfx === 'sports-' || pfx === 'sports';
+    const prefix = isSports ? 'sports-' : '';
+    const srcSelect = document.getElementById(prefix + 'transfer-src-exchange');
+    const amtInput = document.getElementById(prefix + 'transfer-amount');
+    if (!srcSelect || !amtInput) return;
+    const srcIdx = parseInt(srcSelect.value, 10);
+    const data = window.__kalshiExchangesData;
+    let available = 0.0;
+    if (data && data.exchanges) {
+        const found = data.exchanges.find(x => x.exchange_index === srcIdx);
+        if (found) available = parseFloat(found.balance) || 0.0;
+    }
+    const val = (available * (pct / 100.0)).toFixed(2);
+    amtInput.value = Math.max(0.01, parseFloat(val) || 0.0);
+};
+
+// --- Wallet Balances Fetching (All 4 Kalshi Exchange Shards) ---
 window.refreshWalletBalances = async function refreshWalletBalances() {
-    const mainBalEl = document.getElementById('wallet-main-bal');
-    const cryptoBalEl = document.getElementById('wallet-crypto-bal');
+    const shardCardIds = [
+        'wallet-ex0-bal', 'wallet-ex1-bal', 'wallet-ex2-bal', 'wallet-ex3-bal',
+        'sports-wallet-ex0-bal', 'sports-wallet-ex1-bal', 'sports-wallet-ex2-bal', 'sports-wallet-ex3-bal',
+        'wallet-main-bal', 'wallet-crypto-bal'
+    ];
     
-    if (mainBalEl) mainBalEl.innerHTML = '<span class="animate-pulse">Loading...</span>';
-    if (cryptoBalEl) cryptoBalEl.innerHTML = '<span class="animate-pulse">Loading...</span>';
+    shardCardIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<span class="animate-pulse">Loading...</span>';
+    });
     
     try {
         const resp = await fetch(getKalshiApiBase() + '/api/engine/btc/kalshi/exchanges', {
@@ -5559,29 +5700,56 @@ window.refreshWalletBalances = async function refreshWalletBalances() {
         const data = await resp.json();
         
         if (data.success && data.exchanges) {
-            let mainBal = 0.0;
-            let cryptoBal = 0.0;
-            
+            window.__kalshiExchangesData = data;
+            const balMap = {};
             data.exchanges.forEach(ex => {
-                if (ex.exchange_index === 0) {
-                    mainBal = parseFloat(ex.balance) || 0.0;
-                } else if (ex.exchange_index === 2) {
-                    cryptoBal = parseFloat(ex.balance) || 0.0;
-                }
+                balMap[ex.exchange_index] = parseFloat(ex.balance) || 0.0;
             });
             
-            if (mainBalEl) mainBalEl.textContent = '$' + mainBal.toFixed(2);
-            if (cryptoBalEl) cryptoBalEl.textContent = '$' + cryptoBal.toFixed(2);
+            // Populate all 4 exchange shard cards
+            for (let i = 0; i < 4; i++) {
+                const b = balMap[i] != null ? balMap[i] : 0.0;
+                const formatted = '$' + b.toFixed(2);
+                ['wallet-ex' + i + '-bal', 'sports-wallet-ex' + i + '-bal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = formatted;
+                });
+            }
+            
+            // Legacy fallbacks
+            const mainBalEl = document.getElementById('wallet-main-bal');
+            if (mainBalEl) mainBalEl.textContent = '$' + (balMap[0] || 0.0).toFixed(2);
+            const cryptoBalEl = document.getElementById('wallet-crypto-bal');
+            if (cryptoBalEl) cryptoBalEl.textContent = '$' + (balMap[2] || 0.0).toFixed(2);
+            
+            // Total available and portfolio values
+            const totalAvail = parseFloat(data.total_balance) || 0.0;
+            const portVal = data.portfolio_value != null ? parseFloat(data.portfolio_value) : null;
+            
+            ['wallet-total-avail', 'sports-wallet-total-avail'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '$' + totalAvail.toFixed(2);
+            });
+            if (portVal != null) {
+                ['wallet-portfolio-val', 'sports-wallet-portfolio-val'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = '$' + portVal.toFixed(2);
+                });
+            }
         } else {
-            if (mainBalEl) mainBalEl.textContent = 'Error';
-            if (cryptoBalEl) cryptoBalEl.textContent = 'Error';
+            shardCardIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '--';
+            });
         }
     } catch (err) {
         console.error('Failed to refresh wallet balances:', err);
-        if (mainBalEl) mainBalEl.textContent = '--';
-        if (cryptoBalEl) cryptoBalEl.textContent = '--';
+        shardCardIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '--';
+        });
     }
-}
+};
 // --- Dock Asset Selector Bar ---
 window.addEventListener('load', () => {
     const header = document.getElementById('main-header');

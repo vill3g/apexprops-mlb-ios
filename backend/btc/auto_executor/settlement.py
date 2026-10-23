@@ -15,6 +15,7 @@ except ImportError:
 
 from backend.btc.fees import net_pnl
 from backend.btc.kalshi_trader import kalshi_trader
+from backend.btc.loss_analyzer import loss_analyzer
 from backend.btc.ml_engine import get_ml_engine
 from backend.btc.paper_balance import update_balance
 from backend.btc.shadow_executor import update_shadow_settlements
@@ -124,9 +125,15 @@ class SettlementMixin:
                             prior_realized_pnl = float(t.get("realized_pnl", 0.0))
                             # Net of the Kalshi entry fee (no fee is charged at settlement)
                             settlement_pnl = net_pnl(entry_price, 1.0 if is_win else 0.0, count)
-                            t["pnl"] = round(prior_realized_pnl + settlement_pnl, 4)
+                            total_pnl = round(prior_realized_pnl + settlement_pnl, 4)
+                            t["pnl"] = total_pnl
                             t["settlement_pnl"] = settlement_pnl
                             t["settled_at"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET")
+                            if not is_win or total_pnl < 0:
+                                try:
+                                    t["loss_analysis"] = loss_analyzer.diagnose_loss(t)
+                                except Exception as _diag_err:
+                                    logger.warning(f"[SettlementMixin] Loss diagnosis failed: {_diag_err}")
                             modified = True
                             newly_settled_count += 1
                             _pay_out(t, user_id, is_win, count, settlement_pnl)
@@ -161,6 +168,11 @@ class SettlementMixin:
                             "pnl": fallback_pnl,
                             "settled_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                         })
+                        if not is_win or fallback_pnl < 0:
+                            try:
+                                t["loss_analysis"] = loss_analyzer.diagnose_loss(t)
+                            except Exception as _diag_err:
+                                logger.warning(f"[SettlementMixin] Loss diagnosis failed: {_diag_err}")
                         modified = True
                         newly_settled_count += 1
                         _pay_out(t, user_id, is_win, count, fallback_pnl)

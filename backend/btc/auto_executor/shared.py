@@ -36,7 +36,7 @@ _user_last_traded_lock = threading.Lock()
 from backend.btc import liquidation_stream
 
 
-def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[float] = None) -> Dict[str, Any]:
+def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[float] = None, asset: str = 'BTC') -> Dict[str, Any]:
     """
     Auto 2.0: Adaptive Market Regime Classification Engine.
     Dynamically maps current market microstructure, volatility, and trend conditions
@@ -110,7 +110,7 @@ def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[floa
     # 1. Real-time liquidation metrics
     liq_total = 0.0
     try:
-        liq = liquidation_stream.get_liquidation_imbalance()
+        liq = liquidation_stream.get_liquidation_imbalance(asset=asset)
         liq_total = float(liq.get("short_liquidations_usd", 0.0) + liq.get("long_liquidations_usd", 0.0))
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, ValueError, TypeError) as e:
         logger.warning(f"Error fetching liquidation imbalance: {e}")
@@ -163,10 +163,25 @@ def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[floa
 
     is_chop_deadzone = (
         (adx < 18.0 and vol_ratio < 0.85 and bb_width < 0.018) or
-        (adx < 16.0 and vol_ratio < 0.90)
+        (adx < 16.0 and vol_ratio < 0.90) or
+        (adx < 18.5 and abs(rsi - 50.0) < 3.5 and vol_ratio < 0.95)
     )
 
     is_trend_continuation = (adx >= 20.0 and abs(rsi - 50.0) >= 5.0 and vol_ratio >= 0.9)
+
+    # 3-Phase 15-Minute Time-Decay Engine Analysis
+    time_phase = None
+    if sec_left is not None:
+        try:
+            from backend.btc.time_phase_engine import classify_15m_time_phase
+            time_phase = classify_15m_time_phase(
+                sec_left=float(sec_left),
+                spot_price=close,
+                strike_price=0.0,
+                atr=atr
+            )
+        except Exception as e:
+            logger.debug(f"[Regime] Time phase calculation error: {e}")
 
     # Classification Hierarchy
     if is_liq_cascade or is_vol_momentum or is_mtf_aligned_momentum:
@@ -180,7 +195,11 @@ def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[floa
     elif is_chop_deadzone:
         style = "CAPITAL_GUARD"
         regime = "CHOP_DEADZONE"
-        reason = f"Low-volatility compression deadzone (ADX: {adx:.1f} < 18, Vol: {vol_ratio:.2f} < 0.85, BBW: {bb_width:.4f}). Capital Guard active."
+        reason = f"Low-volatility compression deadzone (ADX: {adx:.1f} < 18.5, Vol: {vol_ratio:.2f}, RSI: {rsi:.1f}). Capital Guard active."
+    elif time_phase and time_phase.get("is_pin_risk"):
+        style = "CAPITAL_GUARD"
+        regime = "PIN_RISK_DEADZONE"
+        reason = f"Phase 3 Expiry Pin Risk ({sec_left/60.0:.1f}m left): Spot price is hovering on strike. Capital Guard active."
     elif is_trend_continuation:
         style = "SNIPER"
         regime = "TREND_CONTINUATION"
@@ -194,6 +213,7 @@ def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[floa
         "style": style,
         "regime": regime,
         "reason": reason,
+        "time_phase": time_phase,
         "metrics": {
             "vol_ratio": round(vol_ratio, 3),
             "bb_width": round(bb_width, 5),
@@ -201,6 +221,7 @@ def classify_auto_regime(df_ind: Optional[pd.DataFrame], sec_left: Optional[floa
             "rsi": round(rsi, 2),
             "liq_total": round(liq_total, 2),
             "trend_1h": trend_1h,
+            "phase": time_phase.get("phase") if time_phase else "UNKNOWN",
         }
     }
 

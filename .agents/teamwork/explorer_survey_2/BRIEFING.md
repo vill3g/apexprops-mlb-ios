@@ -1,50 +1,50 @@
-# BRIEFING — 2026-10-02T17:37:00Z
+# BRIEFING — 2026-10-07T22:49:15Z
 
 ## Mission
-Survey ShadowTrader AI codebase for Frontend UI/UX and iOS Smoothness (R2), including HTML structural integrity, JS errors/performance, CSS/iOS safe area, and Capacitor configuration.
+Investigate backend database schemas, user settings storage, authentication, and API endpoints regarding the trading_universe setting (persistence of "BOTH").
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: frontend investigator, UI/UX auditor, iOS smoothness analyzer
-- Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_2
-- Original parent: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Milestone: Survey & Audit Phase
+- Roles: Read-only investigation: analyze problems, synthesize findings, produce structured reports
+- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2
+- Original parent: 269a1b7a-33d9-4136-b7da-906e573af819
+- Milestone: Survey & Investigation
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement or modify project code files
-- Document exact file paths, line numbers, root causes, and risks
-- Adhere to Teamwork protocol and 5-component handoff report
+- Read-only investigation — do NOT implement code changes in the project
+- Investigate backend database schemas, user settings storage, authentication, and API endpoints regarding the trading_universe setting (persistence of "BOTH")
+- Never place source code, tests, or data files in .agents/teamwork/
 
 ## Current Parent
-- Conversation ID: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Updated: 2026-10-02T17:37:00Z
+- Conversation ID: 269a1b7a-33d9-4136-b7da-906e573af819
+- Updated: not yet
 
 ## Investigation State
-- **Explored paths**: `static/saas_dashboard.html`, `static/login.html`, `static/trades.html`, `static/admin_mobile.html`, `static/css/app.css`, `static/css/dashboard.css`, `static/js/app.js`, `static/js/dashboard.js`, `static/js/admin_users.js`, `capacitor.config.json`, `update_ipa.py`, `tests/test_frontend_contracts.py`.
+- **Explored paths**:
+  - `backend/database/models.py`: table schemas, auto-migrations, `VALID_TRADING_UNIVERSES`, `update_user_trading_universe`, `update_user_config`
+  - `backend/auth/routes.py`: `UserConfigRequest`, `validate_trading_universe`, `dashboard_stats`, `set_user_config`, `get_current_user`
+  - `backend/auth/admin_routes.py`: `list_all_users`, `AdminConfigPayload`
+  - `backend/routes/engine.py`: `api_btc_trade_toggle`, `api_btc_trade_config_post`, `_resolve_user_id`
+  - `backend/btc/auto_executor/saas_broadcaster.py`: multi-tenant execution filters
+  - `backend/sports_bridge/executor.py`: sports auto-executor multi-tenant filters
+  - `static/saas_dashboard.html`: `selectUniverse`, `saveUserConfig`, `setAutoTradingUniverse`, `#settingsPanel`
+  - Test suites: `test_r2_r5_multi_universe_and_timestamps.py`, `test_r3_r4_ui_and_rate_limits.py`, `test_challenger_r5_2_adversarial.py`
 - **Key findings**:
-  1. HTML structural error: Unclosed `<div id="settingsDrawer">` at line 5288 in `saas_dashboard.html`, trapping trailing scripts and modals.
-  2. Double polling / runaway loop: `saas_dashboard.html` and `app.js` both run separate aggressive polling loops, generating 7-8 requests/sec.
-  3. Safe area bug: Zero usages of `env(safe-area-inset-bottom)` in `saas_dashboard.html`; sticky footer buttons collide with iOS Home Indicator.
-  4. Auto Trader state sync bug: `toggleAutoTrader` checks nonexistent IDs (`auto-trader-toggle`, `auto-trader-status`, `header-auto-status`) and fails to update `nav-auto-badge`.
-  5. Capacitor config bug: `contentInset: "always"` causes double inset padding on iOS WKWebView.
-  6. Asset 404s: Missing `favicon.svg` and `app_icon.ico` in `login.html` and `trades.html`.
-  7. Corrupted CSS classes: Orphaned `-2xl`, `-xl`, `-sm` from stripped `backdrop-blur`.
-  8. Unlinked stylesheet: `app.css` (41KB of responsive iOS CSS) is never linked in `saas_dashboard.html`.
-- **Unexplored areas**: None within frontend survey scope.
+  - SQLite schema (`users.trading_universe`), Pydantic validation, and execution engines (`saas_broadcaster.py` and `sports_bridge/executor.py`) fully support `"BOTH"` and `"ALL"`.
+  - Discovered 3 critical silent overwrite bugs destroying `"BOTH"`:
+    1. `backend/routes/engine.py:706`: Sports toggle explicitly runs `update_user_trading_universe(user_id, "SPORTS")`.
+    2. `backend/routes/engine.py:916`: Saving config via `/api/engine/{asset}/trade/config` calls `update_user_config` without universe, defaulting to `"FINANCIAL"`.
+    3. `static/saas_dashboard.html:3882`: `selectUniverse` tab switching sets `window.lastDashboardStats.trading_universe = universe;`, corrupting client-side in-memory state.
+- **Unexplored areas**: None within the scope of backend schemas, auth, and universe persistence.
 
 ## Key Decisions Made
-- Completed static AST/parser checks on all HTML, JS, CSS, and config files. Document exact line numbers and concrete remediation steps for the subsequent fix team.
+- Empirically reproduced and confirmed both backend overwrite bugs using local test calls against SQLite database.
+- Generated comprehensive `survey_report.md` detailing findings, root causes, and actionable recommendations.
+- Produced 5-component `handoff.md`.
 
 ## Artifact Index
-- DISPATCH.md — Task assignment from orchestrator
-- BRIEFING.md — Working memory and status
-- progress.md — Liveness heartbeat and milestone tracker
-- audit_html.py — Full HTML parser auditor script
-- check_html.py — Div stack nesting analysis script
-- check_inline_scripts.js — Node.js inline script syntax checker
-- check_missing_ids.py — DOM getElementById cross-checker
-- check_asset_integrity.py — 404 asset path scanner
-- audit_corrupted_classes.py — Broken Tailwind class detector
-- audit_autotrader.py — Auto Trader element audit script
-- survey_report.md — Comprehensive frontend audit report
-- handoff.md — 5-component handoff report
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\DISPATCH.md — Dispatch instructions
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\BRIEFING.md — Working memory
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\progress.md — Liveness heartbeat
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md — Comprehensive findings
+- C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\handoff.md — 5-component handoff report

@@ -51,7 +51,7 @@ from backend.btc.loss_analyzer import loss_analyzer
 from backend.btc.ml_engine import get_ml_engine
 from backend.btc.paper_balance import load_balance, update_balance
 from backend.btc.pattern_detector import detect_candlestick_patterns
-from backend.btc.scalp_engine import scalp_engine
+from backend.btc.scalp_engine import get_scalp_engine, scalp_engine
 from backend.btc.shadow_executor import execute_shadow_trade
 from backend.btc.trade_db import get_trade_db
 from backend.database import order_intents
@@ -116,6 +116,8 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
             self.last_check_time: float = 0.0
             self.ai_settings: dict = {}
             self._rollover_lock = threading.Lock()
+            self._rollover_lock_since: Optional[float] = None
+            self._last_stuck_log_interval: Optional[str] = None
             self._saas_eval_lock = threading.Lock()
             self._config_lock = threading.Lock()
             self._last_saas_eval_time: float = 0.0
@@ -152,7 +154,10 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         with open(self._config_file, "r", encoding="utf-8") as f:
                             cfg = json.load(f)
                             self.enabled = bool(cfg.get("enabled", False))
-                            self.mode = cfg.get("mode", "PAPER")
+                            # SAFEGUARD: The global background AutoExecutor singleton MUST ALWAYS be in PAPER mode.
+                            # Live trading is exclusively executed per-user via evaluate_and_execute_saas_users()
+                            # to prevent rogue global orders from placing unconstrained Kelly trades on the owner account.
+                            self.mode = "PAPER"
                             self.min_conviction = cfg.get("min_conviction", "GRADE B SETUP")
                             self.max_contracts = int(cfg.get("max_contracts", 1))
                             self.prediction_mode = bool(cfg.get("prediction_mode", True))
@@ -162,10 +167,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                             self.ai_settings = cfg.get("ai_settings") or {}
                             if not isinstance(self.ai_settings, dict):
                                 self.ai_settings = {}
-                            if self.mode == "LIVE":
-                                self.ai_settings["dryRun"] = False
-                            elif "dryRun" not in self.ai_settings:
-                                self.ai_settings["dryRun"] = (self.mode == "PAPER")
+                            self.ai_settings["dryRun"] = True
                             if "ignorePass" not in self.ai_settings:
                                 self.ai_settings["ignorePass"] = False
                             if "dynamicStopLoss" not in self.ai_settings:
@@ -620,8 +622,30 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
             # narrow window where two threads could both pass the 4-second check and both
             # enter the expensive ML + network path.
             if not self._rollover_lock.acquire(blocking=False):
-                logger.debug("[AutoExecutor] Rollover evaluation already in progress by another worker. Skipping concurrent execution.")
-                return None
+                now_check = time.time()
+                stuck_since = getattr(self, "_rollover_lock_since", None)
+                if stuck_since and (now_check - stuck_since) > 90.0:
+                    stuck_dur = round(now_check - stuck_since, 1)
+                    logger.warning(f"[AutoExecutor] Rollover lock stuck for {stuck_dur}s — force releasing")
+                    try:
+                        self._rollover_lock.release()
+                    except RuntimeError:
+                        pass
+                    self._rollover_lock_since = None
+                    self._inflight_interval = None
+                    if not self._rollover_lock.acquire(blocking=False):
+                        return None
+                else:
+                    countdown_preview = _pkg_obj("get_candle_countdown", get_candle_countdown)(timeframe="15m")
+                    curr_inter = countdown_preview.get("current_interval_id", "")
+                    if getattr(self, "_last_stuck_log_interval", None) != curr_inter:
+                        self._last_stuck_log_interval = curr_inter
+                        logger.info(f"[AutoExecutor] Rollover evaluation already in progress by another worker for interval {curr_inter}. Skipping concurrent execution.")
+                    else:
+                        logger.debug("[AutoExecutor] Rollover evaluation already in progress by another worker. Skipping concurrent execution.")
+                    return None
+
+            self._rollover_lock_since = time.time()
     
             lock_held = True
             current_interval_id = None
@@ -640,20 +664,28 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 sec_elapsed = 900 - sec_left
     
                 trading_style = str(self.ai_settings.get("tradingStyle", "SNIPER")).upper()
-                is_rollover_window = sec_elapsed <= 60 or sec_left >= 840
-                is_prediction_window = 30 <= sec_elapsed <= 55 or 845 <= sec_left <= 870
+                is_override_active = bool(
+                    self.ai_settings.get("oneShotAiStartTrade") or
+                    self.ai_settings.get("ignorePass") or
+                    self.ai_settings.get("reverseCvd") or
+                    self.ai_settings.get("geminiEveryInterval")
+                )
+                is_rollover_window = (0 <= sec_elapsed <= 180) if (trading_style == "SNIPER" or is_override_active) else (65 <= sec_elapsed <= 180)
+                is_prediction_window = (0 <= sec_elapsed <= 180) if (trading_style == "SNIPER" or is_override_active) else (65 <= sec_elapsed <= 180)
                 
                 from backend.btc.auto_executor.remediations import is_entry_timing_valid
                 timing_res = is_entry_timing_valid(sec_left)
-                if trading_style in ["MOMENTUM_SURFER", "AMBUSH", "AUTO"]:
-                    window_valid = timing_res.get("valid", False)
+                if is_override_active:
+                    window_valid = (sec_left >= 180)
+                elif trading_style in ["MOMENTUM_SURFER", "AMBUSH", "AUTO"]:
+                    window_valid = timing_res.get("valid", False) and (sec_elapsed >= 65)
                 elif trading_style == "PREDICTION":
                     # Wait up to 1m 30s (90s) for opening noise/chop to settle, then enter before the 3m expiry cutoff
                     window_valid = (sec_elapsed >= 90 and sec_left >= 180)
                     if not window_valid and sec_elapsed < 90:
                         logger.debug(f"[AutoExecutor] [PREDICTION] Waiting up to 1 minute 30 seconds for opening candle noise to settle ({sec_elapsed:.0f}s elapsed < 90s).")
                 else:
-                    window_valid = is_prediction_window if self.prediction_mode else is_rollover_window
+                    window_valid = (sec_left >= 180 and sec_elapsed <= 180)
     
                 if not window_valid:
                     return None
@@ -708,7 +740,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 effective_style = trading_style
                 auto_regime_info = None
                 if effective_style == "AUTO":
-                    auto_regime_info = classify_auto_regime(df_ind, sec_left=sec_left)
+                    auto_regime_info = classify_auto_regime(df_ind, sec_left=sec_left, asset=self.asset)
                     effective_style = auto_regime_info["style"]
                     logger.info(
                         f"[AutoExecutor] Auto 2.0 Regime: {auto_regime_info['regime']} -> Routed to {effective_style} "
@@ -796,6 +828,50 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                     execute_shadow_trade(forecast, kalshi_market=active_m)
                 except Exception as e:
                     logger.error(f"[ShadowExecutor Hook] Error: {e}")
+
+                one_shot_ai = bool(self.ai_settings.get("oneShotAi", False))
+                ignore_pass = bool(self.ai_settings.get("ignorePass", False))
+                ignore_pass_technical_only = bool(self.ai_settings.get("ignorePassTechnicalOnly", False))
+                gemini_every_interval = bool(self.ai_settings.get("geminiEveryInterval", False))
+                reverse_cvd = bool(self.ai_settings.get("reverseCvd", False))
+                is_reverse = False
+                is_forced_pass = False
+
+                # ── GEMINI MASTER DECISION ENGINE ─────────────────────────────────────
+                try:
+                    from backend.btc.gemini_15m_gate import get_or_create_master_decision
+                    if not (reverse_cvd and "CVD DIVERGENCE" in str(forecast.get("conviction_badge", ""))):
+                        _spot_now = float(df_ind_eval.iloc[-1]["close"]) if len(df_ind_eval) > 0 else float(strike)
+                        _g_dec = get_or_create_master_decision(
+                            asset=self.asset,
+                            interval_id=current_interval_id,
+                            strike=strike,
+                            spot=_spot_now,
+                            sec_elapsed=sec_elapsed,
+                            active_m=active_m,
+                            forecast=forecast,
+                            df_ind=df_ind,
+                            sync_if_missing=(sec_elapsed <= 195 or gemini_every_interval),
+                            allow_pass=not gemini_every_interval,
+                        )
+                        if _g_dec and not _g_dec.get("fallback"):
+                            _g_dir = str(_g_dec.get("direction", "PASS")).upper().strip()
+                            _g_conf = float(_g_dec.get("confidence", 50.0) or 50.0)
+                            _g_reason = str(_g_dec.get("reason", ""))
+                            _g_model = str(_g_dec.get("model", "gemini"))
+                            if _g_dir == "PASS":
+                                logger.info(f"[AutoExecutor] 🛑 Gemini Master Decision PASS on {current_interval_id}: {_g_reason} [{_g_model}]")
+                                return None
+                            elif _g_dir in ("YES", "NO"):
+                                forecast = dict(forecast)
+                                forecast["direction"] = "ABOVE" if _g_dir == "YES" else "BELOW"
+                                forecast["probability_percent"] = _g_conf
+                                forecast["predicted_probability"] = (_g_conf / 100.0) if _g_dir == "YES" else ((100.0 - _g_conf) / 100.0)
+                                forecast["conviction_grade"] = "GRADE A SETUP (GEMINI MASTER)"
+                                forecast["conviction_badge"] = f"🧠 GEMINI {_g_dir} ({_g_conf:.0f}%)"
+                                forecast["catalysts"] = [f"Gemini Head Trader ({_g_model}): {_g_dir} ({_g_conf:.0f}%) — {_g_reason}"] + list(forecast.get("catalysts") or [])
+                except Exception as _gm_err:
+                    logger.debug(f"[AutoExecutor] Gemini Master Decision hook skipped: {_gm_err}")
     
                 raw_score = float(forecast.get("probability_percent", 50.0))
                 edge_label = str(forecast.get("primary_edge", ""))
@@ -810,15 +886,35 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 raw_ml_prob = float(forecast.get("raw_ml_prob", forecast.get("ml_prob", 0.5)))
                 ml_prob = float(forecast.get("ml_prob", 0.5))
     
-                one_shot_ai = bool(self.ai_settings.get("oneShotAiStartTrade", False))
-                ignore_pass = bool(self.ai_settings.get("ignorePass", False))
-                ignore_pass_technical_only = bool(self.ai_settings.get("ignorePassTechnicalOnly", False))
-                reverse_cvd = bool(self.ai_settings.get("reverseCvd", False))
-                is_reverse = False
-                is_forced_pass = False
-    
                 if ("PIN RISK" in badge or "PIN RISK" in rec) and not one_shot_ai:
                     logger.info("[AutoExecutor] Strike Pin Risk active (price within $15 of strike target in low volatility). Sitting out to protect win rate.")
+                    return None
+
+                cats_joined = " ".join(str(c) for c in (forecast.get("catalysts") or []))
+                has_hard_safety_veto = any(
+                    v in cats_joined
+                    for v in (
+                        "ML Veto",
+                        "Trend Alignment Block",
+                        "Sniper Counter-Strike Block",
+                        "Momentum Surfer Counter-Strike Block",
+                        "Sniper Longshot Block",
+                        "Momentum Surfer Longshot Block",
+                        "AMBUSH Longshot Block",
+                        "Prediction Longshot Block",
+                        "Chop Corridor Block",
+                        "Capital Guard active",
+                        "Dead zone filter",
+                        "STRIKE PIN",
+                        "No technical chart setup fired",
+                        "Model edge too weak",
+                    )
+                )
+                if effective_style == "CAPITAL_GUARD" and not one_shot_ai:
+                    logger.info("[AutoExecutor] CAPITAL GUARD strictly blocks trades in low-volatility chop deadzone.")
+                    return None
+                if direction == "PASS" and has_hard_safety_veto and not one_shot_ai:
+                    logger.info(f"[AutoExecutor] Explicit safety veto active in catalysts ({cats_joined[:80]}). Sitting out.")
                     return None
     
                 if (one_shot_ai or ignore_pass):
@@ -888,6 +984,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         original_dir = best_underlying_dir
                         direction = "BELOW" if original_dir == "ABOVE" else "ABOVE"
                         is_reverse = True
+                        is_forced_pass = True
                         raw_score = best_underlying_prob
                         logger.info(f"[AutoExecutor] 'Reverse on CVD Divergence' enabled. Reversing {original_dir} trade to {direction} (Score: {raw_score:.1f}%).")
                     else:
@@ -897,6 +994,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                     original_dir = direction
                     direction = "BELOW" if original_dir == "ABOVE" else "ABOVE"
                     is_reverse = True
+                    is_forced_pass = True
                     logger.info(f"[AutoExecutor] 'Reverse on CVD Divergence' enabled. Reversing active {original_dir} trade to {direction}.")
     
                 # Strict Filter 2: Conviction & Settings Thresholds
@@ -1000,7 +1098,9 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 c_close = float(c_eval["close"])
                 c_ema9 = float(c_eval.get("ema_9", c_close))
                 c_ema21 = float(c_eval.get("ema_21", c_close))
+                c_atr = float(c_eval.get("atr", max(strike * 0.0015, 1e-4)) or max(strike * 0.0015, 1e-4))
                 delta_strike = c_close - strike
+                conflict_tol = max(c_atr * 0.25, strike * (25.0 / 60000.0))
     
                 chart_conflict = False
                 conflict_reason = ""
@@ -1008,27 +1108,89 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 if direction == "ABOVE":
                     # User wants ABOVE (YES), anticipating settlement >= strike
                     # Fighting chart if: price is deeply below strike AND both candle and EMA momentum are bearish
-                    if delta_strike < -25.0 and (c_close < c_open) and (c_ema9 < c_ema21) and not is_oversold_bounce:
+                    if delta_strike < -conflict_tol and (c_close < c_open) and (c_ema9 < c_ema21) and not is_oversold_bounce:
                         chart_conflict = True
-                        conflict_reason = f"Spot ${c_close:,.2f} is ${abs(delta_strike):.2f} below strike ${strike:,.2f} with red candle and EMA9 < EMA21"
+                        conflict_reason = f"Spot ${c_close:,.4f} is ${abs(delta_strike):.4f} below strike ${strike:,.4f} with red candle and EMA9 < EMA21"
                 elif direction == "BELOW":
                     # User wants BELOW (NO), anticipating settlement < strike
                     # Fighting chart if: price is deeply above strike AND both candle and EMA momentum are bullish
-                    if delta_strike > 25.0 and (c_close > c_open) and (c_ema9 > c_ema21) and not is_overbought_fade:
+                    if delta_strike > conflict_tol and (c_close > c_open) and (c_ema9 > c_ema21) and not is_overbought_fade:
                         chart_conflict = True
-                        conflict_reason = f"Spot ${c_close:,.2f} is ${delta_strike:.2f} above strike ${strike:,.2f} with green candle and EMA9 > EMA21"
+                        conflict_reason = f"Spot ${c_close:,.4f} is ${delta_strike:.4f} above strike ${strike:,.4f} with green candle and EMA9 > EMA21"
     
                 if chart_conflict:
                     logger.warning(
                         f"[AutoExecutor] 🛑 Chart Trend Conflict Blocked: Direction {direction} contradicts physical chart trend ({conflict_reason}). Skipping trade."
                     )
                     return None
-    
+
+                # ── COUNTER-TREND NO GATING & HIGHER CONVICTION ENFORCEMENT ──
+                # If market is in an established bullish uptrend, buying NO is fighting higher timeframe momentum.
+                # Enforce higher conviction threshold (>= 68%) or block the trade.
+                c_trend_1h = str(c_eval.get("trend_1h") or (forecast.get("trend_1h") if forecast else "") or "FLAT").upper()
+                is_bullish_uptrend = (c_trend_1h in ["UP", "BULLISH"]) or (c_ema9 > c_ema21 and c_ema21 > 0)
+                eval_side = "yes" if direction == "ABOVE" else "no"
+                if eval_side == "no" and is_bullish_uptrend:
+                    NO_COUNTER_TREND_MIN_CONF = 68.0
+                    if float(actual_conf or 0) < NO_COUNTER_TREND_MIN_CONF and not (is_forced_pass or one_shot_ai or ignore_pass or gemini_every_interval):
+                        logger.warning(
+                            f"[AutoExecutor] 🛑 Counter-trend NO blocked: "
+                            f"Market in established bullish uptrend (1h={c_trend_1h}, EMA9={c_ema9:.2f} > EMA21={c_ema21:.2f}) "
+                            f"and conviction {float(actual_conf or 0):.1f}% < {NO_COUNTER_TREND_MIN_CONF:.1f}% required."
+                        )
+                        return None
+
+                # 3-Phase Time-Decay Engine Check: Pin Risk Veto in Phase 3
+                from backend.btc.time_phase_engine import classify_15m_time_phase
+                c_close = float(df_ind.iloc[-1]["close"]) if len(df_ind) > 0 else float(strike)
+                c_atr = float(df_ind.iloc[-1].get("atr", 100.0) or 100.0) if len(df_ind) > 0 else 100.0
+                phase_info = classify_15m_time_phase(
+                    sec_left=float(sec_left),
+                    spot_price=c_close,
+                    strike_price=strike,
+                    atr=c_atr,
+                    asset=self.asset
+                )
+                if phase_info.get("is_pin_risk") and not (is_forced_pass or one_shot_ai or ignore_pass or gemini_every_interval):
+                    logger.warning(
+                        f"[AutoExecutor] 🛑 Trade Blocked: {phase_info.get('desc')} (Spot ${c_close:,.2f} too close to strike ${strike:,.2f} in expiring candle)."
+                    )
+                    return None
+
                 # Map signal to Kalshi contract side
                 # "ABOVE" -> buy YES (anticipating price >= strike)
                 # "BELOW" -> buy NO (anticipating price < strike)
                 side = "yes" if direction == "ABOVE" else "no"
                 market_price = active_m.get("yes_ask" if side == "yes" else "no_ask") or 0.50
+                bid_price = float(active_m.get("yes_bid" if side == "yes" else "no_bid") or 0.0)
+                if bid_price <= 0.0:
+                    other_ask = active_m.get("no_ask" if side == "yes" else "yes_ask")
+                    if other_ask is not None and float(other_ask) > 0.0:
+                        bid_price = round(1.0 - float(other_ask), 4)
+                book_spread = round(float(market_price) - bid_price, 4) if bid_price > 0 else 0.99
+                if (bid_price < 0.15 or book_spread > 0.12) and not (is_forced_pass or one_shot_ai or ignore_pass or gemini_every_interval):
+                    logger.warning(
+                        f"[AutoExecutor] 🛑 Illiquid Spread Blocked on {current_interval_id}: "
+                        f"{side.upper()} bid=${bid_price:.2f} / ask=${float(market_price):.2f} (spread=${book_spread:.2f} > $0.12 max)."
+                    )
+                    return None
+
+                # ── EMPIRICAL CEILING CAPPING ──────────────────────────────
+                # Forbid buying contracts priced above $0.62 unless conviction is exceptional (>85% or Grade A+).
+                EMPIRICAL_FLOOR = 0.46
+                EMPIRICAL_CEILING = 0.62
+                is_grade_a_plus = "GRADE A+" in str(forecast.get("conviction_grade", "") if forecast else "")
+                is_exceptional_conviction = is_grade_a_plus or (actual_conf is not None and float(actual_conf) > 85.0)
+                effective_ceiling = 0.68 if is_exceptional_conviction else EMPIRICAL_CEILING
+                if (float(market_price) < EMPIRICAL_FLOOR or float(market_price) > effective_ceiling) and not (is_forced_pass or one_shot_ai or ignore_pass or gemini_every_interval):
+                    logger.warning(
+                        f"[AutoExecutor] 🛑 EMPIRICAL CORRIDOR BLOCK on {current_interval_id}: "
+                        f"ask ${float(market_price):.2f} outside [{EMPIRICAL_FLOOR:.2f}, {effective_ceiling:.2f}] (exceptional={is_exceptional_conviction})."
+                    )
+                    return None
+
+                order_limit_price = round(min(0.99, max(0.01, float(market_price))), 2)
+                is_maker = False
     
                 # Determine affordable contract count for live or paper
             
@@ -1036,23 +1198,33 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 max_cap = float(self.ai_settings.get("maxCap", 0.0))
                 if max_cap <= 0:
                     max_cap = float(self.ai_settings.get("paper_trade_size_dollars" if self.mode == "PAPER" else "trade_size_dollars", 0.0) or self.ai_settings.get("trade_size_dollars", 0.0) or 0.0)
-                unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
+                unit_price_est = min(0.99, max(0.01, float(order_limit_price) + 0.04))
             
                 # AUDIT FIX #3: Hard ceiling on contracts to prevent black-swan order sizes
                 ABSOLUTE_MAX_CONTRACTS = 999999
-    
-                use_kelly = bool(self.ai_settings.get("useKellyCriterion", False)) or bool(self.ai_settings.get("use_kelly_criterion", False))
+
+                is_unanimous = forecast.get("is_unanimous") if forecast else None
+                agreement_ratio = forecast.get("agreement_ratio") if forecast else None
+                if consensus_obj := (forecast.get("consensus") if forecast else None):
+                    if is_unanimous is None:
+                        is_unanimous = consensus_obj.get("is_unanimous")
+                    if agreement_ratio is None:
+                        agreement_ratio = consensus_obj.get("agreement_ratio")
+
+                use_kelly = False  # EV/Kelly removed: fixed trade size, focus on winning trades only
                 if use_kelly:
                     from backend.btc.fees import calculate_binary_kelly_position
                     kelly_res = calculate_binary_kelly_position(
                         win_prob=(float(actual_conf)/100.0 if actual_conf else 0.50),
-                        ask_price=float(market_price),
+                        ask_price=float(order_limit_price),
                         available_capital=(max_cap if max_cap > 0 else (self.max_contracts * unit_price_est) * 4),
                         max_position_cap=(max_cap if max_cap > 0 else (self.max_contracts * unit_price_est)),
-                        slippage_buffer=0.04
+                        slippage_buffer=0.04,
+                        is_unanimous=is_unanimous,
+                        agreement_ratio=agreement_ratio
                     )
                     if kelly_res["contracts"] <= 0:
-                        logger.info(f"[AutoExecutor] Kelly Criterion (-EV Setup): Skipping {side.upper()} @ ${market_price} (Reason: {kelly_res.get('reason')})")
+                        logger.info(f"[AutoExecutor] Kelly Criterion (-EV Setup): Skipping {side.upper()} @ ${order_limit_price} (Reason: {kelly_res.get('reason')})")
                         return None
                     contracts_to_buy = kelly_res["contracts"]
                 elif max_cap > 0:
@@ -1061,13 +1233,25 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         contracts_to_buy = 1
                 else:
                     contracts_to_buy = self.max_contracts
-            
+
+                # Continuous RL dynamic_contracts consumption
+                dyn_contracts = forecast.get("dynamic_contracts") if forecast else None
+                if dyn_contracts is not None and not use_kelly:
+                    try:
+                        dc = int(dyn_contracts)
+                        if dc >= 1:
+                            contracts_to_buy = dc
+                    except (ValueError, TypeError):
+                        pass
+
                 contracts_to_buy = min(contracts_to_buy, ABSOLUTE_MAX_CONTRACTS)
+                if side == "no" and is_bullish_uptrend and contracts_to_buy > 1:
+                    contracts_to_buy = max(1, int(contracts_to_buy * 0.50))
+                    logger.info(f"[AutoExecutor] Scaled down counter-trend NO contracts to {contracts_to_buy} (established bullish uptrend)")
     
-                # 2. Dry Run
-                dry_run = (self.mode == "PAPER")
-                if self.ai_settings.get("dryRun", False):
-                    dry_run = True
+                # 2. Dry Run - SAFEGUARD: Master background rollover NEVER executes live trades.
+                # Live execution is strictly delegated to evaluate_and_execute_saas_users().
+                dry_run = True
     
                 def _do_execute_order():
                     nonlocal contracts_to_buy
@@ -1077,7 +1261,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         bal_res = _pkg_obj("kalshi_trader", kalshi_trader).get_balance()
                         if bal_res.get("success", False):
                             avail_bal = float(bal_res.get("balance_dollars", 0.0))
-                            unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
+                            unit_price = min(0.99, max(0.01, float(order_limit_price) + 0.04))
                             if unit_price > 0 and avail_bal < (unit_price * contracts_to_buy):
                                 affordable = int(avail_bal / unit_price)
                                 contracts_to_buy = affordable
@@ -1086,7 +1270,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         # does against the real account balance above - a paper account shouldn't be
                         # able to size a trade its own balance couldn't cover.
                         paper_avail_bal = load_balance(guest_id=getattr(self, '_guest_id', None))
-                        unit_price = min(0.99, max(0.01, float(market_price) + 0.04))
+                        unit_price = min(0.99, max(0.01, float(order_limit_price) + 0.04))
                         if unit_price > 0 and paper_avail_bal < (unit_price * contracts_to_buy):
                             contracts_to_buy = int(paper_avail_bal / unit_price)
     
@@ -1113,10 +1297,11 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                         ticker=current_interval_id,
                         side=side,
                         count=contracts_to_buy,
-                        limit_price_dollars=market_price,
+                        limit_price_dollars=order_limit_price,
                         dry_run=dry_run,
                         slippage_buffer_dollars=slippage_buffer,
-                        available_balance=paper_avail_bal
+                        available_balance=paper_avail_bal,
+                        post_only=False
                     )
                     if intent_key:
                         order_intents.settle_outcome(intent_key, current_interval_id, order_res)
@@ -1135,7 +1320,7 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                             return None
         
                         # H1 & H2: Record actual fill metrics and fix paper balance cost key
-                        fill_price = float(order_res.get("filled_price", market_price))
+                        fill_price = float(order_res.get("filled_price", order_limit_price))
                         fill_count = float(order_res.get("count", contracts_to_buy))
                         fill_cost = float(order_res.get("total_cost", round(fill_price * fill_count, 4)))
         
@@ -1223,8 +1408,9 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
         
                         # Connect with scalp_engine for early profit exits if scalping is enabled
                         try:
-                            if getattr(scalp_engine, "enabled", False):
-                                scalp_engine.register_position(trade_record)
+                            _se = get_scalp_engine(self.asset)
+                            if getattr(_se, "enabled", False):
+                                _se.register_position(trade_record)
                         except Exception as se_err:
                             logger.warning(f"[AutoExecutor] Could not register trade with ScalpEngine: {se_err}")
         
@@ -1253,7 +1439,11 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                 exec_delay = int(self.ai_settings.get("execDelay", 0))
                 if exec_delay > 0:
                     logger.info(f"[AutoExecutor] Delaying execution by {exec_delay}s (non-blocking background task)...")
-                    self._rollover_lock.release()
+                    try:
+                        self._rollover_lock.release()
+                    except RuntimeError:
+                        pass
+                    self._rollover_lock_since = None
                     lock_held = False
                     def _delayed_task():
                         try:
@@ -1262,10 +1452,15 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                             if not acquired:
                                 logger.error("[AutoExecutor] Could not re-acquire rollover lock after exec_delay; aborting delayed trade.")
                                 return
+                            self._rollover_lock_since = time.time()
                             try:
                                 _do_execute_order()
                             finally:
-                                self._rollover_lock.release()
+                                try:
+                                    self._rollover_lock.release()
+                                except RuntimeError:
+                                    pass
+                                self._rollover_lock_since = None
                         except Exception as dt_err:
                             logger.error(f"[AutoExecutor] Error in delayed execution task: {dt_err}")
                         finally:
@@ -1278,7 +1473,11 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
                     return None
             finally:
                 if lock_held:
-                    self._rollover_lock.release()
+                    try:
+                        self._rollover_lock.release()
+                    except RuntimeError:
+                        pass
+                    self._rollover_lock_since = None
                 if lock_held and current_interval_id and getattr(self, "_inflight_interval", None) == current_interval_id:
                     self._inflight_interval = None
 
@@ -1348,9 +1547,14 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
             unit_price_est = min(0.99, max(0.01, float(market_price) + 0.04))
             
             ABSOLUTE_MAX_CONTRACTS = 999999
-            use_kelly = bool(self.ai_settings.get("useKellyCriterion", False)) or bool(self.ai_settings.get("use_kelly_criterion", False))
+            use_kelly = False  # EV/Kelly removed: fixed trade size, focus on winning trades only
             if use_kelly:
-                p_win = float(conf) / 100.0 if ('conf' in locals() and conf) else 0.50
+                _fc = locals().get('forecast')
+                _mp = _fc.get('ml_prob') if isinstance(_fc, dict) else None
+                try:
+                    p_win = (float(_mp) if dir_clean == 'ABOVE' else 1.0 - float(_mp)) if _mp else 0.50
+                except (TypeError, ValueError):
+                    p_win = 0.50
                 b_price = float(market_price)
                 if p_win <= b_price:
                     logger.info(f"[AutoExecutor] Kelly Criterion (-EV Setup): Skipping {side.upper()} @ ${b_price:.2f} (win prob {p_win*100:.1f}% <= price ${b_price:.2f})")
@@ -1479,8 +1683,9 @@ class AutoExecutor(SaasBroadcasterMixin, RiskManagerMixin, StopManagerMixin, Set
     
                 # Connect with scalp_engine for early profit exits if scalping is enabled
                 try:
-                    if getattr(scalp_engine, "enabled", False):
-                        scalp_engine.register_position(trade_record)
+                    _se = get_scalp_engine(self.asset)
+                    if getattr(_se, "enabled", False):
+                        _se.register_position(trade_record)
                 except Exception as se_err:
                     logger.warning(f"[AutoExecutor] Could not register manual trade with ScalpEngine: {se_err}")
     

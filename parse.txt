@@ -1,0 +1,566 @@
+def parse_sports_market_details(
+    ticker: str = '',
+    title: str = '',
+    series: str = '',
+    markets: Optional[list] = None,
+    sub_title: str = '',
+    event_obj: Optional[dict] = None
+) -> dict:
+    """
+    Parses sport market prop type, line, spread amount, over/under amount,
+    and strike details from Kalshi event and market payloads.
+    Accurately detects Player Props first, Spreads, Totals (O/U), and Moneylines.
+    """
+    combined = f"{ticker} {title} {series} {sub_title}".upper()
+    markets = markets or []
+    m0 = markets[0] if markets and isinstance(markets[0], dict) else {}
+
+    m_title = m0.get('title', '')
+    m_sub = m0.get('yes_sub_title', '')
+    m_ticker = m0.get('ticker', '')
+    m_rules = m0.get('rules_primary', '') or m0.get('rules_secondary', '')
+    m_part = str(m0.get('primary_participant_key', '') or '')
+    m_custom = m0.get('custom_strike', {}) if isinstance(m0.get('custom_strike'), dict) else {}
+    floor_strike = m0.get('floor_strike')
+    cap_strike = m0.get('cap_strike')
+
+    # Gather texts to search for player prop patterns
+    candidate_texts = [m_title, m_sub, title, sub_title]
+
+    # --- STEP 1: DETECT PLAYER PROPS FIRST ---
+    # Kalshi series or tickers that are explicitly player props
+    is_prop_series = any(k in combined for k in [
+        'KXNHLGOAL', 'KXNHLSHOT', 'KXNHLSOG', 'KXNHLAST', 'KXNHLPTS',
+        'KXMLBHRR', 'KXMLBHIT', 'KXMLBHR', 'KXMLBKS', 'KXMLBRBI', 'KXMLBSTEAL', 'KXMLBTB',
+        'KXNFLTD', 'KXNFLPASS', 'KXNFLRUSH', 'KXNFLREC', 'KXNFLFG',
+        'KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBATHREE', 'KXNBA3PT', 'KXNBABLK', 'KXNBASTL',
+        'GOALSCORER'
+    ]) or any(k in m_ticker.upper() for k in [
+        'HRR', 'GOAL', 'SHOT', 'SOG', 'STRIKEOUT', 'TOUCHDOWN', 'PROP'
+    ]) or m_part.endswith('_player') or any('player' in k for k in m_custom.keys()) or ('records' in m_rules.lower() and 'game' in m_rules.lower())
+
+    player_name = None
+    prop_line_num = None
+    prop_stat_raw = None
+
+    for txt in candidate_texts:
+        if not txt:
+            continue
+        m_col = re.match(r'^([^:\n]{2,40}?):\s*(\d+\+?|\d+\.\d+|\d+)\s*(.*)$', txt.strip())
+        if m_col:
+            cand_name = m_col.group(1).strip()
+            # Ensure not a team or game total word, and not a two-team matchup
+            if not re.search(r'\b(total|totals|over|under|spread|run line|puck line|moneyline|game|winner|match|vs|at)\b', cand_name, re.IGNORECASE) and not any(sep in cand_name.lower() for sep in (' vs ', ' @ ', ' at ', ' v ')):
+                player_name = cand_name
+                prop_line_num = m_col.group(2).strip()
+                prop_stat_raw = m_col.group(3).strip()
+                break
+
+    # If no colon pattern, check Kalshi rules e.g. "If Zachary Bolduc records 1+ goals in the..."
+    if not player_name and m_rules:
+        m_rule = re.search(r'If\s+([^:\n\d]+?)\s+records?\s+(\d+\+?|\d+\.\d+|\d+)\s*([a-zA-Z\s\+]+?)\s+in\s+the', m_rules, re.IGNORECASE)
+        if m_rule:
+            player_name = m_rule.group(1).strip()
+            prop_line_num = m_rule.group(2).strip()
+            prop_stat_raw = m_rule.group(3).strip()
+
+    is_player_prop = bool(player_name or is_prop_series)
+
+    if is_player_prop:
+        # Determine stat unit / category
+        stat_combined = f"{prop_stat_raw or ''} {combined} {m_rules}".lower()
+        if 'hrr' in m_ticker.lower() or 'hrr' in series.lower() or ('hit' in stat_combined and 'run' in stat_combined and 'rbi' in stat_combined) or 'h+r+rbi' in stat_combined or 'hits + runs + rbis' in stat_combined:
+            stat_unit = 'H+R+RBI'
+        elif 'total bases' in stat_combined or 'tb' in m_ticker.lower() or 'tb' in series.lower():
+            stat_unit = 'Total Bases'
+        elif 'goal' in stat_combined:
+            stat_unit = 'Goals'
+        elif 'home run' in stat_combined or 'hr' in m_ticker.lower() or 'hr' in series.lower():
+            stat_unit = 'Home Runs'
+        elif 'strikeout' in stat_combined or 'ks' in m_ticker.lower() or 'ks' in series.lower():
+            stat_unit = 'Strikeouts'
+        elif 'hit' in stat_combined or 'hit' in m_ticker.lower():
+            stat_unit = 'Hits'
+        elif 'rbi' in stat_combined or 'rbi' in m_ticker.lower():
+            stat_unit = 'RBIs'
+        elif 'shot' in stat_combined or 'sog' in stat_combined:
+            stat_unit = 'Shots'
+        elif 'touchdown' in stat_combined or 'td' in m_ticker.lower() or 'td' in series.lower():
+            stat_unit = 'Touchdowns'
+        elif 'pass' in stat_combined:
+            stat_unit = 'Pass Yds'
+        elif 'rush' in stat_combined:
+            stat_unit = 'Rush Yds'
+        elif 'reception' in stat_combined or 'rec' in m_ticker.lower():
+            stat_unit = 'Receptions'
+        elif 'point' in stat_combined or 'pts' in m_ticker.lower() or 'pts' in series.lower():
+            stat_unit = 'Points'
+        elif 'rebound' in stat_combined or 'reb' in m_ticker.lower():
+            stat_unit = 'Rebounds'
+        elif 'assist' in stat_combined or 'ast' in m_ticker.lower():
+            stat_unit = 'Assists'
+        elif prop_stat_raw:
+            stat_unit = prop_stat_raw.strip().title()
+        else:
+            stat_unit = 'Props'
+
+        numeric_line = None
+        if prop_line_num:
+            try:
+                numeric_line = float(prop_line_num.replace('+', ''))
+            except Exception:
+                pass
+        elif floor_strike is not None:
+            try:
+                numeric_line = float(floor_strike)
+                prop_line_num = f"{numeric_line:g}+"
+            except Exception:
+                pass
+
+        if prop_line_num in ('0.5+', '0.5') and stat_unit in ('Goals', 'Home Runs', 'Strikeouts', 'Shots', 'Touchdowns', 'Receptions', 'Points', 'Rebounds', 'Assists', 'H+R+RBI', 'Hits', 'RBIs'):
+            prop_line_num = "1+"
+            numeric_line = 1.0
+
+        if not prop_line_num:
+            prop_line_num = "1+"
+
+        formatted_line = f"{prop_line_num} {stat_unit}"
+        strike_details = f"{player_name}: {formatted_line}" if player_name else (m_title or m_sub or formatted_line)
+
+        return {
+            'prop_type': 'Player Prop',
+            'line': formatted_line,
+            'spread_amount': None,
+            'over_under_amount': None,
+            'strike_details': strike_details,
+            'numeric_line': numeric_line,
+            'player_name': player_name
+        }
+
+    # --- STEP 2: SPREAD, TOTAL, OR MONEYLINE ---
+    # Part-of-game markets (NHL periods, MLB first 5 innings, halves, quarters) and futures were
+    # labelled "Moneyline", so the full-game AI pick was shown and traded against them.
+    segment = _detect_game_segment(f"{combined} {m_ticker} {m_title} {m_sub}")
+    is_futures = any(k in combined for k in ['KXNFLWINS', 'KXWC-', 'KXWC ']) or (len(markets) > 3 and not any(k in combined for k in ['SPREAD', 'TOTAL']))
+
+    if is_futures:
+        prop_type = 'Futures'
+    elif any(k in combined for k in ['SPREAD', 'RUN LINE', 'PUCK LINE', 'HANDICAP']):
+        prop_type = 'Spread'
+    elif any(k in combined for k in ['TOTAL', 'POINTS', 'RUNS SCORED', 'O/U', 'OVER/UNDER']):
+        prop_type = 'Total (O/U)'
+    else:
+        prop_type = 'Moneyline'
+
+    if prop_type in ('Moneyline', 'Futures'):
+        clean_strike_details = m_title or m_sub or (title if 'vs' not in title.lower() else '') or 'Match Winner'
+        if segment:
+            prop_type, line_label = 'Period', segment
+        elif is_futures or prop_type == 'Futures':
+            prop_type, line_label = 'Futures', 'Futures'
+            if 'WINS' in m_ticker.upper():
+                clean_strike_details = title
+        else:
+            line_label = 'Moneyline'
+        return {
+            'prop_type': prop_type,
+            'line': line_label,
+            'spread_amount': None,
+            'over_under_amount': None,
+            'strike_details': clean_strike_details,
+            'numeric_line': None,
+            'player_name': None,
+            'segment': segment
+        }
+
+    # Extract numeric line/strike
+    strike_val = None
+    if floor_strike is not None:
+        try:
+            strike_val = float(floor_strike)
+        except Exception:
+            pass
+    elif cap_strike is not None:
+        try:
+            strike_val = float(cap_strike)
+        except Exception:
+            pass
+
+    if strike_val is None:
+        text_to_search = f"{m_sub} {m_title} {title}"
+        m_num = re.search(r'(?:over|under|by|\+|-)\s*(\d+(?:\.\d+)?)', text_to_search, re.IGNORECASE)
+        if m_num:
+            try:
+                strike_val = float(m_num.group(1))
+            except Exception:
+                pass
+        else:
+            m_suf = re.search(r'-([A-Za-z]{0,4})(\d+(?:\.\d+)?)$', m_ticker)
+            if m_suf:
+                try:
+                    strike_val = float(m_suf.group(2))
+                except Exception:
+                    pass
+
+    spread_amount = None
+    over_under_amount = None
+    strike_details = m_sub or m_title or title or 'Match Outcome'
+
+    unit = 'pts'
+    if any(k in combined for k in ['MLB', 'BASEBALL', 'RUN', 'NPB', 'KBO']):
+        unit = 'runs'
+    elif any(k in combined for k in ['NHL', 'HOCKEY', 'SOC', 'SOCCER', 'GOAL']):
+        unit = 'goals'
+    elif any(k in combined for k in ['NBA', 'WNBA', 'BASKETBALL', 'NFL', 'FOOTBALL']):
+        unit = 'pts'
+
+    if prop_type == 'Spread':
+        if strike_val is not None:
+            s_val_str = f"{strike_val:g}"
+            spread_amount = f"{s_val_str} {unit}"
+            m_team = re.search(r'^([A-Za-z0-9\s\.\'\-]+?)\s+wins?\s+by\s+over', m_sub or m_title, re.IGNORECASE)
+            team_prefix = f"{m_team.group(1).strip()} " if m_team else ""
+            line_label = f"Spread: {team_prefix}{s_val_str} {unit}"
+        else:
+            spread_amount = "Spread"
+            line_label = "Spread"
+    elif prop_type == 'Total (O/U)':
+        if strike_val is not None:
+            s_val_str = f"{strike_val:g}"
+            over_under_amount = f"{s_val_str} {unit}"
+            line_label = f"O/U {s_val_str} {unit}"
+        else:
+            over_under_amount = "O/U"
+            line_label = "Total (O/U)"
+    else:
+        line_label = "Moneyline"
+    if segment:
+        line_label = f"{segment} {line_label}"
+
+    return {
+        'prop_type': prop_type,
+        'line': line_label,
+        'spread_amount': spread_amount,
+        'over_under_amount': over_under_amount,
+        'strike_details': strike_details,
+        'numeric_line': strike_val,
+        'player_name': None,
+        'segment': segment
+    }
+
+
+def _fetch_kalshi_series_events(series: str) -> list:
+    now = time.time()
+    with _SPORTS_EVENTS_CACHE_LOCK:
+        if series in _SPORTS_EVENTS_CACHE:
+            ts, cached_events = _SPORTS_EVENTS_CACHE[series]
+            if (now - ts < _SPORTS_CACHE_TTL) and cached_events is not None:
+                return cached_events
+
+    from backend.btc.kalshi_trader import kalshi_trader
+    headers = {'Accept': 'application/json', 'User-Agent': 'ApexProps-Trader/1.0'}
+    path = '/trade-api/v2/events'
+    if kalshi_trader.is_authenticated():
+        try:
+            headers = kalshi_trader._sign_headers('GET', path)
+        except Exception:
+            pass
+
+    import requests
+    session = getattr(kalshi_trader, 'session', requests)
+
+    for attempt in range(3):
+        try:
+            resp = session.get(
+                'https://external-api.kalshi.com/trade-api/v2/events',
+                params={'series_ticker': series, 'with_nested_markets': True, 'status': 'open', 'limit': 50},
+                headers=headers,
+                timeout=5.0
+            )
+            if resp.status_code == 200:
+                events = resp.json().get('events', [])
+                with _SPORTS_EVENTS_CACHE_LOCK:
+                    _SPORTS_EVENTS_CACHE[series] = (now, events)
+                
+                # --- PRE-SUBSCRIBE TO KALSHI WEBSOCKET ---
+                try:
+                    from backend.btc.kalshi_ws import subscribe_to_market
+                    for ev in events:
+                        for m in ev.get('markets', []):
+                            tkr = m.get('ticker')
+                            if tkr:
+                                subscribe_to_market(tkr)
+                except Exception as e:
+                    pass
+                # -----------------------------------------
+                return events
+            elif resp.status_code == 429:
+                logger.warning(f"Kalshi 429 rate limit on series {series}, attempt {attempt+1}")
+                with _SPORTS_EVENTS_CACHE_LOCK:
+                    if series in _SPORTS_EVENTS_CACHE and _SPORTS_EVENTS_CACHE[series][1] is not None:
+                        return _SPORTS_EVENTS_CACHE[series][1]
+                break
+            else:
+                logger.warning(f"Kalshi returned HTTP {resp.status_code} for series {series}")
+                break
+        except Exception as e:
+            logger.error(f"Error fetching Kalshi series {series}: {e}")
+            break
+
+    with _SPORTS_EVENTS_CACHE_LOCK:
+        if series in _SPORTS_EVENTS_CACHE and _SPORTS_EVENTS_CACHE[series][1] is not None:
+            return _SPORTS_EVENTS_CACHE[series][1]
+        _SPORTS_EVENTS_CACHE[series] = (now, [])
+
+    return []
+
+
+_SPORT_TEAM_MAP = {
+    "MLB": {
+      "ARI": "Arizona Diamondbacks", "ARIZONA": "Arizona Diamondbacks",
+      "ATL": "Atlanta Braves", "ATLANTA": "Atlanta Braves",
+      "BAL": "Baltimore Orioles", "BALTIMORE": "Baltimore Orioles",
+      "BOS": "Boston Red Sox", "BOSTON": "Boston Red Sox",
+      "CHC": "Chicago Cubs", "CWS": "Chicago White Sox", "CHICAGO WS": "Chicago White Sox", "CHW": "Chicago White Sox",
+      "CIN": "Cincinnati Reds", "CINCINNATI": "Cincinnati Reds",
+      "CLE": "Cleveland Guardians", "CLEVELAND": "Cleveland Guardians",
+      "COL": "Colorado Rockies", "COLORADO": "Colorado Rockies",
+      "DET": "Detroit Tigers", "DETROIT": "Detroit Tigers",
+      "HOU": "Houston Astros", "HOUSTON": "Houston Astros",
+      "KC": "Kansas City Royals", "KANSAS CITY": "Kansas City Royals",
+      "LAA": "Los Angeles Angels", "LAD": "Los Angeles Dodgers", "LOS ANGELES D": "Los Angeles Dodgers",
+      "MIA": "Miami Marlins", "MIAMI": "Miami Marlins",
+      "MIL": "Milwaukee Brewers", "MILWAUKEE": "Milwaukee Brewers",
+      "MIN": "Minnesota Twins", "MINNESOTA": "Minnesota Twins",
+      "NYM": "New York Mets", "NYY": "New York Yankees", "NEW YORK M": "New York Mets", "NEW YORK Y": "New York Yankees",
+      "OAK": "Oakland Athletics", "OAKLAND": "Oakland Athletics",
+      "PHI": "Philadelphia Phillies", "PHILADELPHIA": "Philadelphia Phillies",
+      "PIT": "Pittsburgh Pirates", "PITTSBURGH": "Pittsburgh Pirates",
+      "SD": "San Diego Padres", "SAN DIEGO": "San Diego Padres", "SDP": "San Diego Padres",
+      "SF": "San Francisco Giants", "SAN FRANCISCO": "San Francisco Giants", "SFG": "San Francisco Giants",
+      "SEA": "Seattle Mariners", "SEATTLE": "Seattle Mariners",
+      "STL": "St. Louis Cardinals", "ST. LOUIS": "St. Louis Cardinals", "ST LOUIS": "St. Louis Cardinals",
+      "TB": "Tampa Bay Rays", "TAMPA BAY": "Tampa Bay Rays", "TBR": "Tampa Bay Rays",
+      "TEX": "Texas Rangers", "TEXAS": "Texas Rangers",
+      "TOR": "Toronto Blue Jays", "TORONTO": "Toronto Blue Jays",
+      "WSH": "Washington Nationals", "WASHINGTON": "Washington Nationals", "WAS": "Washington Nationals",
+    },
+    "NFL": {
+      "BUF": "Buffalo Bills", "BUFFALO": "Buffalo Bills",
+      "MIA": "Miami Dolphins", "MIAMI": "Miami Dolphins",
+      "NE": "New England Patriots", "NEW ENGLAND": "New England Patriots",
+      "NYJ": "New York Jets", "NEW YORK J": "New York Jets",
+      "BAL": "Baltimore Ravens", "BALTIMORE": "Baltimore Ravens",
+      "CIN": "Cincinnati Bengals", "CINCINNATI": "Cincinnati Bengals",
+      "CLE": "Cleveland Browns", "CLEVELAND": "Cleveland Browns",
+      "PIT": "Pittsburgh Steelers", "PITTSBURGH": "Pittsburgh Steelers",
+      "HOU": "Houston Texans", "HOUSTON": "Houston Texans",
+      "IND": "Indianapolis Colts", "INDIANAPOLIS": "Indianapolis Colts",
+      "JAX": "Jacksonville Jaguars", "JACKSONVILLE": "Jacksonville Jaguars",
+      "TEN": "Tennessee Titans", "TENNESSEE": "Tennessee Titans",
+      "DEN": "Denver Broncos", "DENVER": "Denver Broncos",
+      "KC": "Kansas City Chiefs", "KANSAS CITY": "Kansas City Chiefs",
+      "LV": "Las Vegas Raiders", "LAS VEGAS": "Las Vegas Raiders",
+      "LAC": "Los Angeles Chargers", "LOS ANGELES C": "Los Angeles Chargers",
+      "DAL": "Dallas Cowboys", "DALLAS": "Dallas Cowboys",
+      "NYG": "New York Giants", "NEW YORK G": "New York Giants",
+      "PHI": "Philadelphia Eagles", "PHILADELPHIA": "Philadelphia Eagles",
+      "WAS": "Washington Commanders", "WASHINGTON": "Washington Commanders",
+    },
+    "NHL": {
+      "ANA": "Anaheim Ducks", "ANAHEIM": "Anaheim Ducks",
+      "BOS": "Boston Bruins", "BOSTON": "Boston Bruins",
+      "BUF": "Buffalo Sabres", "BUFFALO": "Buffalo Sabres",
+      "CGY": "Calgary Flames", "CALGARY": "Calgary Flames",
+      "CAR": "Carolina Hurricanes", "CAROLINA": "Carolina Hurricanes",
+      "CHI": "Chicago Blackhawks", "CHICAGO": "Chicago Blackhawks",
+      "COL": "Colorado Avalanche", "COLORADO": "Colorado Avalanche",
+      "CBJ": "Columbus Blue Jackets", "COLUMBUS": "Columbus Blue Jackets",
+      "DAL": "Dallas Stars", "DALLAS": "Dallas Stars",
+      "DET": "Detroit Red Wings", "DETROIT": "Detroit Red Wings",
+      "EDM": "Edmonton Oilers", "EDMONTON": "Edmonton Oilers",
+      "FLA": "Florida Panthers", "FLORIDA": "Florida Panthers",
+      "LAK": "Los Angeles Kings", "LA KINGS": "Los Angeles Kings", "LOS ANGELES": "Los Angeles Kings", "LOS ANGELES K": "Los Angeles Kings",
+      "MIN": "Minnesota Wild", "MINNESOTA": "Minnesota Wild",
+      "MTL": "Montreal Canadiens", "MONTREAL": "Montreal Canadiens",
+      "NSH": "Nashville Predators", "NASHVILLE": "Nashville Predators",
+      "NJD": "New Jersey Devils", "NEW JERSEY": "New Jersey Devils",
+      "NYI": "New York Islanders", "NEW YORK I": "New York Islanders",
+      "NYR": "New York Rangers", "NEW YORK R": "New York Rangers",
+      "OTT": "Ottawa Senators", "OTTAWA": "Ottawa Senators",
+      "PHI": "Philadelphia Flyers", "PHILADELPHIA": "Philadelphia Flyers",
+      "PIT": "Pittsburgh Penguins", "PITTSBURGH": "Pittsburgh Penguins",
+      "SJS": "San Jose Sharks", "SAN JOSE": "San Jose Sharks",
+      "SEA": "Seattle Kraken", "SEATTLE": "Seattle Kraken",
+      "STL": "St. Louis Blues", "ST. LOUIS": "St. Louis Blues",
+      "TBL": "Tampa Bay Lightning", "TAMPA BAY": "Tampa Bay Lightning",
+      "TOR": "Toronto Maple Leafs", "TORONTO": "Toronto Maple Leafs",
+      "UTA": "Utah Hockey Club", "UTAH": "Utah Hockey Club",
+      "VAN": "Vancouver Canucks", "VANCOUVER": "Vancouver Canucks",
+      "VGK": "Vegas Golden Knights", "VEGAS": "Vegas Golden Knights",
+      "WSH": "Washington Capitals", "WASHINGTON": "Washington Capitals",
+      "WPG": "Winnipeg Jets", "WINNIPEG": "Winnipeg Jets",
+    },
+    "NPB": {
+      "HAWKS": "Fukuoka SoftBank Hawks", "FUKUOKA": "Fukuoka SoftBank Hawks", "FUKUOKA HAWKS": "Fukuoka SoftBank Hawks",
+      "BAYSTARS": "Yokohama DeNA BayStars", "YOKOHAMA": "Yokohama DeNA BayStars", "YOKOHAMA BAYSTARS": "Yokohama DeNA BayStars",
+      "CARP": "Hiroshima Toyo Carp", "HIROSHIMA": "Hiroshima Toyo Carp", "HIROSHIMA CARP": "Hiroshima Toyo Carp",
+      "GIANTS": "Yomiuri Giants", "YOMIURI": "Yomiuri Giants", "YOMIURI GIANTS": "Yomiuri Giants",
+      "TIGERS": "Hanshin Tigers", "HANSHIN": "Hanshin Tigers", "HANSHIN TIGERS": "Hanshin Tigers",
+      "SWALLOWS": "Tokyo Yakult Swallows", "YAKULT": "Tokyo Yakult Swallows", "TOKYO YAKULT SWALLOWS": "Tokyo Yakult Swallows",
+      "DRAGONS": "Chunichi Dragons", "CHUNICHI": "Chunichi Dragons", "CHUNICHI DRAGONS": "Chunichi Dragons",
+      "LIONS": "Saitama Seibu Lions", "SEIBU": "Saitama Seibu Lions", "SAITAMA SEIBU LIONS": "Saitama Seibu Lions",
+      "BUFFALOES": "Orix Buffaloes", "ORIX": "Orix Buffaloes", "ORIX BUFFALOES": "Orix Buffaloes",
+      "MARINES": "Chiba Lotte Marines", "LOTTE": "Chiba Lotte Marines", "CHIBA LOTTE MARINES": "Chiba Lotte Marines",
+      "FIGHTERS": "Hokkaido Nippon-Ham Fighters", "NIPPON-HAM": "Hokkaido Nippon-Ham Fighters", "HOKKAIDO NIPPON-HAM FIGHTERS": "Hokkaido Nippon-Ham Fighters",
+      "GOLDEN EAGLES": "Tohoku Rakuten Golden Eagles", "EAGLES": "Tohoku Rakuten Golden Eagles", "RAKUTEN": "Tohoku Rakuten Golden Eagles", "TOHOKU RAKUTEN GOLDEN EAGLES": "Tohoku Rakuten Golden Eagles"
+    },
+    "KBO": {
+      "BEARS": "Doosan Bears", "DOOSAN": "Doosan Bears", "DOOSAN BEARS": "Doosan Bears",
+      "GIANTS": "Lotte Giants", "LOTTE": "Lotte Giants", "LOTTE GIANTS": "Lotte Giants",
+      "TWINS": "LG Twins", "LG": "LG Twins", "LG TWINS": "LG Twins",
+      "WIZ": "KT Wiz", "KT": "KT Wiz", "KT WIZ": "KT Wiz",
+      "LANDERS": "SSG Landers", "SSG": "SSG Landers", "SSG LANDERS": "SSG Landers",
+      "DINOS": "NC Dinos", "NC": "NC Dinos", "NC DINOS": "NC Dinos",
+      "TIGERS": "Kia Tigers", "KIA": "Kia Tigers", "KIA TIGERS": "Kia Tigers",
+      "LIONS": "Samsung Lions", "SAMSUNG": "Samsung Lions", "SAMSUNG LIONS": "Samsung Lions",
+      "HEROES": "Kiwoom Heroes", "KIWOOM": "Kiwoom Heroes", "KIWOOM HEROES": "Kiwoom Heroes",
+      "EAGLES": "Hanwha Eagles", "HANWHA": "Hanwha Eagles", "HANWHA EAGLES": "Hanwha Eagles"
+    },
+    "SOC": {
+      "MAN CITY": "Manchester City", "MANCHESTER CITY": "Manchester City",
+      "MAN UTD": "Manchester United", "MAN UNITED": "Manchester United", "MANCHESTER UTD": "Manchester United", "MANCHESTER UNITED": "Manchester United",
+      "SPURS": "Tottenham Hotspur", "TOTTENHAM": "Tottenham Hotspur", "TOTTENHAM HOTSPUR": "Tottenham Hotspur",
+      "ARSENAL": "Arsenal", "CHELSEA": "Chelsea", "LIVERPOOL": "Liverpool",
+      "NEWCASTLE": "Newcastle United", "NEWCASTLE UTD": "Newcastle United",
+      "WOLVES": "Wolverhampton Wanderers", "WOLVERHAMPTON": "Wolverhampton Wanderers",
+      "BRIGHTON": "Brighton & Hove Albion", "WEST HAM": "West Ham United",
+      "ASTON VILLA": "Aston Villa", "EVERTON": "Everton",
+      "DORTMUND": "Borussia Dortmund", "BVB": "Borussia Dortmund",
+      "BAYERN": "Bayern Munich", "BAYERN MUNICH": "Bayern Munich",
+      "LEVERKUSEN": "Bayer Leverkusen", "LEIPZIG": "RB Leipzig",
+      "REAL MADRID": "Real Madrid", "BARCELONA": "Barcelona", "ATLETICO": "Atletico Madrid",
+      "PSG": "Paris Saint-Germain", "INTER": "Inter Milan", "MILAN": "AC Milan", "JUVENTUS": "Juventus"
+    }
+}
+
+def _normalize_team_name(name: str, sport: str = None) -> str:
+    n = (name or "").upper().strip()
+    if not n: return ""
+    if sport and sport in _SPORT_TEAM_MAP:
+        return _SPORT_TEAM_MAP[sport].get(n, n)
+    # Fallback to the first match if no sport
+    for sm in _SPORT_TEAM_MAP.values():
+        if n in sm: return sm[n]
+    return n
+
+def _normalize_sport(s: str) -> str:
+    s = (s or "").upper().strip()
+    if s in ("NPB/KBO", "NPB_KBO", "NPB-KBO", "NPB", "KBO"):
+        return "NPB/KBO"
+    if s in ("TEN", "TENNIS", "ATP", "WTA"):
+        return "TEN"
+    if s in ("SOC", "SOCCER", "EPL", "MLS", "UEFA", "WC"):
+        return "SOC"
+    if s in ("UFC", "MMA"):
+        return "UFC"
+    if s in ("NHL", "HOCKEY"):
+        return "NHL"
+    if s in ("MLB", "BASEBALL"):
+        return "MLB"
+    if s in ("NFL", "FOOTBALL"):
+        return "NFL"
+    return s
+
+
+_SLATE_CACHE = {}
+_SLATE_CACHE_TIME = 0
+def _fetch_all_slates_for_times(base_url='http://127.0.0.1:8057'):
+    global _SLATE_CACHE_TIME, _SLATE_CACHE
+    import time
+    if time.time() - _SLATE_CACHE_TIME < 300 and _SLATE_CACHE:
+        return _SLATE_CACHE
+    import httpx, concurrent.futures
+    endpoints = [
+        ('NHL', '/api/hockey/slate'), ('MLB', '/api/mlb/games'), ('NBA', '/api/nba/slate'), 
+        ('NCAAF', '/api/ncaaf/slate'), ('SOC', '/api/soccer/slate'), ('TEN', '/api/tennis/slate'), 
+        ('UFC', '/api/ufc/slate'), ('NPB', '/api/npb_kbo/slate'), ('KBO', '/api/npb_kbo/slate'), ('NFL', '/api/nfl/games')
+    ]
+    all_games = []
+    def fetch_endpoint(args):
+        sport, ep = args
+        try:
+            with httpx.Client(timeout=7.0) as c:
+                r = c.get(f"{base_url}{ep}")
+                if r.status_code == 200:
+                    d = r.json()
+                    games = d.get('games') or d.get('matches') or d.get('slate') or d.get('events') or d
+                    if isinstance(games, dict) and ('games' in games or 'matches' in games):
+                        games = games.get('games') or games.get('matches')
+                    if isinstance(games, list):
+                        return (sport, games)
+        except Exception:
+            pass
+        return (sport, [])
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        for res in executor.map(fetch_endpoint, endpoints):
+            sport, games = res
+            for g in games:
+                all_games.append((sport, g))
+            
+    slate_map = {}
+    for sport, g in all_games:
+        if sport not in slate_map:
+            slate_map[sport] = {}
+        
+        ht = g.get('home_team')
+        at = g.get('away_team')
+        aliases = []
+        for team_val in [ht, at]:
+            if isinstance(team_val, dict):
+                aliases.append(team_val.get('name'))
+                aliases.append(team_val.get('abbreviation'))
+                aliases.append(team_val.get('abbr'))
+            elif isinstance(team_val, str):
+                aliases.append(team_val)
+        aliases.extend([
+            g.get('name'), g.get('predicted_team'), g.get('player_a'), 
+            g.get('opponent'), g.get('player_b')
+        ])
+        
+        start_time = g.get('start_time') or g.get('game_datetime') or g.get('commence_time') or g.get('date')
+        
+        if sport in ('NPB', 'KBO') and start_time and 'ET' in start_time:
+            if '18:00' in start_time or '13:00' in start_time or '14:00' in start_time:
+                start_time = None
+        
+        import re
+        for t in aliases:
+            if t:
+                t = re.sub(r'Game\s+\d+:\s*', '', str(t), flags=re.IGNORECASE)
+                t_clean = re.sub(r'[^a-zA-Z0-9]', '', t).lower()
+
+                if start_time not in ('TBD', None, ''):
+                    if t_clean not in slate_map[sport]:
+                        slate_map[sport][t_clean] = []
+                    if start_time not in slate_map[sport][t_clean]:
+                        slate_map[sport][t_clean].append(start_time)
+
+                parts = t.split()
+                if len(parts) > 1:
+                    mascot_clean = re.sub(r'[^a-zA-Z0-9]', '', parts[-1]).lower()
+                    city_clean = re.sub(r'[^a-zA-Z0-9]', '', "".join(parts[:-1])).lower()
+                    if start_time not in ('TBD', None, ''):
+                        for c in [mascot_clean, city_clean, re.sub(r'[^a-zA-Z0-9]', '', parts[0]).lower()]:
+                            if c:
+                                if c not in slate_map[sport]:
+                                    slate_map[sport][c] = []
+                                if start_time not in slate_map[sport][c]:
+                                    slate_map[sport][c].append(start_time)
+
+    _SLATE_CACHE = slate_map
+    _SLATE_CACHE_TIME = time.time()
+    return slate_map
+
+@_engine_root_router.get("/api/engine/sports/events", dependencies=[Depends(require_auth)])

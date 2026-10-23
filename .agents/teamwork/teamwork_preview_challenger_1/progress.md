@@ -1,14 +1,11 @@
-# Progress — Challenger 1 (Empirical Replication & Stress Verification)
+# Progress
 
-**Last visited**: 2026-09-30T19:37:30Z  
-**Status**: VERIFIED  
+Last visited: 2026-10-09T15:28:10Z
 
-## Verification Plan
-- [x] Step 0: Read ORIGINAL_REQUEST.md, PROJECT.md, DISPATCH.md, R2 report, and FINAL_PROFITABILITY_REPORT
-- [x] Step 1: Execute `pytest tests/test_risk_budget.py tests/test_backtest.py -v` (6/6 passed cleanly)
-- [x] Step 2: Execute `.venv\Scripts\python.exe backend/btc/backtest.py --days 5 --windows 100` (Accuracy: 46.97% [~47%], Log Loss: 0.91737 [>0.90])
-- [x] Step 3: Execute `.venv\Scripts\python.exe backend/scripts/backtest_rl.py` (Win Rate: 48.59%-48.75% [~48.75%], Profit Factor: 0.87-0.88 [~0.88])
-- [x] Step 4: Execute `.venv\Scripts\python.exe backend/scripts/evaluate_previous_trades.py` and audit code lines 109-115 for taker fee omission (Confirmed 0 fee deducted, 0 spread assumed)
-- [x] Step 5: Conduct forensic / stress audit on edge cases (calibration inversion, zero spread, drawdown mechanics, -$6,065.73 ledger loss verified)
-- [ ] Step 6: Write 5-component handoff report (`handoff.md`) with verdict (APPROVE)
-- [ ] Step 7: Send completion message to orchestrator_1
+- [x] Initialized DISPATCH.md and BRIEFING.md
+- [x] Read ORIGINAL_REQUEST.md, PROJECT.md, and worker's handoff
+- [x] Inspect implementation files backend/routes/engine.py and backend/sports_bridge/prediction_client.py
+- [x] Author adversarial test script in project tests/ directory (`tests/test_challenger1_backend_empirical.py`)
+- [x] Execute empirical tests (43 empirical tests passed; combined 67/67 tests passed)
+- [ ] Generate report.md and handoff.md with verdict
+- [ ] Notify orchestrator

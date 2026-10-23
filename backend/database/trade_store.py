@@ -75,12 +75,36 @@ class TradeStore:
             cursor = conn.cursor()
             # Sort by rowid (insertion order) — timestamp column stores mixed types
             # (ISO strings, ET strings, floats) that SQLite cannot sort reliably
-            cursor.execute("SELECT raw_json FROM trades WHERE user_id = ? ORDER BY rowid DESC LIMIT ?", (user_id, limit))
+            cursor.execute(
+                """
+                SELECT t.raw_json, t.user_id, u.username, t.status, t.pnl, t.exit_price, t.exit_reason, t.settled_at, t.mode
+                FROM trades t
+                LEFT JOIN users u ON t.user_id = u.id
+                WHERE t.user_id = ?
+                ORDER BY t.rowid DESC LIMIT ?
+                """,
+                (user_id, limit),
+            )
             results = []
             for row in cursor.fetchall():
                 try:
-                    parsed = json.loads(row[0])
+                    raw_json, uid, uname, col_status, col_pnl, col_exit_p, col_exit_r, col_settled, col_mode = row
+                    parsed = json.loads(raw_json) if raw_json else {}
                     if isinstance(parsed, dict):
+                        parsed["user_id"] = uid
+                        parsed["username"] = uname or parsed.get("username") or f"User #{uid}"
+                        if col_status and parsed.get("status") != col_status:
+                            parsed["status"] = col_status
+                        if col_pnl is not None and parsed.get("pnl") is None:
+                            parsed["pnl"] = col_pnl
+                        if col_exit_p is not None and parsed.get("exit_price") is None:
+                            parsed["exit_price"] = col_exit_p
+                        if col_exit_r and not parsed.get("exit_reason"):
+                            parsed["exit_reason"] = col_exit_r
+                        if col_settled and not parsed.get("settled_at"):
+                            parsed["settled_at"] = col_settled
+                        if col_mode and not parsed.get("mode"):
+                            parsed["mode"] = col_mode
                         results.append(parsed)
                 except Exception:
                     pass
@@ -90,6 +114,85 @@ class TradeStore:
             return []
         finally:
             conn.close()
+
+    @staticmethod
+    def get_all_users_recent_trades(limit: int = 500, mode: Optional[str] = None, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Fetch recent trades across all users (or a specific user), newest first, with username attached."""
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            clauses = []
+            params: List[Any] = []
+            if user_id is not None and int(user_id) > 0:
+                clauses.append("t.user_id = ?")
+                params.append(int(user_id))
+            if mode and str(mode).upper() in ("PAPER", "LIVE"):
+                clauses.append("UPPER(COALESCE(t.mode, 'PAPER')) = ?")
+                params.append(str(mode).upper())
+            where_sql = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+            params.append(int(limit))
+            cursor.execute(
+                f"""
+                SELECT t.raw_json, t.user_id, u.username, u.trading_style, u.signal_source, u.model_choice,
+                       t.status, t.pnl, t.exit_price, t.exit_reason, t.settled_at, t.mode
+                FROM trades t
+                LEFT JOIN users u ON t.user_id = u.id
+                {where_sql}
+                ORDER BY t.rowid DESC LIMIT ?
+                """,
+                tuple(params),
+            )
+            results = []
+            for row in cursor.fetchall():
+                try:
+                    (raw_json, uid, uname, u_style, u_source, u_model,
+                     col_status, col_pnl, col_exit_p, col_exit_r, col_settled, col_mode) = row
+                    parsed = json.loads(raw_json) if raw_json else {}
+                    if isinstance(parsed, dict):
+                        parsed["user_id"] = uid
+                        parsed["username"] = uname or parsed.get("username") or f"User #{uid}"
+                        if col_status:
+                            parsed["status"] = col_status
+                        if col_pnl is not None:
+                            parsed["pnl"] = col_pnl
+                        if col_exit_p is not None and parsed.get("exit_price") is None:
+                            parsed["exit_price"] = col_exit_p
+                        if col_exit_r and not parsed.get("exit_reason"):
+                            parsed["exit_reason"] = col_exit_r
+                        if col_settled and not parsed.get("settled_at"):
+                            parsed["settled_at"] = col_settled
+                        if col_mode and not parsed.get("mode"):
+                            parsed["mode"] = col_mode
+                        parsed["_user_default_style"] = u_style or "AUTO"
+                        parsed["_user_default_source"] = u_source or "RL_DQN"
+                        parsed["_user_default_model"] = u_model or "RL_DQN"
+                        results.append(parsed)
+                except Exception:
+                    pass
+            return results
+        except Exception as e:
+            logger.warning(f"TradeStore get_all_users_recent_trades error: {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def get_recent_sports_trades(user_id: int, limit: int = 50, scan: int = 5000) -> List[Dict[str, Any]]:
+        """Newest sports trades for a user, independent of how many financial trades came after them."""
+        try:
+            from backend.engine.live_pnl import is_sports_trade
+        except Exception:
+            return []
+        out = []
+        for t in TradeStore.get_recent_trades(user_id, limit=scan):
+            try:
+                if is_sports_trade(t):
+                    out.append(t)
+                    if len(out) >= limit:
+                        break
+            except Exception:
+                continue
+        return out
             
     @staticmethod
     def get_closed_stats(user_id: int) -> Dict[str, Dict[str, float]]:
@@ -852,6 +955,8 @@ class TradeStore:
         separate web/worker processes, since the guard lives in SQLite), so the
         caller that gets True is the only one allowed to credit balances.
         If the row does not exist yet it is inserted already closed."""
+        if not trade or not isinstance(trade, dict):
+            return False
         trade_id = trade.get("id")
         if not trade_id:
             return False

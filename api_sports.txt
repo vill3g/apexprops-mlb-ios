@@ -1,0 +1,724 @@
+def api_sports_events(
+    sport: Optional[str] = None,
+    league: Optional[str] = None,
+    filter: Optional[str] = None
+):
+    try:
+        raw_filter = sport or league or filter or ""
+        if hasattr(raw_filter, "default"):
+            raw_filter = ""
+        query_filter = str(raw_filter or "").strip().upper()
+        now = time.time()
+        with _SPORTS_AGG_CACHE_LOCK:
+            if query_filter in _SPORTS_AGG_CACHE:
+                ts, cached_resp = _SPORTS_AGG_CACHE[query_filter]
+                if now - ts < _SPORTS_AGG_CACHE_TTL:
+                    return cached_resp
+    
+        # Normalize sport filtering
+        if query_filter in ("NPB/KBO", "NPB_KBO", "NPB-KBO", "NPB", "KBO"):
+            target_sports = [("NPB", "NPB/KBO", "NPB"), ("KBO", "NPB/KBO", "KBO")]
+        elif query_filter in ("SOC", "SOCCER"):
+            target_sports = [("SOC", "SOC", "SOC")]
+        elif query_filter in ("TEN", "TENNIS"):
+            target_sports = [("TEN", "TEN", "TEN")]
+        elif query_filter in ("UFC", "MMA"):
+            target_sports = [("UFC", "UFC", "UFC")]
+        elif query_filter in _SPORTS_SERIES_MAP:
+            target_sports = [(query_filter, query_filter, query_filter)]
+        else:
+            target_sports = [
+                ("NPB", "NPB/KBO", "NPB"),
+                ("KBO", "NPB/KBO", "KBO"),
+                ("NFL", "NFL", "NFL"),
+                ("MLB", "MLB", "MLB"),
+                ("NHL", "NHL", "NHL"),
+                ("SOC", "SOC", "SOC"),
+                ("UFC", "UFC", "UFC"),
+                ("TEN", "TEN", "TEN"),
+            ]
+    
+        client = SportsPredictionClient()
+        latest_picks = []
+        try:
+            latest_picks = client.fetch_latest_picks()
+        except Exception as e:
+            logger.debug(f"Could not fetch picks for events: {e}")
+            import traceback; traceback.print_exc()
+    
+        # Gather unique series tickers to fetch in parallel
+        unique_series = set()
+        for series_key, _, _ in target_sports:
+            for s in _SPORTS_SERIES_MAP.get(series_key, []):
+                unique_series.add(s)
+    
+        series_data_map = {}
+        if unique_series:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(25, len(unique_series))) as executor:
+                future_to_series = {executor.submit(_fetch_kalshi_series_events, s): s for s in unique_series}
+                for future in concurrent.futures.as_completed(future_to_series):
+                    s = future_to_series[future]
+                    try:
+                        series_data_map[s] = future.result()
+                    except Exception as e:
+                        logger.error(f"Error reading result for series {s}: {e}")
+                        series_data_map[s] = []
+    
+        slate_map = _fetch_all_slates_for_times()
+        kalshi_events = []
+        seen_tickers = set()
+    
+        for series_key, sport_tag, league_tag in target_sports:
+            series_tickers = _SPORTS_SERIES_MAP.get(series_key, [])
+            for series in series_tickers:
+                events_data = series_data_map.get(series, [])
+                for e in events_data:
+                    event_ticker = e.get('event_ticker') or ''
+                    if not event_ticker or event_ticker in seen_tickers:
+                        continue
+    
+                    now_et = datetime.now(ZoneInfo("America/New_York"))
+                    today_et = now_et.date()
+                    title = e.get('title') or 'Event'
+                    sub = e.get('sub_title') or 'Match'
+                    
+                    slate_time_str = None
+                    title_clean = re.sub(r'[^a-zA-Z0-9]', '', title).lower()
+                    if title_clean in slate_map.get(sport_tag, {}):
+                        slate_time_str = slate_map.get(sport_tag, {}).get(title_clean)
+                    else:
+                        for token in re.split(r'\s+(?:vs\.?|at|@)\s+', title, flags=re.IGNORECASE):
+                            token = re.sub(r'Game\s+\d+:\s*', '', token, flags=re.IGNORECASE)
+                            t_clean = re.sub(r'[^a-zA-Z0-9]', '', token).lower()
+                            if t_clean in slate_map.get(sport_tag, {}):
+                                slate_time_str = slate_map.get(sport_tag, {}).get(t_clean)
+                                break
+                            # fallback mascot matching
+                            for m_word in ["sox", "jays"]:
+                                if t_clean.endswith(m_word):
+                                    if t_clean[-8:] in slate_map.get(sport_tag, {}): slate_time_str = slate_map.get(sport_tag, {}).get(t_clean[-8:])
+                                    break
+                            if not slate_time_str:
+                                for p in re.split(r'[^a-zA-Z0-9]', token):
+                                    p_clean = p.lower().strip()
+                                    if len(p_clean) > 2 and p_clean in slate_map.get(sport_tag, {}):
+                                        slate_time_str = slate_map.get(sport_tag, {}).get(p_clean)
+                                        break
+    
+                                
+                    ev_date, start_epoch = extract_sports_event_date_and_time(event_ticker, event_obj=e, slate_time_str=slate_time_str)
+                    # Filter out past events from previous days UNLESS they are live/still active
+                    is_live = start_epoch and start_epoch < time.time()
+                    if ev_date and ev_date < today_et and not is_live:
+                        continue
+    
+                    seen_tickers.add(event_ticker)
+    
+                    title = e.get('title') or 'Event'
+                    sub = e.get('sub_title') or 'Match'
+                    
+                    # Extract markets list
+                    markets = e.get('markets', [])
+    
+                    # Parse detailed prop type, line, spread/over-under amounts, and strike info
+                    market_details = parse_sports_market_details(
+                        ticker=event_ticker,
+                        title=title,
+                        series=series,
+                        markets=markets,
+                        sub_title=sub,
+                        event_obj=e
+                    )
+                    prop_type = market_details['prop_type']
+                    line = market_details['line']
+                    spread_amount = market_details['spread_amount']
+                    over_under_amount = market_details['over_under_amount']
+                    strike_details = market_details['strike_details']
+                    numeric_line = market_details['numeric_line']
+                    m_type_label = prop_type
+    
+                    conf = 0.0
+                    edge = 0.0
+                    matched_pred_team = None
+                    best_pick = None
+                    if latest_picks:
+                        m_title = re.sub(r'^(?:Game\s+\d+|Fight\s+Night):\s*', '', title or '', flags=re.IGNORECASE).strip()
+                        m_title = re.sub(r':\s*(?:Spread|Total(?:\s*(?:Points|Runs|Goals))?|Moneyline|1\+|First\s*5\s*Innings|Period).*$', '', m_title, flags=re.IGNORECASE).strip()
+                        parts = re.split(r'\s+(?:vs\.?|at|@)\s+', m_title, flags=re.IGNORECASE)
+                        if len(parts) == 2:
+                            away_team = _normalize_team_name(parts[0], sport_tag).upper()
+                            home_team = _normalize_team_name(parts[1], sport_tag).upper()
+                        else:
+                            away_team = ""
+                            home_team = ""
+                        
+                        # Kalshi title date is usually in ticker or event date? 
+                        # Actually we will just compare strings if dates are not easy
+                        t_lower = (event_ticker + " " + title).lower()
+                        generic_words = {'the', 'and', 'city', 'team', 'club', 'fc', 'vs', 'game', 'at', '@'}
+                        best_pick = None
+                        best_pick_score = -100
+    
+                        for p in latest_picks:
+                            p_sport = (p.get("sport") or "").upper()
+                            # Match picks from compatible sport
+                            if _normalize_sport(sport_tag) != _normalize_sport(p_sport):
+                                continue
+    
+                            p_team = (p.get("predicted_team") or "").lower().strip()
+                            p_opp = (p.get("opponent") or "").lower().strip()
+                            p_mtype = str(p.get("market_type") or p.get("metadata", {}).get("type") or "").upper()
+                            
+                            score = 0
+                            is_match = False
+                            
+                            meta = p.get("metadata") or {}
+                            
+                            p_away_raw = meta.get("player_b") or meta.get("away_team", "")
+                            p_home_raw = meta.get("player_a") or meta.get("home_team", "")
+                            if isinstance(p_away_raw, dict): p_away_raw = p_away_raw.get("name", "")
+                            if isinstance(p_home_raw, dict): p_home_raw = p_home_raw.get("name", "")
+                            if not p_away_raw or not p_home_raw:
+                                matchup_raw = meta.get("matchup") or p.get("opponent") or ""
+                                m_split = re.split(r'\s+(?:vs\.?|at|@)\s+', matchup_raw, flags=re.IGNORECASE)
+                                if len(m_split) == 2:
+                                    p_away_raw = m_split[0].strip()
+                                    p_home_raw = m_split[1].strip()
+
+                            p_away = _normalize_team_name(p_away_raw, sport_tag).upper()
+                            p_home = _normalize_team_name(p_home_raw, sport_tag).upper()
+                            
+                            # Exact team matchup
+                            if p_away and p_home and away_team and home_team:
+                                if p_away == away_team and p_home == home_team:
+                                    is_match = True
+                                    score += 100
+                                elif p_away == home_team and p_home == away_team:
+                                    is_match = True
+                                    score += 100
+                                elif sport_tag == "UFC":
+                                    p_a_last = p_away.split()[-1]
+                                    p_h_last = p_home.split()[-1]
+                                    a_last = away_team.split()[-1]
+                                    h_last = home_team.split()[-1]
+                                    if (p_a_last == a_last and p_h_last == h_last) or (p_a_last == h_last and p_h_last == a_last):
+                                        is_match = True
+                                        score += 100
+                                elif sport_tag == "TEN":
+                                    import unicodedata
+                                    def _norm(n):
+                                        return unicodedata.normalize('NFKD', n).encode('ASCII', 'ignore').decode('utf-8').upper()
+                                    p_a_norm = _norm(p_away)
+                                    p_h_norm = _norm(p_home)
+                                    a_norm = _norm(away_team)
+                                    h_norm = _norm(home_team)
+                                    
+                                    def _match_name(fullname, kalshiname):
+                                        if not kalshiname or not fullname: return False
+                                        k_teams = [k.strip() for k in kalshiname.split('/') if k.strip()]
+                                        f_teams = [f.strip() for f in fullname.split('/') if f.strip()]
+                                        if len(k_teams) > 1 or len(f_teams) > 1:
+                                            for kt in k_teams:
+                                                kp = [p for p in re.split(r'[^A-Z0-9]+', kt) if p]
+                                                if any(all(p in [x for x in re.split(r'[^A-Z0-9]+', ft) if x] for p in kp) for ft in (f_teams or [fullname])):
+                                                    return True
+                                            return False
+                                        k_parts = [p for p in re.split(r'[^A-Z0-9]+', kalshiname) if p]
+                                        f_parts = [p for p in re.split(r'[^A-Z0-9]+', fullname) if p]
+                                        return all(k in f_parts for k in k_parts)
+                                    
+                                    if (_match_name(p_a_norm, a_norm) and _match_name(p_h_norm, h_norm)) or \
+                                       (_match_name(p_a_norm, h_norm) and _match_name(p_h_norm, a_norm)):
+                                        date_match = True
+                                        p_start_label = meta.get("start_label", "")
+                                        p_date = None
+                                        if p_start_label:
+                                            try:
+                                                p_dt = datetime.fromisoformat(p_start_label.replace('Z', '+00:00'))
+                                                p_date = p_dt.astimezone(ZoneInfo("America/New_York")).date()
+                                            except Exception:
+                                                pass
+                                        
+                                        ev_real_date = None
+                                        m_occ = e.get("occurrence_datetime") or (markets[0].get("occurrence_datetime") if markets else None)
+                                        if m_occ:
+                                            try:
+                                                ev_real_date = datetime.fromisoformat(m_occ.replace("Z", "+00:00")).astimezone(ZoneInfo("America/New_York")).date()
+                                            except Exception:
+                                                pass
+                                                
+                                        compare_date = ev_real_date or ev_date
+                                        if p_date and compare_date:
+                                            diff = abs((p_date - compare_date).days)
+                                            if diff > 2:
+                                                date_match = False
+                                        
+                                        if date_match:
+                                            is_match = True
+                                            score += 100
+                                            if p_date and compare_date and p_date == compare_date:
+                                                score += 20
+                            
+                            if not is_match:
+                                if p_team and len(p_team) >= 4 and p_team in t_lower:
+                                    is_match = True
+                                    score += 40
+                                elif p_team:
+                                    p_tokens = {w for w in re.findall(r'[a-z0-9]+', p_team) if len(w) >= 3 and w not in generic_words}
+                                    e_tokens = {w for w in re.findall(r'[a-z0-9]+', t_lower) if len(w) >= 3 and w not in generic_words}
+                                    if p_tokens and (p_tokens <= e_tokens):
+                                        is_match = True
+                                        score += 30
+        
+                                if not is_match and p_opp:
+                                    opp_parts = [o.strip() for o in re.split(r'\s+(?:vs\.?|at|@)\s+', p_opp, flags=re.IGNORECASE) if o.strip()]
+                                    if len(opp_parts) == 2:
+                                        p1_tokens = {w for w in re.findall(r'[a-z0-9]+', opp_parts[0]) if len(w) >= 3 and w not in generic_words}
+                                        p2_tokens = {w for w in re.findall(r'[a-z0-9]+', opp_parts[1]) if len(w) >= 3 and w not in generic_words}
+                                        e_tokens = {w for w in re.findall(r'[a-z0-9]+', t_lower) if len(w) >= 3 and w not in generic_words}
+                                        if (p1_tokens & e_tokens) and (p2_tokens & e_tokens) and (p1_tokens != p2_tokens):
+                                            is_match = True
+                                            score += 20
+    
+                            if is_match:
+                                # Match exact prop_type
+                                is_total_market = prop_type in ("Total (O/U)", "TOTAL", "OVER/UNDER")
+                                is_total_pick = "TOTAL" in p_mtype or "OVER" in p_mtype or "UNDER" in p_mtype or "O/U" in p_mtype
+                                
+                                is_spread_market = prop_type in ("Spread", "SPREAD")
+                                is_spread_pick = "SPREAD" in p_mtype or "RUN LINE" in p_mtype or "PUCK LINE" in p_mtype
+                                
+                                is_player_prop_market = prop_type in ("Player Prop", "PLAYER PROP")
+                                is_player_prop_pick = "PROP" in p_mtype or "PLAYER" in p_mtype
+    
+                                if is_total_market:
+                                    if is_total_pick:
+                                        score += 150
+                                    else:
+                                        continue
+                                elif is_spread_market:
+                                    if is_spread_pick:
+                                        score += 150
+                                    else:
+                                        continue
+                                elif is_player_prop_market:
+                                    if is_player_prop_pick:
+                                        score += 150
+                                    else:
+                                        continue
+                                else:
+                                    if "MONEYLINE" in p_mtype or "WINNER" in p_mtype or p_mtype == "":
+                                        score += 100
+                                    elif is_total_pick or is_spread_pick or is_player_prop_pick:
+                                        continue
+                                
+                                if score > best_pick_score:
+                                    best_pick_score = score
+                                    best_pick = p
+    
+                        if best_pick:
+                            conf = float(best_pick.get("confidence_pct") or 0.0)
+                            edge = float(best_pick.get("edge_pct") or 0.0)
+                            
+                            p_meta = best_pick.get("metadata", {})
+                            if is_live and p_meta.get("pick_is_prematch"):
+                                edge = 0.0
+                                best_pick["edge_pct"] = 0.0
+            
+                            matched_pred_team = best_pick.get("predicted_team")
+    
+    
+                    # Determine clean matchup (e.g. "Doosan Bears vs LG Twins" stripping ": Spread" or ": Total Runs")
+                    raw_title = title or sub or "Sports Event"
+                    clean_matchup = re.sub(r':\s*(Spread|Total\s*Runs?|Totals?|Game|Moneyline).*$', '', raw_title, flags=re.IGNORECASE).strip()
+                    if not clean_matchup:
+                        clean_matchup = raw_title
+    
+    
+    
+                    # The AI predicts full games. On a period / first-5 / futures market that pick is
+                    # only a lean: keep it for display, but not as this market's confidence (which the
+                    # auto-trader would otherwise trade on).
+                    segment = market_details.get('segment')
+                    ai_lean_team = None
+                    ai_lean_pct = 0.0
+                    if prop_type in ('Period', 'Futures') or segment:
+                        if matched_pred_team and conf > 0:
+                            ai_lean_team = matched_pred_team
+                            ai_lean_pct = conf
+                        matched_pred_team = None
+                        conf = 0.0
+                        edge = 0.0
+    
+                    has_valid_pick = bool(matched_pred_team and conf > 0 and matched_pred_team.lower() != clean_matchup.lower())
+                    pred_pick_name = matched_pred_team if has_valid_pick else None
+                    if prop_type == 'Player Prop' and market_details.get('player_name'):
+                        if not pred_pick_name or pred_pick_name.lower() in clean_matchup.lower():
+                            pred_pick_name = market_details['player_name']
+                        has_valid_pick = conf > 0
+    
+                    if best_pick:
+                        pred_mtype = str(best_pick.get("market_type") or best_pick.get("metadata", {}).get("type") or "").upper()
+                        if prop_type == "Spread" and not any(k in pred_mtype for k in ("SPREAD", "PUCK LINE", "RUN LINE")):
+                            ai_lean_team = matched_pred_team
+                            ai_lean_pct = conf
+                            conf = 0.0
+                            edge = 0.0
+                            has_valid_pick = False
+                        if prop_type == "Total (O/U)" and not any(k in pred_mtype for k in ("TOTAL", "OVER", "UNDER", "O/U")):
+                            ai_lean_team = matched_pred_team
+                            ai_lean_pct = conf
+                            conf = 0.0
+                            edge = 0.0
+                            has_valid_pick = False
+                        if prop_type in ("Player Prop", "PLAYER PROP") and not any(k in pred_mtype for k in ("PROP", "PLAYER")):
+                            ai_lean_team = matched_pred_team
+                            ai_lean_pct = conf
+                            conf = 0.0
+                            edge = 0.0
+                            has_valid_pick = False
+                    edge = 0.0
+                    if conf > 0 and has_valid_pick:
+                        for mkt in markets:
+                            mkt_sub = (mkt.get('yes_sub_title') or '').lower()
+                            clean_mkt_sub = re.sub(r'[\+\-]\d+(\.\d+)?', '', mkt_sub).strip()
+                            p_lower = (pred_pick_name or '').lower()
+                            norm_p_lower = _normalize_team_name(pred_pick_name or '', sport_tag).lower()
+                            
+                            is_mkt_match = False
+                            if p_lower and (p_lower in mkt_sub or p_lower in clean_mkt_sub or clean_mkt_sub in p_lower):
+                                is_mkt_match = True
+                            elif norm_p_lower and (norm_p_lower in mkt_sub or norm_p_lower in clean_mkt_sub or clean_mkt_sub in norm_p_lower):
+                                is_mkt_match = True
+                                
+                            if is_mkt_match:
+                                m_yes = float(mkt.get('yes_ask_dollars') or (float(mkt.get('yes_ask', 0)) / 100.0 if mkt.get('yes_ask') else None) or mkt.get('last_price_dollars') or 0.50)
+                                edge = round(conf - (m_yes * 100.0), 1)
+                                break
+                    # Extract market odds / prices from first market if available
+                    yes_ask = None
+                    no_ask = None
+                    last_price = None
+                    if markets:
+                        first_mkt = markets[0]
+                        if first_mkt.get('yes_ask_dollars') is not None:
+                            yes_ask = float(first_mkt['yes_ask_dollars'])
+                        elif first_mkt.get('yes_ask') is not None:
+                            yes_ask = float(first_mkt['yes_ask']) / 100.0
+    
+                        if first_mkt.get('no_ask_dollars') is not None:
+                            no_ask = float(first_mkt['no_ask_dollars'])
+                        elif first_mkt.get('no_ask') is not None:
+                            no_ask = float(first_mkt['no_ask']) / 100.0
+    
+                        if first_mkt.get('last_price_dollars') is not None:
+                            last_price = float(first_mkt['last_price_dollars'])
+                        elif first_mkt.get('last_price') is not None:
+                            last_price = float(first_mkt['last_price']) / 100.0
+    
+                        if yes_ask is None and last_price is not None:
+                            yes_ask = last_price
+                            no_ask = round(1.0 - last_price, 2)
+    
+                    # Extract game date & start time - prioritize ticker regex for actual game time
+                    p_md = best_pick.get("metadata", {}) if best_pick else {}
+                    ev_date, start_epoch = extract_sports_event_date_and_time(
+                        event_ticker, 
+                        metadata=p_md, 
+                        event_obj=e, 
+                        slate_time_str=slate_time_str
+                    )
+    
+                    game_time_str = "TBD"
+                    if start_epoch:
+                        dt_et = datetime.fromtimestamp(start_epoch, tz=ZoneInfo("America/New_York"))
+                        hr = dt_et.hour % 12
+                        if hr == 0: hr = 12
+                        ampm = "AM" if dt_et.hour < 12 else "PM"
+                        game_time_str = f"{dt_et.strftime('%b')} {dt_et.day} @ {hr}:{dt_et.strftime('%M')} {ampm} ET"
+                        
+                        if "BUSBER" in event_ticker or "KIANCD" in event_ticker:
+                            print(f"DEBUG {event_ticker}: start_epoch={start_epoch}, game_time={game_time_str}, slate={slate_time_str}")
+    
+                    elif ev_date:
+                        game_time_str = f"{ev_date.strftime('%b')} {ev_date.day}"
+    
+                    if m_type_label == 'Futures':
+                        start_epoch = None
+                        ev_date = None
+                        game_time_str = "Futures"
+                        
+                    is_today = bool(ev_date == today_et or (start_epoch and start_epoch < time.time()))
+                    
+                    is_stale = False
+                    if best_pick:
+                        p_meta = best_pick.get("metadata", {})
+                        if p_meta.get("is_final"):
+                            is_stale = True
+                    stale_threshold = 2 if sport_tag == "TEN" else 1
+                    if ev_date and (today_et - ev_date).days > stale_threshold:
+                        is_stale = True
+                        
+                    if sport_tag == "TEN" and is_stale:
+                        continue
+                    
+                    is_multi_prop_event = (series in ('KXMLBHRR', 'KXMLBHIT', 'KXMLBHR', 'KXMLBRBI', 'KXMLBKS', 'KXMLBTB') or 'HRR' in series)
+                    if is_multi_prop_event and markets:
+                        # Filter for 1+ prop markets (or primary line markets)
+                        one_plus_markets = [
+                            m for m in markets
+                            if (': 1+' in (m.get('yes_sub_title') or '') or
+                                ': 1+' in (m.get('title') or '') or
+                                m.get('floor_strike') == 0.5 or
+                                '1+' in (m.get('rules_primary') or ''))
+                        ]
+                        target_prop_markets = one_plus_markets if one_plus_markets else markets
+                        for mkt in target_prop_markets:
+                            m_ticker = mkt.get('ticker') or event_ticker
+                            mkt_details = parse_sports_market_details(
+                                ticker=m_ticker,
+                                title=mkt.get('title', ''),
+                                series=series,
+                                markets=[mkt],
+                                sub_title=mkt.get('yes_sub_title', ''),
+                                event_obj=e
+                            )
+                            p_name = mkt_details.get('player_name') or mkt.get('yes_sub_title') or 'Player'
+                            p_name = re.sub(r':\s*\d+.*$', '', p_name).strip()
+                            p_line = mkt_details.get('line') or '1+ H+R+RBI'
+                            p_strike = f"{p_name}: {p_line}"
+    
+                            m_yes = None
+                            m_no = None
+                            m_last = None
+                            if mkt.get('yes_ask_dollars') is not None:
+                                m_yes = float(mkt['yes_ask_dollars'])
+                            elif mkt.get('yes_ask') is not None:
+                                m_yes = float(mkt['yes_ask']) / 100.0
+    
+                            if mkt.get('no_ask_dollars') is not None:
+                                m_no = float(mkt['no_ask_dollars'])
+                            elif mkt.get('no_ask') is not None:
+                                m_no = float(mkt['no_ask']) / 100.0
+    
+                            if mkt.get('last_price_dollars') is not None:
+                                m_last = float(mkt['last_price_dollars'])
+                            elif mkt.get('last_price') is not None:
+                                m_last = float(mkt['last_price']) / 100.0
+    
+                            if m_yes is None and m_last is not None:
+                                m_yes = m_last
+                                m_no = round(1.0 - m_last, 2)
+    
+                            p_conf = 0.0
+                            p_edge = 0.0
+                            has_ai_prediction = False
+                            def norm(n):
+                                if not n: return ""
+                                import unicodedata
+                                n = unicodedata.normalize('NFKD', n).encode('ASCII', 'ignore').decode('utf-8')
+                                return ''.join(c for c in n.lower() if c.isalnum())
+                            pn = norm(p_name)
+                            stat = str(market_details.get("stat_name") or market_details.get("prop_type") or "").upper()
+                            apex_type = None
+                            if "ANYTIME TD" in stat or "TOUCHDOWN" in stat: apex_type = "ANYTIME TD"
+                            elif "PASSING" in stat: apex_type = "PASSING YDS"
+                            elif "RUSHING" in stat: apex_type = "RUSHING YDS"
+                            elif "RECEIVING" in stat: apex_type = "RECEIVING YDS"
+                            elif "HIT" in stat and "RUN" in stat and "RBI" in stat: apex_type = "HITS+RUNS+RBIS"
+                            elif "HOME RUN" in stat or "HR" in stat: apex_type = "HOME RUNS"
+                            elif "STRIKEOUT" in stat or "K" in stat: apex_type = "STRIKEOUTS"
+                            elif "TOTAL BASES" in stat or "TB" in stat: apex_type = "TOTAL BASES"
+                            matched_pick = None
+                            pick_is_under = False
+                            for pick in (latest_picks or []):
+                                meta = pick.get("metadata", {})
+                                pick_type = (pick.get("market_type") or meta.get("type") or "").upper()
+                                if "PROP" not in pick_type and "PLAYER" not in pick_type: continue
+                                if _normalize_sport(pick.get("sport") or "") != _normalize_sport(sport_tag): continue
+                                pick_stat = (meta.get("stat_name") or "").upper()
+                                if apex_type and apex_type not in pick_stat and pick_stat not in apex_type: continue
+                                pick_player = norm(pick.get("predicted_team") or pick.get("player_or_team") or "")
+                                if pn != pick_player: continue
+                                pick_line = (meta.get("line") or "").upper()
+                                m1 = re.search(r'(\d+\.?\d*)', pick_line)
+                                m2 = re.search(r'(\d+\.?\d*)', str(p_line))
+                                if m1 and m2 and m1.group(1) == m2.group(1):
+                                    matched_pick = pick
+                                    pick_is_under = "UNDER" in pick_line or " U " in pick_line
+                                    break
+                            
+                            pick_side = "YES"
+                            if matched_pick:
+                                p_conf = float(matched_pick.get("confidence_pct", 0.0))
+                                has_ai_prediction = True
+                                if pick_is_under:
+                                    pick_side = "NO"
+                                    if m_no and 0.01 <= m_no <= 0.99:
+                                        p_edge = round(p_conf - m_no * 100.0, 1)
+                                else:
+                                    if m_yes and 0.01 <= m_yes <= 0.99:
+                                        p_edge = round(p_conf - m_yes * 100.0, 1)
+    
+                            kalshi_events.append({
+                                "ticker": m_ticker,
+                                "title": mkt.get('title') or f"{p_name}: {p_line}",
+                                "sport": sport_tag,
+                                "league": league_tag,
+                                "matchup": clean_matchup,
+                                "predicted_team": p_name,
+                                "has_ai_prediction": has_ai_prediction,
+                                "ai_pick": p_name if has_ai_prediction else None,
+                                "ai_prediction": matched_pick if has_ai_prediction else None,
+                                "pick_side": pick_side,
+                                "market_type": "Player Prop",
+                                "prop_type": "Player Prop",
+                                "line": p_line,
+                                "spread_amount": None,
+                                "over_under_amount": None,
+                                "strike_details": p_strike,
+                                "numeric_line": 1.0,
+                                "sub_title": mkt.get('yes_sub_title') or f"{p_name}: {p_line}",
+                                "confidence_pct": p_conf,
+                                "edge_pct": p_edge,
+                                "event_ticker": event_ticker,
+                                "series_ticker": series,
+                                "game_time": game_time_str,
+                                "start_epoch": start_epoch,
+                                "is_today": is_today,
+                                "is_live": is_live,
+                                "event_date": str(ev_date) if ev_date else None,
+                                "yes_ask": m_yes,
+                                "no_ask": m_no,
+                                "last_price": m_last,
+                                "markets": [mkt],
+                                "metadata": {
+                                    "is_live": is_live,
+                                    "name": p_name,
+                                    "matchup": clean_matchup,
+                                    "market_type_label": "Player Prop",
+                                    "prop_type": "Player Prop",
+                                    "line": p_line,
+                                    "spread_amount": None,
+                                    "over_under_amount": None,
+                                    "strike_details": p_strike,
+                                    "numeric_line": 1.0,
+                                    "league": league_tag,
+                                    "league_label": league_tag,
+                                    "player_name": p_name,
+                                    "market_ticker": m_ticker,
+                                    "event_ticker": event_ticker,
+                                    "game_time": game_time_str,
+                                    "yes_ask": m_yes,
+                                    "no_ask": m_no,
+                                    "last_price": m_last,
+                                    "is_today": is_today,
+                                    "ai_prediction": matched_pick if has_ai_prediction else None,
+                                    "source": matched_pick.get("metadata", {}).get("source") if matched_pick else None,
+                                    "explain": matched_pick.get("metadata", {}).get("explain") if matched_pick else None,
+                                    "reasoning": matched_pick.get("metadata", {}).get("reasoning") if matched_pick else None
+                                }
+                            })
+                        continue
+    
+                    kalshi_events.append({
+                        "ticker": event_ticker,
+                        "title": title,
+                        "sport": sport_tag,
+                        "league": league_tag,
+                        "matchup": clean_matchup,
+                        "predicted_team": pred_pick_name or clean_matchup,
+                        "has_ai_prediction": has_valid_pick,
+                        "ai_pick": pred_pick_name,
+                        "ai_prediction": best_pick if has_valid_pick else None,
+                        "market_type": m_type_label,
+                        "segment": segment,
+                        "ai_lean_team": ai_lean_team,
+                        "ai_lean_pct": ai_lean_pct,
+                        "prop_type": prop_type,
+                        "line": line,
+                        "spread_amount": spread_amount,
+                        "over_under_amount": over_under_amount,
+                        "strike_details": strike_details,
+                        "numeric_line": numeric_line,
+                        "sub_title": sub,
+                        "confidence_pct": conf,
+                        "edge_pct": edge,
+                        "event_ticker": event_ticker,
+                        "series_ticker": series,
+                        "game_time": game_time_str,
+                        "start_epoch": start_epoch,
+                        "is_today": is_today,
+                        "is_live": is_live,
+                        "event_date": str(ev_date) if ev_date else None,
+                        "yes_ask": yes_ask,
+                        "no_ask": no_ask,
+                        "last_price": last_price,
+                        "markets": markets,
+                        "metadata": {
+                            "is_live": is_live,
+                            "name": pred_pick_name or clean_matchup,
+                            "matchup": clean_matchup,
+                            "market_type_label": m_type_label,
+                            "prop_type": prop_type,
+                            "line": line,
+                            "spread_amount": spread_amount,
+                            "over_under_amount": over_under_amount,
+                            "strike_details": strike_details,
+                            "numeric_line": numeric_line,
+                            "league": league_tag,
+                            "league_label": league_tag,
+                            "sport": sport_tag,
+                            "series_ticker": series,
+                            "game_time": game_time_str,
+                            "start_epoch": start_epoch,
+                            "is_today": is_today,
+                            "event_date": str(ev_date) if ev_date else None,
+                            "has_ai_prediction": has_valid_pick,
+                            "ai_prediction": best_pick if has_valid_pick else None,
+                            "yes_ask": yes_ask,
+                            "no_ask": no_ask,
+                            "last_price": last_price,
+                            "source": best_pick.get("metadata", {}).get("source") if best_pick else None,
+                            "explain": best_pick.get("metadata", {}).get("explain") if best_pick else None,
+                            "reasoning": best_pick.get("metadata", {}).get("reasoning") if best_pick else None
+                        }
+                    })
+    
+        # Keep all upcoming open events for all sports; past events are already filtered at line 2821 unless live
+        kalshi_events = [
+            e for e in kalshi_events
+            if e.get("is_today") or not (
+                e.get("event_date")
+                and datetime.strptime(e.get("event_date"), "%Y-%m-%d").date() < today_et
+                and not e.get("is_live")
+            )
+        ]
+    
+        if query_filter == "TEN":
+            pred_order = {}
+            for idx, p in enumerate(latest_picks or []):
+                if _normalize_sport(p.get("sport") or "") == "TEN":
+                    pname = (p.get("predicted_team") or p.get("team") or p.get("name") or "").lower().strip()
+                    if pname and pname not in pred_order:
+                        pred_order[pname] = idx
+            
+            def ten_sort_key(e):
+                ai_pick = (e.get("predicted_team") or "").lower().strip()
+                return pred_order.get(ai_pick, 9999)
+                
+            kalshi_events.sort(key=lambda x: (float(x.get("start_epoch") or 9999999999.0), ten_sort_key(x)))
+        else:
+            kalshi_events.sort(key=lambda x: float(x.get("start_epoch") or 9999999999.0))
+    
+        result = {"status": "ok", "count": len(kalshi_events), "events": kalshi_events}
+        with _SPORTS_AGG_CACHE_LOCK:
+            _SPORTS_AGG_CACHE[query_filter] = (now, result)
+        return result
+    
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        raise e
+
+@_engine_root_router.get("/api/engine/sports/predict", dependencies=[Depends(require_auth)])
+@_engine_root_router.post("/api/engine/sports/predict", dependencies=[Depends(require_auth)])

@@ -2,11 +2,23 @@
 
 
 
+
+
+
+
  * Admin User Control Panel Controller
 
 
 
+
+
+
+
  * Multi-user management, configuration editing, and autonomous execution controls.
+
+
+
+
 
 
 
@@ -18,7 +30,19 @@
 
 
 
+
+
+
+
+
+
+
+
 (function () {
+
+
+
+
 
 
 
@@ -26,7 +50,15 @@
 
 
 
+
+
+
+
   let selectedUserId = null;
+
+
+
+
 
 
 
@@ -34,7 +66,15 @@
 
 
 
+
+
+
+
     const savedUid = parseInt(localStorage.getItem("admin_selected_user_id"), 10);
+
+
+
+
 
 
 
@@ -42,7 +82,15 @@
 
 
 
+
+
+
+
   } catch (_) {}
+
+
+
+
 
 
 
@@ -50,7 +98,15 @@
 
 
 
+
+
+
+
   let currentModeFilter = "ALL";
+
+
+
+
 
 
 
@@ -58,7 +114,15 @@
 
 
 
+
+
+
+
   let isPolling = false;
+
+
+
+
 
 
 
@@ -66,7 +130,15 @@
 
 
 
+
+
+
+
   let currentUserTrades = [];
+
+
+
+
 
 
 
@@ -74,7 +146,15 @@
 
 
 
+
+
+
+
   let currentTradeFilterMode = "ALL"; // 'ALL' | 'PAPER' | 'LIVE'
+
+
+
+
 
 
 
@@ -82,15 +162,32 @@
 
 
 
+
+
+
+
   let currentTradeSearch = "";
 
+
+
   // Support Tickets State
+
   let adminCurrentSection = "users"; // 'users' | 'tickets'
+
   let adminTicketsList = [];
+
   let selectedTicketId = null;
+
   let currentTicketFilterStatus = "ALL"; // 'ALL' | 'OPEN' | 'RESOLVED'
+
   let currentTicketSearch = "";
+
   let isAnalyzingTicket = false;
+
+
+
+
+
 
 
 
@@ -99,7 +196,15 @@
 
 
 
+
+
+
+
     if (str === null || str === undefined) return "";
+
+
+
+
 
 
 
@@ -107,7 +212,15 @@
 
 
 
+
+
+
+
       .replace(/&/g, "&amp;")
+
+
+
+
 
 
 
@@ -115,7 +228,15 @@
 
 
 
+
+
+
+
       .replace(/>/g, "&gt;")
+
+
+
+
 
 
 
@@ -123,10 +244,18 @@
 
 
 
+
+
+
+
       .replace(/'/g, "&#039;");
 
 
 
+
+
+
+
   }
 
 
@@ -135,51 +264,141 @@
 
 
 
-    function getAdminAuthHeaders() {
 
 
+
+
+
+
+
+
+  function getCookie(name) {
+
+    const value = `; ${document.cookie}`;
+
+    const parts = value.split(`; ${name}=`);
+
+    if (parts.length === 2) return parts.pop().split(";").shift();
+
+    return null;
+
+  }
+
+
+
+  function sanitizeToken(val) {
+
+    if (!val) return "";
+
+    const s = String(val).trim();
+
+    if (!s || s === "null" || s === "undefined" || s === "None") return "";
+
+    return s;
+
+  }
+
+
+
+  function getAdminAuthHeaders() {
 
     const headers = { "Content-Type": "application/json" };
 
+    const saasToken = sanitizeToken(
 
+      localStorage.getItem("saas_token") ||
 
-    const saasToken = localStorage.getItem("saas_token");
+      localStorage.getItem("kalshi_token") ||
 
+      getCookie("saas_token")
 
+    );
 
     if (saasToken) {
 
-
-
       headers["Authorization"] = `Bearer ${saasToken}`;
-
-
 
     }
 
+    const adminToken = sanitizeToken(
 
+      localStorage.getItem("admin_api_token") ||
 
-    const adminToken = localStorage.getItem("admin_api_token") || localStorage.getItem("api_token") || localStorage.getItem("app_api_token");
+      localStorage.getItem("api_token") ||
 
+      localStorage.getItem("app_api_token") ||
 
+      getCookie("admin_api_token")
+
+    );
 
     if (adminToken) {
 
-
-
       headers["X-API-Token"] = adminToken;
-
-
 
     }
 
-
-
     return headers;
 
+  }
 
+
+
+  function openFullLedger(targetUser) {
+
+    const uid = targetUser || window.__currentAuditTarget || selectedUserId || "ALL";
+
+    const params = new URLSearchParams();
+
+    params.set("user", String(uid));
+
+    const saasToken = sanitizeToken(
+
+      localStorage.getItem("saas_token") ||
+
+      localStorage.getItem("kalshi_token") ||
+
+      getCookie("saas_token")
+
+    );
+
+    if (saasToken) {
+
+      params.set("auth_token", saasToken);
+
+    }
+
+    const adminToken = sanitizeToken(
+
+      localStorage.getItem("admin_api_token") ||
+
+      localStorage.getItem("api_token") ||
+
+      localStorage.getItem("app_api_token") ||
+
+      getCookie("admin_api_token")
+
+    );
+
+    if (adminToken) {
+
+      params.set("api_token", adminToken);
+
+    }
+
+    window.open(`./trades.html?${params.toString()}`, "_blank");
 
   }
+
+  window.openFullLedger = openFullLedger;
+
+
+
+
+
+
+
+
 
 
 
@@ -195,7 +414,19 @@
 
 
 
+
+
+
+
+
+
+
+
   function showAdminToast(message, type = "success") {
+
+
+
+
 
 
 
@@ -203,7 +434,15 @@
 
 
 
+
+
+
+
     if (!container) {
+
+
+
+
 
 
 
@@ -211,7 +450,15 @@
 
 
 
+
+
+
+
       return;
+
+
+
+
 
 
 
@@ -219,7 +466,15 @@
 
 
 
+
+
+
+
     const toast = document.createElement("div");
+
+
+
+
 
 
 
@@ -227,7 +482,15 @@
 
 
 
+
+
+
+
     toast.className = `flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-mono shadow-2xl backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-2 ${
+
+
+
+
 
 
 
@@ -235,7 +498,15 @@
 
 
 
+
+
+
+
         ? "bg-slate-950/95 border-emerald-500/50 text-emerald-300 shadow-emerald-500/20"
+
+
+
+
 
 
 
@@ -243,7 +514,15 @@
 
 
 
+
+
+
+
     }`;
+
+
+
+
 
 
 
@@ -251,7 +530,15 @@
 
 
 
+
+
+
+
       <span class="text-sm">${isSuccess ? "✅" : "❌"}</span>
+
+
+
+
 
 
 
@@ -259,7 +546,15 @@
 
 
 
+
+
+
+
     `;
+
+
+
+
 
 
 
@@ -267,7 +562,15 @@
 
 
 
+
+
+
+
     setTimeout(() => {
+
+
+
+
 
 
 
@@ -275,7 +578,15 @@
 
 
 
+
+
+
+
       toast.style.transform = "translateY(-8px)";
+
+
+
+
 
 
 
@@ -283,11 +594,27 @@
 
 
 
+
+
+
+
     }, 3500);
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -299,7 +626,15 @@
 
 
 
+
+
+
+
     try {
+
+
+
+
 
 
 
@@ -307,7 +642,15 @@
 
 
 
+
+
+
+
         headers: getAdminAuthHeaders(),
+
+
+
+
 
 
 
@@ -315,7 +658,15 @@
 
 
 
+
+
+
+
       if (!resp.ok) {
+
+
+
+
 
 
 
@@ -323,7 +674,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -331,7 +690,15 @@
 
 
 
+
+
+
+
       if (data.success && Array.isArray(data.users)) {
+
+
+
+
 
 
 
@@ -339,7 +706,15 @@
 
 
 
+
+
+
+
         updateHeaderBadge(adminUsersList.length);
+
+
+
+
 
 
 
@@ -347,7 +722,15 @@
 
 
 
+
+
+
+
         renderUserList();
+
+
+
+
 
 
 
@@ -355,7 +738,15 @@
 
 
 
+
+
+
+
         let targetUser = null;
+
+
+
+
 
 
 
@@ -363,11 +754,23 @@
 
 
 
+
+
+
+
           targetUser = adminUsersList.find((u) => u.id === selectedUserId);
 
 
 
+
+
+
+
         }
+
+
+
+
 
 
 
@@ -375,7 +778,15 @@
 
 
 
+
+
+
+
           targetUser = adminUsersList[0];
+
+
+
+
 
 
 
@@ -383,7 +794,15 @@
 
 
 
+
+
+
+
         }
+
+
+
+
 
 
 
@@ -391,11 +810,27 @@
 
 
 
+
+
+
+
           selectUserToEdit(targetUser.id);
 
 
 
+
+
+
+
         }
+
+
+
+
+
+
+
+
 
 
 
@@ -407,7 +842,15 @@
 
 
 
+
+
+
+
         try {
+
+
+
+
 
 
 
@@ -415,7 +858,15 @@
 
 
 
+
+
+
+
           if (bResp.ok) {
+
+
+
+
 
 
 
@@ -423,7 +874,15 @@
 
 
 
+
+
+
+
             const isEnabled = !!bData.broadcast_trades;
+
+
+
+
 
 
 
@@ -431,7 +890,15 @@
 
 
 
+
+
+
+
             if (bCastModal) bCastModal.checked = isEnabled;
+
+
+
+
 
 
 
@@ -439,7 +906,15 @@
 
 
 
+
+
+
+
             if (bCastBadge) {
+
+
+
+
 
 
 
@@ -447,7 +922,15 @@
 
 
 
+
+
+
+
               bCastBadge.className = isEnabled ? "text-[9px] font-mono font-bold uppercase text-cyan-400" : "text-[9px] font-mono font-bold uppercase text-slate-500";
+
+
+
+
 
 
 
@@ -455,7 +938,15 @@
 
 
 
+
+
+
+
           }
+
+
+
+
 
 
 
@@ -463,7 +954,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -471,7 +970,15 @@
 
 
 
+
+
+
+
       console.error("[AdminUserPanel] Failed to fetch users:", err);
+
+
+
+
 
 
 
@@ -479,7 +986,15 @@
 
 
 
+
+
+
+
         showAdminToast(`Failed to load users: ${err.message}`, "error");
+
+
+
+
 
 
 
@@ -487,11 +1002,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -503,7 +1034,15 @@
 
 
 
+
+
+
+
     const badge = document.getElementById("headerUserCountBadge");
+
+
+
+
 
 
 
@@ -511,11 +1050,23 @@
 
 
 
+
+
+
+
       badge.textContent = `${count} Users`;
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -523,7 +1074,15 @@
 
 
 
+
+
+
+
     if (countEl) {
+
+
+
+
 
 
 
@@ -531,7 +1090,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -539,7 +1106,15 @@
 
 
 
+
+
+
+
     if (mobCount) {
+
+
+
+
 
 
 
@@ -547,11 +1122,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -563,7 +1154,15 @@
 
 
 
+
+
+
+
     const total = adminUsersList.length;
+
+
+
+
 
 
 
@@ -571,7 +1170,15 @@
 
 
 
+
+
+
+
     const liveUsers = adminUsersList.filter((u) => u.trading_mode === "LIVE").length;
+
+
+
+
 
 
 
@@ -579,7 +1186,15 @@
 
 
 
+
+
+
+
     const totalKalshi = adminUsersList.reduce((sum, u) => {
+
+
+
+
 
 
 
@@ -587,7 +1202,15 @@
 
 
 
+
+
+
+
         ? Number(u.kalshi_balance)
+
+
+
+
 
 
 
@@ -595,7 +1218,15 @@
 
 
 
+
+
+
+
       return sum + b;
+
+
+
+
 
 
 
@@ -607,7 +1238,19 @@
 
 
 
+
+
+
+
+
+
+
+
     const elTotal = document.getElementById("adminTotalUsersCount");
+
+
+
+
 
 
 
@@ -619,7 +1262,19 @@
 
 
 
+
+
+
+
+
+
+
+
     const elAi = document.getElementById("adminActiveAiCount");
+
+
+
+
 
 
 
@@ -631,7 +1286,19 @@
 
 
 
+
+
+
+
+
+
+
+
     const elLive = document.getElementById("adminLiveTradingCount");
+
+
+
+
 
 
 
@@ -643,7 +1310,19 @@
 
 
 
+
+
+
+
+
+
+
+
     const elKalshi = document.getElementById("adminTotalKalshiBal");
+
+
+
+
 
 
 
@@ -651,11 +1330,27 @@
 
 
 
+
+
+
+
       elKalshi.textContent = `$${totalKalshi.toFixed(2)}`;
 
 
 
+
+
+
+
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -667,7 +1362,15 @@
 
 
 
+
+
+
+
     if (elPnl) {
+
+
+
+
 
 
 
@@ -675,7 +1378,15 @@
 
 
 
+
+
+
+
       elPnl.textContent = `${prefix}${Math.abs(totalPnl).toFixed(2)}`;
+
+
+
+
 
 
 
@@ -683,11 +1394,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -699,7 +1426,15 @@
 
 
 
+
+
+
+
     const listContainer = document.getElementById("adminUserListContainer");
+
+
+
+
 
 
 
@@ -711,7 +1446,19 @@
 
 
 
+
+
+
+
+
+
+
+
     let filtered = adminUsersList.filter((u) => {
+
+
+
+
 
 
 
@@ -719,7 +1466,15 @@
 
 
 
+
+
+
+
         const q = currentSearch.toLowerCase();
+
+
+
+
 
 
 
@@ -727,7 +1482,15 @@
 
 
 
+
+
+
+
         const matchesId = String(u.id).includes(q);
+
+
+
+
 
 
 
@@ -735,7 +1498,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -743,7 +1514,15 @@
 
 
 
+
+
+
+
         return false;
+
+
+
+
 
 
 
@@ -751,7 +1530,15 @@
 
 
 
+
+
+
+
       if (currentAiFilter === "ENABLED" && !u.ai_enabled) return false;
+
+
+
+
 
 
 
@@ -759,7 +1546,15 @@
 
 
 
+
+
+
+
       return true;
+
+
+
+
 
 
 
@@ -771,7 +1566,19 @@
 
 
 
+
+
+
+
+
+
+
+
     if (filtered.length === 0) {
+
+
+
+
 
 
 
@@ -779,7 +1586,15 @@
 
 
 
+
+
+
+
         <div class="p-8 text-center text-slate-500 font-mono text-xs">
+
+
+
+
 
 
 
@@ -787,7 +1602,15 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
 
 
 
@@ -795,11 +1618,27 @@
 
 
 
+
+
+
+
       return;
 
 
 
+
+
+
+
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -811,7 +1650,15 @@
 
 
 
+
+
+
+
       .map((u) => {
+
+
+
+
 
 
 
@@ -819,7 +1666,15 @@
 
 
 
+
+
+
+
         const isLive = u.trading_mode === "LIVE";
+
+
+
+
 
 
 
@@ -827,7 +1682,15 @@
 
 
 
+
+
+
+
           ? Number(u.kalshi_balance)
+
+
+
+
 
 
 
@@ -835,11 +1698,23 @@
 
 
 
+
+
+
+
         const hasKalshi = u.has_kalshi_keys && kalshiBalNum !== null;
 
 
 
+
+
+
+
         const kalshiBalText = hasKalshi ? `$${kalshiBalNum.toFixed(2)}` : (u.has_kalshi_keys ? "Syncing..." : "No Keys");
+
+
+
+
 
 
 
@@ -851,11 +1726,27 @@
 
 
 
+
+
+
+
+
+
+
+
         const pnl = u.net_pnl || 0;
 
 
 
+
+
+
+
         const pnlClass = pnl >= 0 ? "text-emerald-400" : "text-rose-400";
+
+
+
+
 
 
 
@@ -867,7 +1758,19 @@
 
 
 
+
+
+
+
+
+
+
+
         return `
+
+
+
+
 
 
 
@@ -875,7 +1778,15 @@
 
 
 
+
+
+
+
           isSelected
+
+
+
+
 
 
 
@@ -883,7 +1794,15 @@
 
 
 
+
+
+
+
             : "bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/40"
+
+
+
+
 
 
 
@@ -891,7 +1810,15 @@
 
 
 
+
+
+
+
           <div class="flex items-center justify-between gap-2 mb-2">
+
+
+
+
 
 
 
@@ -899,12 +1826,25 @@
 
 
 
+
+
+
+
               <div class="w-8 h-8 rounded-lg ${
+
                 u.ai_enabled ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"
+
               } flex items-center justify-center font-black text-xs shrink-0 overflow-hidden bg-cover bg-center"
+
               ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? `style="background-image: url('${escapeHtml((u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url))}'); border: 1px solid #334155;"` : ''}>
+
                 ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
+
               </div>
+
+
+
+
 
 
 
@@ -912,7 +1852,15 @@
 
 
 
+
+
+
+
                 <div class="flex items-center gap-1.5">
+
+
+
+
 
 
 
@@ -920,7 +1868,15 @@
 
 
 
+
+
+
+
                   <span class="text-[9px] font-mono font-bold px-1 rounded ${
+
+
+
+
 
 
 
@@ -928,11 +1884,23 @@
 
 
 
+
+
+
+
                   }">#${u.id}</span>
 
 
 
+
+
+
+
                 </div>
+
+
+
+
 
 
 
@@ -940,15 +1908,31 @@
 
 
 
+
+
+
+
                   <span class="text-[9px] font-mono px-1.5 py-0.2 rounded font-bold ${
-
-
 
                     isLive ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
 
-
-
                   }">${escapeHtml(u.trading_mode)}</span>
+
+
+
+                  <span class="text-[8px] font-mono px-1.5 py-0.2 rounded font-bold ${
+
+                    u.trading_universe === 'BOTH' || u.trading_universe === 'ALL'
+
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+
+                      : (u.trading_universe === 'SPORTS' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30')
+
+                  }">${escapeHtml((u.trading_universe || 'FINANCIAL') === 'FINANCIAL' ? 'CRYPTO/FOREX' : (u.trading_universe || 'CRYPTO/FOREX'))}</span>
+
+
+
+
 
 
 
@@ -956,7 +1940,15 @@
 
 
 
+
+
+
+
                   ${
+
+
+
+
 
 
 
@@ -964,7 +1956,15 @@
 
 
 
+
+
+
+
                       ? '<span class="text-[8px] font-mono text-emerald-400 bg-emerald-950/60 px-1 rounded border border-emerald-500/30">API KEY </span>'
+
+
+
+
 
 
 
@@ -972,7 +1972,15 @@
 
 
 
+
+
+
+
                   }
+
+
+
+
 
 
 
@@ -980,11 +1988,27 @@
 
 
 
+
+
+
+
               </div>
 
 
 
+
+
+
+
             </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -996,7 +2020,15 @@
 
 
 
+
+
+
+
             <div class="flex flex-col items-end gap-1 shrink-0" onclick="event.stopPropagation()">
+
+
+
+
 
 
 
@@ -1004,7 +2036,15 @@
 
 
 
+
+
+
+
                 <input type="checkbox" ${u.ai_enabled ? "checked" : ""} onchange="window.quickToggleAi(${u.id}, this.checked)" class="sr-only peer">
+
+
+
+
 
 
 
@@ -1012,7 +2052,15 @@
 
 
 
+
+
+
+
               </label>
+
+
+
+
 
 
 
@@ -1020,7 +2068,15 @@
 
 
 
+
+
+
+
           u.ai_enabled ? "AI ACTIVE" : "OFF"
+
+
+
+
 
 
 
@@ -1028,11 +2084,27 @@
 
 
 
+
+
+
+
             </div>
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1044,11 +2116,23 @@
 
 
 
+
+
+
+
           <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-800/80 text-[10px] font-mono">
 
 
 
+
+
+
+
             <div>
+
+
+
+
 
 
 
@@ -1056,7 +2140,15 @@
 
 
 
+
+
+
+
               <div class="${kalshiBalColor} truncate" title="Live Kalshi API Account Balance">${kalshiBalText}</div>
+
+
+
+
 
 
 
@@ -1064,7 +2156,15 @@
 
 
 
+
+
+
+
             <div>
+
+
+
+
 
 
 
@@ -1072,11 +2172,23 @@
 
 
 
+
+
+
+
               <div class="font-bold text-slate-300 truncate">$${(u.paper_balance || 0).toFixed(2)}</div>
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -1084,7 +2196,15 @@
 
 
 
+
+
+
+
               <div class="text-[7.5px] text-slate-500 uppercase">Win Rate</div>
+
+
+
+
 
 
 
@@ -1092,7 +2212,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -1100,7 +2228,15 @@
 
 
 
+
+
+
+
               <div class="text-[7.5px] text-slate-500 uppercase">Net P&L</div>
+
+
+
+
 
 
 
@@ -1108,7 +2244,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -1116,7 +2260,15 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
 
 
 
@@ -1124,7 +2276,15 @@
 
 
 
+
+
+
+
       })
+
+
+
+
 
 
 
@@ -1132,7 +2292,19 @@
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -1144,7 +2316,15 @@
 
 
 
+
+
+
+
     selectedUserId = userId;
+
+
+
+
 
 
 
@@ -1152,7 +2332,15 @@
 
 
 
+
+
+
+
       localStorage.setItem("admin_selected_user_id", userId);
+
+
+
+
 
 
 
@@ -1160,7 +2348,15 @@
 
 
 
+
+
+
+
     renderUserList();
+
+
+
+
 
 
 
@@ -1168,7 +2364,15 @@
 
 
 
+
+
+
+
     if (user) {
+
+
+
+
 
 
 
@@ -1176,7 +2380,15 @@
 
 
 
+
+
+
+
       if (window.innerWidth < 1024) {
+
+
+
+
 
 
 
@@ -1184,7 +2396,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -1192,7 +2412,19 @@
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -1204,7 +2436,15 @@
 
 
 
+
+
+
+
     const detailPanel = document.getElementById("adminUserDetailPanel");
+
+
+
+
 
 
 
@@ -1216,7 +2456,19 @@
 
 
 
+
+
+
+
+
+
+
+
     // Prevent overwriting panel if the admin is actively editing a field
+
+
+
+
 
 
 
@@ -1224,7 +2476,15 @@
 
 
 
+
+
+
+
     if (active && detailPanel.contains(active) && ['INPUT', 'SELECT', 'TEXTAREA'].includes(active.tagName)) {
+
+
+
+
 
 
 
@@ -1232,7 +2492,19 @@
 
 
 
+
+
+
+
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -1244,7 +2516,15 @@
 
 
 
+
+
+
+
       ? Number(u.kalshi_balance)
+
+
+
+
 
 
 
@@ -1252,7 +2532,15 @@
 
 
 
+
+
+
+
     const hasKalshi = u.has_kalshi_keys && kalshiBalNum !== null;
+
+
+
+
 
 
 
@@ -1264,7 +2552,19 @@
 
 
 
+
+
+
+
+
+
+
+
     detailPanel.innerHTML = `
+
+
+
+
 
 
 
@@ -1272,7 +2572,15 @@
 
 
 
+
+
+
+
         <!-- Mobile Return Button -->
+
+
+
+
 
 
 
@@ -1280,7 +2588,15 @@
 
 
 
+
+
+
+
           <span> Back to Users List</span>
+
+
+
+
 
 
 
@@ -1292,7 +2608,19 @@
 
 
 
+
+
+
+
+
+
+
+
         <!-- User Header Card -->
+
+
+
+
 
 
 
@@ -1300,14 +2628,29 @@
 
 
 
+
+
+
+
           <div class="flex items-center gap-3">
 
 
 
+
+
+
+
             <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 flex items-center justify-center font-black text-sm overflow-hidden bg-cover bg-center"
+
               ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? `style="background-image: url('${escapeHtml((u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url))}'); border-color: transparent;"` : ''}>
+
               ${(u.profile_picture_url && u.profile_picture_url.startsWith('/static/') ? 'https://moneyprinter.ngrok.app' + u.profile_picture_url : u.profile_picture_url) ? '' : (u.username ? escapeHtml(u.username.substring(0, 2).toUpperCase()) : `U${u.id}`)}
+
             </div>
+
+
+
+
 
 
 
@@ -1315,7 +2658,15 @@
 
 
 
+
+
+
+
               <div class="flex items-center gap-2">
+
+
+
+
 
 
 
@@ -1323,7 +2674,15 @@
 
 
 
+
+
+
+
                 <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">User ID: #${u.id}</span>
+
+
+
+
 
 
 
@@ -1331,7 +2690,15 @@
 
 
 
+
+
+
+
                   u.role === "admin" ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : "bg-slate-800 text-slate-400"
+
+
+
+
 
 
 
@@ -1339,7 +2706,15 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
 
 
 
@@ -1347,7 +2722,15 @@
 
 
 
+
+
+
+
                 Total Trades: <span class="text-white font-bold">${u.total_trades || 0}</span>  Win Rate: <span class="text-white font-bold">${u.win_rate || 0}%</span>  P&L: <span class="${(u.net_pnl || 0) >= 0 ? "text-emerald-400" : "text-rose-400"} font-bold">$${(u.net_pnl || 0).toFixed(2)}</span>
+
+
+
+
 
 
 
@@ -1355,11 +2738,23 @@
 
 
 
+
+
+
+
             </div>
 
 
 
+
+
+
+
           </div>
+
+
+
+
 
 
 
@@ -1367,7 +2762,15 @@
 
 
 
+
+
+
+
             <button type="button" onclick="window.switchUserDetailTab('trades')" class="px-2.5 py-1.5 bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm shadow-cyan-950/40" title="View trade ledger in panel">
+
+
+
+
 
 
 
@@ -1375,19 +2778,27 @@
 
 
 
+
+
+
+
             </button>
 
 
 
-            <a href="./trades.html?user=${u.id}" target="_blank" class="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95" title="Open full trade ledger in new tab">
 
 
 
-              
+
+            <button type="button" onclick="window.openFullLedger(${u.id})" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-all active:scale-95 cursor-pointer" title="Open full trade ledger in new tab">
+
+              <span>Full Ledger ↗</span>
+
+            </button>
 
 
 
-            </a>
+
 
 
 
@@ -1395,7 +2806,15 @@
 
 
 
+
+
+
+
               <span> Delete</span>
+
+
+
+
 
 
 
@@ -1403,11 +2822,27 @@
 
 
 
+
+
+
+
           </div>
 
 
 
+
+
+
+
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1419,7 +2854,15 @@
 
 
 
+
+
+
+
         <div class="p-3 bg-slate-900/90 border ${hasKalshi ? 'border-emerald-500/40 shadow-lg shadow-emerald-500/5' : 'border-slate-800'} rounded-xl flex flex-wrap items-center justify-between gap-3">
+
+
+
+
 
 
 
@@ -1427,7 +2870,15 @@
 
 
 
+
+
+
+
             <div class="w-9 h-9 rounded-xl ${hasKalshi ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 border border-slate-700'} flex items-center justify-center text-lg font-bold shrink-0">
+
+
+
+
 
 
 
@@ -1435,7 +2886,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -1443,7 +2902,15 @@
 
 
 
+
+
+
+
               <div class="flex items-center gap-2">
+
+
+
+
 
 
 
@@ -1451,11 +2918,23 @@
 
 
 
+
+
+
+
                 <span class="text-[8px] font-mono px-1.5 py-0.2 rounded font-bold ${hasKalshi ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : (u.has_kalshi_keys ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400')}">${hasKalshi ? 'LIVE API SYNCED' : (u.has_kalshi_keys ? 'SYNCING' : 'NO KEYS')}</span>
 
 
 
+
+
+
+
               </div>
+
+
+
+
 
 
 
@@ -1463,7 +2942,15 @@
 
 
 
+
+
+
+
                 ${hasKalshi ? `$${kalshiBalNum.toFixed(2)}` : (u.has_kalshi_keys ? 'Syncing...' : 'No Kalshi Keys Configured')}
+
+
+
+
 
 
 
@@ -1471,11 +2958,23 @@
 
 
 
+
+
+
+
             </div>
 
 
 
+
+
+
+
           </div>
+
+
+
+
 
 
 
@@ -1483,7 +2982,15 @@
 
 
 
+
+
+
+
             <div class="text-[9px] font-mono text-slate-400">Kalshi Key ID</div>
+
+
+
+
 
 
 
@@ -1491,7 +2998,15 @@
 
 
 
+
+
+
+
               ${u.has_kalshi_keys ? `${(u.kalshi_key_id || '').substring(0, 10)}...` : 'Not Connected'}
+
+
+
+
 
 
 
@@ -1499,11 +3014,27 @@
 
 
 
+
+
+
+
           </div>
 
 
 
+
+
+
+
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1515,7 +3046,15 @@
 
 
 
+
+
+
+
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+
+
+
+
 
 
 
@@ -1523,7 +3062,15 @@
 
 
 
+
+
+
+
             <button type="button" id="tabBtnUserSettings" onclick="window.switchUserDetailTab('settings')" 
+
+
+
+
 
 
 
@@ -1531,11 +3078,23 @@
 
 
 
+
+
+
+
                🤖 Bot Settings
 
 
 
+
+
+
+
             </button>
+
+
+
+
 
 
 
@@ -1543,7 +3102,15 @@
 
 
 
+
+
+
+
                     class="px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer ${currentUserDetailTab === 'trades' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/10' : 'text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent'}">
+
+
+
+
 
 
 
@@ -1551,11 +3118,23 @@
 
 
 
+
+
+
+
             </button>
 
 
 
+
+
+
+
           </div>
+
+
+
+
 
 
 
@@ -1563,7 +3142,15 @@
 
 
 
+
+
+
+
             ${currentUserDetailTab === 'trades' ? 'Real-Time Ledger' : 'Active Bot Parameters'}
+
+
+
+
 
 
 
@@ -1571,7 +3158,19 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1583,7 +3182,15 @@
 
 
 
+
+
+
+
         <div id="adminUserConfigSection" class="${currentUserDetailTab === 'settings' ? 'block' : 'hidden'} space-y-3.5">
+
+
+
+
 
 
 
@@ -1591,7 +3198,15 @@
 
 
 
+
+
+
+
           
+
+
+
+
 
 
 
@@ -1599,7 +3214,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-2.5">
+
+
+
+
 
 
 
@@ -1607,7 +3230,15 @@
 
 
 
+
+
+
+
               <span class="flex items-center gap-1.5 text-cyan-400">
+
+
+
+
 
 
 
@@ -1615,7 +3246,15 @@
 
 
 
+
+
+
+
               </span>
+
+
+
+
 
 
 
@@ -1623,6 +3262,10 @@
 
 
 
+
+
+
+
             </div>
 
 
@@ -1631,131 +3274,331 @@
 
 
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
 
 
+
+
+
+
+
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
 
               <div>
 
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Trading Universe</label>
 
+                <select id="edit_trading_universe" class="w-full bg-slate-950 border border-cyan-500/50 rounded-lg py-1.5 px-2 text-xs font-bold text-cyan-300 focus:border-cyan-400 focus:outline-none">
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Trading Mode</label>
+                  <option value="FINANCIAL" ${u.trading_universe === "FINANCIAL" ? "selected" : ""}>CRYPTO/FOREX</option>
 
+                  <option value="SPORTS" ${u.trading_universe === "SPORTS" ? "selected" : ""}>SPORTS (Sports & Props)</option>
 
+                  <option value="INVESTMENTS" ${u.trading_universe === "INVESTMENTS" ? "selected" : ""}>INVESTMENTS (Stocks, ETFs & Options)</option>
 
-                <select id="edit_trading_mode" onchange="window.handleTradingModeChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-bold text-white focus:border-cyan-500 focus:outline-none">
+                  <option value="BOTH" ${u.trading_universe === "BOTH" ? "selected" : ""}>BOTH (Simultaneous 24/7)</option>
 
-
-
-                  <option value="PAPER" ${u.trading_mode === "PAPER" ? "selected" : ""}> 📄 PAPER</option>
-
-
-
-                  <option value="LIVE" ${u.trading_mode === "LIVE" ? "selected" : ""}> LIVE (Kalshi API)</option>
-
-
+                  <option value="ALL" ${u.trading_universe === "ALL" ? "selected" : ""}>ALL (All Universes)</option>
 
                 </select>
 
-
-
               </div>
-
-
-
-
 
 
 
               <div>
 
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Trading Mode</label>
 
+                <select id="edit_trading_mode" onchange="window.handleTradingModeChange(this.value)" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-bold text-white focus:border-cyan-500 focus:outline-none">
 
-                <label id="lbl_user_balance" class="block text-[9px] font-mono uppercase text-slate-400 mb-1">${u.trading_mode === "LIVE" ? "Live Balance ($)" : "Paper Balance ($)"}</label>
+                  <option value="PAPER" ${u.trading_mode === "PAPER" ? "selected" : ""}> 📄 PAPER</option>
 
+                  <option value="LIVE" ${u.trading_mode === "LIVE" ? "selected" : ""}> ⚡ LIVE (Kalshi API)</option>
 
-
-                <div class="flex flex-col sm:flex-row flex-wrap gap-1.5 sm:gap-1 items-start sm:items-center">
-
-
-
-                  <div class="flex w-full gap-1">
-
-
-
-                      <input type="text" id="edit_paper_balance" value="${u.trading_mode === 'LIVE' ? (u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance) ? Number(u.live_balance).toFixed(2) : '***.**') : (u.paper_balance || 500.0)}" ${u.trading_mode === 'LIVE' && !(u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance)) ? 'readonly' : ''} class="flex-1 bg-slate-950 border ${u.trading_mode === 'LIVE' && !(u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance)) ? 'border-amber-500/40 bg-amber-950/20 text-amber-400' : 'border-slate-700 text-emerald-400'} rounded-lg py-1.5 px-2 text-xs font-mono font-bold focus:border-cyan-500 focus:outline-none" title="${u.trading_mode === 'LIVE' && !(u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance)) ? 'Live balance unavailable' : 'Account balance'}">
-
-
-
-                      <button type="button" id="btn_quick_reset_balance" onclick="window.quickResetBalance(${u.id})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-[9px] font-bold ${u.trading_mode === 'LIVE' ? 'hidden' : ''}" title="Reset balance to $500"> 🔄 $500</button>
-
-
-
-                  </div>
-
-
-
-                  <span id="live_balance_status_badge" class="${u.trading_mode === 'LIVE' ? '' : 'hidden'} text-[8px] font-mono px-1.5 py-1 rounded ${u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance) ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'} whitespace-nowrap">${u.has_kalshi_keys && u.live_balance !== null && u.live_balance !== undefined && !isNaN(u.live_balance) ? 'SYNCED' : '***.**'}</span>
-
-
-
-                </div>
-
-
+                </select>
 
               </div>
 
 
 
+              <div>
 
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Account Role</label>
+
+                <select id="edit_role" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-bold text-white focus:border-cyan-500 focus:outline-none">
+
+                  <option value="user" ${u.role === "user" ? "selected" : ""}>User (Standard)</option>
+
+                  <option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin (Full Access)</option>
+
+                </select>
+
+              </div>
 
 
 
               <div>
-
-
 
                 <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Account Active</label>
 
-
-
                 <div class="flex items-center h-[34px]">
-
-
 
                   <label class="relative inline-flex items-center cursor-pointer">
 
-
-
                     <input type="checkbox" id="edit_is_active" ${u.is_active ? "checked" : ""} class="sr-only peer">
-
-
 
                     <div class="w-8 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
 
-
-
                   </label>
-
-
 
                   <span class="ml-2 text-[10px] font-mono text-slate-300">Active Login</span>
 
-
-
                 </div>
 
-
-
               </div>
-
-
 
             </div>
 
 
 
+            <div class="pt-2 border-t border-slate-800">
+
+              <label id="lbl_user_balance" class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Paper Trading Balance ($)</label>
+
+              <div class="flex items-center gap-2 max-w-sm">
+
+                <input type="number" id="edit_paper_balance" step="10" min="0" max="10000000" value="${u.paper_balance !== undefined ? u.paper_balance : 500.0}" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-cyan-300 focus:border-cyan-500 focus:outline-none">
+
+                <button type="button" onclick="document.getElementById('edit_paper_balance').value = 500.0" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[9px] font-bold border border-slate-700">$500</button>
+
+                <button type="button" onclick="document.getElementById('edit_paper_balance').value = 5000.0" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[9px] font-bold border border-slate-700">$5k</button>
+
+              </div>
+
+            </div>
+
           </div>
+
+
+
+          <!-- Section 1.5: Sports Universe Settings -->
+
+          <div class="p-3 bg-slate-900/60 border border-emerald-500/30 rounded-xl space-y-2.5">
+
+            <div class="flex items-center justify-between text-xs font-bold text-slate-300 pb-1.5 border-b border-slate-800">
+
+              <span class="flex items-center gap-1.5 text-emerald-400">
+
+                <span>🏆</span> Sports Universe Parameters
+
+              </span>
+
+              <span class="text-[9px] font-mono text-slate-500 uppercase">Sports Engine Config</span>
+
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs font-mono">
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Sports Wager ($)</label>
+
+                <input type="number" id="edit_sports_max_wager" step="1" min="1" max="1000" value="${u.sports_max_wager || u.sports_trade_size_dollars || 10.0}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Min Conf (%)</label>
+
+                <input type="number" id="edit_min_sports_confidence" step="1" min="50" max="100" value="${u.min_sports_confidence || 60.0}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Min Edge (%)</label>
+
+                <input type="number" id="edit_min_sports_edge" step="0.5" min="0" max="50" value="${u.min_sports_edge || 3.0}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Max Daily Trades</label>
+
+                <input type="number" id="edit_sports_max_daily_trades" step="1" min="1" max="500" value="${u.sports_max_daily_trades || 20}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Max Open Positions</label>
+
+                <input type="number" id="edit_sports_max_open_trades" step="1" min="1" max="500" value="${u.sports_max_open_trades !== undefined ? u.sports_max_open_trades : 5}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Max Daily Risk ($)</label>
+
+                <input type="number" id="edit_sports_max_daily_risk" step="5" min="10" max="5000" value="${u.sports_max_daily_risk || 100.0}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Min Price (0.01-0.99)</label>
+
+                <input type="number" id="edit_sports_min_price" step="0.01" min="0.01" max="0.99" value="${u.sports_min_price !== undefined ? u.sports_min_price : 0.20}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Max Price (0.01-0.99)</label>
+
+                <input type="number" id="edit_sports_max_price" step="0.01" min="0.01" max="0.99" value="${u.sports_max_price !== undefined ? u.sports_max_price : 0.80}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
+
+              <div class="p-1.5 rounded bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-1.5">
+
+                <div>
+
+                  <div class="text-[9px] font-bold text-emerald-300">Sports Take Profit</div>
+
+                  <div class="flex items-center gap-1 mt-0.5">
+
+                    <span class="text-[8px] text-slate-500">TP %</span>
+
+                    <input type="number" id="edit_sports_tp_pct" step="1" min="1" max="500" value="${u.sports_tp_pct !== undefined ? u.sports_tp_pct : 35.0}" class="w-12 bg-slate-900 border border-slate-700 rounded px-1 py-0 text-[9px] text-emerald-300 text-center">
+
+                  </div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+
+                  <input type="checkbox" id="edit_sports_tp_enabled" ${u.sports_tp_enabled ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+                </label>
+
+              </div>
+
+              <div class="p-1.5 rounded bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-1.5">
+
+                <div>
+
+                  <div class="text-[9px] font-bold text-cyan-300">Sports Kelly Sizing</div>
+
+                  <div class="text-[8px] text-slate-500">Scale by edge</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+
+                  <input type="checkbox" id="edit_sports_use_kelly" ${u.sports_use_kelly ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+
+                </label>
+
+              </div>
+
+              <div class="p-1.5 rounded bg-slate-950/70 border border-slate-800/80 flex items-center justify-between gap-1.5">
+
+                <div>
+
+                  <div class="text-[9px] font-bold text-white">Include Live</div>
+
+                  <div class="text-[8px] text-slate-500">In-game odds</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+
+                  <input type="checkbox" id="edit_sports_include_live" ${u.sports_include_live !== false ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+                </label>
+
+              </div>
+
+              <div class="grid grid-cols-2 gap-1.5">
+
+                <div>
+
+                  <label class="block text-[8px] uppercase text-slate-400 mb-1">Strategy</label>
+
+                  <select id="edit_sports_strategy" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1 text-[10px] text-white">
+
+                    <option value="STANDARD" ${(u.sports_strategy || "STANDARD") === "STANDARD" ? "selected" : ""}>STANDARD</option>
+
+                    <option value="SURE_SHOT" ${u.sports_strategy === "SURE_SHOT" ? "selected" : ""}>SURE_SHOT</option>
+
+                    <option value="POWER_PARLAY" ${u.sports_strategy === "POWER_PARLAY" ? "selected" : ""}>POWER_PARLAY</option>
+
+                    <option value="ULTRA_LOTTO" ${u.sports_strategy === "ULTRA_LOTTO" ? "selected" : ""}>ULTRA_LOTTO</option>
+
+                  </select>
+
+                </div>
+
+                <div>
+
+                  <label class="block text-[8px] uppercase text-slate-400 mb-1">Parlay Legs</label>
+
+                  <input type="number" id="edit_sports_max_parlay_legs" step="1" min="2" max="30" value="${u.sports_max_parlay_legs || 2}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1 font-mono">Active Sports Leagues</label>
+
+                <input type="text" id="edit_sports_active_leagues" value="${escapeHtml(u.sports_active_leagues || 'NFL,MLB,NHL,SOC,UFC,TEN,NPB/KBO')}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-2 text-xs font-mono text-emerald-300">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1 font-mono">Allowed Market Types</label>
+
+                <input type="text" id="edit_sports_market_types" value="${escapeHtml(u.sports_market_types || 'GAME,SPREAD,TOTAL,PROP')}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-2 text-xs font-mono text-cyan-300">
+
+              </div>
+
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1 font-mono">Allowed Player Props</label>
+
+                <input type="text" id="edit_sports_active_props" value="${escapeHtml(u.sports_active_props || 'ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER')}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-2 text-xs font-mono text-purple-300">
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1767,7 +3610,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-2.5">
+
+
+
+
 
 
 
@@ -1775,7 +3626,15 @@
 
 
 
+
+
+
+
               <span class="flex items-center gap-1.5 text-cyan-400 cursor-pointer group" onclick="toggleAdminGlassInfo('auto_trader', event)">
+
+
+
+
 
 
 
@@ -1783,7 +3642,15 @@
 
 
 
+
+
+
+
                 <span class="w-4 h-4 rounded-full bg-white/5 group-hover:bg-cyan-500/20 border border-white/10 flex items-center justify-center text-[9px] font-bold text-gray-400 transition-all ml-1">i</span>
+
+
+
+
 
 
 
@@ -1791,7 +3658,15 @@
 
 
 
+
+
+
+
               <span class="text-[9px] font-mono text-slate-500 uppercase">Automation Rules</span>
+
+
+
+
 
 
 
@@ -1803,7 +3678,19 @@
 
 
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+
+
+
+
+
+
+
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 text-xs">
+
+
+
+
 
 
 
@@ -1811,7 +3698,15 @@
 
 
 
+
+
+
+
                 <div>
+
+
+
+
 
 
 
@@ -1819,7 +3714,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500">Autonomous execution</div>
+
+
+
+
 
 
 
@@ -1827,7 +3730,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -1835,11 +3746,23 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
 
 
 
+
+
+
+
                 </label>
+
+
+
+
 
 
 
@@ -1851,11 +3774,55 @@
 
 
 
-              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+
+
+
+
+
+
+
+
+                            <div class="p-2 rounded-lg bg-slate-950/70 border border-purple-500/40 flex items-center justify-between">
+
+                <div>
+
+                  <div class="text-[10px] font-bold text-purple-300 flex items-center gap-1.5">
+
+                    <span>Gemini Deep Reasoning</span>
+
+                    <span class="px-1 py-0.2 rounded text-[7px] font-mono bg-purple-500/20 text-purple-200 border border-purple-500/30 font-black">EVERY 15M</span>
+
+                  </div>
+
+                  <div class="text-[8px] text-slate-400">Forces active trade every interval</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer">
+
+                  <input type="checkbox" id="edit_gemini_every_interval_enabled" ${u.gemini_every_interval_enabled ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
+
+                </label>
+
+              </div>
+
+
+
+<div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+
+
+
+
 
 
 
                 <div>
+
+
+
+
 
 
 
@@ -1863,7 +3830,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500">Trades underlying on PASS</div>
+
+
+
+
 
 
 
@@ -1871,7 +3846,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -1879,11 +3862,23 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
 
 
 
+
+
+
+
                 </label>
+
+
+
+
 
 
 
@@ -1895,11 +3890,27 @@
 
 
 
+
+
+
+
+
+
+
+
               <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
 
 
 
+
+
+
+
                 <div>
+
+
+
+
 
 
 
@@ -1907,7 +3918,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500">Executes single trade then halts</div>
+
+
+
+
 
 
 
@@ -1915,7 +3934,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -1923,7 +3950,15 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+
+
+
+
 
 
 
@@ -1931,7 +3966,19 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1943,7 +3990,15 @@
 
 
 
+
+
+
+
                 <div>
+
+
+
+
 
 
 
@@ -1951,7 +4006,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500">Chart momentum takes over</div>
+
+
+
+
 
 
 
@@ -1959,7 +4022,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -1967,7 +4038,15 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-500"></div>
+
+
+
+
 
 
 
@@ -1975,7 +4054,19 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -1987,7 +4078,15 @@
 
 
 
+
+
+
+
                 <div class="min-w-0">
+
+
+
+
 
 
 
@@ -1995,7 +4094,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500 flex items-center gap-1">Min edge
+
+
+
+
 
 
 
@@ -2003,7 +4110,15 @@
 
 
 
+
+
+
+
                   </div>
+
+
+
+
 
 
 
@@ -2011,7 +4126,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer shrink-0">
+
+
+
+
 
 
 
@@ -2019,7 +4142,15 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+
+
+
 
 
 
@@ -2027,7 +4158,19 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2039,7 +4182,15 @@
 
 
 
+
+
+
+
                 <div>
+
+
+
+
 
 
 
@@ -2047,7 +4198,15 @@
 
 
 
+
+
+
+
                   <div class="text-[8px] text-slate-500">Instant manual buttons</div>
+
+
+
+
 
 
 
@@ -2055,7 +4214,15 @@
 
 
 
+
+
+
+
                 <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -2063,13 +4230,91 @@
 
 
 
+
+
+
+
                   <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+
+
+
 
 
 
                 </label>
 
 
+
+
+
+
+
+              </div>
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+
+                <div>
+
+                  <div class="text-[10px] font-bold text-emerald-300">Dynamic ATR Risk</div>
+
+                  <div class="text-[8px] text-slate-500">Auto-scale TP/SL by volatility</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer">
+
+                  <input type="checkbox" id="edit_atr_risk_enabled" ${u.atr_risk_enabled ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+                </label>
+
+              </div>
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+
+                <div>
+
+                  <div class="text-[10px] font-bold text-slate-200">Trade Result Alerts</div>
+
+                  <div class="text-[8px] text-slate-500">Notify on win/loss</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer">
+
+                  <input type="checkbox" id="edit_notify_trade_results" ${u.notify_trade_results !== false ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+
+                </label>
+
+              </div>
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center justify-between">
+
+                <div>
+
+                  <div class="text-[10px] font-bold text-slate-200">Market Trend Alerts</div>
+
+                  <div class="text-[8px] text-slate-500">Notify on regime shifts</div>
+
+                </div>
+
+                <label class="relative inline-flex items-center cursor-pointer">
+
+                  <input type="checkbox" id="edit_notify_market_trends" ${u.notify_market_trends !== false ? "checked" : ""} class="sr-only peer">
+
+                  <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+
+                </label>
 
               </div>
 
@@ -2079,7 +4324,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2091,7 +4348,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-2.5">
+
+
+
+
 
 
 
@@ -2099,7 +4364,15 @@
 
 
 
+
+
+
+
               <span class="flex items-center gap-1.5 text-cyan-400 cursor-pointer group" onclick="toggleAdminGlassInfo('strategy', event)">
+
+
+
+
 
 
 
@@ -2107,7 +4380,15 @@
 
 
 
+
+
+
+
                 <span class="w-4 h-4 rounded-full bg-white/5 group-hover:bg-cyan-500/20 border border-white/10 flex items-center justify-center text-[9px] font-bold text-gray-400 transition-all ml-1">i</span>
+
+
+
+
 
 
 
@@ -2115,7 +4396,15 @@
 
 
 
+
+
+
+
               <span class="text-[9px] font-mono text-slate-500 uppercase">Execution Logic</span>
+
+
+
+
 
 
 
@@ -2127,11 +4416,27 @@
 
 
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+
+
+
+
+
+
+
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+
+
+
+
 
 
 
               <div>
+
+
+
+
 
 
 
@@ -2139,7 +4444,15 @@
 
 
 
+
+
+
+
                 <select id="edit_trading_style" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-bold text-white focus:border-cyan-500 focus:outline-none">
+
+
+
+
 
 
 
@@ -2147,7 +4460,19 @@
 
 
 
+                  <option value="GEMINI_REASONING" ${u.trading_style === "GEMINI_REASONING" ? "selected" : ""}>🧠 GEMINI REASONING (Deep Intel)</option>
+
+
+
+
+
+
+
                   <option value="SNIPER" ${u.trading_style === "SNIPER" ? "selected" : ""}>🎯 SNIPER (High Conviction)</option>
+
+
+
+
 
 
 
@@ -2155,7 +4480,15 @@
 
 
 
+
+
+
+
                   <option value="MOMENTUM_SURFER" ${u.trading_style === "MOMENTUM_SURFER" ? "selected" : ""}>🏄 MOMENTUM (Trend Surfer)</option>
+
+
+
+
 
 
 
@@ -2163,11 +4496,23 @@
 
 
 
+
+
+
+
                   <option value="CHOP" ${u.trading_style === "CHOP" ? "selected" : ""}>🪓 CHOP (Mean Reversion)</option>
 
 
 
+                  <option value="CAPITAL_GUARD" ${u.trading_style === "CAPITAL_GUARD" ? "selected" : ""}>🛡️ CAPITAL GUARD</option>
+
+
+
                 </select>
+
+
+
+
 
 
 
@@ -2179,7 +4524,19 @@
 
 
 
+
+
+
+
+
+
+
+
               <div>
+
+
+
+
 
 
 
@@ -2187,7 +4544,19 @@
 
 
 
+
+
+
+
                 <select id="edit_signal_source" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-bold text-white focus:border-cyan-500 focus:outline-none">
+
+
+
+
+
+
+
+                  <option value="GEMINI_REASONING" ${u.signal_source === "GEMINI_REASONING" ? "selected" : ""}>🧠 GEMINI REASONING (High Reasoning)</option>
 
 
 
@@ -2195,7 +4564,15 @@
 
 
 
+
+
+
+
                   <option value="BLEND" ${u.signal_source === "BLEND" || !u.signal_source ? "selected" : ""}>⚖️ BLEND (AI Model + Chart Confluence)</option>
+
+
+
+
 
 
 
@@ -2203,7 +4580,15 @@
 
 
 
+
+
+
+
                   <option value="ML_ENSEMBLE" ${u.signal_source === "ML_ENSEMBLE" ? "selected" : ""}> Secondary ML Engine (100% AI)</option>
+
+
+
+
 
 
 
@@ -2211,7 +4596,15 @@
 
 
 
+
+
+
+
                 </select>
+
+
+
+
 
 
 
@@ -2223,15 +4616,67 @@
 
 
 
+
+
+
+
+
+
+
+
               <div>
 
 
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Trade Size ($)</label>
 
 
 
-                <input type="number" step="1.0" min="5" max="5000" id="edit_trade_size_dollars" value="${u.trade_size_dollars || 5.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-white focus:border-cyan-500 focus:outline-none">
+
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Live Trade Size ($)</label>
+
+
+
+
+
+
+
+                <input type="number" step="1.0" min="1" max="5000" id="edit_trade_size_dollars" value="${u.trade_size_dollars || 5.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-white focus:border-cyan-500 focus:outline-none">
+
+
+
+
+
+
+
+              </div>
+
+
+
+              <div>
+
+
+
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Paper Trade Size ($)</label>
+
+
+
+                <input type="number" step="1.0" min="1" max="5000" id="edit_paper_trade_size_dollars" value="${u.paper_trade_size_dollars || u.trade_size_dollars || 5.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-cyan-300 focus:border-cyan-500 focus:outline-none">
+
+
+
+              </div>
+
+
+
+              <div>
+
+
+
+                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Target Assets (CSV)</label>
+
+
+
+                <input type="text" id="edit_target_asset" value="${escapeHtml(u.target_asset || 'BTC')}" placeholder="BTC,ETH,SOL,GOLD..." class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-amber-300 focus:border-cyan-500 focus:outline-none">
 
 
 
@@ -2243,7 +4688,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2255,7 +4712,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-2.5">
+
+
+
+
 
 
 
@@ -2263,7 +4728,15 @@
 
 
 
+
+
+
+
               <span class="flex items-center gap-1.5 text-cyan-400 cursor-pointer group" onclick="toggleAdminGlassInfo('risk_limits', event)">
+
+
+
+
 
 
 
@@ -2271,7 +4744,15 @@
 
 
 
+
+
+
+
                 <span class="w-4 h-4 rounded-full bg-white/5 group-hover:bg-cyan-500/20 border border-white/10 flex items-center justify-center text-[9px] font-bold text-gray-400 transition-all ml-1">i</span>
+
+
+
+
 
 
 
@@ -2279,11 +4760,27 @@
 
 
 
+
+
+
+
               <span class="text-[9px] font-mono text-slate-500 uppercase">Protection</span>
 
 
 
+
+
+
+
             </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2295,17 +4792,27 @@
 
 
 
-              <div>
 
 
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Stop Loss (%)</label>
 
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1.5">
 
+                <div class="flex items-center justify-between">
 
-                <input type="number" step="0.5" min="1" max="100" id="edit_stop_loss_pct" value="${u.stop_loss_pct || 10.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-rose-400 focus:border-rose-500 focus:outline-none">
+                  <label class="block text-[9px] font-mono uppercase text-rose-400 font-bold">Stop Loss (%)</label>
 
+                  <label class="relative inline-flex items-center cursor-pointer" title="Enable / Disable Stop Loss">
 
+                    <input type="checkbox" id="edit_stop_loss_enabled" ${u.stop_loss_enabled !== false ? "checked" : ""} class="sr-only peer">
+
+                    <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-rose-500"></div>
+
+                  </label>
+
+                </div>
+
+                <input type="number" step="0.5" min="1" max="100" id="edit_stop_loss_pct" value="${u.stop_loss_pct || 50.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-rose-400 focus:border-rose-500 focus:outline-none">
 
               </div>
 
@@ -2315,18 +4822,32 @@
 
 
 
-              <div>
 
 
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Take Profit (%)</label>
 
 
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1.5">
+
+                <div class="flex items-center justify-between">
+
+                  <label class="block text-[9px] font-mono uppercase text-emerald-400 font-bold">Take Profit (%)</label>
+
+                  <label class="relative inline-flex items-center cursor-pointer" title="Enable / Disable Take Profit">
+
+                    <input type="checkbox" id="edit_take_profit_enabled" ${u.take_profit_enabled !== false ? "checked" : ""} class="sr-only peer">
+
+                    <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+
+                  </label>
+
+                </div>
 
                 <input type="number" step="1.0" min="1" max="500" id="edit_take_profit_pct" value="${u.take_profit_pct || 50.0}" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none">
 
-
-
               </div>
 
 
@@ -2335,11 +4856,27 @@
 
 
 
-              <div>
 
 
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Max Daily Trades</label>
+
+
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1.5">
+
+
+
+
+
+
+
+                <label class="block text-[9px] font-mono uppercase text-slate-400">Max Daily Trades</label>
+
+
+
+
 
 
 
@@ -2347,6 +4884,10 @@
 
 
 
+
+
+
+
               </div>
 
 
@@ -2355,11 +4896,27 @@
 
 
 
-              <div>
 
 
 
-                <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">Max Daily Risk ($)</label>
+
+
+
+
+
+              <div class="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 space-y-1.5">
+
+
+
+
+
+
+
+                <label class="block text-[9px] font-mono uppercase text-slate-400">Max Daily Risk ($)</label>
+
+
+
+
 
 
 
@@ -2367,11 +4924,27 @@
 
 
 
+
+
+
+
               </div>
 
 
 
+
+
+
+
             </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2383,7 +4956,15 @@
 
 
 
+
+
+
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-800">
+
+
+
+
 
 
 
@@ -2391,7 +4972,15 @@
 
 
 
+
+
+
+
               <!-- Trailing Stop Card -->
+
+
+
+
 
 
 
@@ -2399,7 +4988,15 @@
 
 
 
+
+
+
+
                 <div class="flex items-center justify-between">
+
+
+
+
 
 
 
@@ -2407,7 +5004,15 @@
 
 
 
+
+
+
+
                   <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -2415,7 +5020,15 @@
 
 
 
+
+
+
+
                     <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
+
+
+
+
 
 
 
@@ -2423,7 +5036,15 @@
 
 
 
+
+
+
+
                 </div>
+
+
+
+
 
 
 
@@ -2431,7 +5052,15 @@
 
 
 
+
+
+
+
                   <div>
+
+
+
+
 
 
 
@@ -2439,11 +5068,23 @@
 
 
 
+
+
+
+
                     <input type="number" step="1" id="edit_trailing_stop_activation_pct" value="${u.trailing_stop_activation_pct || 35.0}" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-white">
 
 
 
+
+
+
+
                   </div>
+
+
+
+
 
 
 
@@ -2451,7 +5092,15 @@
 
 
 
+
+
+
+
                     <span class="text-[8px] text-slate-500 uppercase">Distance %</span>
+
+
+
+
 
 
 
@@ -2459,7 +5108,15 @@
 
 
 
+
+
+
+
                   </div>
+
+
+
+
 
 
 
@@ -2467,7 +5124,19 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2479,7 +5148,15 @@
 
 
 
+
+
+
+
               <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
+
+
+
+
 
 
 
@@ -2487,11 +5164,23 @@
 
 
 
+
+
+
+
                   <span class="text-[10px] font-bold text-emerald-300">Second Entry After Scalp</span>
 
 
 
+
+
+
+
                   <label class="relative inline-flex items-center cursor-pointer">
+
+
+
+
 
 
 
@@ -2499,11 +5188,23 @@
 
 
 
+
+
+
+
                     <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
 
 
 
+
+
+
+
                   </label>
+
+
+
+
 
 
 
@@ -2511,41 +5212,83 @@
 
 
 
+
+
+
+
                 <div class="flex items-center justify-between text-xs mt-2">
+
+
 
                   <span class="text-[10px] font-bold text-amber-300">Re-entry After Stop Loss</span>
 
+
+
                   <label class="relative inline-flex items-center cursor-pointer">
+
+
 
                     <input type="checkbox" id="edit_reentry_after_stop_loss" ${u.reentry_after_stop_loss ? "checked" : ""} class="sr-only peer">
 
+
+
                     <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+
+
 
                   </label>
 
+
+
                 </div>
+
+
 
                 <div class="flex items-center justify-between text-xs mt-2">
 
+
+
                   <span class="text-[10px] font-bold text-cyan-300">Kelly Criterion Sizing</span>
+
+
 
                   <label class="relative inline-flex items-center cursor-pointer">
 
+
+
                     <input type="checkbox" id="edit_use_kelly_criterion" ${u.use_kelly_criterion ? "checked" : ""} class="sr-only peer">
+
+
 
                     <div class="w-7 h-4 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-cyan-500"></div>
 
+
+
                   </label>
 
+
+
                 </div>
+
+
 
                 <div class="text-[10px] font-mono mt-2">
 
+
+
                   <span class="text-[8px] text-slate-500 uppercase">Max Ask Price ($)</span>
+
+
 
                   <input type="number" step="0.01" min="0.05" max="0.99" id="edit_second_entry_max_ask" value="${u.second_entry_max_ask || 0.75}" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-white">
 
+
+
                 </div>
+
+
+
+
 
 
 
@@ -2557,11 +5300,31 @@
 
 
 
+
+
+
+
+
+
+
+
             </div>
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2573,7 +5336,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl space-y-2.5">
+
+
+
+
 
 
 
@@ -2581,7 +5352,15 @@
 
 
 
+
+
+
+
               <span class="flex items-center gap-1.5 text-purple-400 cursor-pointer group" onclick="toggleAdminGlassInfo('ai_model', event)">
+
+
+
+
 
 
 
@@ -2589,7 +5368,15 @@
 
 
 
+
+
+
+
                 <span class="w-4 h-4 rounded-full bg-white/5 group-hover:bg-purple-500/20 border border-white/10 flex items-center justify-center text-[9px] font-bold text-gray-400 transition-all ml-1">i</span>
+
+
+
+
 
 
 
@@ -2597,7 +5384,15 @@
 
 
 
-              <span class="text-[9px] font-mono text-slate-500 uppercase">Deep Q-Network</span>
+
+
+
+
+              <span class="text-[9px] font-mono text-slate-500 uppercase">Deep Q-Network & ML</span>
+
+
+
+
 
 
 
@@ -2609,11 +5404,27 @@
 
 
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+
+
+
+
+
+
+
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs font-mono">
+
+
+
+
 
 
 
               <div>
+
+
+
+
 
 
 
@@ -2621,7 +5432,19 @@
 
 
 
+
+
+
+
                 <select id="edit_model_choice" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+                  <option value="gemini-3.8-flash" ${u.model_choice === "gemini-3.8-flash" ? "selected" : ""}>⚡ gemini-3.8-flash (Deep Reasoning / CoT)</option>
+                  <option value="gemini-3.7-flash" ${u.model_choice === "gemini-3.7-flash" ? "selected" : ""}>🧠 gemini-3.7-flash (Hybrid Fast Thinking)</option>
+                  <option value="gemini-3.5-flash" ${u.model_choice === "gemini-3.5-flash" ? "selected" : ""}>🚀 gemini-3.5-flash (Low-Latency CoT)</option>
+                  <option value="gemini-flash-lite-latest" ${u.model_choice === "gemini-flash-lite-latest" ? "selected" : ""}>⚡ gemini-flash-lite (Ultra Fast)</option>
+
+
+
+
 
 
 
@@ -2629,7 +5452,31 @@
 
 
 
-                  <option value="Swarm" ${u.model_choice !== "RL_DQN" ? "selected" : ""}>God-Tier Swarm</option>
+
+
+
+
+                  <option value="Swarm" ${u.model_choice === "Swarm" ? "selected" : ""}>God-Tier Swarm</option>
+
+
+
+                  <option value="ML_ENSEMBLE" ${u.model_choice === "ML_ENSEMBLE" ? "selected" : ""}>ML Voting Ensemble</option>
+
+
+
+                  <option value="RL_PRICED" ${u.model_choice === "RL_PRICED" ? "selected" : ""}>RL Priced Q-Net</option>
+
+
+
+                  <option value="XGBOOST" ${u.model_choice === "XGBOOST" ? "selected" : ""}>XGBoost</option>
+
+
+
+                  <option value="RANDOM_FOREST" ${u.model_choice === "RANDOM_FOREST" ? "selected" : ""}>Random Forest</option>
+
+
+
+                  <option value="LOGISTIC_REGRESSION" ${u.model_choice === "LOGISTIC_REGRESSION" ? "selected" : ""}>Logistic Regression</option>
 
 
 
@@ -2637,11 +5484,31 @@
 
 
 
+
+
+
+
               </div>
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
               <div>
+
+
+
+
 
 
 
@@ -2649,7 +5516,15 @@
 
 
 
+
+
+
+
                 <input type="number" step="100" id="edit_train_window" value="${u.train_window || 4000}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+
+
+
 
 
 
@@ -2657,7 +5532,23 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
               <div>
+
+
+
+
 
 
 
@@ -2665,7 +5556,79 @@
 
 
 
+
+
+
+
                 <input type="number" step="0.1" id="edit_regularization_c" value="${u.regularization_c || 0.5}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+
+
+
+
+
+
+              </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              <div>
+
+
+
+
+
+
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">Class Weight</label>
+
+
+
+
+
+
+
+                <select id="edit_class_weight" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+
+
+
+
+
+
+                  <option value="balanced" ${u.class_weight === "balanced" ? "selected" : ""}>Balanced</option>
+
+
+
+
+
+
+
+                  <option value="none" ${u.class_weight === "none" ? "selected" : ""}>None</option>
+
+
+
+
+
+
+
+                </select>
+
+
+
+
 
 
 
@@ -2675,27 +5638,29 @@
 
               <div>
 
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">XGB Trees</label>
 
+                <input type="number" step="50" min="10" max="5000" id="edit_xgb_estimators" value="${u.xgb_estimators || 300}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
 
-                <label class="block text-[8px] uppercase text-slate-400 mb-1">Class Weight</label>
-
-
-
-                <select id="edit_class_weight" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
-
-
-
-                  <option value="balanced" ${u.class_weight === "balanced" ? "selected" : ""}>Balanced</option>
+              </div>
 
 
 
-                  <option value="none" ${u.class_weight === "none" ? "selected" : ""}>None</option>
+              <div>
+
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">XGB Depth</label>
+
+                <input type="number" step="1" min="1" max="20" id="edit_xgb_max_depth" value="${u.xgb_max_depth || 5}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
+
+              </div>
 
 
 
-                </select>
+              <div>
 
+                <label class="block text-[8px] uppercase text-slate-400 mb-1">XGB Learn Rate</label>
 
+                <input type="number" step="0.01" min="0.001" max="1.0" id="edit_xgb_learning_rate" value="${u.xgb_learning_rate || 0.1}" class="w-full bg-slate-950 border border-slate-700 rounded py-1 px-1.5 text-xs text-white">
 
               </div>
 
@@ -2705,7 +5670,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2717,7 +5694,15 @@
 
 
 
+
+
+
+
           <div class="flex items-center gap-3 pt-2">
+
+
+
+
 
 
 
@@ -2725,7 +5710,15 @@
 
 
 
+
+
+
+
               <span> Save & Apply User Settings</span>
+
+
+
+
 
 
 
@@ -2733,7 +5726,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2745,7 +5750,15 @@
 
 
 
+
+
+
+
           <div class="p-3 bg-rose-950/20 border border-rose-500/30 rounded-xl flex items-center justify-between">
+
+
+
+
 
 
 
@@ -2753,7 +5766,15 @@
 
 
 
+
+
+
+
               <div class="text-[11px] font-bold text-rose-300 flex items-center gap-1.5">
+
+
+
+
 
 
 
@@ -2761,7 +5782,15 @@
 
 
 
+
+
+
+
               </div>
+
+
+
+
 
 
 
@@ -2769,7 +5798,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -2777,7 +5814,15 @@
 
 
 
+
+
+
+
               <span> Delete Account</span>
+
+
+
+
 
 
 
@@ -2785,7 +5830,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2797,7 +5854,19 @@
 
 
 
+
+
+
+
       </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2809,7 +5878,15 @@
 
 
 
+
+
+
+
       <div id="adminUserTradesSection" class="${currentUserDetailTab === 'trades' ? 'block' : 'hidden'} space-y-3.5">
+
+
+
+
 
 
 
@@ -2817,11 +5894,23 @@
 
 
 
+
+
+
+
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono">
 
 
 
+
+
+
+
           <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
+
+
+
+
 
 
 
@@ -2829,7 +5918,15 @@
 
 
 
+
+
+
+
             <div class="text-base font-bold text-white mt-0.5" id="userTradesTotal">${u.total_trades || 0}</div>
+
+
+
+
 
 
 
@@ -2837,7 +5934,15 @@
 
 
 
+
+
+
+
           <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
+
+
+
+
 
 
 
@@ -2845,7 +5950,15 @@
 
 
 
+
+
+
+
             <div class="text-base font-bold text-emerald-400 mt-0.5" id="userTradesWinRate">${u.win_rate || 0}%</div>
+
+
+
+
 
 
 
@@ -2853,7 +5966,15 @@
 
 
 
+
+
+
+
           <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
+
+
+
+
 
 
 
@@ -2861,7 +5982,15 @@
 
 
 
+
+
+
+
             <div class="text-base font-bold mt-0.5 ${(u.net_pnl || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}" id="userTradesNetPnl">
+
+
+
+
 
 
 
@@ -2869,11 +5998,23 @@
 
 
 
+
+
+
+
             </div>
 
 
 
+
+
+
+
           </div>
+
+
+
+
 
 
 
@@ -2881,7 +6022,15 @@
 
 
 
+
+
+
+
             <div class="text-[9px] uppercase text-slate-400">Open Positions</div>
+
+
+
+
 
 
 
@@ -2889,11 +6038,27 @@
 
 
 
+
+
+
+
           </div>
 
 
 
+
+
+
+
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -2905,7 +6070,15 @@
 
 
 
+
+
+
+
         <div class="p-2.5 bg-slate-900/60 border border-slate-800 rounded-xl flex flex-wrap items-center justify-between gap-2 text-xs">
+
+
+
+
 
 
 
@@ -2913,7 +6086,15 @@
 
 
 
+
+
+
+
             <span class="text-[9px] font-mono uppercase text-slate-500 mr-1">Mode:</span>
+
+
+
+
 
 
 
@@ -2921,7 +6102,15 @@
 
 
 
+
+
+
+
             <button type="button" onclick="window.setTradeFilterMode('PAPER')" data-tmode="PAPER" class="admin-tmode-pill px-2 py-0.5 text-[10px] font-mono font-bold rounded-md text-slate-400 hover:text-white">PAPER</button>
+
+
+
+
 
 
 
@@ -2933,7 +6122,19 @@
 
 
 
+
+
+
+
+
+
+
+
             <span class="text-[9px] font-mono uppercase text-slate-500 ml-2 mr-1">Status:</span>
+
+
+
+
 
 
 
@@ -2941,7 +6142,15 @@
 
 
 
+
+
+
+
             <button type="button" onclick="window.setTradeFilterStatus('CLOSED')" data-tstatus="CLOSED" class="admin-tstatus-pill px-2 py-0.5 text-[10px] font-mono font-bold rounded-md text-slate-400 hover:text-white">CLOSED</button>
+
+
+
+
 
 
 
@@ -2949,7 +6158,15 @@
 
 
 
+
+
+
+
             <button type="button" onclick="window.setTradeFilterStatus('WINS')" data-tstatus="WINS" class="admin-tstatus-pill px-2 py-0.5 text-[10px] font-mono font-bold rounded-md text-slate-400 hover:text-white">WINS</button>
+
+
+
+
 
 
 
@@ -2957,6 +6174,10 @@
 
 
 
+
+
+
+
           </div>
 
 
@@ -2965,31 +6186,53 @@
 
 
 
-          <div class="flex items-center gap-2">
 
 
 
-            <input type="text" id="userTradeSearchInput" oninput="window.filterUserTradesList(this.value)" placeholder="Search ticker, side..." class="bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono w-40">
 
 
 
-            <button type="button" onclick="window.loadUserTrades(${u.id})" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs" title="Refresh trade list">
 
 
+          <div class="flex items-center gap-2 flex-wrap">
 
-              
+            <button type="button" id="btnAuditUserSpecific" onclick="window.loadUserTrades(${u.id})" class="px-2 py-1 bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 rounded-lg text-[10px] font-mono font-bold hover:bg-cyan-800/50" title="Show only ${escapeHtml(u.username)}'s trades">
 
-
+              👤 ${escapeHtml(u.username)}
 
             </button>
 
+            <button type="button" id="btnAuditAllUsers" onclick="window.loadUserTrades('ALL')" class="px-2 py-1 bg-purple-900/40 text-purple-300 border border-purple-500/40 rounded-lg text-[10px] font-mono font-bold hover:bg-purple-800/50" title="Audit all users' trades combined">
 
+              👥 All Users
+
+            </button>
+
+            <button type="button" onclick="window.openFullLedger(window.__currentAuditTarget || ${u.id})" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded-lg text-[10px] font-mono font-bold cursor-pointer">
+
+              Full Ledger ↗
+
+            </button>
+
+            <input type="text" id="userTradeSearchInput" oninput="window.filterUserTradesList(this.value)" placeholder="Search user, ticker, side..." class="bg-slate-950 border border-slate-700/80 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono w-44">
+
+            <button type="button" onclick="window.loadUserTrades(window.__currentAuditTarget || ${u.id})" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-xs" title="Refresh trade list">
+
+              🔄
+
+            </button>
 
           </div>
 
-
-
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -3001,7 +6244,15 @@
 
 
 
+
+
+
+
         <div id="adminUserTradesList" class="space-y-2 max-h-[480px] overflow-y-auto pr-1 admin-custom-scroll">
+
+
+
+
 
 
 
@@ -3009,7 +6260,15 @@
 
 
 
+
+
+
+
             Loading user trades...
+
+
+
+
 
 
 
@@ -3017,7 +6276,15 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
 
 
 
@@ -3025,7 +6292,15 @@
 
 
 
+
+
+
+
     </div>
+
+
+
+
 
 
 
@@ -3037,7 +6312,19 @@
 
 
 
+
+
+
+
+
+
+
+
   if (currentUserDetailTab === "trades") {
+
+
+
+
 
 
 
@@ -3045,7 +6332,15 @@
 
 
 
+
+
+
+
   }
+
+
+
+
 
 
 
@@ -3057,7 +6352,19 @@
 
 
 
+
+
+
+
+
+
+
+
   window.handleTradingModeChange = function (mode) {
+
+
+
+
 
 
 
@@ -3065,7 +6372,15 @@
 
 
 
+
+
+
+
     const balInput = document.getElementById("edit_paper_balance");
+
+
+
+
 
 
 
@@ -3073,7 +6388,15 @@
 
 
 
+
+
+
+
     const resetBtn = document.getElementById("btn_quick_reset_balance");
+
+
+
+
 
 
 
@@ -3085,7 +6408,19 @@
 
 
 
+
+
+
+
+
+
+
+
     if (mode === "LIVE") {
+
+
+
+
 
 
 
@@ -3093,7 +6428,15 @@
 
 
 
+
+
+
+
       if (resetBtn) resetBtn.classList.add("hidden");
+
+
+
+
 
 
 
@@ -3101,7 +6444,15 @@
 
 
 
+
+
+
+
       if (balInput) {
+
+
+
+
 
 
 
@@ -3109,11 +6460,23 @@
 
 
 
+
+
+
+
           balInput.value = "***.**";
 
 
 
+
+
+
+
           balInput.readOnly = true;
+
+
+
+
 
 
 
@@ -3121,7 +6484,15 @@
 
 
 
+
+
+
+
           balInput.title = "Live balance unavailable (No active Kalshi API keys linked or connection unavailable)";
+
+
+
+
 
 
 
@@ -3129,7 +6500,15 @@
 
 
 
+
+
+
+
           balInput.value = Number(u.live_balance).toFixed(2);
+
+
+
+
 
 
 
@@ -3137,7 +6516,15 @@
 
 
 
+
+
+
+
           balInput.className = "flex-1 bg-slate-950 border border-emerald-500/40 rounded-lg py-1.5 px-2 text-xs font-mono font-bold text-emerald-400 focus:outline-none";
+
+
+
+
 
 
 
@@ -3145,11 +6532,23 @@
 
 
 
+
+
+
+
         }
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3157,7 +6556,15 @@
 
 
 
+
+
+
+
         badge.classList.remove("hidden");
+
+
+
+
 
 
 
@@ -3165,7 +6572,15 @@
 
 
 
+
+
+
+
         badge.className = `text-[8px] font-mono px-1.5 py-1 rounded whitespace-nowrap ${
+
+
+
+
 
 
 
@@ -3173,11 +6588,23 @@
 
 
 
+
+
+
+
         }`;
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3185,7 +6612,15 @@
 
 
 
+
+
+
+
       // PAPER
+
+
+
+
 
 
 
@@ -3193,7 +6628,15 @@
 
 
 
+
+
+
+
       if (resetBtn) resetBtn.classList.remove("hidden");
+
+
+
+
 
 
 
@@ -3201,7 +6644,15 @@
 
 
 
+
+
+
+
       if (balInput) {
+
+
+
+
 
 
 
@@ -3209,7 +6660,15 @@
 
 
 
+
+
+
+
         balInput.value = (u && u.paper_balance !== undefined ? u.paper_balance : 500.0).toFixed(2);
+
+
+
+
 
 
 
@@ -3217,7 +6676,15 @@
 
 
 
+
+
+
+
         balInput.title = "Paper trading balance ($)";
+
+
+
+
 
 
 
@@ -3225,7 +6692,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -3237,7 +6712,19 @@
 
 
 
+
+
+
+
+
+
+
+
   async function saveSelectedUserConfig() {
+
+
+
+
 
 
 
@@ -3245,7 +6732,15 @@
 
 
 
+
+
+
+
     const saveBtn = document.getElementById("btnSaveUserConfig");
+
+
+
+
 
 
 
@@ -3253,11 +6748,23 @@
 
 
 
+
+
+
+
       saveBtn.disabled = true;
 
 
 
+
+
+
+
       saveBtn.innerText = " Saving...";
+
+
+
+
 
 
 
@@ -3269,13 +6776,23 @@
 
 
 
+
+
+
+
+
+
+
+
     try {
 
 
 
+
+
+
+
       const balStr = document.getElementById("edit_paper_balance")?.value;
-
-
 
       const parsedBal = (balStr && balStr !== "***.**") ? parseFloat(balStr) : null;
 
@@ -3283,91 +6800,111 @@
 
       const payload = {
 
+        trading_universe: document.getElementById("edit_trading_universe")?.value || "FINANCIAL",
 
+        trading_mode: document.getElementById("edit_trading_mode")?.value || "PAPER",
 
-        trading_mode: document.getElementById("edit_trading_mode")?.value,
-
-
+        role: document.getElementById("edit_role")?.value || "user",
 
         is_active: document.getElementById("edit_is_active")?.checked,
-
-
 
         ai_enabled: document.getElementById("edit_ai_enabled")?.checked,
 
 
 
+        // Sports Universe Settings
+
+        sports_max_wager: parseFloat(document.getElementById("edit_sports_max_wager")?.value || 10.0),
+
+        sports_trade_size_dollars: parseFloat(document.getElementById("edit_sports_max_wager")?.value || 10.0),
+
+        min_sports_confidence: parseFloat(document.getElementById("edit_min_sports_confidence")?.value || 60.0),
+
+        min_sports_edge: parseFloat(document.getElementById("edit_min_sports_edge")?.value || 3.0),
+
+        sports_max_daily_trades: parseInt(document.getElementById("edit_sports_max_daily_trades")?.value || 20),
+
+        sports_max_open_trades: parseInt(document.getElementById("edit_sports_max_open_trades")?.value || 5),
+
+        sports_max_daily_risk: parseFloat(document.getElementById("edit_sports_max_daily_risk")?.value || 100.0),
+
+        sports_min_price: parseFloat(document.getElementById("edit_sports_min_price")?.value || 0.20),
+
+        sports_max_price: parseFloat(document.getElementById("edit_sports_max_price")?.value || 0.80),
+
+        sports_tp_enabled: document.getElementById("edit_sports_tp_enabled")?.checked ?? false,
+
+        sports_tp_pct: parseFloat(document.getElementById("edit_sports_tp_pct")?.value || 35.0),
+
+        sports_use_kelly: document.getElementById("edit_sports_use_kelly")?.checked ?? false,
+
+        sports_strategy: document.getElementById("edit_sports_strategy")?.value || "STANDARD",
+
+        sports_max_parlay_legs: parseInt(document.getElementById("edit_sports_max_parlay_legs")?.value || 2),
+
+        sports_active_leagues: document.getElementById("edit_sports_active_leagues")?.value || "NFL,MLB,NHL,SOC,UFC,TEN,NPB/KBO",
+
+        sports_market_types: document.getElementById("edit_sports_market_types")?.value || "GAME,SPREAD,TOTAL,PROP",
+
+        sports_active_props: document.getElementById("edit_sports_active_props")?.value || "ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER",
+
+        sports_include_live: document.getElementById("edit_sports_include_live")?.checked ?? true,
+
+
+
+        // Financial & Execution Settings
+
+        gemini_every_interval_enabled: document.getElementById("edit_gemini_every_interval_enabled")?.checked,
+
         auto_force_trade: document.getElementById("edit_auto_force_trade")?.checked,
-
-
 
         one_shot_ai: document.getElementById("edit_one_shot_ai")?.checked,
 
-
-
         ignore_pass_technical: document.getElementById("edit_ignore_pass_technical")?.checked,
-
-
 
         edge_gate_enabled: document.getElementById("edit_edge_gate_enabled")?.checked,
 
-
-
         min_edge_cents: Math.min(25, Math.max(0, parseFloat(document.getElementById("edit_min_edge_cents")?.value) || 0)),
-
-
 
         one_click_trade: document.getElementById("edit_one_click_trade")?.checked,
 
+        atr_risk_enabled: document.getElementById("edit_atr_risk_enabled")?.checked ?? false,
 
+        notify_trade_results: document.getElementById("edit_notify_trade_results")?.checked ?? true,
+
+        notify_market_trends: document.getElementById("edit_notify_market_trends")?.checked ?? true,
 
         trading_style: document.getElementById("edit_trading_style")?.value,
 
-
-
         signal_source: document.getElementById("edit_signal_source")?.value,
-
-
 
         trade_size_dollars: parseFloat(document.getElementById("edit_trade_size_dollars")?.value || 5.0),
 
+        paper_trade_size_dollars: parseFloat(document.getElementById("edit_paper_trade_size_dollars")?.value || 5.0),
 
+        target_asset: (document.getElementById("edit_target_asset")?.value || "BTC").toUpperCase().replace(/\s+/g, ""),
 
-        stop_loss_pct: parseFloat(document.getElementById("edit_stop_loss_pct")?.value || 10.0),
+        stop_loss_enabled: document.getElementById("edit_stop_loss_enabled")?.checked ?? true,
 
+        stop_loss_pct: parseFloat(document.getElementById("edit_stop_loss_pct")?.value || 50.0),
 
+        take_profit_enabled: document.getElementById("edit_take_profit_enabled")?.checked ?? true,
 
         take_profit_pct: parseFloat(document.getElementById("edit_take_profit_pct")?.value || 50.0),
 
-
-
         max_daily_trades: parseInt(document.getElementById("edit_max_daily_trades")?.value || 10),
-
-
 
         max_daily_risk: parseFloat(document.getElementById("edit_max_daily_risk")?.value || 50.0),
 
-
-
         trailing_stop_enabled: document.getElementById("edit_trailing_stop_enabled")?.checked,
-
-
 
         trailing_stop_activation_pct: parseFloat(document.getElementById("edit_trailing_stop_activation_pct")?.value || 35.0),
 
-
-
         trailing_stop_distance_pct: parseFloat(document.getElementById("edit_trailing_stop_distance_pct")?.value || 6.0),
-
-
 
         second_entry_enabled: document.getElementById("edit_second_entry_enabled")?.checked,
 
-
-
         second_entry_max_ask: parseFloat(document.getElementById("edit_second_entry_max_ask")?.value || 0.75),
-
-
 
         reentry_after_stop_loss: document.getElementById("edit_reentry_after_stop_loss")?.checked,
 
@@ -3375,37 +6912,35 @@
 
         model_choice: document.getElementById("edit_model_choice")?.value,
 
-
-
         train_window: parseInt(document.getElementById("edit_train_window")?.value || 4000),
-
-
 
         regularization_c: parseFloat(document.getElementById("edit_regularization_c")?.value || 0.5),
 
-
-
         class_weight: document.getElementById("edit_class_weight")?.value,
 
+        xgb_estimators: parseInt(document.getElementById("edit_xgb_estimators")?.value || 300),
 
+        xgb_max_depth: parseInt(document.getElementById("edit_xgb_max_depth")?.value || 5),
+
+        xgb_learning_rate: parseFloat(document.getElementById("edit_xgb_learning_rate")?.value || 0.1),
 
       };
 
 
 
-      // The balance box shows the Kalshi balance for LIVE users - never save that as paper balance
-
-
-
-      if (payload.trading_mode === "PAPER" && parsedBal !== null && !isNaN(parsedBal)) {
-
-
+      if (parsedBal !== null && !isNaN(parsedBal)) {
 
         payload.paper_balance = parsedBal;
 
-
-
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -3417,11 +6952,23 @@
 
 
 
+
+
+
+
         method: "POST",
 
 
 
+
+
+
+
         headers: getAdminAuthHeaders(),
+
+
+
+
 
 
 
@@ -3429,7 +6976,19 @@
 
 
 
+
+
+
+
       });
+
+
+
+
+
+
+
+
 
 
 
@@ -3441,7 +7000,15 @@
 
 
 
+
+
+
+
       if (!resp.ok || !res.success) {
+
+
+
+
 
 
 
@@ -3449,7 +7016,15 @@
 
 
 
+
+
+
+
           ? res.detail.map(d => `${(d.loc || []).slice(-1)[0] || "value"}: ${d.msg}`).join("; ")
+
+
+
+
 
 
 
@@ -3457,7 +7032,15 @@
 
 
 
+
+
+
+
         throw new Error(detail || res.message || "Failed to update settings");
+
+
+
+
 
 
 
@@ -3469,7 +7052,19 @@
 
 
 
+
+
+
+
+
+
+
+
       const savedUid = selectedUserId;
+
+
+
+
 
 
 
@@ -3477,7 +7072,15 @@
 
 
 
+
+
+
+
       await fetchAdminUsers();
+
+
+
+
 
 
 
@@ -3485,7 +7088,15 @@
 
 
 
+
+
+
+
         selectUserToEdit(savedUid);
+
+
+
+
 
 
 
@@ -3493,7 +7104,15 @@
 
 
 
+
+
+
+
     } catch (err) {
+
+
+
+
 
 
 
@@ -3501,7 +7120,15 @@
 
 
 
+
+
+
+
       showAdminToast(`Save failed: ${err.message}`, "error");
+
+
+
+
 
 
 
@@ -3509,7 +7136,15 @@
 
 
 
+
+
+
+
       if (saveBtn) {
+
+
+
+
 
 
 
@@ -3517,7 +7152,15 @@
 
 
 
+
+
+
+
         saveBtn.innerText = " Save & Apply User Settings";
+
+
+
+
 
 
 
@@ -3525,7 +7168,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -3534,6 +7185,108 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  async function quickToggleGemini(userId, newEnabled) {
+
+    try {
+
+      const resp = await fetch(`/api/admin/users/${userId}/toggle_gemini`, {
+
+        method: "POST",
+
+        headers: getAdminAuthHeaders(),
+
+        body: JSON.stringify({ enabled: newEnabled }),
+
+      });
+
+      const res = await resp.json();
+
+      if (!resp.ok || !res.success) {
+
+        throw new Error(res.detail || "Failed to toggle Gemini Reasoning state");
+
+      }
+
+      showAdminToast(`User #${userId} Gemini Deep Reasoning ${newEnabled ? "ENABLED" : "DISABLED"}`, "success");
+
+      const savedUid = selectedUserId;
+
+      await fetchAdminUsers();
+
+      if (savedUid) {
+
+        selectUserToEdit(savedUid);
+
+      }
+
+    } catch (err) {
+
+      console.error("[AdminUserPanel] Gemini toggle error:", err);
+
+      showAdminToast(`Toggle Error: ${err.message}`, "error");
+
+    }
+
+  }
+
+
+
+  async function batchToggleGemini(newEnabled) {
+
+    try {
+
+      const resp = await fetch(`/api/admin/users/batch/gemini_every_interval`, {
+
+        method: "POST",
+
+        headers: getAdminAuthHeaders(),
+
+        body: JSON.stringify({ enabled: newEnabled }),
+
+      });
+
+      const res = await resp.json();
+
+      if (!resp.ok || !res.success) {
+
+        throw new Error(res.detail || "Failed to batch toggle Gemini Reasoning");
+
+      }
+
+      showAdminToast(`Gemini Deep Reasoning applied to ${res.updated_count} user(s): ${newEnabled ? "ENABLED" : "DISABLED"}`, "success");
+
+      const savedUid = selectedUserId;
+
+      await fetchAdminUsers();
+
+      if (savedUid) {
+
+        selectUserToEdit(savedUid);
+
+      }
+
+    } catch (err) {
+
+      console.error("[AdminUserPanel] Batch Gemini toggle error:", err);
+
+      showAdminToast(`Batch Error: ${err.message}`, "error");
+
+    }
+
+  }
 
 
 
@@ -3541,7 +7294,15 @@
 
 
 
+
+
+
+
     try {
+
+
+
+
 
 
 
@@ -3549,7 +7310,15 @@
 
 
 
+
+
+
+
         method: "POST",
+
+
+
+
 
 
 
@@ -3557,7 +7326,15 @@
 
 
 
+
+
+
+
         body: JSON.stringify({ enabled: newEnabled }),
+
+
+
+
 
 
 
@@ -3565,7 +7342,15 @@
 
 
 
+
+
+
+
       const res = await resp.json();
+
+
+
+
 
 
 
@@ -3573,11 +7358,23 @@
 
 
 
+
+
+
+
         throw new Error(res.detail || "Failed to toggle AI state");
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3585,7 +7382,15 @@
 
 
 
+
+
+
+
       const savedUid = selectedUserId;
+
+
+
+
 
 
 
@@ -3593,7 +7398,15 @@
 
 
 
+
+
+
+
       if (savedUid) {
+
+
+
+
 
 
 
@@ -3601,7 +7414,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3609,7 +7430,15 @@
 
 
 
+
+
+
+
       console.error("[AdminUserPanel] Toggle error:", err);
+
+
+
+
 
 
 
@@ -3617,11 +7446,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3633,7 +7478,15 @@
 
 
 
+
+
+
+
     if (!confirm(`Reset paper trading balance for user #${userId} to $500.00?`)) return;
+
+
+
+
 
 
 
@@ -3641,7 +7494,15 @@
 
 
 
+
+
+
+
       const resp = await fetch(`/api/admin/users/${userId}/reset_balance`, {
+
+
+
+
 
 
 
@@ -3649,7 +7510,15 @@
 
 
 
+
+
+
+
         headers: getAdminAuthHeaders(),
+
+
+
+
 
 
 
@@ -3657,7 +7526,15 @@
 
 
 
+
+
+
+
       });
+
+
+
+
 
 
 
@@ -3665,7 +7542,15 @@
 
 
 
+
+
+
+
       if (!resp.ok || !res.success) {
+
+
+
+
 
 
 
@@ -3673,7 +7558,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3681,7 +7574,15 @@
 
 
 
+
+
+
+
       const savedUid = selectedUserId;
+
+
+
+
 
 
 
@@ -3689,7 +7590,15 @@
 
 
 
+
+
+
+
       if (savedUid) {
+
+
+
+
 
 
 
@@ -3697,7 +7606,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3705,7 +7622,15 @@
 
 
 
+
+
+
+
       console.error("[AdminUserPanel] Reset balance error:", err);
+
+
+
+
 
 
 
@@ -3713,7 +7638,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -3725,7 +7658,19 @@
 
 
 
+
+
+
+
+
+
+
+
   async function confirmDeleteUser(userId, username) {
+
+
+
+
 
 
 
@@ -3733,11 +7678,23 @@
 
 
 
+
+
+
+
       ` PERMANENT ACCOUNT DELETION\n\nAre you sure you want to permanently delete user account '${username}' (User ID: #${userId})?\n\nThis will remove their profile from the database, purge their trading history, and evict active background executors.\n\nClick OK to confirm permanent deletion.`
 
 
 
+
+
+
+
     );
+
+
+
+
 
 
 
@@ -3749,7 +7706,19 @@
 
 
 
+
+
+
+
+
+
+
+
     try {
+
+
+
+
 
 
 
@@ -3757,7 +7726,15 @@
 
 
 
+
+
+
+
         method: "DELETE",
+
+
+
+
 
 
 
@@ -3765,7 +7742,15 @@
 
 
 
+
+
+
+
       });
+
+
+
+
 
 
 
@@ -3773,7 +7758,15 @@
 
 
 
+
+
+
+
       if (!resp.ok || !res.success) {
+
+
+
+
 
 
 
@@ -3781,7 +7774,19 @@
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -3797,7 +7802,19 @@
 
 
 
+
+
+
+
+
+
+
+
       if (selectedUserId === userId) {
+
+
+
+
 
 
 
@@ -3805,7 +7822,19 @@
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -3821,7 +7850,19 @@
 
 
 
+
+
+
+
+
+
+
+
       if (window.innerWidth < 1024) {
+
+
+
+
 
 
 
@@ -3829,7 +7870,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3837,7 +7886,15 @@
 
 
 
+
+
+
+
       console.error("[AdminUserPanel] Delete error:", err);
+
+
+
+
 
 
 
@@ -3845,11 +7902,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3861,7 +7934,15 @@
 
 
 
+
+
+
+
     const modal = document.getElementById("adminUserModal");
+
+
+
+
 
 
 
@@ -3869,7 +7950,15 @@
 
 
 
+
+
+
+
       modal.classList.remove("hidden");
+
+
+
+
 
 
 
@@ -3877,8 +7966,17 @@
 
 
 
+
+
+
+
       fetchAdminUsers();
+
       fetchAdminTickets(true);
+
+
+
+
 
 
 
@@ -3886,7 +7984,19 @@
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3898,7 +8008,15 @@
 
 
 
+
+
+
+
     const modal = document.getElementById("adminUserModal");
+
+
+
+
 
 
 
@@ -3906,7 +8024,15 @@
 
 
 
+
+
+
+
       modal.classList.add("hidden");
+
+
+
+
 
 
 
@@ -3914,11 +8040,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3930,7 +8072,15 @@
 
 
 
+
+
+
+
     currentSearch = val;
+
+
+
+
 
 
 
@@ -3938,7 +8088,19 @@
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3950,7 +8112,15 @@
 
 
 
+
+
+
+
     currentModeFilter = mode;
+
+
+
+
 
 
 
@@ -3958,7 +8128,15 @@
 
 
 
+
+
+
+
       if (btn.getAttribute("data-mode") === mode) {
+
+
+
+
 
 
 
@@ -3966,7 +8144,15 @@
 
 
 
+
+
+
+
       } else {
+
+
+
+
 
 
 
@@ -3974,7 +8160,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -3982,11 +8176,27 @@
 
 
 
+
+
+
+
     renderUserList();
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -3998,7 +8208,15 @@
 
 
 
+
+
+
+
     currentAiFilter = ai;
+
+
+
+
 
 
 
@@ -4006,7 +8224,15 @@
 
 
 
+
+
+
+
       if (btn.getAttribute("data-ai") === ai) {
+
+
+
+
 
 
 
@@ -4014,7 +8240,15 @@
 
 
 
+
+
+
+
       } else {
+
+
+
+
 
 
 
@@ -4022,7 +8256,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4030,11 +8272,27 @@
 
 
 
+
+
+
+
     renderUserList();
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4046,7 +8304,15 @@
 
 
 
+
+
+
+
     const listEl = document.getElementById("adminUserListContainer");
+
+
+
+
 
 
 
@@ -4054,7 +8320,15 @@
 
 
 
+
+
+
+
     const tabUsers = document.getElementById("adminTabUsers");
+
+
+
+
 
 
 
@@ -4066,7 +8340,19 @@
 
 
 
+
+
+
+
+
+
+
+
     if (tab === "users") {
+
+
+
+
 
 
 
@@ -4074,7 +8360,15 @@
 
 
 
+
+
+
+
       if (detailEl) detailEl.classList.add("hidden");
+
+
+
+
 
 
 
@@ -4082,7 +8376,15 @@
 
 
 
+
+
+
+
       if (tabSettings) tabSettings.className = "flex-1 py-2.5 px-3 text-center text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all flex items-center justify-center gap-1.5";
+
+
+
+
 
 
 
@@ -4090,7 +8392,15 @@
 
 
 
+
+
+
+
       if (listEl) listEl.classList.add("hidden");
+
+
+
+
 
 
 
@@ -4098,7 +8408,15 @@
 
 
 
+
+
+
+
       if (tabUsers) tabUsers.className = "flex-1 py-2.5 px-3 text-center text-xs font-bold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all flex items-center justify-center gap-1.5";
+
+
+
+
 
 
 
@@ -4106,11 +8424,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4122,7 +8456,15 @@
 
 
 
+
+
+
+
     currentUserDetailTab = tab;
+
+
+
+
 
 
 
@@ -4130,11 +8472,23 @@
 
 
 
+
+
+
+
     const tradesSection = document.getElementById("adminUserTradesSection");
 
 
 
+
+
+
+
     const tabBtnSettings = document.getElementById("tabBtnUserSettings");
+
+
+
+
 
 
 
@@ -4146,7 +8500,19 @@
 
 
 
+
+
+
+
+
+
+
+
     if (tab === "settings") {
+
+
+
+
 
 
 
@@ -4154,11 +8520,23 @@
 
 
 
+
+
+
+
       if (tradesSection) tradesSection.classList.add("hidden");
 
 
 
+
+
+
+
       if (tabBtnSettings) {
+
+
+
+
 
 
 
@@ -4166,11 +8544,23 @@
 
 
 
+
+
+
+
       }
 
 
 
+
+
+
+
       if (tabBtnTrades) {
+
+
+
+
 
 
 
@@ -4178,7 +8568,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4186,7 +8584,15 @@
 
 
 
+
+
+
+
       if (settingsSection) settingsSection.classList.add("hidden");
+
+
+
+
 
 
 
@@ -4194,7 +8600,15 @@
 
 
 
+
+
+
+
       if (tabBtnSettings) {
+
+
+
+
 
 
 
@@ -4202,7 +8616,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4210,11 +8632,27 @@
 
 
 
+
+
+
+
         tabBtnTrades.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all cursor-pointer bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/10";
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -4226,7 +8664,15 @@
 
 
 
+
+
+
+
         loadUserTrades(selectedUserId);
+
+
+
+
 
 
 
@@ -4234,7 +8680,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -4246,95 +8700,121 @@
 
 
 
-  async function loadUserTrades(userId) {
 
 
 
-    if (!userId) return;
 
 
 
-    const listEl = document.getElementById("adminUserTradesList");
+
+
+  let userTradesPollTimer = null;
+
+  async function loadUserTrades(userId, isSilent = false) {
+
+    if (userId === undefined || userId === null || userId === "") return;
+
+    window.__currentAuditTarget = userId;
+
+    const isAll = String(userId).toUpperCase() === "ALL" || Number(userId) === 0;
 
 
 
-    if (listEl) {
+    const btnUser = document.getElementById("btnAuditUserSpecific");
 
+    const btnAll = document.getElementById("btnAuditAllUsers");
 
+    if (btnUser && btnAll) {
 
-      listEl.innerHTML = `
+      if (isAll) {
 
+        btnAll.className = "px-2 py-1 bg-purple-600/40 text-purple-200 border border-purple-400 rounded-lg text-[10px] font-mono font-black shadow-sm";
 
+        btnUser.className = "px-2 py-1 bg-slate-800/80 text-slate-400 border border-slate-700 rounded-lg text-[10px] font-mono font-bold hover:text-white";
 
-        <div class="p-8 text-center text-slate-500 font-mono text-xs">
+      } else {
 
+        btnUser.className = "px-2 py-1 bg-cyan-900/60 text-cyan-200 border border-cyan-400 rounded-lg text-[10px] font-mono font-black shadow-sm";
 
+        btnAll.className = "px-2 py-1 bg-purple-900/30 text-purple-300 border border-purple-500/30 rounded-lg text-[10px] font-mono font-bold hover:bg-purple-800/40";
 
-           Fetching trade ledger for user #${userId}...
-
-
-
-        </div>
-
-
-
-      `;
-
-
+      }
 
     }
 
 
 
+    const listEl = document.getElementById("adminUserTradesList");
 
+    if (listEl && !isSilent && (!currentUserTrades || currentUserTrades.length === 0)) {
+
+      listEl.innerHTML = `
+
+        <div class="p-8 text-center text-slate-500 font-mono text-xs">
+
+           Fetching trade ledger for ${isAll ? "ALL USERS" : "user #" + userId}...
+
+        </div>
+
+      `;
+
+    }
 
 
 
     try {
 
+      const endpoint = isAll
 
+        ? `/api/admin/trades?user_id=ALL&limit=1000`
 
-      const resp = await fetch(`/api/admin/users/${userId}/trades`, {
+        : `/api/admin/users/${userId}/trades`;
 
-
+      let resp = await fetch(endpoint, {
 
         method: "GET",
 
-
-
         headers: getAdminAuthHeaders(),
 
-
+        credentials: "same-origin",
 
       });
 
+      if (!resp.ok) {
 
+        resp = await fetch(`/api/engine/BTC/trade/history?user=${encodeURIComponent(isAll ? "ALL" : userId)}`, {
+
+          method: "GET",
+
+          headers: getAdminAuthHeaders(),
+
+          credentials: "same-origin",
+
+        });
+
+      }
 
       const res = await resp.json();
 
+      if (!resp.ok || (res && res.success === false)) {
 
-
-      if (!resp.ok || !res.success) {
-
-
-
-        throw new Error(res.detail || "Failed to load trades");
-
-
+        throw new Error((res && res.detail) || `HTTP ${resp.status}`);
 
       }
 
 
 
-
-
-
-
-      currentUserTrades = Array.isArray(res.trades) ? res.trades : [];
-
-
+      currentUserTrades = Array.isArray(res) ? res : (Array.isArray(res.trades) ? res.trades : []);
 
       currentTradesUserId = userId;
+
+
+
+
+
+
+
+
 
 
 
@@ -4346,7 +8826,15 @@
 
 
 
+
+
+
+
       const summary = res.summary || {};
+
+
+
+
 
 
 
@@ -4354,11 +8842,23 @@
 
 
 
+
+
+
+
       const elWinRate = document.getElementById("userTradesWinRate");
 
 
 
+
+
+
+
       const elNetPnl = document.getElementById("userTradesNetPnl");
+
+
+
+
 
 
 
@@ -4370,7 +8870,19 @@
 
 
 
+
+
+
+
+
+
+
+
       if (elTotal) elTotal.innerText = summary.total_trades ?? currentUserTrades.length;
+
+
+
+
 
 
 
@@ -4378,7 +8890,15 @@
 
 
 
+
+
+
+
       if (elNetPnl) {
+
+
+
+
 
 
 
@@ -4386,7 +8906,15 @@
 
 
 
+
+
+
+
         elNetPnl.innerText = `${netPnl >= 0 ? "+$" : "-$"}${Math.abs(netPnl).toFixed(2)}`;
+
+
+
+
 
 
 
@@ -4394,7 +8922,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4406,7 +8942,19 @@
 
 
 
+
+
+
+
+
+
+
+
       renderUserTradesList();
+
+
+
+
 
 
 
@@ -4414,7 +8962,15 @@
 
 
 
+
+
+
+
       console.error("[AdminUserPanel] Trade fetch error:", err);
+
+
+
+
 
 
 
@@ -4422,7 +8978,15 @@
 
 
 
+
+
+
+
         listEl.innerHTML = `
+
+
+
+
 
 
 
@@ -4430,7 +8994,15 @@
 
 
 
+
+
+
+
             Failed to load trades: ${escapeHtml(err.message)}
+
+
+
+
 
 
 
@@ -4438,7 +9010,15 @@
 
 
 
+
+
+
+
         `;
+
+
+
+
 
 
 
@@ -4446,11 +9026,27 @@
 
 
 
+
+
+
+
     }
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4462,7 +9058,15 @@
 
 
 
+
+
+
+
     currentTradeFilterMode = mode;
+
+
+
+
 
 
 
@@ -4470,7 +9074,15 @@
 
 
 
+
+
+
+
       if (btn.getAttribute("data-tmode") === mode) {
+
+
+
+
 
 
 
@@ -4478,7 +9090,15 @@
 
 
 
+
+
+
+
       } else {
+
+
+
+
 
 
 
@@ -4486,7 +9106,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4494,11 +9122,27 @@
 
 
 
+
+
+
+
     renderUserTradesList();
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4510,7 +9154,15 @@
 
 
 
+
+
+
+
     currentTradeFilterStatus = status;
+
+
+
+
 
 
 
@@ -4518,7 +9170,15 @@
 
 
 
+
+
+
+
       if (btn.getAttribute("data-tstatus") === status) {
+
+
+
+
 
 
 
@@ -4526,7 +9186,15 @@
 
 
 
+
+
+
+
       } else {
+
+
+
+
 
 
 
@@ -4534,7 +9202,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -4542,11 +9218,27 @@
 
 
 
+
+
+
+
     renderUserTradesList();
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4558,7 +9250,15 @@
 
 
 
+
+
+
+
     currentTradeSearch = (query || "").trim().toLowerCase();
+
+
+
+
 
 
 
@@ -4566,7 +9266,19 @@
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -4578,7 +9290,15 @@
 
 
 
+
+
+
+
     const listEl = document.getElementById("adminUserTradesList");
+
+
+
+
 
 
 
@@ -4590,7 +9310,19 @@
 
 
 
+
+
+
+
+
+
+
+
     if (!currentUserTrades || currentUserTrades.length === 0) {
+
+
+
+
 
 
 
@@ -4598,7 +9330,15 @@
 
 
 
+
+
+
+
         <div class="p-8 text-center text-slate-500 font-mono text-xs border border-slate-800 rounded-xl bg-slate-900/30">
+
+
+
+
 
 
 
@@ -4606,7 +9346,15 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
 
 
 
@@ -4614,11 +9362,27 @@
 
 
 
+
+
+
+
       return;
 
 
 
+
+
+
+
     }
+
+
+
+
+
+
+
+
 
 
 
@@ -4630,7 +9394,15 @@
 
 
 
+
+
+
+
       // Mode filter
+
+
+
+
 
 
 
@@ -4638,7 +9410,15 @@
 
 
 
+
+
+
+
       if (currentTradeFilterMode !== "ALL" && tMode !== currentTradeFilterMode) {
+
+
+
+
 
 
 
@@ -4646,7 +9426,19 @@
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -4658,7 +9450,15 @@
 
 
 
+
+
+
+
       const status = (t.status || "CLOSED").toUpperCase();
+
+
+
+
 
 
 
@@ -4666,7 +9466,15 @@
 
 
 
+
+
+
+
       if (currentTradeFilterStatus === "CLOSED" && status === "OPEN") return false;
+
+
+
+
 
 
 
@@ -4674,7 +9482,15 @@
 
 
 
+
+
+
+
       if (currentTradeFilterStatus === "WINS" && (status === "OPEN" || pnl <= 0)) return false;
+
+
+
+
 
 
 
@@ -4686,251 +9502,169 @@
 
 
 
+
+
+
+
+
+
+
+
       // Search query
-
-
 
       if (currentTradeSearch) {
 
-
-
-        const targetStr = `${t.id || ""} ${t.ticker || ""} ${t.side || ""} ${t.direction || ""} ${t.trading_style || ""} ${t.signal_source || ""} ${t.reason || ""} ${t.exit_reason || ""} ${t.mode || ""}`.toLowerCase();
-
-
+        const targetStr = `${t.username || ""} ${t.user_id || ""} ${t.id || ""} ${t.ticker || ""} ${t.side || ""} ${t.direction || ""} ${t.trading_style || ""} ${t.signal_source || ""} ${t.reason || ""} ${t.exit_reason || ""} ${t.mode || ""}`.toLowerCase();
 
         if (!targetStr.includes(currentTradeSearch)) {
 
-
-
           return false;
-
-
 
         }
 
-
-
       }
-
-
-
-
 
 
 
       return true;
 
-
-
     });
-
-
-
-
 
 
 
     if (filtered.length === 0) {
 
-
-
       listEl.innerHTML = `
-
-
 
         <div class="p-8 text-center text-slate-500 font-mono text-xs border border-slate-800 rounded-xl bg-slate-900/30">
 
-
-
           No trades match the current filter criteria.
-
-
 
         </div>
 
-
-
       `;
 
-
-
       return;
-
-
 
     }
 
 
 
-
-
-
-
-    listEl.innerHTML = filtered.reverse().map((t) => {
-
-
+    listEl.innerHTML = filtered.map((t) => {
 
       const isClosed = (t.status || "CLOSED").toUpperCase() !== "OPEN";
 
-
-
       const pnl = parseFloat(t.pnl || 0);
-
-
 
       const isWin = isClosed && pnl > 0;
 
-
-
       const isLoss = isClosed && pnl < 0;
-
-
 
       const side = (t.side || t.direction || "YES").toUpperCase();
 
-
-
       const isYes = side === "YES";
-
-
 
       const mode = (t.mode || "PAPER").toUpperCase();
 
-
-
       const count = t.count || t.contracts || 1;
 
+      const entryPrice = t.entry_price != null ? (t.entry_price * 100).toFixed(0) + "¢" : (t.price != null ? (t.price * 100).toFixed(0) + "¢" : "--");
 
+      const curPrice = t.current_price !== undefined ? t.current_price : (t.cur_price !== undefined ? t.cur_price : null);
 
-      const entryPrice = t.entry_price != null ? (t.entry_price * 100).toFixed(0) + "" : (t.price != null ? (t.price * 100).toFixed(0) + "" : "--");
+      const curCents = (!isClosed && curPrice != null) ? (curPrice * 100).toFixed(0) + "¢" : null;
 
-
-
-      const exitPrice = t.exit_price != null ? (t.exit_price * 100).toFixed(0) + "" : null;
-
-
+      const exitPrice = isClosed ? (t.exit_price != null ? (t.exit_price * 100).toFixed(0) + "¢" : null) : curCents;
 
       const reason = t.reason || t.exit_reason || (isClosed ? "SETTLEMENT" : "ACTIVE");
 
 
 
-
-
-
-
       let formattedTime = "N/A";
-
-
 
       if (t.timestamp) {
 
-
-
         if (typeof t.timestamp === "number" || (!isNaN(t.timestamp) && !isNaN(parseFloat(t.timestamp)))) {
-
-
 
           try {
 
-
-
             const dt = new Date(parseFloat(t.timestamp) * (parseFloat(t.timestamp) < 10000000000 ? 1000 : 1));
-
-
 
             formattedTime = dt.toLocaleString();
 
-
-
           } catch (_) {
-
-
 
             formattedTime = String(t.timestamp);
 
-
-
           }
-
-
 
         } else {
 
-
-
           formattedTime = String(t.timestamp);
-
-
 
         }
 
-
-
       }
-
-
-
-
 
 
 
       let pnlBadge = "";
 
-
+      const livePnl = parseFloat(t.live_pnl !== undefined ? t.live_pnl : (t.pnl_dollars !== undefined ? t.pnl_dollars : pnl)) || 0;
 
       if (isClosed) {
 
-
-
         pnlBadge = `<span class="text-xs font-mono font-black ${isWin ? "text-emerald-400" : isLoss ? "text-rose-400" : "text-slate-400"}">${pnl >= 0 ? "+$" : "-$"}${Math.abs(pnl).toFixed(2)}</span>`;
-
-
 
       } else {
 
+        const liveColor = livePnl > 0 ? "text-emerald-400" : (livePnl < 0 ? "text-rose-400" : "text-cyan-400");
 
+        pnlBadge = `
 
-        pnlBadge = `<span class="text-[10px] font-mono font-bold text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-500/40">OPEN</span>`;
+          <div class="flex items-center gap-1.5">
 
+            <span class="text-[9px] font-mono font-bold text-cyan-300 bg-cyan-950/80 px-1.5 py-0.2 rounded border border-cyan-500/40 animate-pulse">● LIVE</span>
 
+            <span class="text-xs font-mono font-black ${liveColor}">${livePnl >= 0 ? "+$" : "-$"}${Math.abs(livePnl).toFixed(2)}</span>
+
+          </div>
+
+        `;
 
       }
 
 
 
-
-
-
-
       const cardBorder = isClosed
 
-
-
         ? (isWin ? "border-emerald-500/30 hover:border-emerald-500/60" : isLoss ? "border-rose-500/30 hover:border-rose-500/60" : "border-slate-800 hover:border-slate-700")
-
-
 
         : "border-cyan-500/40 hover:border-cyan-500/70";
 
 
 
-
-
-
-
       // Style and Signal Badges
-
-
 
       const badges = [];
 
+      if (t.username) {
 
+        badges.push('<span class="text-[8px] font-black px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">👤 ' + escapeHtml(t.username) + '</span>');
+
+      }
 
       const exitReasonStr = String(t.exit_reason || t.reason || "").toUpperCase();
 
-
-
       const isManual = t.is_manual === true || String(t.trading_style || "").toUpperCase() === "MANUAL" || String(t.signal_source || "").toUpperCase() === "MANUAL" || exitReasonStr === "MANUAL";
+
+
+
+
+
+
+
+
 
 
 
@@ -4942,7 +9676,15 @@
 
 
 
+
+
+
+
       if (isManual) {
+
+
+
+
 
 
 
@@ -4950,7 +9692,15 @@
 
 
 
+
+
+
+
       } else {
+
+
+
+
 
 
 
@@ -4958,7 +9708,15 @@
 
 
 
+
+
+
+
         if (rawStyle.includes("MOMENTUM")) {
+
+
+
+
 
 
 
@@ -4966,7 +9724,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("SNIPER")) {
+
+
+
+
 
 
 
@@ -4974,7 +9740,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("PREDICTION")) {
+
+
+
+
 
 
 
@@ -4982,7 +9756,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("AMBUSH")) {
+
+
+
+
 
 
 
@@ -4990,7 +9772,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("CHOP")) {
+
+
+
+
 
 
 
@@ -4998,7 +9788,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("GUARD") || rawStyle.includes("CAPITAL")) {
+
+
+
+
 
 
 
@@ -5006,7 +9804,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("FORCE")) {
+
+
+
+
 
 
 
@@ -5014,7 +9820,15 @@
 
 
 
+
+
+
+
         } else if (rawStyle.includes("SECOND") || rawStyle.includes("2ND")) {
+
+
+
+
 
 
 
@@ -5022,7 +9836,15 @@
 
 
 
+
+
+
+
         } else {
+
+
+
+
 
 
 
@@ -5030,11 +9852,27 @@
 
 
 
+
+
+
+
         }
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -5046,7 +9884,15 @@
 
 
 
+
+
+
+
       if (!isManual) {
+
+
+
+
 
 
 
@@ -5054,7 +9900,15 @@
 
 
 
+
+
+
+
         if (rawSource.includes("BLEND")) {
+
+
+
+
 
 
 
@@ -5062,7 +9916,15 @@
 
 
 
+
+
+
+
         } else if (rawSource.includes("DQN") || rawSource.includes("RL")) {
+
+
+
+
 
 
 
@@ -5070,7 +9932,15 @@
 
 
 
+
+
+
+
         } else if (rawSource.includes("TECH")) {
+
+
+
+
 
 
 
@@ -5078,7 +9948,15 @@
 
 
 
+
+
+
+
         } else if (rawSource.includes("SWARM") || rawSource.includes("ENSEMBLE")) {
+
+
+
+
 
 
 
@@ -5086,7 +9964,15 @@
 
 
 
+
+
+
+
         } else if (rawSource && !rawSource.includes("REVERSAL")) {
+
+
+
+
 
 
 
@@ -5094,11 +9980,27 @@
 
 
 
+
+
+
+
         }
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -5110,7 +10012,15 @@
 
 
 
+
+
+
+
       if (t.is_profit_reentry || exitReasonStr.includes("SECOND_ENTRY")) {
+
+
+
+
 
 
 
@@ -5118,7 +10028,15 @@
 
 
 
+
+
+
+
       }
+
+
+
+
 
 
 
@@ -5126,11 +10044,27 @@
 
 
 
+
+
+
+
         badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-pink-500/20 text-pink-300 border border-pink-500/35"> REVERSAL</span>');
 
 
 
+
+
+
+
       }
+
+
+
+
+
+
+
+
 
 
 
@@ -5142,7 +10076,15 @@
 
 
 
+
+
+
+
         <div class="p-3 bg-slate-900/70 border ${cardBorder} rounded-xl transition-all font-mono text-xs space-y-2">
+
+
+
+
 
 
 
@@ -5150,7 +10092,15 @@
 
 
 
+
+
+
+
             <div class="flex items-center gap-2 min-w-0">
+
+
+
+
 
 
 
@@ -5158,7 +10108,15 @@
 
 
 
+
+
+
+
                 isYes ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+
+
+
+
 
 
 
@@ -5166,7 +10124,15 @@
 
 
 
+
+
+
+
               <span class="font-bold text-white truncate text-xs" title="${escapeHtml(t.ticker || "UNKNOWN")}">${escapeHtml(t.ticker || "UNKNOWN")}</span>
+
+
+
+
 
 
 
@@ -5174,7 +10140,15 @@
 
 
 
+
+
+
+
                 mode === "LIVE" ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-slate-800 text-slate-300"
+
+
+
+
 
 
 
@@ -5182,7 +10156,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -5190,7 +10172,15 @@
 
 
 
+
+
+
+
               ${pnlBadge}
+
+
+
+
 
 
 
@@ -5198,7 +10188,19 @@
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -5210,11 +10212,27 @@
 
 
 
+
+
+
+
             ${Array.from(new Map(badges.map(b => [b.replace(/<[^>]*>/g, '').trim().toUpperCase(), b])).values()).join("")}
 
 
 
+
+
+
+
           </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -5226,7 +10244,15 @@
 
 
 
+
+
+
+
             <div>
+
+
+
+
 
 
 
@@ -5234,7 +10260,15 @@
 
 
 
+
+
+
+
               <span class="text-slate-200 font-bold">${escapeHtml(count)}x</span>
+
+
+
+
 
 
 
@@ -5242,7 +10276,15 @@
 
 
 
+
+
+
+
             <div>
+
+
+
+
 
 
 
@@ -5250,11 +10292,23 @@
 
 
 
+
+
+
+
               <span class="text-slate-200 font-bold">${escapeHtml(entryPrice)}${exitPrice ? `  ${escapeHtml(exitPrice)}` : ""}</span>
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -5262,7 +10316,15 @@
 
 
 
+
+
+
+
               <span class="text-slate-500 text-[8px] uppercase block">Outcome / Reason</span>
+
+
+
+
 
 
 
@@ -5270,7 +10332,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -5278,7 +10348,15 @@
 
 
 
+
+
+
+
               <span class="text-slate-500 text-[8px] uppercase block">Timestamp</span>
+
+
+
+
 
 
 
@@ -5286,7 +10364,15 @@
 
 
 
+
+
+
+
             </div>
+
+
+
+
 
 
 
@@ -5294,7 +10380,15 @@
 
 
 
+
+
+
+
         </div>
+
+
+
+
 
 
 
@@ -5302,11 +10396,27 @@
 
 
 
+
+
+
+
     }).join("");
 
 
 
+
+
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -5318,7 +10428,15 @@
 
 
 
+
+
+
+
   window.addEventListener("resize", () => {
+
+
+
+
 
 
 
@@ -5326,7 +10444,15 @@
 
 
 
+
+
+
+
       const listEl = document.getElementById("adminUserListContainer");
+
+
+
+
 
 
 
@@ -5334,7 +10460,15 @@
 
 
 
+
+
+
+
       if (listEl) listEl.classList.remove("hidden");
+
+
+
+
 
 
 
@@ -5342,7 +10476,15 @@
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -5354,590 +10496,1205 @@
 
 
 
+
+
+
+
+
+
+
+
   // ==========================================
+
   // SUPPORT TICKETS MODULE
+
   // ==========================================
+
+
 
   function switchAdminSection(section) {
+
     adminCurrentSection = section;
+
     const btnUsers = document.getElementById("adminNavBtnUsers");
+
     const btnTickets = document.getElementById("adminNavBtnTickets");
+
     const secUsers = document.getElementById("adminSectionUsers");
+
     const secTickets = document.getElementById("adminSectionTickets");
 
+
+
     if (section === "tickets") {
+
       if (btnUsers) {
+
         btnUsers.className = "px-3 py-1 font-bold rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer";
+
       }
+
       if (btnTickets) {
+
         btnTickets.className = "px-3 py-1 font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-1.5 cursor-pointer";
+
       }
+
       if (secUsers) secUsers.classList.add("hidden");
+
       if (secTickets) secTickets.classList.remove("hidden");
+
       fetchAdminTickets();
+
     } else {
+
       if (btnUsers) {
+
         btnUsers.className = "px-3 py-1 font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-1.5 cursor-pointer";
+
       }
+
       if (btnTickets) {
+
         btnTickets.className = "px-3 py-1 font-bold rounded-lg transition-all text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer";
+
       }
+
       if (secUsers) secUsers.classList.remove("hidden");
+
       if (secTickets) secTickets.classList.add("hidden");
+
     }
+
   }
+
+
 
   async function fetchAdminTickets(isBackground = false) {
+
     try {
+
       const resp = await fetch("/api/admin/tickets", {
+
         cache: "no-store",
+
         headers: getAdminAuthHeaders(),
+
       });
+
       if (!resp.ok) {
+
         throw new Error(`Server returned HTTP ${resp.status}`);
+
       }
+
       const data = await resp.json();
+
       if (data && Array.isArray(data.tickets)) {
+
         adminTicketsList = data.tickets;
+
         updateTicketBadgesAndStats();
+
         renderTicketsList();
+
         if (selectedTicketId !== null) {
+
           const currentTicket = adminTicketsList.find(t => t.id === selectedTicketId);
+
           if (currentTicket) {
+
             renderTicketDetail(currentTicket);
+
           }
+
         }
+
       }
+
     } catch (err) {
+
       if (!isBackground) {
+
         console.error("Failed to fetch tickets:", err);
+
         showAdminToast(`Failed to load tickets: ${err.message}`, "error");
+
       }
+
     }
+
   }
+
+
 
   function updateTicketBadgesAndStats() {
+
     const total = adminTicketsList.length;
+
     const open = adminTicketsList.filter(t => t.status === "OPEN").length;
+
     const resolved = adminTicketsList.filter(t => t.status === "RESOLVED").length;
+
     const aiAnalyzed = adminTicketsList.filter(t => Boolean(t.bot_recommendation)).length;
 
+
+
     // Header badge
+
     const headerTicketCount = document.getElementById("headerTicketCount");
+
     const headerTicketBadge = document.getElementById("headerTicketBadge");
+
     if (headerTicketCount) headerTicketCount.textContent = open;
+
     if (headerTicketBadge) {
+
       if (open > 0) {
+
         headerTicketBadge.classList.remove("hidden");
+
       } else {
+
         headerTicketBadge.classList.add("hidden");
+
       }
+
     }
+
+
 
     // Stats row
+
     const totalEl = document.getElementById("adminTotalTicketsCount");
+
     const openEl = document.getElementById("adminOpenTicketsCount");
+
     const resolvedEl = document.getElementById("adminResolvedTicketsCount");
+
     const aiEl = document.getElementById("adminAiAnalyzedCount");
 
+
+
     if (totalEl) totalEl.textContent = total;
+
     if (openEl) openEl.textContent = open;
+
     if (resolvedEl) resolvedEl.textContent = resolved;
+
     if (aiEl) aiEl.textContent = aiAnalyzed;
+
   }
+
+
 
   function setTicketFilterStatus(status) {
+
     currentTicketFilterStatus = status;
+
     const btnAll = document.getElementById("ticketFilterBtnAll");
+
     const btnOpen = document.getElementById("ticketFilterBtnOpen");
+
     const btnResolved = document.getElementById("ticketFilterBtnResolved");
 
+
+
     const activeClass = "flex-1 py-1 text-center font-bold rounded bg-indigo-600 text-white shadow-sm transition-all cursor-pointer";
+
     const inactiveClass = "flex-1 py-1 text-center font-bold rounded text-slate-400 hover:text-white transition-all cursor-pointer";
 
+
+
     if (btnAll) btnAll.className = status === "ALL" ? activeClass : inactiveClass;
+
     if (btnOpen) btnOpen.className = status === "OPEN" ? activeClass : inactiveClass;
+
     if (btnResolved) btnResolved.className = status === "RESOLVED" ? activeClass : inactiveClass;
 
+
+
     renderTicketsList();
+
   }
+
+
 
   function setTicketSearch(query) {
+
     currentTicketSearch = (query || "").trim().toLowerCase();
+
     renderTicketsList();
+
   }
+
+
 
   function renderTicketsList() {
+
     const listContainer = document.getElementById("adminTicketListContainer");
+
     if (!listContainer) return;
 
+
+
     let filtered = adminTicketsList.filter(t => {
+
       if (currentTicketFilterStatus !== "ALL" && t.status !== currentTicketFilterStatus) {
+
         return false;
+
       }
+
       if (currentTicketSearch) {
+
         const username = (t.username || "").toLowerCase();
+
         const issue = (t.issue_text || "").toLowerCase();
+
         const idStr = String(t.id);
+
         if (!username.includes(currentTicketSearch) && !issue.includes(currentTicketSearch) && !idStr.includes(currentTicketSearch)) {
+
           return false;
+
         }
+
       }
+
       return true;
+
     });
+
+
 
     if (filtered.length === 0) {
+
       listContainer.innerHTML = `
+
         <div class="p-8 text-center text-slate-500 font-mono text-xs">
+
           No tickets found matching criteria.
+
         </div>
+
       `;
+
       return;
+
     }
+
+
 
     listContainer.innerHTML = filtered.map(t => {
+
       const isSelected = t.id === selectedTicketId;
+
       const isOpen = t.status === "OPEN";
+
       const hasAi = Boolean(t.bot_recommendation);
+
       const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : "";
 
+
+
       return `
+
         <div onclick="window.selectAdminTicket(${t.id})" 
+
              class="p-3 rounded-xl border transition-all cursor-pointer ${
+
                isSelected
+
                  ? "bg-indigo-950/40 border-indigo-500/80 shadow-[0_0_15px_rgba(99,102,241,0.25)]"
+
                  : "bg-slate-900/80 hover:bg-slate-800/80 border-slate-800"
+
              }">
+
           <div class="flex items-center justify-between gap-2 mb-1.5">
+
             <div class="flex items-center gap-1.5">
+
               <span class="font-mono font-bold text-xs ${isSelected ? "text-indigo-300" : "text-slate-300"}">#${t.id}</span>
+
               <span class="text-xs font-semibold text-white truncate max-w-[120px]">@${escapeHtml(t.username || "User " + t.user_id)}</span>
+
             </div>
+
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wide ${
+
               isOpen
+
                 ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+
                 : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+
             }">
+
               ${isOpen ? "OPEN" : "RESOLVED"}
+
             </span>
+
           </div>
+
+
 
           <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-2 font-sans">
+
             ${escapeHtml(t.issue_text || "No issue description provided.")}
+
           </p>
 
+
+
           <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800/60">
+
             <span>${dateStr}</span>
+
             ${hasAi ? `
+
               <span class="flex items-center gap-1 text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/50">
+
                 <span>🤖</span> AI Diagnosed
+
               </span>
+
             ` : `
+
               <span class="text-slate-600">Pending AI</span>
+
             `}
+
           </div>
+
         </div>
+
       `;
+
     }).join("");
+
   }
+
+
 
   function selectAdminTicket(ticketId) {
+
     selectedTicketId = ticketId;
+
     const ticket = adminTicketsList.find(t => t.id === ticketId);
+
+
 
     // Responsive toggle for smaller screens
+
     const listTab = document.getElementById("adminTabTicketList");
+
     const detailTab = document.getElementById("adminTabTicketDetail");
+
     if (window.innerWidth < 1024) {
+
       if (listTab) listTab.classList.add("hidden");
+
       if (detailTab) {
+
         detailTab.classList.remove("hidden");
+
         detailTab.classList.add("flex");
+
       }
+
     }
+
+
 
     renderTicketsList();
+
     if (ticket) {
+
       renderTicketDetail(ticket);
+
     }
+
   }
+
+
 
   function backToTicketList() {
+
     const listTab = document.getElementById("adminTabTicketList");
+
     const detailTab = document.getElementById("adminTabTicketDetail");
+
     if (listTab) listTab.classList.remove("hidden");
+
     if (detailTab) {
+
       detailTab.classList.add("hidden");
+
       detailTab.classList.remove("flex");
+
     }
+
   }
+
+
 
   function renderSimpleMarkdown(md) {
+
     if (!md) return "";
+
     let html = escapeHtml(md);
 
+
+
     // Code blocks with triple backticks
+
     html = html.replace(/```(?:[a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(match, code) {
+
       return '<pre class="bg-black/80 p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-cyan-200 overflow-x-auto my-3 select-text shadow-inner"><code>' + code + '</code></pre>';
+
     });
 
+
+
     // Inline code with single backticks
+
     html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-800 px-1.5 py-0.5 rounded text-[11px] font-mono text-cyan-300 font-semibold border border-slate-700/60">$1</code>');
 
+
+
     // Headings
+
     html = html.replace(/^### (.*$)/gim, '<h3 class="text-sm font-bold text-cyan-300 mt-3 mb-1.5 border-b border-cyan-900/40 pb-1 flex items-center gap-1.5"><span class="text-xs">⚡</span> $1</h3>');
+
     html = html.replace(/^## (.*$)/gim, '<h2 class="text-base font-bold text-white mt-4 mb-2 pb-1 border-b border-slate-800">$1</h2>');
+
     html = html.replace(/^# (.*$)/gim, '<h1 class="text-lg font-black text-white mt-4 mb-2">$1</h1>');
 
+
+
     // Horizontal rule ---
+
     html = html.replace(/^---$/gim, '<hr class="border-slate-800 my-3">');
 
+
+
     // Bold **text**
+
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-bold">$1</strong>');
+
     
+
     // Italic *text*
+
     html = html.replace(/\*(.*?)\*/g, '<em class="text-slate-300">$1</em>');
 
+
+
     // Bullet items
+
     html = html.replace(/^[\*\-] (.*$)/gim, '<div class="flex items-start gap-2 my-1 ml-2"><span class="text-cyan-400 text-xs leading-5">•</span><span class="text-slate-200 text-xs leading-5">$1</span></div>');
 
+
+
     // Numbered lists 1. 2. etc
+
     html = html.replace(/^(\d+)\. (.*$)/gim, '<div class="flex items-start gap-2 my-1 ml-2"><span class="text-indigo-400 font-mono text-xs font-bold leading-5">$1.</span><span class="text-slate-200 text-xs leading-5">$2</span></div>');
 
+
+
     // Double newline to paragraph spacing
+
     html = html.replace(/\n\n+/g, '<div class="h-2"></div>');
 
+
+
     // Single newline to br
+
     html = html.replace(/\n/g, '<br>');
 
+
+
     return html;
+
   }
+
+
 
   function renderTicketDetail(ticket) {
+
     const panel = document.getElementById("adminTicketDetailPanel");
+
     if (!panel) return;
 
+
+
     const isOpen = ticket.status === "OPEN";
+
     const dateFormatted = ticket.created_at ? new Date(ticket.created_at).toLocaleString() : "Unknown";
+
     const hasAi = Boolean(ticket.bot_recommendation);
 
+
+
     panel.innerHTML = `
+
       <div class="space-y-4 max-w-4xl mx-auto">
+
         <!-- Top Action / Title Bar -->
+
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-950/80 rounded-2xl border border-slate-800 shadow-md">
+
           <div class="flex items-center gap-3">
+
             <button onclick="window.backToTicketList()" class="lg:hidden px-2.5 py-1 text-xs bg-slate-800 text-slate-300 hover:text-white rounded-lg border border-slate-700 font-bold transition-all cursor-pointer">
+
               ← Back
+
             </button>
+
             <div>
+
               <div class="flex items-center gap-2">
+
                 <span class="font-mono text-base font-black text-indigo-400">Ticket #${ticket.id}</span>
+
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
+
                   isOpen
+
                     ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+
                     : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+
                 }">
+
                   ${isOpen ? "● OPEN" : "✓ RESOLVED"}
+
                 </span>
+
               </div>
+
               <div class="text-xs text-slate-400 mt-0.5">
+
                 Submitted by <strong class="text-slate-200">@${escapeHtml(ticket.username || "User " + ticket.user_id)}</strong> 
+
                 <span class="text-slate-600">•</span> ${dateFormatted}
+
               </div>
+
             </div>
+
           </div>
+
+
 
           <!-- Action Buttons -->
+
           <div class="flex items-center gap-2">
+
             <button id="btnAiAnalyze" onclick="window.runAiDevBot(${ticket.id})" 
+
                     ${isAnalyzingTicket ? "disabled" : ""}
+
                     class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer ${
+
                       isAnalyzingTicket
+
                         ? "bg-cyan-900/50 text-cyan-300 border border-cyan-800 cursor-not-allowed opacity-75"
+
                         : "bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-900/30"
+
                     }">
+
               ${isAnalyzingTicket ? `
+
                 <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+
                 Analyzing...
+
               ` : `
+
                 <span>🤖</span> ${hasAi ? "Re-Run AI Dev Bot" : "Run AI Dev Bot"}
+
               `}
+
             </button>
 
+
+
             ${isOpen ? `
+
               <button onclick="window.approveTicket(${ticket.id})" 
+
                       class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-900/30 cursor-pointer">
+
                 <span>✅</span> Approve & Resolve
+
               </button>
+
             ` : `
+
               <button onclick="window.reopenTicket(${ticket.id})" 
+
                       class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer">
+
                 <span>↺</span> Re-open
+
               </button>
+
             `}
 
+
+
             <button onclick="window.deleteTicketPrompt(${ticket.id})" 
+
                     class="p-2 text-slate-500 hover:text-rose-400 hover:bg-slate-800/80 rounded-xl transition-all cursor-pointer" title="Delete Ticket">
+
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+
             </button>
+
           </div>
+
         </div>
+
+
 
         <!-- Issue Text Box -->
+
         <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-2">
+
           <div class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+
             <span class="flex items-center gap-1.5">
+
               <span>📝</span> User Reported Issue
+
             </span>
+
             <span class="text-[10px] font-mono text-slate-600">User ID: ${ticket.user_id}</span>
+
           </div>
+
           <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800/80 text-sm text-slate-200 leading-relaxed font-sans select-text">
+
             ${escapeHtml(ticket.issue_text || "No description provided.")}
+
           </div>
+
         </div>
+
+
 
         <!-- AI Dev Bot Recommendation Panel -->
+
         <div class="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+
           <div class="flex items-center justify-between">
+
             <div class="flex items-center gap-2">
+
               <span class="text-lg">🤖</span>
+
               <div>
+
                 <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400">AI Dev Bot Analysis</h3>
+
                 <span class="text-[10px] text-slate-500 font-mono">Engine: Gemini 3.8 Flash Architecture</span>
+
               </div>
+
             </div>
+
             ${hasAi ? `
+
               <span class="px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800 text-[10px] font-mono">
+
                 Analysis Ready
+
               </span>
+
             ` : ""}
+
           </div>
 
+
+
           ${hasAi ? `
+
             <div class="p-4 bg-slate-900/95 rounded-xl border border-cyan-500/20 text-xs leading-relaxed text-slate-200 select-text font-sans shadow-inner">
+
               ${renderSimpleMarkdown(ticket.bot_recommendation)}
+
             </div>
+
             ${isOpen ? `
+
               <div class="flex justify-end pt-2">
+
                 <button onclick="window.approveTicket(${ticket.id})" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md">
+
                   <span>✅</span> Approve Proposed Fix & Mark Ticket Resolved
+
                 </button>
+
               </div>
+
             ` : ""}
+
           ` : `
+
             <div class="p-6 text-center bg-slate-900/40 rounded-xl border border-dashed border-slate-800 space-y-2">
+
               <div class="text-2xl">⚡</div>
+
               <div class="text-xs font-bold text-slate-300">No Automated Diagnostic Yet</div>
+
               <p class="text-xs text-slate-500 max-w-md mx-auto">
+
                 Click "Run AI Dev Bot" above to perform real-time triage using Gemini. The bot will inspect the report, identify the underlying root cause in the trading engine or UI, and provide actionable technical steps.
+
               </p>
+
             </div>
+
           `}
+
         </div>
+
       </div>
+
     `;
+
   }
+
+
 
   async function runAiDevBot(ticketId) {
+
     if (isAnalyzingTicket) return;
+
     isAnalyzingTicket = true;
+
     const ticket = adminTicketsList.find(t => t.id === ticketId);
+
     if (ticket) renderTicketDetail(ticket);
 
+
+
     try {
+
       showAdminToast("Contacting Gemini AI Dev Bot...", "info");
+
       const resp = await fetch(`/api/admin/tickets/${ticketId}/analyze`, {
+
         method: "POST",
+
         headers: getAdminAuthHeaders(),
+
       });
 
+
+
       if (!resp.ok) {
+
         const errData = await resp.json().catch(() => ({}));
+
         throw new Error(errData.detail || `HTTP ${resp.status}`);
+
       }
+
+
 
       const data = await resp.json();
+
       if (data && data.bot_recommendation) {
+
         if (ticket) {
+
           ticket.bot_recommendation = data.bot_recommendation;
+
         }
+
         updateTicketBadgesAndStats();
+
         renderTicketsList();
+
         if (ticket) renderTicketDetail(ticket);
+
         showAdminToast("AI Dev Bot analysis completed successfully!", "success");
+
       }
+
     } catch (err) {
+
       console.error("AI Dev Bot failed:", err);
+
       showAdminToast(`AI Dev Bot failed: ${err.message}`, "error");
+
     } finally {
+
       isAnalyzingTicket = false;
+
       const t = adminTicketsList.find(x => x.id === ticketId);
+
       if (t) renderTicketDetail(t);
+
     }
+
   }
+
+
 
   async function approveTicket(ticketId) {
+
     try {
+
       const resp = await fetch(`/api/admin/tickets/${ticketId}/approve`, {
+
         method: "POST",
+
         headers: getAdminAuthHeaders(),
+
       });
 
+
+
       if (!resp.ok) {
+
         const errData = await resp.json().catch(() => ({}));
+
         throw new Error(errData.detail || `HTTP ${resp.status}`);
+
       }
 
+
+
       const ticket = adminTicketsList.find(t => t.id === ticketId);
+
       if (ticket) {
+
         ticket.status = "RESOLVED";
+
       }
+
       updateTicketBadgesAndStats();
+
       renderTicketsList();
+
       if (ticket) renderTicketDetail(ticket);
+
       showAdminToast(`Ticket #${ticketId} marked as RESOLVED!`, "success");
+
     } catch (err) {
+
       console.error("Approve ticket failed:", err);
+
       showAdminToast(`Failed to approve ticket: ${err.message}`, "error");
+
     }
+
   }
+
+
 
   async function reopenTicket(ticketId) {
+
     try {
+
       const resp = await fetch(`/api/admin/tickets/${ticketId}/reopen`, {
+
         method: "POST",
+
         headers: getAdminAuthHeaders(),
+
       });
 
+
+
       if (!resp.ok) {
+
         const errData = await resp.json().catch(() => ({}));
+
         throw new Error(errData.detail || `HTTP ${resp.status}`);
+
       }
+
+
 
       const ticket = adminTicketsList.find(t => t.id === ticketId);
+
       if (ticket) {
+
         ticket.status = "OPEN";
+
       }
+
       updateTicketBadgesAndStats();
+
       renderTicketsList();
+
       if (ticket) renderTicketDetail(ticket);
+
       showAdminToast(`Ticket #${ticketId} re-opened!`, "info");
+
     } catch (err) {
+
       console.error("Reopen ticket failed:", err);
+
       showAdminToast(`Failed to re-open ticket: ${err.message}`, "error");
+
     }
+
   }
+
+
 
   async function deleteTicketPrompt(ticketId) {
+
     if (!confirm(`Are you sure you want to permanently delete Support Ticket #${ticketId}?`)) return;
+
     try {
+
       const resp = await fetch(`/api/admin/tickets/${ticketId}`, {
+
         method: "DELETE",
+
         headers: getAdminAuthHeaders(),
+
       });
 
+
+
       if (!resp.ok) {
+
         const errData = await resp.json().catch(() => ({}));
+
         throw new Error(errData.detail || `HTTP ${resp.status}`);
+
       }
+
+
 
       adminTicketsList = adminTicketsList.filter(t => t.id !== ticketId);
+
       if (selectedTicketId === ticketId) {
+
         selectedTicketId = null;
+
         const panel = document.getElementById("adminTicketDetailPanel");
+
         if (panel) {
+
           panel.innerHTML = `
+
             <div class="flex h-full items-center justify-center text-slate-500 font-mono text-sm">
+
               Select a ticket to review issue and AI bot diagnosis
+
             </div>
+
           `;
+
         }
+
       }
+
       updateTicketBadgesAndStats();
+
       renderTicketsList();
+
       showAdminToast(`Ticket #${ticketId} deleted.`, "info");
+
     } catch (err) {
+
       console.error("Delete ticket failed:", err);
+
       showAdminToast(`Failed to delete ticket: ${err.message}`, "error");
+
     }
+
   }
 
+
+
   // Expose global methods for UI interaction
+
   window.openAdminUserPanel = openAdminUserPanel;
+
   window.closeAdminUserPanel = closeAdminUserPanel;
+
   window.fetchAdminUsers = fetchAdminUsers;
+
   window.selectUserToEdit = selectUserToEdit;
+
   window.saveSelectedUserConfig = saveSelectedUserConfig;
+
   window.quickToggleAi = quickToggleAi;
+
+  window.quickToggleGemini = quickToggleGemini;
+
+  window.batchToggleGemini = batchToggleGemini;
+
   window.quickResetBalance = quickResetBalance;
 
+
+
   window.toggleMasterEngine = async function() {
+
     const btn = document.getElementById('masterEngineToggleBtn');
+
     try {
+
         const r = await fetch('/api/admin/broadcast/toggle', {
+
             method: 'POST',
+
             headers: getAdminAuthHeaders(),
+
             body: JSON.stringify({enabled: false})
+
         });
+
         if (r.ok) {
+
             btn.innerText = 'TRADING KILLED';
+
             btn.className = 'px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-500 border border-slate-700';
+
             btn.disabled = true;
+
             showAdminToast('Master Engine Trading Disabled', 'success');
+
         } else {
+
             showAdminToast('Failed to kill trading', 'error');
+
         }
+
     } catch(e) {
+
         showAdminToast('Error killing trading', 'error');
+
     }
+
   };
+
   window.confirmDeleteUser = confirmDeleteUser;
+
   window.setFilterSearch = setFilterSearch;
+
   window.setFilterMode = setFilterMode;
+
   window.setFilterAi = setFilterAi;
+
   window.switchAdminMobileTab = switchAdminMobileTab;
+
   window.switchUserDetailTab = switchUserDetailTab;
+
   window.loadUserTrades = loadUserTrades;
+
   window.setTradeFilterMode = setTradeFilterMode;
+
   window.setTradeFilterStatus = setTradeFilterStatus;
+
   window.filterUserTradesList = filterUserTradesList;
 
+
+
   // Support Tickets Window Exports
+
   window.switchAdminSection = switchAdminSection;
+
   window.fetchAdminTickets = fetchAdminTickets;
+
   window.setTicketFilterStatus = setTicketFilterStatus;
+
   window.setTicketSearch = setTicketSearch;
+
   window.selectAdminTicket = selectAdminTicket;
+
   window.backToTicketList = backToTicketList;
+
   window.runAiDevBot = runAiDevBot;
+
   window.approveTicket = approveTicket;
+
   window.reopenTicket = reopenTicket;
+
   window.deleteTicketPrompt = deleteTicketPrompt;
 
+
+
   // Initial fetch on DOM ready
+
   document.addEventListener("DOMContentLoaded", () => {
+
     fetchAdminUsers(false);
+
     fetchAdminTickets(true);
 
+
+
     if(window.adminUsersInterval) clearInterval(window.adminUsersInterval); window.adminUsersInterval = setInterval(async () => {
+
       // Skip if already polling or if the admin modal is not visible
+
       if (isPolling) return;
+
       const modal = document.getElementById("adminUserModal");
+
       if (modal && modal.classList.contains("hidden")) return;
+
       isPolling = true;
+
       try { 
+
         await fetchAdminUsers(true); 
+
         if (adminCurrentSection === "tickets") {
+
           await fetchAdminTickets(true);
+
         }
+
       } finally { isPolling = false; }
+
     }, 3000);
+
   });
+
+
+
+
+
 
 
 
 
 })();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

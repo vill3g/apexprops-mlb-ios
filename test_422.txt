@@ -1,0 +1,2 @@
+200
+{"status":"ok","event_ticker":"KXNHL-20261015-MAPLELEAFS","prediction":null,"event_details":{"prop_type":"Moneyline","line":"Moneyline","spread_amount":null,"over_under_amount":null,"strike_details":"Match Winner","numeric_line":null,"player_name":null,"segment":null},"criteria_met":false,"criteria_info":{"conf":0.0,"req_conf":70.0,"edge":0.0,"req_edge":1.0},"executed":false,"trade_id":null,"trade":null,"error":null}

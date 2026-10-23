@@ -20,7 +20,7 @@ API_PORT = int(os.getenv("API_PORT", "8056"))
 DEFAULT_TRADE_SIZE_DOLLARS = float(os.getenv("DEFAULT_TRADE_SIZE", "5.0"))
 DEFAULT_PAPER_TRADE_SIZE_DOLLARS = float(os.getenv("DEFAULT_PAPER_TRADE_SIZE", "50.0"))
 DEFAULT_PAPER_BALANCE = float(os.getenv("DEFAULT_PAPER_BALANCE", "500.0"))
-DEFAULT_STOP_LOSS_PCT = float(os.getenv("DEFAULT_STOP_LOSS_PCT", "50.0"))
+DEFAULT_STOP_LOSS_PCT = float(os.getenv("DEFAULT_STOP_LOSS_PCT", "75.0"))
 DEFAULT_TAKE_PROFIT_PCT = float(os.getenv("DEFAULT_TAKE_PROFIT_PCT", "50.0"))
 DEFAULT_MAX_DAILY_TRADES = int(os.getenv("DEFAULT_MAX_DAILY_TRADES", "10"))
 DEFAULT_MAX_DAILY_RISK = float(os.getenv("DEFAULT_MAX_DAILY_RISK", "50.0"))
@@ -39,7 +39,7 @@ DEFAULT_XGB_LEARNING_RATE = float(os.getenv("DEFAULT_XGB_LEARNING_RATE", "0.1"))
 # ─── Trailing Stop Defaults ──────────────────────────────────────
 DEFAULT_TRAILING_STOP_ACTIVATION_PCT = float(os.getenv("DEFAULT_TRAILING_STOP_ACTIVATION_PCT", "35.0"))
 DEFAULT_TRAILING_STOP_DISTANCE_PCT = float(os.getenv("DEFAULT_TRAILING_STOP_DISTANCE_PCT", "6.0"))
-DEFAULT_SECOND_ENTRY_MAX_ASK = float(os.getenv("DEFAULT_SECOND_ENTRY_MAX_ASK", "0.75"))
+DEFAULT_SECOND_ENTRY_MAX_ASK = float(os.getenv("DEFAULT_SECOND_ENTRY_MAX_ASK", "0.62"))
 
 # ─── Timing & Polling ────────────────────────────────────────────
 AUTO_TRADER_LOOP_INTERVAL_SEC = float(os.getenv("AUTO_TRADER_LOOP_INTERVAL", "2.0"))
@@ -55,3 +55,6 @@ KALSHI_API_RETRY_BACKOFF_BASE = float(os.getenv("KALSHI_API_RETRY_BACKOFF", "1.0
 
 # ─── Data Paths ───────────────────────────────────────────────────
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+
+# ─── Live Market Cache ────────────────────────────────────────────
+USE_MARKET_CACHE = os.getenv("USE_MARKET_CACHE", "1").lower() in ("1", "true", "yes")

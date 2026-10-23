@@ -149,7 +149,7 @@ def test_prediction_client_unmatched_game_monte_carlo_fallback():
     assert pred.get("sport") == "NPB/KBO"
     assert pred.get("league") == "NPB"
     # Must simulate or evaluate for the actual matchup, not a random team like Tampa Bay or Tohoku
-    assert pred.get("predicted_team") in ("Yokohama Baystars", "Hiroshima Carp", "Favorite")
+    assert pred.get("predicted_team") in ("Yokohama Baystars", "Yokohama DeNA BayStars", "Hiroshima Carp", "Favorite")
     if pred.get("metadata", {}).get("simulation"):
         assert pred.get("confidence_pct", 0) > 50.0
 
@@ -287,11 +287,12 @@ def test_sports_bridge_settle_kx_trades_both_sides(monkeypatch):
 
     assert settled_yes.get("status") == "CLOSED"
     assert settled_yes.get("exit_price") == 1.0
-    assert settled_yes.get("pnl") == 4.0  # (1.0 - 0.6) * 10
+    from backend.btc.fees import net_pnl
+    assert settled_yes.get("pnl") == net_pnl(0.60, 1.0, 10)  # (1.0 - 0.6) * 10, net of the entry fee
 
     assert settled_no.get("status") == "CLOSED"
     assert settled_no.get("exit_price") == 0.0
-    assert settled_no.get("pnl") == -4.0  # -0.4 * 10
+    assert settled_no.get("pnl") == net_pnl(0.40, 0.0, 10)  # -0.4 * 10, net of the entry fee
 
 def test_tennis_on_demand_simulation():
     """Reviewer R3: Tennis event must run live on-demand simulation on port 8057."""
@@ -327,6 +328,23 @@ def test_tennis_and_soccer_sport_normalization(client):
     assert len(events) > 0
     for e in events:
         assert e.get("sport") == "TEN"
+
+def test_api_sports_events_tennis_ai_prediction_attached(client):
+    """AC 1: Querying /api/engine/sports/events?sport=TEN returns events with ai_prediction object attached."""
+    res = client.get("/api/engine/sports/events?sport=TEN")
+    assert res.status_code == 200
+    events = res.json().get("events", [])
+    assert len(events) > 0, "Expected TEN events"
+    has_any_pred = False
+    for e in events:
+        assert "ai_prediction" in e, f"Event {e.get('ticker')} missing ai_prediction key at top level"
+        assert "ai_prediction" in e.get("metadata", {}), f"Event {e.get('ticker')} missing ai_prediction in metadata"
+        if e.get("has_ai_prediction"):
+            assert isinstance(e.get("ai_prediction"), dict), f"Event {e.get('ticker')} ai_prediction should be a dict"
+            assert e.get("ai_prediction").get("predicted_team"), "ai_prediction missing predicted_team"
+            has_any_pred = True
+    assert has_any_pred, "Expected at least one Tennis event to have active ai_prediction matched"
+
 
 def test_predict_uses_cache_and_custom_title_under_kalshi_failure(client, monkeypatch):
     """Reviewer R3: When Kalshi /events endpoint is 429 or failing, predict uses provided title or cache."""
@@ -393,5 +411,46 @@ def test_mlb_events_includes_hrr_series():
     """Verify _SPORTS_SERIES_MAP contains KXMLBHRR for MLB."""
     from backend.routes.engine import _SPORTS_SERIES_MAP
     assert 'KXMLBHRR' in _SPORTS_SERIES_MAP.get('MLB', [])
+
+
+def test_saas_dashboard_javascript_syntax_validity():
+    """Verify that all inline <script> blocks in static/saas_dashboard.html are syntactically valid JavaScript."""
+    import subprocess
+    import tempfile
+    import os
+    from bs4 import BeautifulSoup
+
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    html_path = os.path.join(repo_root, "static", "saas_dashboard.html")
+
+    with open(html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    soup = BeautifulSoup(html, "html.parser")
+    inline_scripts = [
+        s.string or s.get_text() or ""
+        for s in soup.find_all("script")
+        if not s.get("src") and (s.string or s.get_text() or "").strip()
+    ]
+
+    assert len(inline_scripts) > 0, "No inline scripts found in saas_dashboard.html"
+
+    syntax_errors = []
+    for idx, code in enumerate(inline_scripts):
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as tf:
+            tf.write(code)
+            tf_path = tf.name
+
+        try:
+            res = subprocess.run(["node", "-c", tf_path], capture_output=True, text=True, encoding="utf-8")
+            if res.returncode != 0:
+                err_msg = res.stderr.strip() or res.stdout.strip()
+                syntax_errors.append(f"Inline script #{idx} failed syntax check:\n{err_msg}")
+        finally:
+            if os.path.exists(tf_path):
+                os.unlink(tf_path)
+
+    assert not syntax_errors, "Syntax error(s) in static/saas_dashboard.html:\n" + "\n".join(syntax_errors)
+
 
 

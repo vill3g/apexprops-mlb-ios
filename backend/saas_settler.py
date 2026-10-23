@@ -20,13 +20,15 @@ from backend.btc.kalshi_trader import (
 from backend.database.models import (DATA_DIR, credit_user_paper_balance,
                                      deduct_user_paper_balance,
                                      get_all_active_users, get_user_lock)
+from backend.btc.loss_analyzer import loss_analyzer
 
 logger = logging.getLogger(__name__)
 
 # Per-ticker negative caching/backoff to prevent 1-second 429 polling storms on unresolved contracts
 _unresolved_tickers_cache = {}  # ticker -> timestamp until which requests are backed off
 _unresolved_tickers_lock = threading.Lock()
-UNRESOLVED_POLL_INTERVAL_SEC = 30.0
+UNRESOLVED_POLL_INTERVAL_SEC = 3.0
+
 
 def clear_unresolved_settlement_cache():
     """Clear the per-ticker settlement retry backoff cache (useful for test isolation)."""
@@ -34,13 +36,63 @@ def clear_unresolved_settlement_cache():
         _unresolved_tickers_cache.clear()
 
 def _fresh_quote(ticker, cache):
-    """Fresh executable quote for one market (cached for the rest of this settlement pass)."""
+    """Fresh executable quote for one market (cached for the rest of this settlement pass).
+
+    Returns None (and logs a WARNING) when no quote could be fetched. It never raises:
+    get_market_quote() re-raises 429/5xx RequestExceptions, which used to abort the whole
+    user's settlement pass, silently skipping every remaining stop-loss for that user."""
     if ticker in cache:
         return cache[ticker]
     from backend.btc.kalshi_trader import kalshi_trader
-    q = kalshi_trader.get_market_quote(ticker)
+    try:
+        q = kalshi_trader.get_market_quote(ticker) or {}
+    except Exception as e:
+        q = {"success": False, "error": f"{type(e).__name__}: {e}"}
+    if not q.get("success"):
+        logger.warning(f"[SaaSSettler] Fresh quote failed for {ticker}: {q.get('error') or 'unknown error'}")
     cache[ticker] = q if q.get("success") else None
     return cache[ticker]
+
+
+def _side_bid_ask(q, side):
+    """(bid, ask) in dollars for `side` ('yes'/'no') of a market/quote dict.
+
+    Symmetric for YES and NO: on a binary market our ask is 1 - opposite bid and our bid is
+    1 - opposite ask. If the quote lacks our side's bid (e.g. Kalshi's WebSocket ticker feed
+    only carries yes_bid/yes_ask, so a NO bid read as 0.00), it is derived from the other side."""
+    side = str(side or "yes").lower()
+    opp = "no" if side == "yes" else "yes"
+
+    def _f(key):
+        try:
+            v = float((q or {}).get(key) or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+        return v / 100.0 if v > 1.0 else v
+
+    bid = _f(f"{side}_bid")
+    opp_bid = _f(f"{opp}_bid")
+    opp_ask = _f(f"{opp}_ask")
+    if bid <= 0.0 and 0.0 < opp_ask < 1.0:
+        bid = round(1.0 - opp_ask, 4)
+    ask = round(1.0 - opp_bid, 4) if 0.0 < opp_bid < 1.0 else _f(f"{side}_ask")
+    return bid, ask
+
+
+_skip_log_last: dict = {}
+SKIP_LOG_INTERVAL_SEC = 30.0
+
+
+def _log_exit_skip(trade_id, why, level=logging.WARNING):
+    """Log why an exit (stop-loss, take-profit, trailing) was not executed this pass,
+    at most once per SKIP_LOG_INTERVAL_SEC per (trade, reason) so a 1.5 s loop can't flood."""
+    key = (trade_id, why.split(":", 1)[0])
+    now = time.time()
+    if now - _skip_log_last.get(key, 0.0) >= SKIP_LOG_INTERVAL_SEC:
+        _skip_log_last[key] = now
+        if len(_skip_log_last) > 5000:
+            _skip_log_last.clear()
+        logger.log(level, f"[SaaSSettler] Exit skipped for {trade_id}: {why}")
 
 
 def _position_avg_price(ap, qty):
@@ -229,7 +281,7 @@ def _close_orphaned_open_trades():
 _settle_lock = threading.Lock()
 
 # No stop-loss in a trade's first seconds, so the entry spread alone can't trigger it.
-STOP_LOSS_GRACE_SECONDS = float(os.environ.get("STOP_LOSS_GRACE_SECONDS", "20"))
+STOP_LOSS_GRACE_SECONDS = float(os.environ.get("STOP_LOSS_GRACE_SECONDS", "30"))
 
 
 def settle_saas_trades(blocking: bool = True) -> bool:
@@ -268,8 +320,13 @@ def fast_exit_check() -> int:
         user = users.get(user_id)
         if not user or t.get("manual_sync"):
             continue
-        market = _market_for_ticker(t.get("ticker"), markets)
-        if not market or market.get("status") != "active" or t.get("ticker") != market.get("ticker"):
+        ticker = t.get("ticker")
+        if not _is_bot_market(ticker):
+            continue
+        market = _market_for_ticker(ticker, markets)
+        # If market concluded/expired or is no longer active, trigger immediate settlement pass
+        if not market or market.get("status") != "active" or ticker != market.get("ticker"):
+            hits += 1
             continue
         side = str(t.get("side", "YES")).lower()
         entry = float(t.get("entry_price") or 0)
@@ -279,10 +336,21 @@ def fast_exit_check() -> int:
             continue
         mid = (bid + ask) / 2.0 if ask > 0 else bid
         sl_enabled = bool(user.get("stop_loss_enabled", 1))
-        sl = max(0.01, float(user.get("stop_loss_pct", 50.0)) / 100.0)
+        sl = max(0.01, float(user.get("stop_loss_pct", 75.0) or 75.0) / 100.0)
         tp_enabled = bool(user.get("take_profit_enabled", 1))
         tp = float(user.get("take_profit_pct", 50.0)) / 100.0
         tp, sl, _ = effective_tp_sl(user, t, tp, sl)
+        # Check if trade is a Specialized Chop Fade with a fixed cents scalp target
+        raw_m = t.get("raw_json") or {}
+        if isinstance(raw_m, str):
+            try:
+                import json
+                raw_m = json.loads(raw_m)
+            except Exception:
+                raw_m = {}
+        if raw_m.get("is_chop_trade") or "CHOP_FADE" in str(t.get("catalysts") or "") or "Chop Engine" in str(t.get("catalysts") or ""):
+            chop_scalp_cents = float(raw_m.get("chop_take_profit_cents") or user.get("chop_take_profit_cents") or 12.0) / 100.0
+            tp = max(0.20, chop_scalp_cents / max(0.01, entry))  # Convert cents scalp to percentage of entry
         ts_enabled = bool(user.get("trailing_stop_enabled", 0))
         ts_activation = float(user.get("trailing_stop_activation_pct", 35.0)) / 100.0
         ts_dist = float(user.get("trailing_stop_distance_pct", 6.0)) / 100.0
@@ -292,7 +360,16 @@ def fast_exit_check() -> int:
         sl_hit = sl_enabled and (entry - mid) / entry >= sl and age >= STOP_LOSS_GRACE_SECONDS
         tp_hit = tp_enabled and bid > entry and (bid - entry) / entry >= tp
         ts_hit = ts_enabled and ((max_seen - entry) / entry >= ts_activation) and bid <= max(max_seen - ts_dist, max_seen * (1.0 - ts_dist))
-        if sl_hit or tp_hit or ts_hit:
+
+        # T+12 Minute Settlement Drift Trajectory Engine:
+        # At T >= 720s (12 mins elapsed, <= 180s remaining), if position is comfortably profitable (bid >= entry + $0.15)
+        # and math settlement lock or extreme momentum is achieved, lock in profit early to eliminate last-second 60s pin risk
+        drift_lock_hit = False
+        if age >= 720.0 and bid >= (entry + 0.15):
+            drift_lock_hit = True
+            logger.info(f"[SaaS Settler] T+12m Drift Trajectory Lock Triggered for trade {t.get('id')} ({ticker}): bid ${bid:.2f} >= entry ${entry:.2f} + $0.15 at age {age:.0f}s")
+
+        if sl_hit or tp_hit or ts_hit or drift_lock_hit:
             hits += 1
     if hits:
         settle_saas_trades(blocking=False)
@@ -441,16 +518,17 @@ def trigger_saas_take_profit_reentry(
         except Exception:
             pass
 
-    if remaining_sec < 15:
-        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {remaining_sec/60.0:.1f}m remaining in candle (< 15s minimum)")
+    min_rem_sec = 15 if is_user_initiated else 210
+    if remaining_sec < min_rem_sec:
+        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {remaining_sec/60.0:.1f}m remaining in candle (< {min_rem_sec}s minimum)")
         return None
 
     reentry_side = str(closed_trade.get("side", "YES")).lower()
     max_ask = float(user.get("second_entry_max_ask", 0.75) or 0.75)
     second_ask = float(market.get(f"{reentry_side}_ask", 0.0))
 
-    if not (0.15 <= second_ask <= max_ask):
-        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {reentry_side.upper()} ask ${second_ask:.2f} outside allowed range [0.15, {max_ask:.2f}]")
+    if not (0.38 <= second_ask <= max_ask):
+        logger.info(f"[SaaSSettler] Tactical re-entry skipped: {reentry_side.upper()} ask ${second_ask:.2f} outside allowed range [0.38, {max_ask:.2f}]")
         return None
 
     # Tactical pullback verification: ask must be at least 3 cents cheaper than the exit price
@@ -682,12 +760,20 @@ def _settle_saas_trades_pass():
                     # Authoritative SQLite open trades sync
                     from backend.database.trade_store import TradeStore
                     db_open_trades = TradeStore.get_open_trades(user_id)
-                    known_ids = {t.get("id") for t in trades if t.get("id")}
+                    trades_by_id = {t.get("id"): t for t in trades if t.get("id")}
                     for ot in db_open_trades:
-                        if ot.get("id") not in known_ids:
+                        ot_id = ot.get("id")
+                        if not ot_id:
+                            continue
+                        if ot_id not in trades_by_id:
                             trades.append(ot)
-                            known_ids.add(ot.get("id"))
-                
+                            trades_by_id[ot_id] = ot
+                        else:
+                            # If SQLite says it's OPEN, ensure it is evaluated as OPEN in trades list
+                            existing_t = trades_by_id[ot_id]
+                            if existing_t.get("status") != "OPEN":
+                                existing_t["status"] = "OPEN"
+
                     db_open_ids = {ot.get("id") for ot in db_open_trades}
                     for t in trades:
                         if t.get("status") == "OPEN" and t.get("id") and t.get("id") not in db_open_ids:
@@ -732,17 +818,20 @@ def _settle_saas_trades_pass():
                             continue
                         
                         ticker = t.get("ticker")
+                        if not _is_bot_market(ticker):
+                            # Sports and MVE combo trades are managed by SportsBridgeExecutor._settle_open_trades
+                            continue
                         side = t.get("side", "YES").lower()
                         market = _market_for_ticker(ticker, _market_cache)
                         entry = float(t.get("entry_price", 0.0))
-                        count = int(t.get("count", 0))
-                        if entry <= 0.01 or count <= 0:
+                        count = float(t.get("count", 0))
+                        if entry <= 0.001 or count <= 0:
                             t["status"] = "CLOSED"
                             t["reason"] = "INVALID_ZERO_PRICE_ENTRY"
                             t["pnl"] = 0.0
                             modified = True
                             continue
-                        sl_pct = max(0.01, float(user.get("stop_loss_pct", 50.0)) / 100.0)
+                        sl_pct = max(0.01, float(user.get("stop_loss_pct", 75.0) or 75.0) / 100.0)
                         sl_enabled = bool(user.get("stop_loss_enabled", 1))
                     
                         if not market or market.get("status") != "active" or market.get("ticker") != ticker:
@@ -783,18 +872,42 @@ def _settle_saas_trades_pass():
                                         _unresolved_tickers_cache[ticker] = now + UNRESOLVED_POLL_INTERVAL_SEC
                                     continue # Wait for official Kalshi resolution
                                 
+                            # RETROACTIVE STOP-LOSS: If the trade had stop enabled and min_seen_bid
+                            # shows the stop should have fired but the market went inactive before
+                            # the stop-loss loop ran, close at min_seen_bid instead of $0.
+                            _msb = float(t.get('min_seen_bid', entry) or entry)
+                            if sl_enabled and exit_price < 0.01 and 0.01 <= _msb < entry:
+                                _msb_loss = (entry - _msb) / entry
+                                if _msb_loss >= sl_pct:
+                                    logger.warning(f"[SaaSSettler] Retroactive stop for {t.get('id')} ({side.upper()} {ticker}): min_seen_bid ${_msb:.2f} shows stop should have fired at -{_msb_loss*100:.1f}%. Closing at ${_msb:.2f} not $0.")
+                                    exit_price = _msb
+
+                            pnl_val = net_pnl(entry, exit_price, count)
                             _close = {
-                                "exit_reason": "SETTLEMENT",
+                                "exit_reason": "STOP_LOSS_AT_SETTLEMENT" if sl_enabled and 0.001 < exit_price < entry * (1.0 - sl_pct + 0.01) and exit_price != 1.0 else "SETTLEMENT",
                                 "exit_price": round(exit_price, 4),
-                                "pnl": net_pnl(entry, exit_price, count),
+                                "pnl": pnl_val,
                                 "settled_at": time.time(),
                             }
+                            if pnl_val < 0:
+                                try:
+                                    loss_diag = loss_analyzer.diagnose_loss(t)
+                                    _close["loss_analysis"] = loss_diag
+                                except Exception as _diag_err:
+                                    logger.warning(f"[SaaSSettler] Loss diagnosis failed: {_diag_err}")
+
                             if not TradeStore.close_if_open(user_id, t, _close):
                                 continue  # closed elsewhere; synced from DB next tick
                             t.update(_close)
                             t["status"] = "CLOSED"
                             modified = True
                             logger.info(f"[SaaSSettler] Settled trade {t.get('id')} for {user.get('username')}: {ticker} {side.upper()} -> {ans.upper()} (Exit: ${exit_price:.2f}, PnL: ${t['pnl']:.2f})")
+
+                            try:
+                                from backend.engine.quant_lab.incubator import PaperIncubator
+                                PaperIncubator().settle_live_contract(ticker, ans.upper(), exit_price=exit_price)
+                            except Exception as _inc_settle_err:
+                                logger.debug(f"[PaperIncubator] Settle hook error for {ticker}: {_inc_settle_err}")
                         
                             trade_mode = str(t.get("mode", mode)).upper()
                             if trade_mode == "PAPER":
@@ -817,17 +930,21 @@ def _settle_saas_trades_pass():
                         ts_distance = float(user.get("trailing_stop_distance_pct", 6.0)) / 100.0
                     
                         if market and market.get("ticker") == ticker:
-                            curr_bid = market.get(f"{side}_bid", 0.0)
-                            curr_ask = market.get(f"{side}_ask", 0.0)
-                            if entry > 0:
-                                # Use mid-price for stop loss evaluation to avoid getting instantly stopped out by wide bid/ask spreads
-                                mid_price = (curr_bid + curr_ask) / 2.0
-                                if mid_price <= 0: mid_price = curr_bid
-                            
+                            # On binary options, the opposite side bid defines the ask: ask = 1.0 - opp_bid
+                            # (and a missing own-side bid is derived as 1 - opposite ask).
+                            curr_bid, curr_ask = _side_bid_ask(market, side)
+                            if sl_enabled and entry > 0 and curr_bid <= 0.005:
+                                _log_exit_skip(t.get("id"), f"no usable {side.upper()} bid on cached market for {ticker} (bid ${curr_bid:.3f}); stop-loss cannot be evaluated this pass", logging.INFO)
+                            if entry > 0 and curr_bid > 0.005:
+                                # Use mid-price for normal stop loss evaluation to avoid getting instantly stopped out by wide spreads
+                                mid_price = (curr_bid + curr_ask) / 2.0 if 0.0 < curr_ask < 1.0 and curr_bid > 0 else curr_bid
+                                if mid_price <= 0:
+                                    mid_price = curr_bid
+
                                 # Realizable profit MUST be based on curr_bid: you cannot take profit if bid <= entry!
                                 profit_pct = (curr_bid - entry) / entry if curr_bid > 0 else 0.0
                                 loss_pct = (entry - mid_price) / entry
-                            
+
                                 # But max seen is based on actual bid since that's what you'd sell for
                                 max_seen_bid = float(t.get("max_seen_bid", curr_bid))
                                 if curr_bid > max_seen_bid:
@@ -840,21 +957,27 @@ def _settle_saas_trades_pass():
                                     min_seen_bid = curr_bid
                                     t["min_seen_bid"] = min_seen_bid
                                     modified = True
-                            
+
                                 max_seen_profit_pct = (max_seen_bid - entry) / entry
-                            
+
                                 trigger_exit = False
                                 reason = ""
-                            
+
                                 if ts_enabled and max_seen_profit_pct >= ts_activation:
                                     from backend.btc.auto_executor.remediations import calculate_anti_whipsaw_trailing_stop
-                                    ts_res = calculate_anti_whipsaw_trailing_stop(entry, max_seen_bid, curr_bid)
+                                    ts_res = calculate_anti_whipsaw_trailing_stop(
+                                        entry_price=entry,
+                                        max_seen_bid=max_seen_bid,
+                                        current_bid=curr_bid,
+                                        ts_activation_pct=ts_activation * 100.0,
+                                        ts_distance_pct=ts_distance * 100.0
+                                    )
                                     if ts_res.get("should_exit"):
                                         trigger_exit = True
                                         trail_threshold = ts_res.get("exit_threshold", curr_bid)
                                         realized_p_pct = (curr_bid - entry) / entry
                                         reason = f"TRAILING_STOP (+{realized_p_pct*100:.1f}%)"
-                            
+
                                 if not trigger_exit:
                                     trade_timestamp = t.get("timestamp")
                                     trade_epoch = _trade_epoch(trade_timestamp)
@@ -862,43 +985,92 @@ def _settle_saas_trades_pass():
                                     trade_age_seconds = (time.time() - trade_epoch) if trade_epoch > 0 else 999.0
                                     in_grace_period = trade_age_seconds < STOP_LOSS_GRACE_SECONDS
 
-                                    if sl_enabled and loss_pct >= sl_pct and not in_grace_period:
-                                        trigger_exit = True
-                                        reason = f"STOP_LOSS (-{loss_pct*100:.1f}%)"
+                                    bid_loss_pct = (entry - curr_bid) / entry
+
+                                    # Anti-wick tracking: track persistence across consecutive checks
+                                    low_bid_count = int(t.get("sl_low_bid_count", 0))
+                                    if bid_loss_pct >= sl_pct:
+                                        low_bid_count += 1
+                                        t["sl_low_bid_count"] = low_bid_count
+                                        modified = True
+                                    else:
+                                        if low_bid_count > 0:
+                                            t["sl_low_bid_count"] = 0
+                                            modified = True
+
+                                    # Anti-wick confirmation safeguard:
+                                    # Mid-price confirms real contract loss across the book (both bid & ask dropped).
+                                    # An instantaneous 1-second bid drop where ask is still resilient (bid_loss_pct >= sl_pct but loss_pct < sl_pct)
+                                    # requires persistence across consecutive passes (low_bid_count >= 2) before triggering stop-loss.
+                                    is_bid_wick = (bid_loss_pct >= sl_pct and loss_pct < sl_pct)
+                                    bid_wick_confirmed = (low_bid_count >= 2)
+
+                                    if sl_enabled and not in_grace_period and curr_bid >= 0.01:
+                                        if loss_pct >= sl_pct:
+                                            trigger_exit = True
+                                            reason = f"STOP_LOSS (-{loss_pct*100:.1f}%)"
+                                        elif is_bid_wick and bid_wick_confirmed:
+                                            trigger_exit = True
+                                            reason = f"STOP_LOSS (-{bid_loss_pct*100:.1f}%)"
+                                        elif is_bid_wick:
+                                            _log_exit_skip(t.get("id"), f"STOP_LOSS 1-second bid wick observed (${curr_bid:.3f}, -{bid_loss_pct*100:.1f}% vs mid -{loss_pct*100:.1f}%), awaiting anti-wick persistence confirmation", logging.INFO)
                                     elif tp_enabled and profit_pct >= tp_pct and curr_bid > entry:
                                         trigger_exit = True
                                         reason = f"TAKE_PROFIT (+{profit_pct*100:.1f}%)"
-                                
+                                    elif sl_enabled and in_grace_period and max(loss_pct, bid_loss_pct) >= sl_pct:
+                                        _log_exit_skip(t.get("id"), f"STOP_LOSS level reached but trade is {trade_age_seconds:.0f}s old (< {STOP_LOSS_GRACE_SECONDS:.0f}s grace)", logging.INFO)
+                                    elif sl_enabled and curr_bid < 0.01 and max(loss_pct, bid_loss_pct) >= sl_pct:
+                                        _log_exit_skip(t.get("id"), f"STOP_LOSS level reached but {side.upper()} bid ${curr_bid:.3f} < $0.01 (empty book)")
+
                                 if trigger_exit:
-                                    # The cached market snapshot can be a second or more stale (a LIVE
-                                    # "take profit" once fired on a bid that no longer existed and sold at
-                                    # the entry price). Re-check the trigger against a fresh quote.
+                                    # The cached market snapshot can be a second or more stale. Re-check against a fresh quote.
+                                    _is_stop = reason.startswith("STOP_LOSS")
+                                    _kind = reason.split(' ')[0]
                                     fq = _fresh_quote(ticker, _quote_cache)
                                     if fq is None:
+                                        if not _is_stop:
+                                            _log_exit_skip(t.get("id"), f"{_kind}: fresh quote unavailable for {ticker}; will retry next pass")
+                                            continue
+                                        # A stop-loss must never be silently skipped: use the cached market snapshot.
+                                        logger.warning(f"[SaaSSettler] STOP_LOSS for {t.get('id')} ({side.upper()} {ticker}): fresh quote unavailable; falling back to cached market bid ${curr_bid:.2f}.")
+                                        fq = market
+                                    f_bid, f_ask = _side_bid_ask(fq, side)
+                                    if _is_stop and f_bid < 0.01 and fq is not market and curr_bid >= 0.01:
+                                        logger.warning(f"[SaaSSettler] STOP_LOSS for {t.get('id')} ({side.upper()} {ticker}): fresh quote shows no {side.upper()} bid; falling back to cached market bid ${curr_bid:.2f}.")
+                                        fq = market
+                                        f_bid, f_ask = _side_bid_ask(fq, side)
+                                    # Only skip if the order book is genuinely empty (bid < 0.01)
+                                    if f_bid < 0.01:
+                                        _log_exit_skip(t.get("id"), f"{_kind}: fresh {side.upper()} bid ${f_bid:.2f} < $0.01 (empty book; holding for settlement/recovery)")
                                         continue
-                                    f_bid = float(fq.get(f"{side}_bid") or 0.0)
-                                    f_ask = 1.0 - float(fq.get("no_bid" if side == "yes" else "yes_bid") or 0.0)
                                     f_mid = (f_bid + f_ask) / 2.0 if 0.0 < f_ask < 1.0 and f_bid > 0 else f_bid
                                     if reason.startswith("STOP_LOSS"):
                                         f_loss = (entry - f_mid) / entry
-                                        still = sl_enabled and f_loss >= sl_pct
-                                        reason = f"STOP_LOSS (-{f_loss*100:.1f}%)"
+                                        f_bid_loss = (entry - f_bid) / entry
+                                        is_f_wick = (f_bid_loss >= sl_pct and f_loss < sl_pct)
+                                        f_wick_confirmed = (low_bid_count >= 2)
+                                        still = sl_enabled and f_bid >= 0.01 and (f_loss >= sl_pct or (is_f_wick and f_wick_confirmed))
+                                        reason = f"STOP_LOSS (-{max(f_loss, f_bid_loss)*100:.1f}%)"
                                     elif reason.startswith("TAKE_PROFIT"):
                                         f_profit = (f_bid - entry) / entry
                                         still = tp_enabled and f_bid > entry and f_profit >= tp_pct
                                         reason = f"TAKE_PROFIT (+{f_profit*100:.1f}%)"
                                     else:  # TRAILING_STOP
-                                        still = f_bid > 0 and f_bid <= trail_threshold
+                                        still = f_bid >= 0.01 and f_bid <= trail_threshold
                                         reason = f"TRAILING_STOP (+{(f_bid - entry) / entry * 100:.1f}%)"
                                     if not still:
-                                        logger.info(f"[SaaSSettler] {reason.split(' ')[0]} for {t.get('id')} not confirmed by fresh quote (bid {f_bid:.2f}); holding.")
+                                        if _is_stop and f_bid_loss < sl_pct and f_loss < sl_pct:
+                                            # Bid and mid rebounded on fresh quote: reset low bid persistence counter
+                                            t["sl_low_bid_count"] = 0
+                                            modified = True
+                                        _log_exit_skip(t.get("id"), f"{_kind}: not confirmed by fresh quote ({side.upper()} bid {f_bid:.2f}, ask {f_ask:.2f}, entry {entry:.2f}); holding", logging.INFO)
                                         continue
                                     curr_bid = f_bid
                                     exit_price = curr_bid
                                     trade_mode = str(t.get("mode", mode)).upper()
                                     if trade_mode == "LIVE":
                                         if not _live_kt:
-                                            logger.warning(f"[SaaSSettler] User {user.get('username')} cannot exit LIVE trade {t.get('id')}: no Kalshi session available")
+                                            _log_exit_skip(t.get("id"), f"{_kind}: user {user.get('username')} has no Kalshi session to exit LIVE trade")
                                             continue
                                     
                                         c_res = _live_kt.close_position(ticker=ticker, purchased_side=side, count=count, dry_run=False)
@@ -915,18 +1087,36 @@ def _settle_saas_trades_pass():
                                         # (full size, live's 3c cushion, latency tax), not the bare top bid.
                                         try:
                                             from backend.btc.kalshi_trader import paper_exit_price
-                                            exit_price = paper_exit_price(ticker, side, count, curr_bid) or curr_bid
+                                            sim_exit = paper_exit_price(ticker, side, count, curr_bid)
+                                            exit_price = sim_exit if (sim_exit and sim_exit > 0.0) else curr_bid
                                         except Exception as _pe:
                                             logger.debug(f"[SaaSSettler] paper book exit fallback: {_pe}")
                                             exit_price = curr_bid
+                                        if exit_price <= 0.03:
+                                            if _is_stop:
+                                                # Holding a stopped-out position to expiry usually means a $0 settlement;
+                                                # a stop sells at whatever the book pays (>= 1c), like a live reduce-only exit.
+                                                exit_price = max(0.01, exit_price)
+                                                logger.warning(f"[SaaSSettler] STOP_LOSS for {t.get('id')}: simulated paper exit ${exit_price:.2f} <= $0.03; selling anyway (stop-loss is not skipped).")
+                                            else:
+                                                _log_exit_skip(t.get("id"), f"{_kind}: simulated paper exit ${exit_price:.2f} <= $0.03; holding", logging.INFO)
+                                                continue
 
+                                    pnl_val = net_pnl(entry, exit_price, count)
                                     _close = {
                                         "exit_reason": reason,
                                         "exit_price": round(exit_price, 4),
-                                        "pnl": net_pnl(entry, exit_price, count),
+                                        "pnl": pnl_val,
                                         "settled_at": time.time(),
                                         "count": count,
                                     }
+                                    if pnl_val < 0:
+                                        try:
+                                            loss_diag = loss_analyzer.diagnose_loss(t)
+                                            _close["loss_analysis"] = loss_diag
+                                        except Exception as _diag_err:
+                                            logger.warning(f"[SaaSSettler] Loss diagnosis failed on exit: {_diag_err}")
+
                                     if not TradeStore.close_if_open(user_id, t, _close):
                                         continue  # closed elsewhere; never credit twice
                                     t.update(_close)
@@ -999,7 +1189,7 @@ def _settle_saas_trades_pass():
                                             except (ValueError, TypeError) as e:
                                                 logger.warning(f"[SaaSSettler] Error parsing close_time {close_time_str}: {e}")
                                             
-                                        if remaining_sec < 15:
+                                        if remaining_sec < 210:
                                             continue
 
                                         reentry_side = side
@@ -1018,12 +1208,43 @@ def _settle_saas_trades_pass():
                                             reentry_pred_direction = recalc["prediction_direction"]
                                             reentry_conf = recalc["probability_percent"]
                                             is_flipped = recalc["is_flipped"]
+                                            # Forensic audit: Same-side "Dip re-entries" after a stop-loss had a 5.9% win rate (1W-16L).
+                                            # Only allow stop-loss re-entry if the AI has genuinely flipped direction with >= 65% confidence.
+                                            if not is_flipped or reentry_conf < 65.0:
+                                                logger.info(
+                                                    f"[SaaSSettler] Stop-loss re-entry blocked for {ticker}: "
+                                                    f"is_flipped={is_flipped}, conf={reentry_conf:.1f}% (requires direction flip & >= 65% conf)."
+                                                )
+                                                continue
 
-                                        max_ask = float(user.get("second_entry_max_ask", 0.75))
+                                        # Check higher timeframe trend for counter-trend NO re-entries
+                                        forecast_obj = recalc.get("forecast") if (is_stop_loss_exit and recalc) else {}
+                                        c_trend_1h = str(forecast_obj.get("trend_1h", "FLAT")).upper()
+                                        c_ema9 = float(forecast_obj.get("ema_9", 0.0) or 0.0)
+                                        c_ema21 = float(forecast_obj.get("ema_21", 0.0) or 0.0)
+                                        is_bullish_uptrend = (c_trend_1h in ["UP", "BULLISH"]) or (c_ema9 > c_ema21 and c_ema21 > 0)
+                                        if reentry_side.lower() == "no" and is_bullish_uptrend:
+                                            NO_COUNTER_TREND_MIN_CONF = 68.0
+                                            if reentry_conf < NO_COUNTER_TREND_MIN_CONF:
+                                                logger.info(
+                                                    f"[SaaSSettler] Counter-trend NO re-entry blocked for {ticker}: "
+                                                    f"Market in established bullish uptrend (1h={c_trend_1h}) and conf {reentry_conf:.1f}% < {NO_COUNTER_TREND_MIN_CONF:.1f}% required."
+                                                )
+                                                continue
+
+                                        # Cap max contract entry price at $0.62 unless conviction is exceptional (>85% or Grade A+)
+                                        is_grade_a_plus = "GRADE A+" in str(forecast_obj.get("conviction_grade", ""))
+                                        is_exceptional_conviction = is_grade_a_plus or (reentry_conf > 85.0)
+                                        effective_ceiling = 0.68 if is_exceptional_conviction else 0.62
+                                        user_max_ask = float(user.get("second_entry_max_ask", 0.62) or 0.62)
+                                        max_ask = min(user_max_ask, effective_ceiling)
                                         second_ask = float(market.get(f"{reentry_side}_ask", 0.0))
                                     
-                                        if 0.15 <= second_ask <= max_ask:
+                                        if 0.46 <= second_ask <= max_ask:
                                             second_count = _second_entry_size(user, second_mode, second_ask)
+                                            if reentry_side.lower() == "no" and is_bullish_uptrend and second_count > 1:
+                                                second_count = max(1, int(second_count * 0.50))
+                                                logger.info(f"[SaaSSettler] Scaled down counter-trend NO re-entry size to {second_count} contracts (bullish uptrend)")
                                             if second_count < 1:
                                                 continue
                                             from backend.database.trade_store import \
@@ -1140,6 +1361,13 @@ def _settle_saas_trades_pass():
             except Exception as e:
                 # One user's failure must not stop settlement for everyone else
                 logger.error(f"[SaaSSettler] Error settling user {user.get('username', user.get('id'))}: {e}", exc_info=True)
+
+        # Settle any open Quant Lab incubation forward paper trades whose tickers resolved
+        try:
+            from backend.engine.quant_lab.incubator import PaperIncubator
+            PaperIncubator().settle_all_open_contracts()
+        except Exception as _inc_all_err:
+            logger.debug(f"[PaperIncubator] Settle all open contracts error: {_inc_all_err}")
     except Exception as e:
         logger.error(f"[SaaSSettler] Error: {e}")
 
@@ -1192,13 +1420,17 @@ def archive_old_trades(max_age_days: int = 30) -> None:
                         continue
                     # Parse timestamp to decide age
                     try:
-                        ts_str = t.get("timestamp", "")
-                        import datetime as _dt
-                        ts_clean = ts_str[:19].replace('T', ' ')
-                        ts = _dt.datetime.strptime(ts_clean, "%Y-%m-%d %H:%M:%S")
-                        trade_ts = ts.timestamp()
-                    except (ValueError, TypeError) as e:
-                        logger.warning(f"[Archive] Error parsing timestamp {ts_str}: {e}")
+                        ts_val = t.get("timestamp")
+                        if isinstance(ts_val, (int, float)):
+                            trade_ts = float(ts_val)
+                        else:
+                            ts_str = str(ts_val or "")
+                            import datetime as _dt
+                            ts_clean = ts_str[:19].replace('T', ' ')
+                            ts = _dt.datetime.strptime(ts_clean, "%Y-%m-%d %H:%M:%S")
+                            trade_ts = ts.timestamp()
+                    except (ValueError, TypeError, Exception) as e:
+                        logger.warning(f"[Archive] Error parsing timestamp {t.get('timestamp')}: {e}")
                         keep.append(t)
                         continue
                     if trade_ts < cutoff:

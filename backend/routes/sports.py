@@ -21,6 +21,7 @@ from backend.engine.international_model import InternationalBaseballModel
 from backend.engine.pitcher_k_model import PitcherKModel
 from backend.engine.simulator import HRRBISimulator
 from backend.engine.top5_selector import Top5Selector
+from backend.engine.nba_model import NBAModel
 
 # Singletons used by the sports endpoints (previously created in main.py, which these
 # routes could not see after the router split — every sports endpoint raised NameError).
@@ -33,6 +34,7 @@ intl_model = InternationalBaseballModel()
 bvp_weather_model = BvPWeatherModel()
 verified_client = VerifiedMLBClient()
 injuries_client = InjuriesClient()
+nba_model = NBAModel()
 
 router = APIRouter()
 
@@ -316,3 +318,26 @@ def get_ui_version():
         {"version": "4.1.0", "mtime": mtime},
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
     )
+
+@router.get("/api/nba/slate")
+def get_nba_slate():
+    slate = nba_model.get_nba_slate()
+    return {
+        "league": "NBA",
+        "count": len(slate),
+        "games": slate
+    }
+
+@router.get("/api/nba/props")
+def get_nba_props_endpoint():
+    props = nba_model.get_nba_props()
+    return {
+        "league": "NBA",
+        "count": len(props),
+        "props": props
+    }
+
+@router.get("/api/nba/simulate")
+def get_nba_simulate(home_team: str, away_team: str, simulations: int = 1000):
+    res = nba_model.simulate_nba(home_team, away_team, simulations)
+    return res

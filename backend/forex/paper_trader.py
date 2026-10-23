@@ -43,7 +43,14 @@ def _save_state(state: dict):
         atomic_json_write(STATE_PATH, state)
 
 def get_balance() -> float:
-    return _load_state().get("balance", 10000.0)
+    b = float(_load_state().get("balance", 10000.0))
+    if b <= 0.0:
+        with _lock:
+            state = _load_state()
+            state["balance"] = 10000.0
+            _save_state(state)
+        return 10000.0
+    return b
 
 def get_open_positions() -> List[dict]:
     state = _load_state()

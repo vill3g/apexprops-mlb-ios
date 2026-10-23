@@ -1,14 +1,14 @@
-# BRIEFING — 2026-10-02T17:33:50Z
+# BRIEFING — 2026-10-07T22:53:10Z
 
 ## Mission
-Perform an in-depth survey of ShadowTrader AI codebase focusing on Asset & Route Integrity (R3) and Auto Trader Logic & UI Integration (R4).
+Investigate static/app.js and related frontend JS/DOM regarding tab switching (Financial vs Sports), settings drawer interactions, API calls for settings persistence, performance/stuttering issues, and universe display handling (especially "BOTH"), producing a detailed survey report and handoff.
 
 ## 🔒 My Identity
 - Archetype: explorer
 - Roles: survey, read-only investigation, synthesis
-- Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_3
-- Original parent: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Milestone: Survey Phase Complete
+- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_3
+- Original parent: 269a1b7a-33d9-4136-b7da-906e573af819
+- Milestone: Survey Phase
 
 ## 🔒 Key Constraints
 - Read-only investigation — do NOT implement
@@ -17,31 +17,30 @@ Perform an in-depth survey of ShadowTrader AI codebase focusing on Asset & Route
 - Provide exact file paths, line numbers, root causes, and risks
 
 ## Current Parent
-- Conversation ID: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Updated: 2026-10-02T17:33:50Z
+- Conversation ID: 269a1b7a-33d9-4136-b7da-906e573af819
+- Updated: 2026-10-07T22:53:10Z
 
 ## Investigation State
 - **Explored paths**:
-  - `static/` (HTML, CSS, JS, manifest.json, sw.js, assets)
-  - `capacitor.config.json`
-  - `backend/main.py`, `backend/routes/ui.py`, `backend/routes/engine.py`
-  - `backend/btc/auto_executor/` (`executor.py`, `saas_broadcaster.py`, `kalshi_trader.py`, `kalshi_client.py`, `shared.py`)
-  - `backend/worker.py`
+  - `static/app.js` and `static/js/app.js`
+  - `static/saas_dashboard.html`
+  - `backend/auth/routes.py` (`/dashboard_stats`, `/api/auth/user/config`)
+  - `backend/database/models.py`
+  - `tests/test_frontend_contracts.py`, `tests/test_r2_r5_multi_universe_and_timestamps.py`, `tests/test_r3_r4_ui_and_rate_limits.py`
 - **Key findings**:
-  - Missing assets: `./assets/app_icon.ico` and `./assets/favicon.svg` causing 404s and broken login branding
-  - Capacitor path failures: Absolute `/static/assets/...` and `/admin/mobile` break in iOS WKWebView
-  - Broken data fallback in `app.js`: `.catch()` doesn't catch HTTP 404 responses
-  - Auto Trader runaway loop: Kalshi HTTP 429 fails to set `last_traded_interval`, spamming orders every 1 second
-  - Lock release race condition: `execDelay` releases `_rollover_lock` before recording interval
-  - UI desync: mismatched DOM IDs, Dynamic Island glow offset at 59px, hardcoded BTC in `loadConfig()`, and 6-8 req/sec polling storm
-- **Unexplored areas**: None within assigned scope (R3 & R4 fully surveyed)
+  - `static/js/app.js` is the authoritative script referenced in `saas_dashboard.html` and contract tests; `static/app.js` is a stale root artifact.
+  - Tab switch lag/stutter is caused by `showChartLoader()` overlay, blanking HUD counters (`$--,---`, `--%`), uncached `loadSportsEvents` fetch with DOM wipe, and missing canvas resize.
+  - Universe "BOTH" bug: Line 237894 in `saas_dashboard.html` (`window.lastDashboardStats.trading_universe = universe;`) mutates user's saved auto-trading universe on every tab switch, wiping "BOTH".
+  - Dedicated drawers blueprint created: `financialSettingsDrawer` and `sportsSettingsDrawer` with shared Auto-Trading Universe control ("BOTH") synchronized via `setAutoTradingUniverse`.
+  - All 70+ controls inventoried across Financial, Sports, and Common categories.
+- **Unexplored areas**: None within assigned scope (all 6 dispatch tasks fully surveyed).
 
 ## Key Decisions Made
-- Completed exhaustive survey and produced 14 actionable fix specifications
-- Authored detailed survey_report.md and self-contained handoff.md
+- Authored comprehensive `survey_report.md` detailing root causes, control mappings, and implementation blueprints.
+- Delivered 5-component `handoff.md` and updated `progress.md`.
 
 ## Artifact Index
-- survey_report.md — Comprehensive findings and fix specifications for R3 and R4
-- handoff.md — 5-component hard handoff report
-- progress.md — Heartbeat and progress milestones
-- DISPATCH.md — Copy of original dispatch
+- `survey_report.md` — In-depth architectural findings, root causes, and fix specifications
+- `handoff.md` — 5-component handoff report
+- `progress.md` — Heartbeat log
+- `DISPATCH.md` — Record of task assignments

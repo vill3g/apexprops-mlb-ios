@@ -1,7 +1,7 @@
-# BRIEFING — 2026-09-30T19:38:30Z
+# BRIEFING — 2026-10-09T15:25:00Z
 
 ## Mission
-Independently audit and review the empirical backtest and quantitative methodology of the Kalshi AI Trader.
+Act as designated Agent-as-Judge for Acceptance Criterion 2: Verify frontend code in `static/saas_dashboard.html` to ensure filtering logic correctly aligns the selected tab (e.g., TEN) with sport identifiers returned by the backend, events render correctly, loading states do not prematurely flash "No active AI picks", settings gates allow explicit sport tab browsing, pull-to-refresh preserves filters, and `ai_prediction` objects are correctly parsed and displayed.
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_reviewer
@@ -10,53 +10,53 @@ Independently audit and review the empirical backtest and quantitative methodolo
 - Original parent: 69f1fc34-0f88-433d-8fc9-49626797374a
 - Milestone: M2/M3 Review
 - Instance: 2 of 2
+- Current dispatch: 2026-10-09T15:10:19Z (orchestrator_8 / 79a13c8c-bb16-4406-ac17-c75d551d55ff)
+- Current role: Agent-as-Judge for Acceptance Criterion 2 (Frontend Filtering & Rendering)
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
 - Reviewer and adversarial critic role
 - Check for integrity violations (hardcoded results, dummy implementations, shortcuts, fabricated verification, self-certifying work)
+- Verify frontend code in `static/saas_dashboard.html` without breaking existing contracts
 
 ## Current Parent
-- Conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Updated: not yet
+- Conversation ID: 79a13c8c-bb16-4406-ac17-c75d551d55ff (orchestrator_8)
+- Updated: 2026-10-09T15:10:19Z
 
 ## Review Scope
-- **Files to review**: `backend/btc/backtest.py`, `backend/scripts/backtest_rl.py`, `backend/scripts/evaluate_previous_trades.py`, `backend/btc/backtester_sim.py`, `.agents/teamwork/reports/R1_strategy_risk_assessment.md`, `.agents/teamwork/reports/R2_empirical_backtest_report.md`, `.agents/teamwork/reports/FINAL_PROFITABILITY_REPORT.md`
-- **Interface contracts**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\PROJECT.md`
-- **Review criteria**: Empirical correctness, walk-forward validity, fee/spread accounting, statistical rigor, conclusion soundness
+- **Files to review**: `static/saas_dashboard.html` (specifically `isSportMatch`, `renderSportsEvents`, `loadSportsEvents`, settings gate, `manualDashboardRefresh`, `SPORT_ICONS`, AI prediction card rendering), `backend/routes/engine.py` (sport identifiers and event structures), `tests/test_sports_dashboard.py`
+- **Interface contracts**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_8\PROJECT.md`
+- **Review criteria**: Correctness of sport tab matching, ticker prefix matching, alias handling, loading state flickering prevention, settings decoupling for explicit tabs, accurate parsing of `ai_prediction` payload into UI cards, absence of integrity violations.
 
 ## Review Checklist
 - **Items reviewed**:
-  - `backend/btc/backtest.py` (walk-forward rolling XGBoost harness)
-  - `backend/scripts/backtest_rl.py` (60-day walk-forward RL evaluation)
-  - `backend/scripts/evaluate_previous_trades.py` (in-sample SQLite replay script)
-  - `backend/btc/backtester_sim.py` (static HTML report generator)
-  - `backend/btc/fees.py` (Kalshi 7% taker fee schedule)
-  - `backend/data/trades_history.json` (739 executed trades ledger)
-  - `backend/data/model_cache/rl_scalper.json` (3,962 test trades)
-  - `reports/R1_strategy_risk_assessment.md`, `reports/R2_empirical_backtest_report.md`, `reports/FINAL_PROFITABILITY_REPORT.md`
-  - Test suites: `tests/test_risk_budget.py`, `tests/test_backtest.py` (6 passed)
-- **Verdict**: APPROVE (All claims independently verified; NOT PROFITABLE conclusion mathematically and empirically confirmed)
-- **Unverified claims**: None remaining.
+  - `static/saas_dashboard.html`: `isSportMatch(evt, f)`, `renderSportsEvents()`, `loadSportsEvents()`, settings gate (line 4145), `manualDashboardRefresh()` (lines 5747-5775), `SPORT_ICONS` (lines 4013-4040), card rendering & `ai_prediction` parsing.
+  - `backend/routes/engine.py`: `/api/engine/sports/events` responses for TEN, NFL, MLB, NHL, SOC, UFC, NPB/KBO.
+  - `tests/test_sports_dashboard.py`: 24 passing tests, identified limitation in frontend test coverage.
+  - Full Node.js syntax analysis of all HTML `<script>` tags.
+- **Verdict**: REQUEST_CHANGES
+- **Unverified claims**: Worker's handoff claimed frontend was complete and working; verified that Script 4 has fatal SyntaxError (`Unexpected token '}'` on line 4129).
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Zero-fee maker hypothesis: Tested; sub-50% win rate remains negative EV even with 0% fee.
-  - High-conviction filtering hypothesis: Tested; out-of-sample calibration inversion collapses accuracy to 32.3% on high confidence.
-  - Day session only hypothesis: Tested; day session win rate (49.3%-49.5%) remains below 52.0% Kalshi break-even hurdle.
-  - Sample size validity: Tested; 5,709 intervals and 739 real trades confirm statistical significance (p < 0.0001).
+  - Ticker prefix collisions or misses: Tested on all 320 events across 7 sports; 100% matched when isolated from syntax error.
+  - Runtime execution of `saas_dashboard.html` scripts: Failed on Node.js AST compilation due to lines 4119-4129.
+  - Premature "No active AI picks" flash: Fixed via `window.__sportsLoading` check and spinner.
+  - Explicit tab settings gate bypass: Fixed via `f === 'ALL'` check on line 4145.
+  - Pull-to-refresh preservation: Fixed via `loadSportsEvents(window.sportsFilter)` in `manualDashboardRefresh`.
+  - Incomplete frontend testing: Confirmed test 376 only asserts file substring presence, masking runtime syntax failures.
 - **Vulnerabilities found**:
-  - Static HTML template in `backend/btc/backtester_sim.py:36-46` (codebase flaw exposed in reports).
-  - Omission of 7% taker fee and zero spread in `evaluate_previous_trades.py` (codebase flaw exposed in reports).
-  - Midnight risk budget reset without multi-day drawdown protection.
-- **Untested angles**: None.
+  - Fatal JavaScript syntax error at `saas_dashboard.html:4129` causing complete breakage of Script 4 (5,694 lines) in browsers.
+- **Untested angles**: None within AC2 scope.
 
 ## Key Decisions Made
-- Executed all 3 backtest/simulation scripts independently from `.venv`.
-- Verified mathematical equivalence between theoretical expectancy (-$0.0325/contract) and empirical simulation (-$185.68 on 5,709 trades).
-- Confirmed that the reviewed reports contain no integrity violations; they accurately expose and document the flaws in the trading application.
+- Executed Node.js AST syntax check across all script tags in `saas_dashboard.html`, uncovering the fatal SyntaxError on line 4129.
+- Verified `isSportMatch` logic against 320 real events across all 7 sports, confirming that the function itself works with 100% accuracy once orphaned lines 4119-4129 are removed.
+- Issued verdict of `REQUEST_CHANGES` with concrete, line-level remediation instructions.
 
 ## Artifact Index
-- `.agents/teamwork/teamwork_preview_reviewer_2/BRIEFING.md` — persistent working memory
-- `.agents/teamwork/teamwork_preview_reviewer_2/progress.md` — heartbeat and progress tracker
-- `.agents/teamwork/teamwork_preview_reviewer_2/handoff.md` — comprehensive review and challenge report
+- `DISPATCH.md` — log of dispatches received
+- `BRIEFING.md` — persistent working memory
+- `progress.md` — heartbeat and progress log
+- `report.md` — detailed review report
+- `handoff.md` — 5-component handoff report with verdict

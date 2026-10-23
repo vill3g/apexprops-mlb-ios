@@ -8,7 +8,7 @@
         
         (async function initApiBackend() {
             const isApp = window.location.protocol === "file:" || window.location.protocol.includes("capacitor");
-            if (!isApp && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1" && !window.location.hostname.startsWith("192.168.")) {
+            if (!isApp) {
                 return; 
             }
 
@@ -30,26 +30,45 @@
                 window.API_BASE_URL = remoteUrl;
             }
             
+            const currentFetch = window.fetch;
             window.fetch = async function() {
                 let [resource, config] = arguments;
                 if (typeof resource === "string" && resource.startsWith("/api/")) {
                     resource = window.API_BASE_URL + resource;
                 }
-                return originalFetch(resource, config);
+                return currentFetch(resource, config);
             };
         })();
     </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="ShadowTrade">
     <meta name="theme-color" content="#000000">
     <meta name="color-scheme" content="dark">
     <title id="page-title">ShadowTrade AI - Copilot Login</title>
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
-    <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./assets/app_icon_192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+    <!-- iOS PWA launch screens (portrait). One per device size; iOS shows a blank screen when none match. -->
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1320x2868.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1290x2796.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1206x2622.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1179x2556.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1284x2778.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1170x2532.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1242x2688.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_828x1792.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1125x2436.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./assets/splash_1080x2340.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_750x1334.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_640x1136.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_2048x2732.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_1668x2388.png">
+    <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./assets/splash_1536x2048.png">
     <style>
         html {
             background-color: #000000 !important;
@@ -427,7 +446,26 @@
     (function checkExistingSession() {
         const urlParams = new URLSearchParams(window.location.search);
         const forceAdmin = urlParams.get('mode') === 'admin' || urlParams.get('admin') !== null;
-        
+        const loggedOut = urlParams.get('logged_out') === '1' || urlParams.get('logout') === '1';
+
+        if (loggedOut) {
+            // Explicit user logout: clear all residual tokens and prevent auto-redirect
+            try {
+                localStorage.removeItem('saas_token');
+                localStorage.removeItem('saas_username');
+                localStorage.removeItem('app_api_token');
+                localStorage.removeItem('admin_api_token');
+                localStorage.removeItem('api_token');
+                localStorage.removeItem('is_admin_session');
+                sessionStorage.clear();
+                const expiredCookieStr = '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0; SameSite=Lax';
+                document.cookie = 'saas_token' + expiredCookieStr;
+                document.cookie = 'app_api_token' + expiredCookieStr;
+                document.cookie = 'admin_api_token' + expiredCookieStr;
+            } catch(e) {}
+            return;
+        }
+
         // Check for Master API Token (Admin fallback) FIRST
         const masterAdminToken = localStorage.getItem('admin_api_token') || localStorage.getItem('app_api_token');
         if (masterAdminToken) {

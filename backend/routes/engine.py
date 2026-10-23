@@ -33,6 +33,7 @@ from backend.sports_bridge.prediction_client import SportsPredictionClient
 logger = logging.getLogger(__name__)
 
 import traceback
+USE_KALSHI_BRIDGE = True
 _fx_cache = {}
 import threading
 _fx_cache_lock = threading.Lock()
@@ -81,6 +82,12 @@ _SPORTS_ASSETS = {
     "SOC", "SOCCER", "UFC", "MMA", "TEN", "TENNIS", "ALL", "WNBA", "NCAAF", "NCAAB"
 }
 
+_INVESTMENTS_ASSETS = {
+    "INVESTMENTS", "INVESTMENT", "STOCK", "STOCKS", "OPTION", "OPTIONS", "EQUITY", "EQUITIES"
+}
+
+from backend.routes.engine_sports import _SPORTS_SERIES_MAP
+
 def _is_sports_asset(asset: str) -> bool:
     if not asset:
         return False
@@ -91,10 +98,15 @@ def _is_sports_asset(asset: str) -> bool:
         return True
     return False
 
+def _is_investments_asset(asset: str) -> bool:
+    if not asset:
+        return False
+    return str(asset).strip().upper() in _INVESTMENTS_ASSETS
+
 def _validate_asset(request: Request):
     """Reject unknown /{asset} path values with 404 instead of a 500."""
     asset = str(request.path_params.get("asset", "") or "").upper().strip()
-    if asset and asset not in SUPPORTED_ASSETS and asset not in ACTIVE_PAIRS and not _is_sports_asset(asset):
+    if asset and asset not in SUPPORTED_ASSETS and asset not in ACTIVE_PAIRS and not _is_sports_asset(asset) and not _is_investments_asset(asset):
         raise HTTPException(status_code=404, detail=f"Unknown asset '{asset}'")
 
 router = APIRouter(dependencies=[Depends(_validate_asset)])
@@ -107,9 +119,125 @@ def engine_root():
     """Health and capabilities endpoint for the trading engine."""
     return {"status": "ok", "assets": list(SUPPORTED_ASSETS)}
 
+@_engine_root_router.get("/api/engine/{asset}/gemini/live-dossier")
+def api_gemini_live_dossier(asset: str):
+    """Returns the latest real-time Gemini Head Trader decision, conviction, and reasoning dossier."""
+    a_norm = str(asset or "BTC").upper().strip()
+    try:
+        from backend.btc.gemini_15m_gate import _MASTER_CACHE, _CACHE_LOCK
+        with _CACHE_LOCK:
+            # Find the newest entry for this asset
+            matches = [v for k, v in _MASTER_CACHE.items() if k[0] == a_norm]
+        if matches:
+            latest = matches[-1]
+            return JSONResponse({
+                "status": "ok",
+                "asset": a_norm,
+                "has_decision": True,
+                "direction": latest.get("direction"),
+                "confidence": latest.get("confidence"),
+                "reason": latest.get("reason"),
+                "model": latest.get("model"),
+                "timestamp": latest.get("timestamp") or latest.get("ts"),
+                "cached": True
+            })
+        return JSONResponse({
+            "status": "ok",
+            "asset": a_norm,
+            "has_decision": False,
+            "message": "No active Gemini decision yet evaluated for current interval"
+        })
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
 from pydantic import BaseModel
 from backend.database.trade_store import TradeStore
 from backend.btc.backtester import run_simulation
+
+def _authenticated_user_id(request: Optional[Request]) -> Optional[int]:
+    """The user id proven by the caller's login (JWT), or None."""
+    if request is None:
+        return None
+    req_uid = getattr(request.state, "user_id", None)
+    if req_uid:
+        try:
+            return int(req_uid)
+        except (ValueError, TypeError):
+            pass
+    try:
+        from backend.auth.dependencies import _extract_jwt
+        from backend.auth.security import decode_jwt_token
+        token = _extract_jwt(request)
+        if token:
+            payload = decode_jwt_token(token)
+            if payload and payload.get("user_id"):
+                return int(payload["user_id"])
+    except Exception:
+        pass
+    return None
+
+
+def _owner_default_user_id() -> Optional[int]:
+    """For the owner on this PC / LAN / master token with no login: the account the
+    owner bot trades for (admin first). Never used for other callers."""
+    try:
+        from backend.database.models import get_all_active_users
+        users = get_all_active_users() or []
+    except Exception:
+        return None
+    if not users:
+        return None
+    def _role(u): return (u.get("role") or "").lower()
+    def _mode(u): return (u.get("trading_mode") or "").upper()
+    def _univ(u): return (u.get("trading_universe") or "").upper()
+    for pick in (
+        lambda u: _role(u) == "admin" and _mode(u) == "LIVE" and _univ(u) in ("SPORTS", "BOTH", "ALL"),
+        lambda u: _role(u) == "admin",
+        lambda u: _mode(u) == "LIVE" and _univ(u) in ("SPORTS", "BOTH", "ALL"),
+        lambda u: _mode(u) == "LIVE",
+        lambda u: _univ(u) in ("SPORTS", "BOTH", "ALL"),
+    ):
+        for u in users:
+            if pick(u):
+                return int(u["id"])
+    return int(users[0]["id"])
+
+
+def _resolve_user_id(user_id: Optional[int], request: Optional[Request] = None) -> Optional[int]:
+    """Which account a request acts on."""
+    requested = None
+    for raw in (
+        user_id,
+        request.query_params.get("user_id") if request is not None else None,
+        request.headers.get("X-User-Id") if request is not None else None,
+    ):
+        if raw in (None, ""):
+            continue
+        try:
+            requested = int(raw)
+            break
+        except (ValueError, TypeError):
+            continue
+
+    authed = _authenticated_user_id(request)
+    is_owner = False
+    if request is not None:
+        try:
+            is_owner = bool(getattr(request.state, "is_owner", False) or caller_has_owner_access(request))
+        except Exception:
+            is_owner = False
+    else:
+        is_owner = True
+
+    if requested is not None and requested != authed:
+        if is_owner:
+            return requested
+        logger.warning(f"[Auth] Ignoring client-supplied user_id={requested} (logged in as {authed}).")
+    if authed:
+        return authed
+    if is_owner:
+        return _owner_default_user_id()
+    return None
 
 class BacktestRequest(BaseModel):
     tp_pct: float
@@ -117,14 +245,14 @@ class BacktestRequest(BaseModel):
 
 @_engine_root_router.get("/api/engine/analytics/equity")
 def get_analytics_equity(request: Request):
-    user_id = getattr(request.state, "user_id", None)
+    user_id = _resolve_user_id(None, request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Unauthorized")
     return JSONResponse(TradeStore.get_equity_curve(user_id))
 
 @_engine_root_router.post("/api/engine/backtest/simulate")
 async def simulate_backtest(request: Request):
-    user_id = getattr(request.state, "user_id", None)
+    user_id = _resolve_user_id(None, request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Unauthorized")
     try:
@@ -142,9 +270,8 @@ async def simulate_backtest(request: Request):
 
 def api_btc_analyze(asset: str, timeframe: str = "15m"):
     """Returns comprehensive directional analysis, score, and trade setup for selected timeframe."""
-
+    asset = str(asset or "BTC").upper().strip()
     if asset in ACTIVE_PAIRS:
-
         analysis = _cached_analyze_forex_pair(asset, timeframe)
         # Adapt keys to match UI expectations
         price = analysis.get("price", 1.0)
@@ -195,16 +322,34 @@ def api_btc_analyze(asset: str, timeframe: str = "15m"):
         return JSONResponse(sanitize_btc_json(forex_dict))
 
     try:
-        _, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe)
-        return JSONResponse(sanitize_btc_json(analysis))
+        _, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe, non_blocking=True)
+        if not analysis:
+            for _ in range(25):
+                time.sleep(0.1)
+                _, analysis = get_cached_btc_analysis(asset=asset, timeframe=timeframe, non_blocking=True)
+                if analysis:
+                    break
+        if analysis:
+            return JSONResponse(sanitize_btc_json(analysis))
+        if asset == "BTC":
+            static_backup = os.path.join(STATIC_DIR, "data", "btc_analysis.json")
+            if os.path.exists(static_backup):
+                try:
+                    with open(static_backup, "r", encoding="utf-8") as f:
+                        return JSONResponse(json.load(f))
+                except (json.JSONDecodeError, FileNotFoundError, OSError):
+                    pass
+        tk_price = float(get_asset_ticker(asset).get("price", 0.0) or 0.0)
+        return JSONResponse({"status": "warming_up", "asset": asset, "price": tk_price, "timeframe": timeframe, "direction": "NEUTRAL", "confidence_percent": 50})
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as e:
-        static_backup = os.path.join(STATIC_DIR, "data", "btc_analysis.json")
-        if os.path.exists(static_backup):
-            try:
-                with open(static_backup, "r", encoding="utf-8") as f:
-                    return JSONResponse(json.load(f))
-            except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
-                logger.warning(f"Failed to load static backup: {e}")
+        if asset == "BTC":
+            static_backup = os.path.join(STATIC_DIR, "data", "btc_analysis.json")
+            if os.path.exists(static_backup):
+                try:
+                    with open(static_backup, "r", encoding="utf-8") as f:
+                        return JSONResponse(json.load(f))
+                except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
+                    logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @router.post("/api/engine/{asset}/prediction/accuracy/reset", dependencies=[Depends(require_auth), Depends(require_owner)])
@@ -267,7 +412,7 @@ def api_btc_live(asset: str):
             tp = float(analysis.get("tp") or curr_price)
             delta = round(curr_price - tp, 5)
             delta_pct = round((delta / tp) * 100, 4) if tp else 0.0
-            cd = get_candle_countdown("15m")
+            cd = get_candle_countdown("15m", asset=asset.upper())
             
             data = {
                 "price": curr_price,
@@ -278,6 +423,8 @@ def api_btc_live(asset: str):
                 "status": "ABOVE" if delta >= 0 else "BELOW",
                 "seconds_left": cd["seconds_left"],
                 "formatted_countdown": cd["formatted"],
+                "close_epoch_ms": cd.get("close_epoch_ms"),
+                "server_now_ms": cd.get("server_now_ms"),
                 "last_5_targets": [tp],
                 "streak_summary": f"Forex AI {analysis.get('signal', 'HOLD')}",
                 "volume_24h": float(ticker.get("volume_24h", 0)),
@@ -319,20 +466,21 @@ def api_btc_ticker(asset: str):
         ticker = get_asset_ticker(asset.upper())
         return JSONResponse(sanitize_btc_json(ticker))
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as e:
-        static_backup = os.path.join(STATIC_DIR, "data", "btc_ticker.json")
-        if os.path.exists(static_backup):
-            try:
-                with open(static_backup, "r", encoding="utf-8") as f:
-                    return JSONResponse(json.load(f))
-            except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
-                logger.warning(f"Failed to load static backup: {e}")
+        if asset.upper() == "BTC":
+            static_backup = os.path.join(STATIC_DIR, "data", "btc_ticker.json")
+            if os.path.exists(static_backup):
+                try:
+                    with open(static_backup, "r", encoding="utf-8") as f:
+                        return JSONResponse(json.load(f))
+                except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
+                    logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @router.get("/api/engine/{asset}/countdown")
 def api_btc_countdown(asset: str, timeframe: str = "15m"):
     """Returns countdown to current candle close for selected timeframe."""
     try:
-        return JSONResponse(sanitize_btc_json(get_candle_countdown(timeframe=timeframe)))
+        return JSONResponse(sanitize_btc_json(get_candle_countdown(timeframe=timeframe, asset=asset.upper())))
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as e:
         logger.error(f"Error in countdown: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -358,6 +506,7 @@ def api_btc_kalshi(asset: str):
                 "status": "active",
                 "ticker": f"{pair_fmt} · SPOT FX",
                 "target_price": tp,
+                "strike_price": tp,
                 "entry_price": p,
                 "sl_price": sl,
                 "tp_price": tp,
@@ -373,35 +522,36 @@ def api_btc_kalshi(asset: str):
         data = dict(data)
         data["is_synthetic"] = (data.get("status") == "synthetic") or (data.get("source") == "Kalshi Synthetic")
         try:
-            _, analysis = get_cached_btc_analysis(asset=asset, timeframe="15m")
-            tb = analysis.get("target_benchmark", {}).get("next_contract_forecast", {})
-            pred_prob = tb.get("probability_percent")
-            if pred_prob is not None:
-                try:
-                    pred_prob = float(pred_prob) / 100.0
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"Error parsing probability: {e}")
-                    pred_prob = None
-            cats = tb.get("catalysts") or []
-            summary_str = ""
-            if cats:
-                summary_str = " | ".join(str(c) for c in cats[:2])
-            elif tb.get("primary_edge"):
-                summary_str = str(tb.get("primary_edge"))
-            elif tb.get("recommendation"):
-                summary_str = str(tb.get("recommendation"))
+            _, analysis = get_cached_btc_analysis(asset=asset, timeframe="15m", non_blocking=True)
+            if analysis:
+                tb = analysis.get("target_benchmark", {}).get("next_contract_forecast", {})
+                pred_prob = tb.get("probability_percent")
+                if pred_prob is not None:
+                    try:
+                        pred_prob = float(pred_prob) / 100.0
+                    except (ValueError, TypeError) as e:
+                        logger.warning(f"Error parsing probability: {e}")
+                        pred_prob = None
+                cats = tb.get("catalysts") or []
+                summary_str = ""
+                if cats:
+                    summary_str = " | ".join(str(c) for c in cats[:2])
+                elif tb.get("primary_edge"):
+                    summary_str = str(tb.get("primary_edge"))
+                elif tb.get("recommendation"):
+                    summary_str = str(tb.get("recommendation"))
 
-            bias_val = tb.get("direction") or analysis.get("primary_bias") or analysis.get("direction") or "NEUTRAL"
-            conf_val = int(tb.get("probability_percent") or analysis.get("confidence_percent") or 50)
-            grade_val = tb.get("conviction_grade") or analysis.get("conviction_grade") or "PASS"
+                bias_val = tb.get("direction") or analysis.get("primary_bias") or analysis.get("direction") or "NEUTRAL"
+                conf_val = int(tb.get("probability_percent") or analysis.get("confidence_percent") or 50)
+                grade_val = tb.get("conviction_grade") or analysis.get("conviction_grade") or "PASS"
 
-            data["ml_reasoning"] = {
-                "primary_bias": str(bias_val),
-                "confidence_percent": conf_val,
-                "predicted_probability": pred_prob,
-                "summary": summary_str,
-                "conviction_grade": str(grade_val)
-            }
+                data["ml_reasoning"] = {
+                    "primary_bias": str(bias_val),
+                    "confidence_percent": conf_val,
+                    "predicted_probability": pred_prob,
+                    "summary": summary_str,
+                    "conviction_grade": str(grade_val)
+                }
         except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as _ml_err:
             logger.debug(f"[Ticker] ml_reasoning enrichment skipped: {_ml_err}")
         return JSONResponse(data)
@@ -484,7 +634,10 @@ def api_kalshi_live_trades(asset: str, since: float = 0.0):
     ticker = (market or {}).get("ticker", "")
     if not market or market.get("status") == "synthetic" or "SYNTH" in str(ticker).upper():
         return JSONResponse({"ticker": ticker, "trades": []})
-    trades = [t for t in get_recent_trades(ticker) if t["ts"] > float(since or 0)]
+    try:
+        trades = [t for t in get_recent_trades(ticker) if t.get("ts", 0) > float(since or 0)]
+    except Exception:
+        trades = []
     return JSONResponse({"ticker": ticker, "trades": trades[:30]})
 
 
@@ -558,21 +711,26 @@ def api_btc_trade_status(asset: str, request: Request):
                         user_mode = str(u.get("trading_mode") or "PAPER").upper()
                         paper_bal = float(u.get("paper_balance") or 0.0)
                     from backend.database.trade_store import TradeStore
-                    from backend.sports_bridge.executor import _is_sports_trade
+                    from backend.engine.live_pnl import annotate_trade_live_pnl, is_sports_trade
                     user_open = TradeStore.get_open_trades(user_id)
-                    open_trades = [t for t in user_open if _is_sports_trade(t)]
-                    user_rec = TradeStore.get_recent_trades(user_id, limit=50)
-                    recent_trades = [t for t in user_rec if _is_sports_trade(t)]
+                    open_trades = [annotate_trade_live_pnl(t) for t in user_open if is_sports_trade(t)]
+                    user_rec = TradeStore.get_recent_sports_trades(user_id, limit=50)
+                    recent_trades = [annotate_trade_live_pnl(t) for t in user_rec if is_sports_trade(t)]
                 except Exception as e:
                     logger.error(f"Error fetching sports trade status: {e}")
+            bal_val = paper_bal if user_mode == "PAPER" else live_bal
+            open_sports_pnl = round(sum(float(t.get("live_pnl") or 0.0) for t in open_trades), 2)
+            open_sports_val = round(sum(float(t.get("cur_price") or t.get("entry_price") or 0.5) * float(t.get("count") or 1.0) for t in open_trades), 2)
             return JSONResponse({
                 "status": "ok",
                 "enabled": ai_on,
                 "mode": user_mode,
                 "asset": asset.upper(),
                 "universe": "SPORTS",
-                "balance_dollars": paper_bal if user_mode == "PAPER" else live_bal,
+                "balance_dollars": bal_val,
                 "paper_balance": paper_bal,
+                "equity": round(bal_val + open_sports_val, 2),
+                "open_pnl_dollars": open_sports_pnl,
                 "open_trades": open_trades,
                 "recent_trades": recent_trades
             })
@@ -701,12 +859,12 @@ def api_btc_trade_toggle(asset: str, enabled: bool = Query(...), request: Reques
         if _is_sports_asset(asset):
             if user_id:
                 update_user_ai_enabled(user_id, enabled)
-                from backend.database.models import update_user_trading_universe
-                try:
-                    update_user_trading_universe(user_id, "SPORTS")
-                except Exception:
-                    pass
             return JSONResponse({"status": "ok", "success": True, "enabled": enabled, "asset": asset.upper(), "universe": "SPORTS"})
+
+        if _is_investments_asset(asset):
+            if user_id:
+                update_user_ai_enabled(user_id, enabled)
+            return JSONResponse({"status": "ok", "success": True, "enabled": enabled, "asset": asset.upper(), "universe": "INVESTMENTS"})
 
         if asset.upper() in ACTIVE_PAIRS:
 
@@ -760,7 +918,7 @@ def api_btc_trade_mode(asset: str, mode: str = Query(...), request: Request = No
                 detail="Kalshi API credentials must be configured before switching to LIVE trading."
             )
 
-    if _is_sports_asset(asset):
+    if _is_sports_asset(asset) or _is_investments_asset(asset):
         if user_id:
             from backend.database.models import update_user_trading_mode
             update_user_trading_mode(user_id, mode_clean)
@@ -899,6 +1057,10 @@ async def api_btc_trade_config_post(asset: str, request: Request, background_tas
                 if "sports_active_leagues" in data:
                     val = data["sports_active_leagues"]
                     update_fields["sports_active_leagues"] = json.dumps(val) if isinstance(val, (list, dict)) else str(val)
+                if "sports_strategy" in data:
+                    update_fields["sports_strategy"] = str(data["sports_strategy"])
+                if "sports_max_parlay_legs" in data:
+                    update_fields["sports_max_parlay_legs"] = int(data["sports_max_parlay_legs"])
                 if "ai_enabled" in data:
                     update_user_ai_enabled(user_id, bool(data["ai_enabled"]))
                 if update_fields:
@@ -911,39 +1073,41 @@ async def api_btc_trade_config_post(asset: str, request: Request, background_tas
             return JSONResponse({"status": "ok", "success": True, "saved": "sports_config"})
         
         if user_id:
-
-
+            cur_u = get_user_by_id(user_id) or {}
             update_user_config(
                 user_id=user_id,
-                trade_size_dollars=float(data.get("trade_size_dollars", 5.0)),
-                paper_trade_size_dollars=float(data.get("paper_trade_size_dollars", 50.0)),
-                stop_loss_pct=float(data.get("stop_loss_pct", 50.0)),
-                one_click_trade=bool(data.get("one_click_trade", False)),
-                auto_force_trade=bool(data.get("auto_force_trade", False)),
-                trading_style=str(data.get("trading_style", "AUTO")),
-                signal_source=str(data.get("signal_source", "RL_DQN")),
-                take_profit_pct=float(data.get("take_profit_pct", 50.0)),
-                take_profit_enabled=bool(data.get("take_profit_enabled", True)),
-                notify_trade_results=bool(data.get("notify_trade_results", True)),
-                notify_market_trends=bool(data.get("notify_market_trends", True)),
-                max_daily_trades=int(data.get("max_daily_trades", 10)),
-                max_daily_risk=float(data.get("max_daily_risk", 50.0)),
-                trailing_stop_enabled=bool(data.get("trailing_stop_enabled", False)),
-                trailing_stop_activation_pct=float(data.get("trailing_stop_activation_pct", 35.0)),
-                trailing_stop_distance_pct=float(data.get("trailing_stop_distance_pct", 6.0)),
-                second_entry_enabled=bool(data.get("second_entry_enabled", False)),
-                second_entry_max_ask=float(data.get("second_entry_max_ask", 0.75)),
-                reentry_after_stop_loss=bool(data.get("reentry_after_stop_loss", False)),
-                model_choice=str(data.get("model_choice", "RL_DQN")),
-                train_window=int(data.get("train_window", 4000)),
-                regularization_c=float(data.get("regularization_c", 0.5)),
-                class_weight=str(data.get("class_weight", "balanced")),
-                xgb_estimators=int(data.get("xgb_estimators", 300)),
-                xgb_max_depth=int(data.get("xgb_max_depth", 5)),
-                xgb_learning_rate=float(data.get("xgb_learning_rate", 0.1)),
-                ignore_pass_technical=bool(data.get("ignore_pass_technical", False)),
-                one_shot_ai=bool(data.get("one_shot_ai", False)),
-                use_kelly_criterion=bool(data.get("use_kelly_criterion", False))
+                trade_size_dollars=float(data.get("trade_size_dollars", cur_u.get("trade_size_dollars", 5.0))),
+                paper_trade_size_dollars=float(data.get("paper_trade_size_dollars", cur_u.get("paper_trade_size_dollars", 50.0))),
+                stop_loss_pct=float(data.get("stop_loss_pct", cur_u.get("stop_loss_pct", 50.0))),
+                stop_loss_enabled=bool(data.get("stop_loss_enabled", cur_u.get("stop_loss_enabled", 1))),
+                one_click_trade=bool(data.get("one_click_trade", cur_u.get("one_click_trade", False))),
+                auto_force_trade=bool(data.get("auto_force_trade", cur_u.get("auto_force_trade", False))),
+                target_asset=str(data.get("target_asset") or cur_u.get("target_asset") or asset.upper()),
+                trading_style=str(data.get("trading_style", cur_u.get("trading_style", "AUTO"))),
+                signal_source=str(data.get("signal_source", cur_u.get("signal_source", "RL_DQN"))),
+                take_profit_pct=float(data.get("take_profit_pct", cur_u.get("take_profit_pct", 50.0))),
+                take_profit_enabled=bool(data.get("take_profit_enabled", cur_u.get("take_profit_enabled", True))),
+                notify_trade_results=bool(data.get("notify_trade_results", cur_u.get("notify_trade_results", True))),
+                notify_market_trends=bool(data.get("notify_market_trends", cur_u.get("notify_market_trends", True))),
+                max_daily_trades=int(data.get("max_daily_trades", cur_u.get("max_daily_trades", 10))),
+                max_daily_risk=float(data.get("max_daily_risk", cur_u.get("max_daily_risk", 50.0))),
+                trailing_stop_enabled=bool(data.get("trailing_stop_enabled", cur_u.get("trailing_stop_enabled", False))),
+                trailing_stop_activation_pct=float(data.get("trailing_stop_activation_pct", cur_u.get("trailing_stop_activation_pct", 35.0))),
+                trailing_stop_distance_pct=float(data.get("trailing_stop_distance_pct", cur_u.get("trailing_stop_distance_pct", 6.0))),
+                second_entry_enabled=bool(data.get("second_entry_enabled", cur_u.get("second_entry_enabled", False))),
+                second_entry_max_ask=float(data.get("second_entry_max_ask", cur_u.get("second_entry_max_ask", 0.75))),
+                reentry_after_stop_loss=bool(data.get("reentry_after_stop_loss", cur_u.get("reentry_after_stop_loss", False))),
+                model_choice=str(data.get("model_choice", cur_u.get("model_choice", "RL_DQN"))),
+                train_window=int(data.get("train_window", cur_u.get("train_window", 4000))),
+                regularization_c=float(data.get("regularization_c", cur_u.get("regularization_c", 0.5))),
+                class_weight=str(data.get("class_weight", cur_u.get("class_weight", "balanced"))),
+                xgb_estimators=int(data.get("xgb_estimators", cur_u.get("xgb_estimators", 300))),
+                xgb_max_depth=int(data.get("xgb_max_depth", cur_u.get("xgb_max_depth", 5))),
+                xgb_learning_rate=float(data.get("xgb_learning_rate", cur_u.get("xgb_learning_rate", 0.1))),
+                ignore_pass_technical=bool(data.get("ignore_pass_technical", cur_u.get("ignore_pass_technical", False))),
+                one_shot_ai=bool(data.get("one_shot_ai", cur_u.get("one_shot_ai", False))),
+                use_kelly_criterion=bool(data.get("use_kelly_criterion", cur_u.get("use_kelly_criterion", False))),
+                trading_universe=data.get("trading_universe") if data.get("trading_universe") else None
             )
             invalidate_saas_users_cache(user_id)
 
@@ -1171,25 +1335,86 @@ def api_btc_trade_history(asset: str, mode: Optional[str] = None, request: Reque
             })
         return JSONResponse(res)
 
-    # Check if a specific registered user is targeted (via ?user=, ?user_id=, numeric ?guest=, or request.state.target_user_id)
-    target_user_id = getattr(request.state, "target_user_id", None) if request else None
+    # Check if a specific registered user or ALL users (for admin) is targeted
+    target_user_id = None
+    want_all_users = False
+    if request:
+        # Only the owner/admins may view another account's history; everyone else is
+        # limited to their own user id, whatever ?user= / ?guest= they pass.
+        caller_uid = getattr(request.state, "user_id", None)
+        privileged = caller_has_owner_access(request)
 
-    if target_user_id:
+        def _may_view(uid: int) -> bool:
+            return privileged or (caller_uid is not None and int(uid) == int(caller_uid))
 
+        qp_user = request.query_params.get("user") or request.query_params.get("user_id") or request.query_params.get("guest")
+        requested_uid = int(qp_user) if qp_user and str(qp_user).isdigit() else getattr(request.state, "target_user_id", None)
+        if qp_user and str(qp_user).strip().upper() in ("ALL", "0"):
+            if privileged:
+                want_all_users = True
+        elif requested_uid:
+            if not _may_view(requested_uid):
+                return JSONResponse({"detail": "You can only view your own trade history."}, status_code=403)
+            target_user_id = int(requested_uid)
+        elif getattr(request.state, "user_id", None):
+            target_user_id = request.state.user_id
+        else:
+            gid = _get_guest_id(request)
+            if gid and str(gid).isdigit():
+                target_user_id = int(gid)
+
+    if want_all_users:
         try:
             from backend.database.trade_store import TradeStore
-            user_history = TradeStore.get_recent_trades(target_user_id, limit=200)
+            from backend.engine.live_pnl import annotate_trade_live_pnl
+            all_history = TradeStore.get_all_users_recent_trades(limit=500, mode=mode, user_id=None)
+            enriched_all = []
+            for t in all_history:
+                t_dict = dict(t)
+                uid = t_dict.get("user_id")
+                uname = t_dict.get("username") or f"User #{uid}"
+                u_style = t_dict.pop("_user_default_style", "AUTO")
+                u_source = t_dict.pop("_user_default_source", "RL_DQN")
+                u_model = t_dict.pop("_user_default_model", "RL_DQN")
+                if str(t_dict.get("status", "")).upper() == "OPEN":
+                    try:
+                        t_dict = annotate_trade_live_pnl(t_dict)
+                    except Exception:
+                        pass
+                enr = enrich_trade_metadata(t_dict, default_style=u_style, default_source=u_source, default_model=u_model)
+                enr["user_id"] = uid
+                enr["username"] = uname
+                enriched_all.append(enr)
+            return JSONResponse(sanitize_btc_json(enriched_all))
+        except Exception as e:
+            logger.warning(f"Unexpected error parsing all-users history: {e}")
+
+    if target_user_id:
+        try:
+            from backend.database.trade_store import TradeStore
+            from backend.engine.live_pnl import annotate_trade_live_pnl
+            user_history = TradeStore.get_recent_trades(target_user_id, limit=500)
             if mode:
                 user_history = [t for t in user_history if str(t.get("mode", "PAPER")).upper() == mode.upper()]
             u = get_user_by_id(target_user_id) or {}
+            u_name = u.get("username", f"User #{target_user_id}")
             u_style = u.get("trading_style", "AUTO")
             u_source = u.get("signal_source", "RL_DQN")
             u_model = u.get("model_choice", "RL_DQN")
-            enriched_user_hist = [
-                enrich_trade_metadata(dict(t), default_style=u_style, default_source=u_source, default_model=u_model)
-                for t in user_history
-            ]
-            return JSONResponse(sanitize_btc_json(enriched_user_hist[::-1]))
+            enriched_user_hist = []
+            for t in user_history:
+                t_dict = dict(t)
+                if str(t_dict.get("status", "")).upper() == "OPEN":
+                    try:
+                        t_dict = annotate_trade_live_pnl(t_dict)
+                    except Exception as e:
+                        logger.debug(f"Failed to annotate live pnl on open trade: {e}")
+                enr = enrich_trade_metadata(t_dict, default_style=u_style, default_source=u_source, default_model=u_model)
+                enr["user_id"] = target_user_id
+                enr["username"] = t_dict.get("username") or u_name
+                enriched_user_hist.append(enr)
+            # TradeStore.get_recent_trades is already ordered newest-first (ORDER BY rowid DESC)
+            return JSONResponse(sanitize_btc_json(enriched_user_hist))
         except Exception as e:
             logger.warning(f"Unexpected error parsing history: {e}")
 
@@ -1298,8 +1523,29 @@ def api_kalshi_transfer(asset: str, payload: dict, request: Request = None):
         if not kt:
             return JSONResponse({"success": False, "error": "Kalshi configuration incomplete"})
             
-        src = 0 if direction == "main_to_crypto" else 2
-        dst = 2 if direction == "main_to_crypto" else 0
+        source_exchange = payload.get("source_exchange")
+        destination_exchange = payload.get("destination_exchange")
+        if source_exchange is not None and destination_exchange is not None:
+            src = int(source_exchange)
+            dst = int(destination_exchange)
+        elif direction == "main_to_crypto":
+            src = 0
+            dst = 2
+        elif direction == "crypto_to_main":
+            src = 2
+            dst = 0
+        elif direction == "main_to_sports":
+            src = 0
+            dst = 3
+        elif direction == "sports_to_main":
+            src = 3
+            dst = 0
+        else:
+            src = 0
+            dst = 2
+
+        if src == dst:
+            return JSONResponse({"success": False, "error": "Source and destination exchanges must be different."})
         
         res = kt.transfer_between_exchanges(source_exchange=src, destination_exchange=dst, amount_dollars=amount)
         return JSONResponse(res)
@@ -1316,8 +1562,9 @@ def api_btc_candles(asset: str, timeframe: str = "15m"):
 
     
     try:
+        asset = str(asset or "BTC").upper().strip()
         is_fx = asset in ACTIVE_PAIRS
-        prec = 5 if is_fx else 2
+        prec = 5 if (is_fx or asset == "DOGE") else 2
 
         if is_fx:
 
@@ -1403,13 +1650,14 @@ def api_btc_candles(asset: str, timeframe: str = "15m"):
             "target_benchmark": target_benchmark
         }))
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as e:
-        static_backup = os.path.join(STATIC_DIR, "data", "btc_candles.json")
-        if os.path.exists(static_backup):
-            try:
-                with open(static_backup, "r", encoding="utf-8") as f:
-                    return JSONResponse(json.load(f))
-            except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
-                logger.warning(f"Failed to load static backup: {e}")
+        if asset == "BTC":
+            static_backup = os.path.join(STATIC_DIR, "data", "btc_candles.json")
+            if os.path.exists(static_backup):
+                try:
+                    with open(static_backup, "r", encoding="utf-8") as f:
+                        return JSONResponse(json.load(f))
+                except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
+                    logger.warning(f"Failed to load static backup: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
@@ -1517,1636 +1765,94 @@ async def api_backtest_run(request: Request):
 _SPORTS_SERIES_MAP = {
     "NPB": ["KXNPBGAME", "KXNPBSPREAD", "KXNPBTOTAL"],
     "KBO": ["KXKBOGAME", "KXKBOSPREAD", "KXKBOTOTAL"],
-    "NFL": ["KXNFLSPREAD", "KXNFLTOTAL", "KXNFLWINS", "KXNFLGAME"],
+    "NFL": ["KXNFLSPREAD", "KXNFLTOTAL", "KXNFLWINS", "KXNFLGAME", "KXNFLTD", "KXNFLPASS", "KXNFLRUSH", "KXNFLREC"],
     "MLB": ["KXMLBGAME", "KXMLBSPREAD", "KXMLBTOTAL", "KXMLBF5", "KXMLBHRR"],
-    "NHL": ["KXNHLSPREAD", "KXNHLGOAL", "KXNHL2P", "KXNHL1P"],
-    "SOC": ["KXEPLGAME", "KXMLSGAME", "KXUEFAGAME", "KXWC"],
-    "UFC": ["KXUFCMIDDLEWEIGHTTITLE", "KXUFCLHEAVYWEIGHTTITLE", "KXUFCBANTAMWEIGHTTITLE"],
-    "TEN": ["KXATPMATCH", "KXWTAMATCH", "KXATP", "KXWTA"]
+    "NHL": ["KXNHLGAME", "KXNHLSPREAD", "KXNHLTOTAL", "KXNHLTEAMTOTAL", "KXNHLF10G", "KXNHL1P", "KXNHL2P", "KXNHL3P", "KXNHL1PSPREAD", "KXNHL2PSPREAD", "KXNHL3PSPREAD", "KXNHL1PTOTAL", "KXNHL2PTOTAL", "KXNHL3PTOTAL", "KXNHLOT", "KXNHLGOAL", "KXNHLAST", "KXNHLPTS", "KXNHLFIRSTGOAL", "KXNHLSAVE"],
+    "SOC": ["KXEPLGAME", "KXMLSGAME", "KXUEFAGAME", "KXWC", "KXBUNDESLIGA", "KXLALIGA"],
+    "UFC": ["KXUFCMIDDLEWEIGHTTITLE", "KXUFCLHEAVYWEIGHTTITLE", "KXUFCBANTAMWEIGHTTITLE", "KXUFCFIGHT", "KXUFC"],
+    "TEN": ["KXATPMATCH", "KXWTAMATCH", "KXATP", "KXWTA"],
+    "NBA": ["KXNBAGAME", "KXNBASPREAD", "KXNBATOTAL", "KXNBAPTS", "KXNBAREB", "KXNBAAST", "KXNBATHREE", "KXNBA3PT", "KXNBABLK", "KXNBASTL"],
+    "NCAAF": ["KXNCAAFGAME", "KXNCAAFSPREAD", "KXNCAAFTOTAL"]
 }
 
-def _resolve_user_id(user_id: Optional[int], request: Optional[Request] = None) -> int:
-    if user_id:
-        try:
-            return int(user_id)
-        except (ValueError, TypeError):
-            pass
-    if request:
-        try:
-            qp_uid = request.query_params.get("user_id")
-            if qp_uid:
-                return int(qp_uid)
-        except Exception:
-            pass
-        try:
-            hdr_uid = request.headers.get("X-User-Id")
-            if hdr_uid:
-                return int(hdr_uid)
-        except Exception:
-            pass
-        req_uid = getattr(request.state, "user_id", None)
-        if req_uid:
-            try:
-                return int(req_uid)
-            except (ValueError, TypeError):
-                pass
-        try:
-            from backend.auth.dependencies import _extract_jwt
-            from backend.auth.security import decode_jwt_token
-            token = _extract_jwt(request)
-            if token:
-                payload = decode_jwt_token(token)
-                if payload and payload.get("user_id"):
-                    return int(payload["user_id"])
-        except Exception:
-            pass
-    try:
-        from backend.database.models import get_all_active_users
-        users = get_all_active_users()
-        if users:
-            # 1. Prioritize admin user in LIVE mode with SPORTS universe
-            for u in users:
-                if (u.get("role") or "").lower() == "admin" and (u.get("trading_mode") or "").upper() == "LIVE" and (u.get("trading_universe") or "").upper() in ("SPORTS", "BOTH", "ALL"):
-                    return int(u["id"])
-            # 2. Prioritize admin user
-            for u in users:
-                if (u.get("role") or "").lower() == "admin":
-                    return int(u["id"])
-            # 3. Prioritize LIVE mode with SPORTS universe
-            for u in users:
-                if (u.get("trading_mode") or "").upper() == "LIVE" and (u.get("trading_universe") or "").upper() in ("SPORTS", "BOTH", "ALL"):
-                    return int(u["id"])
-            # 4. Prioritize LIVE mode
-            for u in users:
-                if (u.get("trading_mode") or "").upper() == "LIVE":
-                    return int(u["id"])
-            # 5. Prioritize SPORTS universe
-            for u in users:
-                if (u.get("trading_universe") or "").upper() in ("SPORTS", "BOTH", "ALL"):
-                    return int(u["id"])
-            return int(users[0]["id"])
-    except Exception:
-        pass
-    return 7
-
-def _get_user_sports_criteria(user_id: int) -> dict:
-    try:
-        from backend.database.models import get_db_connection
-        conn = get_db_connection()
-        row = conn.execute("SELECT min_sports_confidence, min_sports_edge, sports_max_wager, sports_trade_size_dollars FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.close()
-        if row:
-            wager = row[3] if (len(row) > 3 and row[3] is not None) else (row[2] if row[2] is not None else 10.0)
-            return {
-                "min_confidence": float(row[0]) if row[0] is not None else 50.0,
-                "min_edge": float(row[1]) if row[1] is not None else 0.0,
-                "max_wager": float(wager) if wager is not None else 10.0,
-                "trade_size_dollars": float(wager) if wager is not None else 10.0
-            }
-    except Exception:
-        pass
-    return {"min_confidence": 50.0, "min_edge": 0.0, "max_wager": 10.0, "trade_size_dollars": 10.0}
-
-def _execute_sports_trade(
-    event_ticker: str,
-    prediction: dict,
-    user_id: int,
-    trade_size: Optional[float] = None,
-    explicit_side: Optional[str] = None
-) -> tuple[Optional[dict], Optional[str]]:
-    import requests
-    import uuid
-    import re
-    from backend.database.trade_store import TradeStore
-
-    if not event_ticker or not str(event_ticker).strip():
-        return None, "Invalid or missing event_ticker"
-    if not prediction:
-        return None, "Missing prediction data"
-
-    from backend.database.models import get_user_by_id
-    user = get_user_by_id(user_id)
-    if not user:
-        return None, f"User {user_id} not found"
-
-    mode = (user.get("trading_mode") or "PAPER").upper()
-
-    event_ticker = str(event_ticker).strip()
-    market_ticker = None
-    entry_price = 0.50
-    side = (explicit_side or "YES").upper()
-
-    if event_ticker.startswith("KALSHI-") and mode == "LIVE":
-        return None, f"Trade execution failed: Cannot place live order on non-Kalshi ticker '{event_ticker}'"
-
-    now_et = datetime.now(ZoneInfo("America/New_York"))
-    today_et = now_et.date()
-    ev_date, start_epoch = extract_sports_event_date_and_time(
-        event_ticker,
-        metadata=prediction.get("metadata") if isinstance(prediction, dict) else None
-    )
-    if mode == "LIVE":
-        if ev_date and ev_date < today_et:
-            return None, f"Trade execution failed: Event '{event_ticker}' scheduled date ({ev_date}) is in the past"
-        if start_epoch and (time.time() - start_epoch > 14400):
-            return None, f"Trade execution failed: Event '{event_ticker}' already concluded"
-
-    try:
-        headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
-        from backend.btc.kalshi_trader import kalshi_trader
-        if kalshi_trader.is_authenticated():
-            try:
-                headers = kalshi_trader._sign_headers("GET", f"/trade-api/v2/events/{event_ticker}")
-            except Exception:
-                pass
-        r = requests.get(
-            f"https://external-api.kalshi.com/trade-api/v2/events/{event_ticker}",
-            params={"with_nested_markets": True},
-            headers=headers,
-            timeout=5.0
-        )
-        if r.status_code == 200:
-            evt = r.json().get("event", {})
-            markets = evt.get("markets", [])
-            if not markets:
-                logger.warning(f"Event {event_ticker} has no open markets on Kalshi.")
-                return None, f"Trade execution failed: Event {event_ticker} has no open markets on Kalshi"
-
-            pred_team_raw = (prediction.get("predicted_team") or prediction.get("team") or "").strip()
-            meta = prediction.get("metadata") or {}
-            meta_name = (meta.get("name") or meta.get("player_or_team") or meta.get("home_team") or "").strip()
-
-            # Clean off "(Manual YES)" or "(Manual NO)" if present
-            pred_team = re.sub(r'\(?\b(?:manual\s+yes|yes\s*\(manual\)|manual\s+no|no\s*\(manual\)|manual|yes|no)\b\)?', '', pred_team_raw, flags=re.IGNORECASE).strip().lower()
-            if not pred_team and meta_name:
-                pred_team = meta_name.lower().strip()
-
-            generic_words = {'the', 'and', 'city', 'team', 'club', 'fc', 'vs', 'game', 'wins', 'at', 'in'}
-            pred_tokens = {w for w in re.findall(r'[a-z0-9]+', pred_team) if len(w) >= 3 and w not in generic_words}
-            meta_tokens = {w for w in re.findall(r'[a-z0-9]+', meta_name.lower()) if len(w) >= 3 and w not in generic_words}
-            all_target_tokens = pred_tokens | meta_tokens
-
-            matched_m = None
-            best_score = 0
-            
-            if (not pred_team or pred_team in ("yes", "no")) and len(markets) > 0:
-                matched_m = markets[0]
-                if not explicit_side and pred_team in ("yes", "no"):
-                    side = pred_team.upper()
-                best_score = 100
-            else:
-                for m in markets:
-                    m_ticker = (m.get("ticker") or "").lower()
-                    m_title = (m.get("title") or "").lower()
-                    m_sub = (m.get("yes_sub_title") or "").lower()
-                    m_text = f"{m_ticker} {m_title} {m_sub}"
-                    m_tokens = {w for w in re.findall(r'[a-z0-9]+', m_text) if len(w) >= 3 and w not in generic_words}
-
-                    score = 0
-                    if pred_team and (pred_team in m_title or pred_team in m_sub):
-                        score += 25
-                    if m_sub and len(m_sub) >= 4 and m_sub in pred_team:
-                        score += 20
-                    if meta_name and (meta_name.lower() in m_title or meta_name.lower() in m_sub):
-                        score += 15
-
-                    overlap = len(all_target_tokens & m_tokens)
-                    score += overlap * 10
-
-                    for tok in all_target_tokens:
-                        if len(tok) >= 3:
-                            if any(mt.startswith(tok) or tok.startswith(mt) for mt in m_tokens):
-                                score += 6
-                            if m_ticker.endswith("-" + tok) or f"-{tok}-" in m_ticker:
-                                score += 12
-
-                    if score > best_score:
-                        best_score = score
-                        matched_m = m
-
-            # If there is only 1 binary market and pred_team didn't match YES, check if it matches opponent (NO side)
-            if not matched_m and len(markets) == 1:
-                m = markets[0]
-                m_sub = (m.get("yes_sub_title") or "").lower()
-                m_tokens = {w for w in re.findall(r'[a-z0-9]+', m_sub) if len(w) >= 3 and w not in generic_words}
-                evt_title_sub = f"{evt.get('title', '')} {evt.get('sub_title', '')} {m.get('title', '')}".lower()
-                if all_target_tokens and any(tok in evt_title_sub for tok in all_target_tokens) and not (all_target_tokens & m_tokens):
-                    matched_m = m
-                    side = "NO"
-                    best_score = 5
-
-            # If still not matched, but explicit_side was passed and we have markets, fall back to markets[0]
-            if (not matched_m or best_score <= 0) and explicit_side and len(markets) > 0:
-                matched_m = markets[0]
-                side = explicit_side
-                best_score = 1
-
-            if not matched_m or best_score <= 0:
-                logger.warning(f"Could not match predicted team '{pred_team}' to any market in event {event_ticker}")
-                return None, f"Trade execution failed: Could not match predicted team '{pred_team}' in event {event_ticker}"
-
-            m_status = str(matched_m.get("status") or "").lower()
-            if m_status in ("closed", "settled", "determined"):
-                return None, f"Trade execution failed: Market '{matched_m.get('ticker')}' is {m_status} (cannot place order on closed market)"
-            if mode == "LIVE" and m_status not in ("active", "open"):
-                return None, f"Trade execution failed: Market '{matched_m.get('ticker')}' is {m_status} (cannot place live order on closed market)"
-
-            market_ticker = matched_m.get("ticker")
-            if side == "YES":
-                ask = float(matched_m.get("yes_ask_dollars") or (float(matched_m.get("yes_ask", 0)) / 100.0 if matched_m.get("yes_ask") else 0) or matched_m.get("last_price_dollars") or 0.50)
-            else:
-                ask = float(matched_m.get("no_ask_dollars") or (float(matched_m.get("no_ask", 0)) / 100.0 if matched_m.get("no_ask") else 0) or (1.0 - float(matched_m.get("last_price_dollars") or 0.50)) or 0.50)
-            if 0.01 <= ask <= 0.99:
-                entry_price = ask
-        elif r.status_code == 404:
-            if event_ticker.startswith("KALSHI-"):
-                market_ticker = event_ticker
-                entry_price = float(prediction.get("limit_price") or 0.50)
-            else:
-                # Check if event_ticker is actually a direct market ticker (e.g. KXNFLGAME-...-DAL)
-                headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
-                from backend.btc.kalshi_trader import kalshi_trader
-                if kalshi_trader.is_authenticated():
-                    try:
-                        headers = kalshi_trader._sign_headers("GET", f"/trade-api/v2/markets/{event_ticker}")
-                    except Exception:
-                        pass
-                r_mkt = requests.get(
-                    f"https://external-api.kalshi.com/trade-api/v2/markets/{event_ticker}",
-                    headers=headers,
-                    timeout=5.0
-                )
-                if r_mkt.status_code == 200:
-                    m_data = r_mkt.json().get("market", {})
-                    m_status = str(m_data.get("status") or "").lower()
-                    if mode == "LIVE" and m_status and m_status not in ("active", "open"):
-                        return None, f"Trade execution failed: Market '{event_ticker}' is {m_status} (cannot place live order on closed market)"
-                    market_ticker = event_ticker
-                    if explicit_side:
-                        side = explicit_side.upper()
-                    elif (prediction.get("predicted_team") or "").lower().strip() == "no":
-                        side = "NO"
-                    else:
-                        side = "YES"
-
-                    if side == "YES":
-                        ask = float(m_data.get("yes_ask_dollars") or (float(m_data.get("yes_ask", 0)) / 100.0 if m_data.get("yes_ask") else 0) or m_data.get("last_price_dollars") or 0.50)
-                    else:
-                        ask = float(m_data.get("no_ask_dollars") or (float(m_data.get("no_ask", 0)) / 100.0 if m_data.get("no_ask") else 0) or (1.0 - float(m_data.get("last_price_dollars") or 0.50)) or 0.50)
-                    if 0.01 <= ask <= 0.99:
-                        entry_price = ask
-                elif r_mkt.status_code == 429:
-                    logger.warning(f"Kalshi 429 rate limit on market {event_ticker}")
-                    return None, f"Kalshi API rate limit (429) while fetching {event_ticker}. Please retry shortly."
-                else:
-                    logger.warning(f"Event/Market {event_ticker} not found on Kalshi (status {r_mkt.status_code})")
-                    return None, f"Trade execution failed: Event {event_ticker} has no active matching markets on Kalshi"
-        elif r.status_code == 429:
-            logger.warning(f"Kalshi 429 rate limit on {event_ticker}.")
-            from backend.database.models import get_user_by_id
-            u_chk = get_user_by_id(user_id)
-            if u_chk and (u_chk.get("trading_mode") or "PAPER").upper() == "LIVE":
-                return None, f"Kalshi API rate limit (429) while fetching {event_ticker}. Please retry shortly."
-            if event_ticker.startswith("KX"):
-                market_ticker = f"{event_ticker}-MKT"
-                entry_price = 0.50
-            else:
-                return None, f"Kalshi 429 rate limit on {event_ticker}"
-        else:
-            logger.warning(f"Kalshi returned HTTP {r.status_code} for {event_ticker}")
-            return None, f"Kalshi returned HTTP {r.status_code} for {event_ticker}"
-    except Exception as e:
-        logger.warning(f"Failed to fetch market details for {event_ticker}: {e}")
-        from backend.database.models import get_user_by_id
-        u_chk = get_user_by_id(user_id)
-        if u_chk and (u_chk.get("trading_mode") or "PAPER").upper() == "LIVE":
-            return None, f"Failed to fetch market details for live order: {e}"
-        if event_ticker.startswith("KX"):
-            market_ticker = f"{event_ticker}-MKT"
-            entry_price = 0.50
-        else:
-            return None, f"Failed to fetch market details for {event_ticker}: {e}"
-
-    if not market_ticker:
-        return None, f"Trade execution failed: Event {event_ticker} has no active matching markets on Kalshi"
-
-    criteria = _get_user_sports_criteria(user_id)
-    wager = float(trade_size) if (trade_size is not None and float(trade_size) > 0) else float(criteria.get("trade_size_dollars") or criteria.get("max_wager") or 10.0)
-    count = max(1, int(wager / max(entry_price, 0.01)))
-    cost = round(entry_price * count, 2)
-    trade_id = f"sports_{int(time.time())}_{uuid.uuid4().hex[:8]}"
-    pred_team_name = prediction.get("predicted_team") or prediction.get("team") or "Team"
-    conf = float(prediction.get("confidence_pct") or 60.0)
-    edge = float(prediction.get("edge_pct") or 5.0)
-    sport = prediction.get("sport")
-    if not sport:
-        m_s = re.search(r'KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|NPB|KBO|SOC|UFC|TEN|MMA)', event_ticker) or re.search(r'KX([A-Z]{3,5}?)(?:GAME|-|$)', event_ticker) or re.search(r'KX([A-Z]{3,5})', event_ticker)
-        if m_s:
-            sport = m_s.group(1)
-        elif event_ticker.startswith("KALSHI-"):
-            parts = event_ticker.split("-")
-            sport = parts[1] if len(parts) > 1 else "SPORTS"
-        else:
-            sport = "SPORTS"
-
-    fill_price = entry_price
-    fill_count = count
-    actual_cost = cost
-    order_id = trade_id
-
-    if mode == "LIVE":
-        if not market_ticker.startswith("KX") or market_ticker.endswith("-MKT") or market_ticker.startswith("KALSHI-"):
-            return None, f"Trade execution failed: Cannot place live order on non-Kalshi ticker '{market_ticker}'"
-
-        from backend.btc.kalshi_trader import get_authenticated_trader_for_user
-        kt = get_authenticated_trader_for_user(user, fail_fast=True)
-        if not kt or not kt.is_authenticated():
-            return None, "User is in LIVE mode but has no valid Kalshi API keys linked in settings"
-
-        bal_res = kt.get_balance(force_refresh=True)
-        if not bal_res.get("success"):
-            return None, f"Unable to verify Kalshi live balance: {bal_res.get('error', 'Balance check failed')}"
-        live_bal = float(bal_res.get("balance_dollars", 0.0))
-        if live_bal < cost:
-            return None, f"Insufficient Kalshi live balance (${live_bal:.2f}) for order cost (${cost:.2f})"
-
-        # Ensure order count with slippage buffer does not exceed available live balance
-        max_price = min(0.99, max(0.01, entry_price + 0.04))
-        max_est_cost = max_price * count
-        if live_bal < max_est_cost and count > 1:
-            clamped = int(live_bal / max_price)
-            if clamped >= 1:
-                count = clamped
-                cost = round(entry_price * count, 2)
-
-        order_res = kt.place_sports_order(
-            ticker=market_ticker,
-            side=side.lower(),
-            count=count,
-            limit_price_dollars=entry_price,
-            dry_run=False,
-            slippage_buffer_dollars=0.04
-        )
-        if not order_res.get("success"):
-            return None, f"Kalshi Order Failed: {order_res.get('error')}"
-
-        order_id = str(order_res.get("order_id") or order_res.get("client_order_id") or trade_id)
-        fill_price = float(order_res.get("filled_price") or entry_price)
-        fill_count = int(order_res.get("count") or count)
-        actual_cost = round(fill_price * fill_count, 2)
-    else:
-        from backend.database.models import deduct_user_paper_balance
-        if not deduct_user_paper_balance(user_id, cost):
-            logger.warning(f"User {user_id} has insufficient paper balance for ${cost:.2f} sports trade")
-            return None, f"Insufficient paper balance for ${cost:.2f} sports trade"
-
-    evt_obj = evt if ('evt' in locals() and isinstance(evt, dict)) else {}
-    mkts_list = [matched_m] if ('matched_m' in locals() and matched_m) else (evt_obj.get("markets", []) if evt_obj else [])
-    market_details = parse_sports_market_details(
-        ticker=market_ticker or event_ticker,
-        title=evt_obj.get("title", ""),
-        series=event_ticker,
-        markets=mkts_list,
-        sub_title=evt_obj.get("sub_title", ""),
-        event_obj=evt_obj
-    )
-    prop_type_val = market_details.get("prop_type", "Moneyline")
-    line_val = market_details.get("line", "Moneyline")
-    spread_amt_val = market_details.get("spread_amount")
-    ou_amt_val = market_details.get("over_under_amount")
-    strike_det_val = market_details.get("strike_details", "")
-    num_line_val = market_details.get("numeric_line")
-    if market_details.get("player_name"):
-        pred_team_name = market_details["player_name"]
-
-    trade_dict = {
-        "id": order_id,
-        "order_id": order_id,
-        "client_order_id": order_id,
-        "user_id": user_id,
-        "ticker": market_ticker,
-        "sport": sport,
-        "asset": sport,
-        "predicted_team": pred_team_name,
-        "team": pred_team_name,
-        "trade_size_dollars": wager,
-        "side": side,
-        "direction": side,
-        "entry_price": fill_price,
-        "count": fill_count,
-        "cost": actual_cost,
-        "pnl": 0.0,
-        "status": "OPEN",
-        "mode": mode,
-        "prop_type": prop_type_val,
-        "line": line_val,
-        "spread_amount": spread_amt_val,
-        "over_under_amount": ou_amt_val,
-        "strike_details": strike_det_val,
-        "numeric_line": num_line_val,
-        "reason": f"[{prop_type_val}] {line_val} | AI Edge: {pred_team_name} (Conf: {conf:.1f}%, Edge: {edge:.1f}%)" if conf < 100 else f"[{prop_type_val}] {line_val} | Manual: {pred_team_name} ({side})",
-        "trading_style": "SPORTS_AI",
-        "signal_source": "Local AI Prediction Engine (8057)" if conf < 100 else "Manual Sports Trade Slip",
-        "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
-        "ml_reasoning": json.dumps({
-            "event_ticker": event_ticker,
-            "market_ticker": market_ticker,
-            "sport": sport,
-            "predicted_team": pred_team_name,
-            "team": pred_team_name,
-            "confidence_pct": conf,
-            "edge_pct": edge,
-            "prop_type": prop_type_val,
-            "line": line_val,
-            "spread_amount": spread_amt_val,
-            "over_under_amount": ou_amt_val,
-            "strike_details": strike_det_val,
-            "numeric_line": num_line_val,
-            "criteria_met": True
-        }),
-        "catalysts": [
-            f"{sport} {prop_type_val}: {line_val}",
-            f"{sport} AI edge: {edge:.1f}%",
-            f"Model win prob: {conf:.1f}%"
-        ]
-    }
-    trade_dict["raw_json"] = json.dumps(trade_dict)
-    TradeStore.insert_trade(user_id, trade_dict)
-    return trade_dict, None
-
-
-def _execute_sports_paper_trade(event_ticker: str, prediction: dict, user_id: int, trade_size: Optional[float] = None) -> Optional[dict]:
-    trade, err = _execute_sports_trade(event_ticker, prediction, user_id, trade_size=trade_size)
-    return trade
-
-import concurrent.futures
-
-_SPORTS_EVENTS_CACHE = {}  # series_ticker -> (timestamp, events)
-_SPORTS_EVENTS_CACHE_LOCK = threading.Lock()
-_SPORTS_CACHE_TTL = 180.0  # 3 minutes TTL cache to prevent Kalshi 429 rate limits
-_SPORTS_AGG_CACHE = {}  # query_filter -> (timestamp, response_dict)
-_SPORTS_AGG_CACHE_LOCK = threading.Lock()
-_SPORTS_AGG_CACHE_TTL = 30.0  # 30 seconds
-_ON_DEMAND_PRED_CACHE = {}  # key -> (timestamp, pred_dict)
-_ON_DEMAND_PRED_LOCK = threading.Lock()
-from zoneinfo import ZoneInfo
-from datetime import datetime, date
-
-_MONTHS_MAP = {
-    "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
-    "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12
-}
-
-def extract_sports_event_date_and_time(
-    ticker: str,
-    metadata: Optional[dict] = None,
-    event_obj: Optional[dict] = None
-) -> tuple[Optional[date], Optional[float]]:
-    """
-    Extracts scheduled game date (date object) and start time (unix epoch float)
-    from a sports event ticker, metadata, or Kalshi event object in Eastern Time (ET).
-    Returns: (event_date: date | None, start_epoch: float | None)
-    """
-    metadata = metadata or {}
-    event_obj = event_obj or {}
-
-    text_corpus = f"{ticker} {event_obj.get('event_ticker', '')} {metadata.get('series_ticker', '')}"
-    m = re.search(r'-(\d{2})([A-Z]{3})(\d{2})(?:(\d{4}))?', text_corpus, flags=re.IGNORECASE)
-    if m:
-        yy_str, mon_str, dd_str, hhmm_str = m.groups()
-        mon = _MONTHS_MAP.get(mon_str.upper())
-        if mon:
-            try:
-                ev_year = 2000 + int(yy_str)
-                ev_day = int(dd_str)
-                ev_date = date(ev_year, mon, ev_day)
-                ev_epoch = None
-                if hhmm_str:
-                    hh = int(hhmm_str[:2])
-                    mm = int(hhmm_str[2:])
-                    dt = datetime(ev_year, mon, ev_day, hh, mm, tzinfo=ZoneInfo("America/New_York"))
-                    ev_epoch = dt.timestamp()
-                return ev_date, ev_epoch
-            except Exception:
-                pass
-
-    date_str = metadata.get("date")
-    if date_str and isinstance(date_str, str):
-        try:
-            clean_d = date_str.split("T")[0].strip()
-            parts = [int(p) for p in clean_d.split("-") if p.isdigit()]
-            if len(parts) == 3:
-                return date(parts[0], parts[1], parts[2]), None
-        except Exception:
-            pass
-
-    markets = event_obj.get("markets") or []
-    for mkt in markets:
-        c_time = mkt.get("close_time") or mkt.get("expected_expiration_time")
-        if c_time and isinstance(c_time, str):
-            try:
-                dt = datetime.fromisoformat(c_time.replace("Z", "+00:00"))
-                dt_et = dt.astimezone(ZoneInfo("America/New_York"))
-                return dt_et.date(), dt_et.timestamp()
-            except Exception:
-                pass
-
-    return None, None
-
-
-def parse_sports_market_details(
-    ticker: str = '',
-    title: str = '',
-    series: str = '',
-    markets: Optional[list] = None,
-    sub_title: str = '',
-    event_obj: Optional[dict] = None
-) -> dict:
-    """
-    Parses sport market prop type, line, spread amount, over/under amount,
-    and strike details from Kalshi event and market payloads.
-    Accurately detects Player Props first, Spreads, Totals (O/U), and Moneylines.
-    """
-    combined = f"{ticker} {title} {series} {sub_title}".upper()
-    markets = markets or []
-    m0 = markets[0] if markets and isinstance(markets[0], dict) else {}
-
-    m_title = m0.get('title', '')
-    m_sub = m0.get('yes_sub_title', '')
-    m_ticker = m0.get('ticker', '')
-    m_rules = m0.get('rules_primary', '') or m0.get('rules_secondary', '')
-    m_part = str(m0.get('primary_participant_key', '') or '')
-    m_custom = m0.get('custom_strike', {}) if isinstance(m0.get('custom_strike'), dict) else {}
-    floor_strike = m0.get('floor_strike')
-    cap_strike = m0.get('cap_strike')
-
-    # Gather texts to search for player prop patterns
-    candidate_texts = [m_title, m_sub, title, sub_title]
-
-    # --- STEP 1: DETECT PLAYER PROPS FIRST ---
-    # Kalshi series or tickers that are explicitly player props
-    is_prop_series = any(k in combined for k in [
-        'KXNHLGOAL', 'KXNHLSHOT', 'KXNHLSOG', 'KXNHLAST', 'KXNHLPTS',
-        'KXMLBHRR', 'KXMLBHIT', 'KXMLBHR', 'KXMLBKS', 'KXMLBRBI', 'KXMLBSTEAL', 'KXMLBTB',
-        'KXNFLTD', 'KXNFLPASS', 'KXNFLRUSH', 'KXNFLREC', 'KXNFLFG',
-        'KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBATHREE', 'KXNBA3PT', 'KXNBABLK', 'KXNBASTL',
-        'GOALSCORER'
-    ]) or any(k in m_ticker.upper() for k in [
-        'HRR', 'GOAL', 'SHOT', 'SOG', 'STRIKEOUT', 'TOUCHDOWN', 'PROP'
-    ]) or m_part.endswith('_player') or any('player' in k for k in m_custom.keys()) or ('records' in m_rules.lower() and 'game' in m_rules.lower())
-
-    player_name = None
-    prop_line_num = None
-    prop_stat_raw = None
-
-    for txt in candidate_texts:
-        if not txt:
-            continue
-        m_col = re.match(r'^([^:\n]{2,40}?):\s*(\d+\+?|\d+\.\d+|\d+)\s*(.*)$', txt.strip())
-        if m_col:
-            cand_name = m_col.group(1).strip()
-            # Ensure not a team or game total word, and not a two-team matchup
-            if not re.search(r'\b(total|totals|over|under|spread|run line|puck line|moneyline|game|winner|match|vs|at)\b', cand_name, re.IGNORECASE) and not any(sep in cand_name.lower() for sep in (' vs ', ' @ ', ' at ', ' v ')):
-                player_name = cand_name
-                prop_line_num = m_col.group(2).strip()
-                prop_stat_raw = m_col.group(3).strip()
-                break
-
-    # If no colon pattern, check Kalshi rules e.g. "If Zachary Bolduc records 1+ goals in the..."
-    if not player_name and m_rules:
-        m_rule = re.search(r'If\s+([^:\n\d]+?)\s+records?\s+(\d+\+?|\d+\.\d+|\d+)\s*([a-zA-Z\s\+]+?)\s+in\s+the', m_rules, re.IGNORECASE)
-        if m_rule:
-            player_name = m_rule.group(1).strip()
-            prop_line_num = m_rule.group(2).strip()
-            prop_stat_raw = m_rule.group(3).strip()
-
-    is_player_prop = bool(player_name or is_prop_series)
-
-    if is_player_prop:
-        # Determine stat unit / category
-        stat_combined = f"{prop_stat_raw or ''} {combined} {m_rules}".lower()
-        if 'hrr' in m_ticker.lower() or 'hrr' in series.lower() or ('hit' in stat_combined and 'run' in stat_combined and 'rbi' in stat_combined) or 'h+r+rbi' in stat_combined or 'hits + runs + rbis' in stat_combined:
-            stat_unit = 'H+R+RBI'
-        elif 'total bases' in stat_combined or 'tb' in m_ticker.lower() or 'tb' in series.lower():
-            stat_unit = 'Total Bases'
-        elif 'goal' in stat_combined:
-            stat_unit = 'Goals'
-        elif 'home run' in stat_combined or 'hr' in m_ticker.lower() or 'hr' in series.lower():
-            stat_unit = 'Home Runs'
-        elif 'strikeout' in stat_combined or 'ks' in m_ticker.lower() or 'ks' in series.lower():
-            stat_unit = 'Strikeouts'
-        elif 'hit' in stat_combined or 'hit' in m_ticker.lower():
-            stat_unit = 'Hits'
-        elif 'rbi' in stat_combined or 'rbi' in m_ticker.lower():
-            stat_unit = 'RBIs'
-        elif 'shot' in stat_combined or 'sog' in stat_combined:
-            stat_unit = 'Shots'
-        elif 'touchdown' in stat_combined or 'td' in m_ticker.lower() or 'td' in series.lower():
-            stat_unit = 'Touchdowns'
-        elif 'pass' in stat_combined:
-            stat_unit = 'Pass Yds'
-        elif 'rush' in stat_combined:
-            stat_unit = 'Rush Yds'
-        elif 'reception' in stat_combined or 'rec' in m_ticker.lower():
-            stat_unit = 'Receptions'
-        elif 'point' in stat_combined or 'pts' in m_ticker.lower() or 'pts' in series.lower():
-            stat_unit = 'Points'
-        elif 'rebound' in stat_combined or 'reb' in m_ticker.lower():
-            stat_unit = 'Rebounds'
-        elif 'assist' in stat_combined or 'ast' in m_ticker.lower():
-            stat_unit = 'Assists'
-        elif prop_stat_raw:
-            stat_unit = prop_stat_raw.strip().title()
-        else:
-            stat_unit = 'Props'
-
-        numeric_line = None
-        if prop_line_num:
-            try:
-                numeric_line = float(prop_line_num.replace('+', ''))
-            except Exception:
-                pass
-        elif floor_strike is not None:
-            try:
-                numeric_line = float(floor_strike)
-                prop_line_num = f"{numeric_line:g}+"
-            except Exception:
-                pass
-
-        if prop_line_num in ('0.5+', '0.5') and stat_unit in ('Goals', 'Home Runs', 'Strikeouts', 'Shots', 'Touchdowns', 'Receptions', 'Points', 'Rebounds', 'Assists', 'H+R+RBI', 'Hits', 'RBIs'):
-            prop_line_num = "1+"
-            numeric_line = 1.0
-
-        if not prop_line_num:
-            prop_line_num = "1+"
-
-        formatted_line = f"{prop_line_num} {stat_unit}"
-        strike_details = f"{player_name}: {formatted_line}" if player_name else (m_title or m_sub or formatted_line)
-
-        return {
-            'prop_type': 'Player Prop',
-            'line': formatted_line,
-            'spread_amount': None,
-            'over_under_amount': None,
-            'strike_details': strike_details,
-            'numeric_line': numeric_line,
-            'player_name': player_name
-        }
-
-    # --- STEP 2: SPREAD, TOTAL, OR MONEYLINE ---
-    if any(k in combined for k in ['SPREAD', 'RUN LINE', 'PUCK LINE', 'HANDICAP']):
-        prop_type = 'Spread'
-    elif any(k in combined for k in ['TOTAL', 'POINTS', 'RUNS SCORED', 'O/U', 'OVER/UNDER']):
-        prop_type = 'Total (O/U)'
-    else:
-        prop_type = 'Moneyline'
-
-    if prop_type == 'Moneyline':
-        clean_strike_details = m_title or m_sub or (title if 'vs' not in title.lower() else '') or 'Match Winner'
-        return {
-            'prop_type': 'Moneyline',
-            'line': 'Moneyline',
-            'spread_amount': None,
-            'over_under_amount': None,
-            'strike_details': clean_strike_details,
-            'numeric_line': None,
-            'player_name': None
-        }
-
-    # Extract numeric line/strike
-    strike_val = None
-    if floor_strike is not None:
-        try:
-            strike_val = float(floor_strike)
-        except Exception:
-            pass
-    elif cap_strike is not None:
-        try:
-            strike_val = float(cap_strike)
-        except Exception:
-            pass
-
-    if strike_val is None:
-        text_to_search = f"{m_sub} {m_title} {title}"
-        m_num = re.search(r'(?:over|under|by|\+|-)\s*(\d+(?:\.\d+)?)', text_to_search, re.IGNORECASE)
-        if m_num:
-            try:
-                strike_val = float(m_num.group(1))
-            except Exception:
-                pass
-        else:
-            m_suf = re.search(r'-([A-Za-z]{0,4})(\d+(?:\.\d+)?)$', m_ticker)
-            if m_suf:
-                try:
-                    strike_val = float(m_suf.group(2))
-                except Exception:
-                    pass
-
-    spread_amount = None
-    over_under_amount = None
-    strike_details = m_sub or m_title or title or 'Match Outcome'
-
-    unit = 'pts'
-    if any(k in combined for k in ['MLB', 'BASEBALL', 'RUN', 'NPB', 'KBO']):
-        unit = 'runs'
-    elif any(k in combined for k in ['NHL', 'HOCKEY', 'SOC', 'SOCCER', 'GOAL']):
-        unit = 'goals'
-    elif any(k in combined for k in ['NBA', 'WNBA', 'BASKETBALL', 'NFL', 'FOOTBALL']):
-        unit = 'pts'
-
-    if prop_type == 'Spread':
-        if strike_val is not None:
-            s_val_str = f"{strike_val:g}"
-            spread_amount = f"{s_val_str} {unit}"
-            m_team = re.search(r'^([A-Za-z0-9\s\.\'\-]+?)\s+wins?\s+by\s+over', m_sub or m_title, re.IGNORECASE)
-            team_prefix = f"{m_team.group(1).strip()} " if m_team else ""
-            line_label = f"Spread: {team_prefix}{s_val_str} {unit}"
-        else:
-            spread_amount = "Spread"
-            line_label = "Spread"
-    elif prop_type == 'Total (O/U)':
-        if strike_val is not None:
-            s_val_str = f"{strike_val:g}"
-            over_under_amount = f"{s_val_str} {unit}"
-            line_label = f"O/U {s_val_str} {unit}"
-        else:
-            over_under_amount = "O/U"
-            line_label = "Total (O/U)"
-    else:
-        line_label = "Moneyline"
-
-    return {
-        'prop_type': prop_type,
-        'line': line_label,
-        'spread_amount': spread_amount,
-        'over_under_amount': over_under_amount,
-        'strike_details': strike_details,
-        'numeric_line': strike_val,
-        'player_name': None
-    }
-
-
-def _fetch_kalshi_series_events(series: str) -> list:
-    now = time.time()
-    with _SPORTS_EVENTS_CACHE_LOCK:
-        if series in _SPORTS_EVENTS_CACHE:
-            ts, cached_events = _SPORTS_EVENTS_CACHE[series]
-            if (now - ts < _SPORTS_CACHE_TTL) and cached_events is not None:
-                return cached_events
-
-    from backend.btc.kalshi_trader import kalshi_trader
-    headers = {'Accept': 'application/json', 'User-Agent': 'ApexProps-Trader/1.0'}
-    path = '/trade-api/v2/events'
-    if kalshi_trader.is_authenticated():
-        try:
-            headers = kalshi_trader._sign_headers('GET', path)
-        except Exception:
-            pass
-
-    import requests
-    session = getattr(kalshi_trader, 'session', requests)
-
-    for attempt in range(3):
-        try:
-            resp = session.get(
-                'https://external-api.kalshi.com/trade-api/v2/events',
-                params={'series_ticker': series, 'with_nested_markets': True, 'status': 'open', 'limit': 50},
-                headers=headers,
-                timeout=5.0
-            )
-            if resp.status_code == 200:
-                events = resp.json().get('events', [])
-                with _SPORTS_EVENTS_CACHE_LOCK:
-                    _SPORTS_EVENTS_CACHE[series] = (now, events)
-                return events
-            elif resp.status_code == 429:
-                logger.warning(f"Kalshi 429 rate limit on series {series}, attempt {attempt+1}")
-                with _SPORTS_EVENTS_CACHE_LOCK:
-                    if series in _SPORTS_EVENTS_CACHE and _SPORTS_EVENTS_CACHE[series][1] is not None:
-                        return _SPORTS_EVENTS_CACHE[series][1]
-                break
-            else:
-                logger.warning(f"Kalshi returned HTTP {resp.status_code} for series {series}")
-                break
-        except Exception as e:
-            logger.error(f"Error fetching Kalshi series {series}: {e}")
-            break
-
-    with _SPORTS_EVENTS_CACHE_LOCK:
-        if series in _SPORTS_EVENTS_CACHE and _SPORTS_EVENTS_CACHE[series][1] is not None:
-            return _SPORTS_EVENTS_CACHE[series][1]
-        _SPORTS_EVENTS_CACHE[series] = (now, [])
-
-    return []
-
-def _normalize_sport(s: str) -> str:
-    s = (s or "").upper().strip()
-    if s in ("NPB/KBO", "NPB_KBO", "NPB-KBO", "NPB", "KBO"):
-        return "NPB/KBO"
-    if s in ("TEN", "TENNIS", "ATP", "WTA"):
-        return "TEN"
-    if s in ("SOC", "SOCCER", "EPL", "MLS", "UEFA", "WC"):
-        return "SOC"
-    if s in ("UFC", "MMA"):
-        return "UFC"
-    if s in ("NHL", "HOCKEY"):
-        return "NHL"
-    if s in ("MLB", "BASEBALL"):
-        return "MLB"
-    if s in ("NFL", "FOOTBALL"):
-        return "NFL"
-    return s
-
-@_engine_root_router.get("/api/engine/sports/events", dependencies=[Depends(require_auth)])
-def api_sports_events(
-    sport: Optional[str] = None,
-    league: Optional[str] = None,
-    filter: Optional[str] = None
-):
-    raw_filter = sport or league or filter or ""
-    if hasattr(raw_filter, "default"):
-        raw_filter = ""
-    query_filter = str(raw_filter or "").strip().upper()
-    now = time.time()
-    with _SPORTS_AGG_CACHE_LOCK:
-        if query_filter in _SPORTS_AGG_CACHE:
-            ts, cached_resp = _SPORTS_AGG_CACHE[query_filter]
-            if now - ts < _SPORTS_AGG_CACHE_TTL:
-                return cached_resp
-
-    # Normalize sport filtering
-    if query_filter in ("NPB/KBO", "NPB_KBO", "NPB-KBO", "NPB", "KBO"):
-        target_sports = [("NPB", "NPB/KBO", "NPB"), ("KBO", "NPB/KBO", "KBO")]
-    elif query_filter in ("SOC", "SOCCER"):
-        target_sports = [("SOC", "SOC", "SOC")]
-    elif query_filter in ("TEN", "TENNIS"):
-        target_sports = [("TEN", "TEN", "TEN")]
-    elif query_filter in ("UFC", "MMA"):
-        target_sports = [("UFC", "UFC", "UFC")]
-    elif query_filter in _SPORTS_SERIES_MAP:
-        target_sports = [(query_filter, query_filter, query_filter)]
-    else:
-        target_sports = [
-            ("NPB", "NPB/KBO", "NPB"),
-            ("KBO", "NPB/KBO", "KBO"),
-            ("NFL", "NFL", "NFL"),
-            ("MLB", "MLB", "MLB"),
-            ("NHL", "NHL", "NHL"),
-            ("SOC", "SOC", "SOC"),
-            ("UFC", "UFC", "UFC"),
-            ("TEN", "TEN", "TEN"),
-        ]
-
-    client = SportsPredictionClient()
-    latest_picks = []
-    try:
-        latest_picks = client.fetch_latest_picks()
-    except Exception as e:
-        logger.debug(f"Could not fetch picks for events: {e}")
-
-    # Gather unique series tickers to fetch in parallel
-    unique_series = set()
-    for series_key, _, _ in target_sports:
-        for s in _SPORTS_SERIES_MAP.get(series_key, []):
-            unique_series.add(s)
-
-    series_data_map = {}
-    if unique_series:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(unique_series))) as executor:
-            future_to_series = {executor.submit(_fetch_kalshi_series_events, s): s for s in unique_series}
-            for future in concurrent.futures.as_completed(future_to_series):
-                s = future_to_series[future]
-                try:
-                    series_data_map[s] = future.result()
-                except Exception as e:
-                    logger.error(f"Error reading result for series {s}: {e}")
-                    series_data_map[s] = []
-
-    kalshi_events = []
-    seen_tickers = set()
-
-    for series_key, sport_tag, league_tag in target_sports:
-        series_tickers = _SPORTS_SERIES_MAP.get(series_key, [])
-        for series in series_tickers:
-            events_data = series_data_map.get(series, [])
-            for e in events_data:
-                event_ticker = e.get('event_ticker') or ''
-                if not event_ticker or event_ticker in seen_tickers:
-                    continue
-
-                now_et = datetime.now(ZoneInfo("America/New_York"))
-                today_et = now_et.date()
-                ev_date, start_epoch = extract_sports_event_date_and_time(event_ticker, event_obj=e)
-                # Filter out past events from previous days
-                if ev_date and ev_date < today_et:
-                    continue
-
-                seen_tickers.add(event_ticker)
-
-                title = e.get('title') or 'Event'
-                sub = e.get('sub_title') or 'Match'
-
-                conf = 0.0
-                edge = 0.0
-                matched_pred_team = None
-                if latest_picks:
-                    t_lower = (event_ticker + " " + title).lower()
-                    generic_words = {'the', 'and', 'city', 'team', 'club', 'fc', 'vs', 'game'}
-                    best_pick = None
-                    best_pick_score = -100
-
-                    for p in latest_picks:
-                        p_sport = (p.get("sport") or "").upper()
-                        # Match picks from compatible sport
-                        if _normalize_sport(sport_tag) != _normalize_sport(p_sport):
-                            continue
-
-                        p_team = (p.get("predicted_team") or "").lower().strip()
-                        p_opp = (p.get("opponent") or "").lower().strip()
-                        p_mtype = str(p.get("market_type") or p.get("metadata", {}).get("type") or "").upper()
-
-                        score = 0
-                        is_match = False
-
-                        if p_team and len(p_team) >= 4 and p_team in t_lower:
-                            is_match = True
-                            score += 40
-                        elif p_team:
-                            p_tokens = {w for w in re.findall(r'[a-z0-9]+', p_team) if len(w) >= 3 and w not in generic_words}
-                            e_tokens = {w for w in re.findall(r'[a-z0-9]+', t_lower) if len(w) >= 3 and w not in generic_words}
-                            if p_tokens and (p_tokens <= e_tokens):
-                                is_match = True
-                                score += 30
-
-                        if not is_match and p_opp and "vs" in p_opp:
-                            opp_parts = [o.strip() for o in re.split(r'\s+(?:vs\.?|at|@)\s+', p_opp, flags=re.IGNORECASE) if o.strip()]
-                            if len(opp_parts) == 2:
-                                p1_tokens = {w for w in re.findall(r'[a-z0-9]+', opp_parts[0]) if len(w) >= 3 and w not in generic_words}
-                                p2_tokens = {w for w in re.findall(r'[a-z0-9]+', opp_parts[1]) if len(w) >= 3 and w not in generic_words}
-                                e_tokens = {w for w in re.findall(r'[a-z0-9]+', t_lower) if len(w) >= 3 and w not in generic_words}
-                                if (p1_tokens & e_tokens) and (p2_tokens & e_tokens) and (p1_tokens != p2_tokens):
-                                    is_match = True
-                                    score += 20
-
-                        if is_match:
-                            # Prefer moneyline / winner picks over totals
-                            if any(k in event_ticker.upper() for k in ["GAME", "MATCH", "TITLE"]):
-                                if "MONEYLINE" in p_mtype or "WINNER" in p_mtype:
-                                    score += 50
-                                if "/" in p_team:
-                                    score -= 40
-                            if score > best_pick_score:
-                                best_pick_score = score
-                                best_pick = p
-
-                    if best_pick:
-                        conf = float(best_pick.get("confidence_pct") or 0.0)
-                        edge = float(best_pick.get("edge_pct") or 0.0)
-                        if conf > 50.0 and edge == 0.0:
-                            edge = round(conf - 50.0, 1)
-                        matched_pred_team = best_pick.get("predicted_team")
-
-                if conf == 0.0 and any(sep in title for sep in (" vs ", " @ ", " v ", " VS ")):
-                    pred_cache_key = f"{event_ticker}_{title}"
-                    now_ts = time.time()
-                    cached_pred = None
-                    with _ON_DEMAND_PRED_LOCK:
-                        if pred_cache_key in _ON_DEMAND_PRED_CACHE:
-                            ts_p, p_data = _ON_DEMAND_PRED_CACHE[pred_cache_key]
-                            if (now_ts - ts_p) < 600.0:
-                                cached_pred = p_data
-                    if cached_pred is None:
-                        try:
-                            cached_pred = client.predict_for_event(event_ticker, title=title, sport=sport_tag)
-                            if cached_pred:
-                                with _ON_DEMAND_PRED_LOCK:
-                                    _ON_DEMAND_PRED_CACHE[pred_cache_key] = (now_ts, cached_pred)
-                        except Exception:
-                            pass
-                    if cached_pred:
-                        conf = float(cached_pred.get("confidence_pct") or 0.0)
-                        edge = float(cached_pred.get("edge_pct") or 0.0)
-                        if conf > 50.0 and edge == 0.0:
-                            edge = round(conf - 50.0, 1)
-                        matched_pred_team = cached_pred.get("predicted_team")
-
-                # Determine clean matchup (e.g. "Doosan Bears vs LG Twins" stripping ": Spread" or ": Total Runs")
-                raw_title = title or sub or "Sports Event"
-                clean_matchup = re.sub(r':\s*(Spread|Total\s*Runs?|Totals?|Game|Moneyline).*$', '', raw_title, flags=re.IGNORECASE).strip()
-                if not clean_matchup:
-                    clean_matchup = raw_title
-
-                # Extract markets list
-                markets = e.get('markets', [])
-
-                # Parse detailed prop type, line, spread/over-under amounts, and strike info
-                market_details = parse_sports_market_details(
-                    ticker=event_ticker,
-                    title=title,
-                    series=series,
-                    markets=markets,
-                    sub_title=sub,
-                    event_obj=e
-                )
-                prop_type = market_details['prop_type']
-                line = market_details['line']
-                spread_amount = market_details['spread_amount']
-                over_under_amount = market_details['over_under_amount']
-                strike_details = market_details['strike_details']
-                numeric_line = market_details['numeric_line']
-                m_type_label = prop_type
-
-                has_valid_pick = bool(matched_pred_team and conf > 0 and matched_pred_team.lower() != clean_matchup.lower())
-                pred_pick_name = matched_pred_team if has_valid_pick else None
-                if prop_type == 'Player Prop' and market_details.get('player_name'):
-                    if not pred_pick_name or pred_pick_name.lower() in clean_matchup.lower():
-                        pred_pick_name = market_details['player_name']
-                    has_valid_pick = True
-                    if conf <= 0:
-                        conf = 60.0
-                        edge = 8.0
-
-                # Extract market odds / prices from first market if available
-                yes_ask = None
-                no_ask = None
-                last_price = None
-                if markets:
-                    first_mkt = markets[0]
-                    if first_mkt.get('yes_ask_dollars') is not None:
-                        yes_ask = float(first_mkt['yes_ask_dollars'])
-                    elif first_mkt.get('yes_ask') is not None:
-                        yes_ask = float(first_mkt['yes_ask']) / 100.0
-
-                    if first_mkt.get('no_ask_dollars') is not None:
-                        no_ask = float(first_mkt['no_ask_dollars'])
-                    elif first_mkt.get('no_ask') is not None:
-                        no_ask = float(first_mkt['no_ask']) / 100.0
-
-                    if first_mkt.get('last_price_dollars') is not None:
-                        last_price = float(first_mkt['last_price_dollars'])
-                    elif first_mkt.get('last_price') is not None:
-                        last_price = float(first_mkt['last_price']) / 100.0
-
-                    if yes_ask is None and last_price is not None:
-                        yes_ask = last_price
-                        no_ask = round(1.0 - last_price, 2)
-
-                # Extract game date & start time - prioritize ticker regex for actual game time
-                game_time_str = ""
-                m = re.search(r'-(\d{2})([A-Z]{3})(\d{2})(\d{4})', event_ticker)
-                if m:
-                    yy, mon, dd, hhmm = m.groups()
-                    hr = int(hhmm[:2])
-                    mn = hhmm[2:]
-                    ampm = "AM"
-                    if hr >= 12:
-                        ampm = "PM"
-                        if hr > 12: hr -= 12
-                    if hr == 0: hr = 12
-                    game_time_str = f"{mon.capitalize()} {int(dd)} @ {hr}:{mn} {ampm} ET"
-                else:
-                    m_date = re.search(r'-(\d{2})([A-Z]{3})(\d{2})', event_ticker)
-                    if m_date:
-                        yy, mon, dd = m_date.groups()
-                        game_time_str = f"{mon.capitalize()} {int(dd)}"
-
-                if not game_time_str and markets:
-                    for mkt in markets:
-                        c_time = mkt.get('close_time') or mkt.get('expected_expiration_time')
-                        if c_time and isinstance(c_time, str):
-                            try:
-                                dt = datetime.fromisoformat(c_time.replace('Z', '+00:00'))
-                                dt_et = dt.astimezone(ZoneInfo("America/New_York"))
-                                hr = dt_et.hour % 12
-                                if hr == 0: hr = 12
-                                ampm = "AM" if dt_et.hour < 12 else "PM"
-                                game_time_str = f"{dt_et.strftime('%b')} {dt_et.day} @ {hr}:{dt_et.strftime('%M')} {ampm} ET"
-                                break
-                            except Exception:
-                                pass
-
-                is_today = bool(ev_date == today_et)
-
-                is_multi_prop_event = (series in ('KXMLBHRR', 'KXMLBHIT', 'KXMLBHR', 'KXMLBRBI', 'KXMLBKS', 'KXMLBTB') or 'HRR' in series)
-                if is_multi_prop_event and markets:
-                    # Filter for 1+ prop markets (or primary line markets)
-                    one_plus_markets = [
-                        m for m in markets
-                        if (': 1+' in (m.get('yes_sub_title') or '') or
-                            ': 1+' in (m.get('title') or '') or
-                            m.get('floor_strike') == 0.5 or
-                            '1+' in (m.get('rules_primary') or ''))
-                    ]
-                    target_prop_markets = one_plus_markets if one_plus_markets else markets
-                    for mkt in target_prop_markets:
-                        m_ticker = mkt.get('ticker') or event_ticker
-                        mkt_details = parse_sports_market_details(
-                            ticker=m_ticker,
-                            title=mkt.get('title', ''),
-                            series=series,
-                            markets=[mkt],
-                            sub_title=mkt.get('yes_sub_title', ''),
-                            event_obj=e
-                        )
-                        p_name = mkt_details.get('player_name') or mkt.get('yes_sub_title') or 'Player'
-                        p_name = re.sub(r':\s*\d+.*$', '', p_name).strip()
-                        p_line = mkt_details.get('line') or '1+ H+R+RBI'
-                        p_strike = f"{p_name}: {p_line}"
-
-                        m_yes = None
-                        m_no = None
-                        m_last = None
-                        if mkt.get('yes_ask_dollars') is not None:
-                            m_yes = float(mkt['yes_ask_dollars'])
-                        elif mkt.get('yes_ask') is not None:
-                            m_yes = float(mkt['yes_ask']) / 100.0
-
-                        if mkt.get('no_ask_dollars') is not None:
-                            m_no = float(mkt['no_ask_dollars'])
-                        elif mkt.get('no_ask') is not None:
-                            m_no = float(mkt['no_ask']) / 100.0
-
-                        if mkt.get('last_price_dollars') is not None:
-                            m_last = float(mkt['last_price_dollars'])
-                        elif mkt.get('last_price') is not None:
-                            m_last = float(mkt['last_price']) / 100.0
-
-                        if m_yes is None and m_last is not None:
-                            m_yes = m_last
-                            m_no = round(1.0 - m_last, 2)
-
-                        p_conf = 65.0
-                        p_edge = 8.0
-                        if m_yes and 0.01 <= m_yes <= 0.99:
-                            impl_prob = m_yes * 100.0
-                            if impl_prob < 65.0:
-                                p_conf = round(impl_prob + 8.0, 1)
-                                p_edge = 8.0
-                            else:
-                                p_conf = round(min(88.0, impl_prob + 5.0), 1)
-                                p_edge = 5.0
-
-                        kalshi_events.append({
-                            "ticker": m_ticker,
-                            "title": mkt.get('title') or f"{p_name}: {p_line}",
-                            "sport": sport_tag,
-                            "league": league_tag,
-                            "matchup": clean_matchup,
-                            "predicted_team": p_name,
-                            "has_ai_prediction": True,
-                            "ai_pick": p_name,
-                            "market_type": "Player Prop",
-                            "prop_type": "Player Prop",
-                            "line": p_line,
-                            "spread_amount": None,
-                            "over_under_amount": None,
-                            "strike_details": p_strike,
-                            "numeric_line": 1.0,
-                            "sub_title": mkt.get('yes_sub_title') or f"{p_name}: {p_line}",
-                            "confidence_pct": p_conf,
-                            "edge_pct": p_edge,
-                            "event_ticker": event_ticker,
-                            "series_ticker": series,
-                            "game_time": game_time_str,
-                            "is_today": is_today,
-                            "event_date": str(ev_date) if ev_date else None,
-                            "yes_ask": m_yes,
-                            "no_ask": m_no,
-                            "last_price": m_last,
-                            "markets": [mkt],
-                            "metadata": {
-                                "name": p_name,
-                                "matchup": clean_matchup,
-                                "market_type_label": "Player Prop",
-                                "prop_type": "Player Prop",
-                                "line": p_line,
-                                "spread_amount": None,
-                                "over_under_amount": None,
-                                "strike_details": p_strike,
-                                "numeric_line": 1.0,
-                                "league": league_tag,
-                                "league_label": league_tag,
-                                "player_name": p_name,
-                                "market_ticker": m_ticker,
-                                "event_ticker": event_ticker,
-                                "game_time": game_time_str,
-                                "yes_ask": m_yes,
-                                "no_ask": m_no,
-                                "last_price": m_last,
-                                "is_today": is_today
-                            }
-                        })
-                    continue
-
-                kalshi_events.append({
-                    "ticker": event_ticker,
-                    "title": title,
-                    "sport": sport_tag,
-                    "league": league_tag,
-                    "matchup": clean_matchup,
-                    "predicted_team": pred_pick_name or clean_matchup,
-                    "has_ai_prediction": has_valid_pick,
-                    "ai_pick": pred_pick_name,
-                    "market_type": m_type_label,
-                    "prop_type": prop_type,
-                    "line": line,
-                    "spread_amount": spread_amount,
-                    "over_under_amount": over_under_amount,
-                    "strike_details": strike_details,
-                    "numeric_line": numeric_line,
-                    "sub_title": sub,
-                    "confidence_pct": conf,
-                    "edge_pct": edge,
-                    "event_ticker": event_ticker,
-                    "series_ticker": series,
-                    "game_time": game_time_str,
-                    "is_today": is_today,
-                    "event_date": str(ev_date) if ev_date else None,
-                    "yes_ask": yes_ask,
-                    "no_ask": no_ask,
-                    "last_price": last_price,
-                    "markets": markets,
-                    "metadata": {
-                        "name": pred_pick_name or clean_matchup,
-                        "matchup": clean_matchup,
-                        "market_type_label": m_type_label,
-                        "prop_type": prop_type,
-                        "line": line,
-                        "spread_amount": spread_amount,
-                        "over_under_amount": over_under_amount,
-                        "strike_details": strike_details,
-                        "numeric_line": numeric_line,
-                        "league": league_tag,
-                        "league_label": league_tag,
-                        "sport": sport_tag,
-                        "series_ticker": series,
-                        "game_time": game_time_str,
-                        "is_today": is_today,
-                        "event_date": str(ev_date) if ev_date else None,
-                        "has_ai_prediction": has_valid_pick,
-                        "yes_ask": yes_ask,
-                        "no_ask": no_ask,
-                        "last_price": last_price
-                    }
-                })
-
-    result = {"status": "ok", "count": len(kalshi_events), "events": kalshi_events}
-    with _SPORTS_AGG_CACHE_LOCK:
-        _SPORTS_AGG_CACHE[query_filter] = (now, result)
-    return result
-
-@_engine_root_router.get("/api/engine/sports/predict", dependencies=[Depends(require_auth)])
-@_engine_root_router.post("/api/engine/sports/predict", dependencies=[Depends(require_auth)])
-def api_sports_predict(
-    event_ticker: str = Query(...),
-    execute: bool = Query(True),
-    min_confidence: Optional[float] = Query(None),
-    min_edge: Optional[float] = Query(None),
-    user_id: Optional[int] = Query(None),
-    title: Optional[str] = Query(None),
-    sport: Optional[str] = Query(None),
-    trade_size: Optional[float] = Query(None),
-    side: Optional[str] = Query(None),
-    request: Request = None
-):
-    if not event_ticker or not str(event_ticker).strip():
-        return {
-            "status": "error",
-            "error": "Invalid or missing event_ticker",
-            "prediction": None,
-            "criteria_met": False,
-            "executed": False,
-            "trade_id": None,
-            "trade": None
-        }
-
-    event_ticker = str(event_ticker).strip()
-    event_title = (title or "").strip()
-    event_sport = (sport or "").strip()
-
-    # 1. Check local _SPORTS_EVENTS_CACHE first to avoid Kalshi 429 rate limits
-    if not event_title or (" vs " not in event_title.lower() and " @ " not in event_title.lower()):
-        with _SPORTS_EVENTS_CACHE_LOCK:
-            for series_key, (ts, evts) in _SPORTS_EVENTS_CACHE.items():
-                for e in evts:
-                    if e.get("event_ticker") == event_ticker:
-                        cached_t = e.get("title") or ""
-                        if cached_t:
-                            event_title = cached_t
-                        if not event_sport:
-                            s = e.get("series_ticker") or ""
-                            if "NPB" in s or "KBO" in s:
-                                event_sport = "NPB/KBO"
-                            elif "NFL" in s:
-                                event_sport = "NFL"
-                            elif "MLB" in s:
-                                event_sport = "MLB"
-                            elif "NHL" in s:
-                                event_sport = "NHL"
-                            elif "SOC" in s or "EPL" in s:
-                                event_sport = "SOC"
-                            elif "UFC" in s:
-                                event_sport = "UFC"
-                            elif "ATP" in s or "WTA" in s:
-                                event_sport = "TEN"
-                        break
-                if event_title and (" vs " in event_title.lower() or " @ " in event_title.lower()):
-                    break
-
-    # 2. If still missing full matchup, query Kalshi event API
-    if not event_title or (" vs " not in event_title.lower() and " @ " not in event_title.lower()):
-        import requests
-        try:
-            headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
-            from backend.btc.kalshi_trader import kalshi_trader
-            if kalshi_trader.is_authenticated():
-                try:
-                    headers = kalshi_trader._sign_headers("GET", f"/trade-api/v2/events/{event_ticker}")
-                except Exception:
-                    pass
-            r = requests.get(f"https://external-api.kalshi.com/trade-api/v2/events/{event_ticker}", headers=headers, timeout=5.0)
-            if r.status_code == 200:
-                evt = r.json().get("event", {})
-                real_title = evt.get("title") or ""
-                if real_title:
-                    event_title = real_title
-                series = evt.get("series_ticker") or ""
-                if not event_sport:
-                    if "NPB" in series or "KBO" in series:
-                        event_sport = "NPB/KBO"
-                    elif "NFL" in series:
-                        event_sport = "NFL"
-                    elif "MLB" in series:
-                        event_sport = "MLB"
-                    elif "NHL" in series:
-                        event_sport = "NHL"
-                    elif "SOC" in series or "EPL" in series:
-                        event_sport = "SOC"
-                    elif "UFC" in series:
-                        event_sport = "UFC"
-                    elif "ATP" in series or "WTA" in series:
-                        event_sport = "TEN"
-        except Exception:
-            pass
-
-    client = SportsPredictionClient()
-    prediction = client.predict_for_event(event_ticker, title=event_title, sport=event_sport)
-
+def _require_user_id(user_id: Optional[int], request: Optional[Request] = None) -> int:
+    """Like _resolve_user_id, but refuses to place an order without a known account."""
     uid = _resolve_user_id(user_id, request)
-    criteria = _get_user_sports_criteria(uid)
-    req_min_conf = min_confidence if min_confidence is not None else criteria["min_confidence"]
-    req_min_edge = min_edge if min_edge is not None else criteria["min_edge"]
+    if uid:
+        return uid
+    if request is not None and _get_guest_id(request):
+        raise HTTPException(status_code=403, detail="Sports trades need a signed-in account.")
+    raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
 
-    conf = float(prediction.get("confidence_pct", 0.0) if prediction else 0.0)
-    edge = float(prediction.get("edge_pct", 0.0) if prediction else 0.0)
-    criteria_met = bool(prediction and conf >= req_min_conf and edge >= req_min_edge)
 
-    trade = None
-    executed = False
-    error_msg = None
-    if criteria_met and execute:
-        trade, error_msg = _execute_sports_trade(event_ticker, prediction, uid, trade_size=trade_size, explicit_side=side.upper() if side else None)
-        executed = bool(trade)
-        if not executed and not error_msg:
-            error_msg = f"Trade execution failed: Event {event_ticker} has no active matching markets on Kalshi"
+# Sports routes have been modularized
+from backend.routes.engine_sports import sports_router
+from backend.routes.nfl_router import router as nfl_router
+from backend.routes.mlb_router import router as mlb_router
+from backend.routes.ufc_router import router as ufc_router
 
-    market_details = parse_sports_market_details(
-        ticker=event_ticker,
-        title=event_title,
-        series=event_sport or event_ticker
-    )
-    if prediction and isinstance(prediction, dict):
-        prediction["prop_type"] = market_details.get("prop_type")
-        prediction["line"] = market_details.get("line")
-        prediction["spread_amount"] = market_details.get("spread_amount")
-        prediction["over_under_amount"] = market_details.get("over_under_amount")
-        prediction["strike_details"] = market_details.get("strike_details")
+_engine_root_router.include_router(sports_router)
+_engine_root_router.include_router(nfl_router)
+_engine_root_router.include_router(mlb_router)
+_engine_root_router.include_router(ufc_router)
 
-    return {
-        "status": "ok",
-        "event_ticker": event_ticker,
-        "prediction": prediction,
-        "event_details": market_details,
-        "criteria_met": criteria_met,
-        "criteria_info": {"conf": conf, "req_conf": req_min_conf, "edge": edge, "req_edge": req_min_edge},
-        "executed": executed,
-        "trade_id": trade.get("id") if trade else None,
-        "trade": trade,
-        "error": error_msg
-    }
+# -------------------------------------------------------------
+# Live Kalshi Market Cache & Scanner Endpoints
+# -------------------------------------------------------------
 
-@_engine_root_router.post("/api/engine/sports/execute", dependencies=[Depends(require_auth)])
-@_engine_root_router.get("/api/engine/sports/execute", dependencies=[Depends(require_auth)])
-def api_sports_execute(
-    event_ticker: str = Query(...),
-    min_confidence: Optional[float] = Query(None),
-    min_edge: Optional[float] = Query(None),
-    user_id: Optional[int] = Query(None),
-    title: Optional[str] = Query(None),
-    sport: Optional[str] = Query(None),
-    manual_team: Optional[str] = Query(None),
-    trade_size: Optional[float] = Query(None),
-    side: Optional[str] = Query(None),
-    request: Request = None
+@_engine_root_router.get("/api/engine/markets/cache-status")
+@_engine_root_router.get("/markets/cache-status")
+def api_markets_cache_status():
+    from backend.engine.kalshi_market_cache import get_market_cache_instance
+    cache = get_market_cache_instance()
+    return JSONResponse(cache.get_cache_status())
+
+
+@_engine_root_router.get("/api/engine/markets/scan")
+@_engine_root_router.get("/markets/scan")
+def api_markets_scan(
+    min_price: float = Query(0.90, description="Minimum price of ask (0.01 to 0.99)"),
+    max_price: float = Query(0.99, description="Maximum price of ask (0.01 to 0.99)"),
+    side: str = Query("any", description="Side to filter: any, yes, no"),
+    require_bid: int = Query(1, description="Require bid > 0 on qualified side"),
+    min_volume: float = Query(1.0, description="Minimum total volume"),
+    min_volume_24h: float = Query(0.0, description="Minimum 24h volume"),
+    max_close_hours: Optional[float] = Query(None, description="Maximum hours until close"),
+    series: Optional[str] = Query(None, description="Comma-separated series tickers"),
+    limit: int = Query(200, description="Max results to return"),
+    sort: str = Query("close_time", description="Sort by close_time, price, or volume")
 ):
-    explicit_side = side.upper() if side else None
-    if manual_team:
-        uid = _resolve_user_id(user_id, request)
-        clean_team = manual_team.strip()
-        if "MANUAL" in clean_team.upper() and "YES" in clean_team.upper():
-            base_team = re.sub(r'\(?\b(?:manual\s+yes|yes\s*\(manual\)|manual|yes)\b\)?', '', clean_team, flags=re.IGNORECASE).strip()
-            pred = {"predicted_team": base_team or "YES", "confidence_pct": 100, "edge_pct": 100}
-            if not explicit_side:
-                explicit_side = "YES"
-        elif "MANUAL" in clean_team.upper() and "NO" in clean_team.upper():
-            base_team = re.sub(r'\(?\b(?:manual\s+no|no\s*\(manual\)|manual|no)\b\)?', '', clean_team, flags=re.IGNORECASE).strip()
-            pred = {"predicted_team": base_team or "NO", "confidence_pct": 100, "edge_pct": 100}
-            if not explicit_side:
-                explicit_side = "NO"
-        else:
-            pred = {"predicted_team": clean_team, "confidence_pct": 100, "edge_pct": 100}
-        if sport:
-            pred["sport"] = sport
-        elif not pred.get("sport"):
-            m_s = re.search(r'KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|NPB|KBO|SOC|UFC|TEN|MMA)', event_ticker) or re.search(r'KX([A-Z]{3,5}?)(?:GAME|-|$)', event_ticker) or re.search(r'KX([A-Z]{3,5})', event_ticker)
-            if m_s:
-                pred["sport"] = m_s.group(1)
-            
-        trade, err = _execute_sports_trade(event_ticker, pred, uid, trade_size=trade_size, explicit_side=explicit_side)
-        return {
-            "status": "ok" if trade else "error",
-            "event_ticker": event_ticker,
-            "prediction": pred,
-            "criteria_met": True,
-            "executed": bool(trade),
-            "trade": trade,
-            "trade_id": trade.get("id") if trade else None,
-            "error": err if not trade else None
-        }
-
-    return api_sports_predict(
-        event_ticker=event_ticker,
-        execute=True,
-        min_confidence=min_confidence if min_confidence is not None else 0.0,
-        min_edge=min_edge if min_edge is not None else 0.0,
-        user_id=user_id,
-        title=title,
-        sport=sport,
-        trade_size=trade_size,
+    from backend.engine.kalshi_market_cache import get_market_cache_instance
+    cache = get_market_cache_instance()
+    res = cache.scan_markets(
+        min_price=min_price,
+        max_price=max_price,
         side=side,
-        request=request
+        require_bid=require_bid,
+        min_volume=min_volume,
+        min_volume_24h=min_volume_24h,
+        max_close_hours=max_close_hours,
+        series=series,
+        limit=limit,
+        sort=sort
     )
+    return JSONResponse(res)
 
-@_engine_root_router.post("/api/engine/sports/combo", dependencies=[Depends(require_auth)])
-@_engine_root_router.get("/api/engine/sports/combo", dependencies=[Depends(require_auth)])
-@_engine_root_router.post("/api/engine/sports/combo/execute", dependencies=[Depends(require_auth)])
-@_engine_root_router.get("/api/engine/sports/combo/execute", dependencies=[Depends(require_auth)])
-def api_sports_combo_execute(
-    event_tickers: str = Query(...),
-    teams: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
-    trade_size: Optional[float] = Query(None),
-    request: Request = None
-):
-    # Simplified combo execution
-    uid = _resolve_user_id(user_id, request)
-    tickers = [t.strip() for t in event_tickers.split(",") if t.strip()]
-    team_list = [t.strip() for t in teams.split(",")] if teams else []
-    trades = []
-    errors = []
-    
-    for i, ticker in enumerate(tickers):
-        manual_team = team_list[i] if i < len(team_list) else "YES"
-        clean_team = manual_team.strip()
-        explicit_side = None
-        if "MANUAL" in clean_team.upper() and "YES" in clean_team.upper():
-            base_team = re.sub(r'\(?\b(?:manual\s+yes|yes\s*\(manual\)|manual|yes)\b\)?', '', clean_team, flags=re.IGNORECASE).strip()
-            pred = {"predicted_team": base_team or "YES", "confidence_pct": 100, "edge_pct": 100}
-            explicit_side = "YES"
-        elif "MANUAL" in clean_team.upper() and "NO" in clean_team.upper():
-            base_team = re.sub(r'\(?\b(?:manual\s+no|no\s*\(manual\)|manual|no)\b\)?', '', clean_team, flags=re.IGNORECASE).strip()
-            pred = {"predicted_team": base_team or "NO", "confidence_pct": 100, "edge_pct": 100}
-            explicit_side = "NO"
-        else:
-            pred = {"predicted_team": clean_team, "confidence_pct": 100, "edge_pct": 100}
-        trade, err = _execute_sports_trade(ticker, pred, uid, trade_size=trade_size, explicit_side=explicit_side)
-        if trade:
-            trades.append(trade)
-        else:
-            errors.append({"ticker": ticker, "error": err or f"Execution failed for {ticker}"})
-            
-    return {
-        "status": "ok" if len(trades) > 0 else "error",
-        "combo_executed": len(trades) > 0,
-        "trades": trades,
-        "errors": errors,
-        "total_requested": len(tickers),
-        "total_executed": len(trades)
-    }
 
-@_engine_root_router.post("/api/engine/sports/trade/manual", dependencies=[Depends(require_auth)])
-@_engine_root_router.get("/api/engine/sports/trade/manual", dependencies=[Depends(require_auth)])
-async def api_sports_trade_manual(
-    event_ticker: Optional[str] = Query(None),
-    ticker: Optional[str] = Query(None),
-    market_ticker: Optional[str] = Query(None),
-    side: Optional[str] = Query("YES"),
-    direction: Optional[str] = Query(None),
-    manual_team: Optional[str] = Query(None),
-    team: Optional[str] = Query(None),
-    sport: Optional[str] = Query(None),
-    trade_size: Optional[float] = Query(None),
-    amount_dollars: Optional[float] = Query(None),
-    user_id: Optional[int] = Query(None),
-    request: Request = None
-):
-    body = {}
-    if request:
-        try:
-            body = await request.json()
-        except Exception:
-            body = {}
+@_engine_root_router.get("/api/engine/markets/{ticker}")
+def api_get_market_by_ticker(ticker: str):
+    from backend.engine.kalshi_market_cache import get_market_cache_instance
+    cache = get_market_cache_instance()
+    m = cache.get_market(ticker.strip().upper())
+    if not m:
+        raise HTTPException(status_code=404, detail=f"Market '{ticker}' not found in live cache.")
+    return JSONResponse(m)
 
-    tk = event_ticker or ticker or market_ticker or body.get("event_ticker") or body.get("ticker") or body.get("market_ticker")
-    if not tk or not str(tk).strip():
-        return JSONResponse({"status": "error", "error": "Missing event or market ticker", "executed": False, "trade": None}, status_code=400)
 
-    target_ticker = str(tk).strip()
-    target_side = (direction or side or body.get("direction") or body.get("side") or "YES").upper()
-    team_name = manual_team or team or body.get("manual_team") or body.get("team") or body.get("predicted_team") or (body.get("prediction") if isinstance(body.get("prediction"), dict) else {}).get("predicted_team") or ("YES" if target_side == "YES" else "NO")
-    size_val = trade_size if trade_size is not None else (amount_dollars if amount_dollars is not None else (body.get("trade_size") or body.get("amount_dollars")))
-    size_flt = float(size_val) if size_val is not None else None
-    sport_name = sport or body.get("sport")
-    uid = _resolve_user_id(user_id or body.get("user_id"), request)
-
-    pred = {"predicted_team": team_name, "confidence_pct": 100.0, "edge_pct": 100.0}
-    if sport_name:
-        pred["sport"] = sport_name
-
-    trade, err = _execute_sports_trade(target_ticker, pred, uid, trade_size=size_flt, explicit_side=target_side)
-    if not trade:
-        return JSONResponse({
-            "status": "error",
-            "executed": False,
-            "error": err or f"Trade execution failed for {target_ticker}",
-            "trade": None
-        }, status_code=400)
-
-    return {
-        "status": "ok",
-        "executed": True,
-        "trade": trade,
-        "trade_id": trade.get("id"),
-        "mode": trade.get("mode")
-    }
-
-@_engine_root_router.post("/api/engine/sports/slip/submit", dependencies=[Depends(require_auth)])
-async def api_sports_slip_submit(request: Request):
-    try:
-        data = await request.json()
-    except Exception:
-        data = {}
-
-    items = data.get("items") or data.get("trades") or data.get("slip")
-    if not items and isinstance(data, list):
-        items = data
-    elif not items and (data.get("ticker") or data.get("event_ticker")):
-        items = [data]
-
-    if not items:
-        return JSONResponse({"status": "error", "error": "No items provided in trade slip", "executed_count": 0, "trades": []}, status_code=400)
-
-    uid = _resolve_user_id(data.get("user_id"), request)
-    global_trade_size = data.get("trade_size") or data.get("amount_dollars")
-
-    executed_trades = []
-    errors = []
-
-    for item in items:
-        tk = item.get("ticker") or item.get("event_ticker")
-        if not tk:
-            continue
-        team = item.get("team") or item.get("manual_team") or item.get("predicted_team") or "YES"
-        item_side = (item.get("side") or item.get("direction") or "YES").upper()
-        size_val = item.get("trade_size") or item.get("amount_dollars") or global_trade_size
-        size_flt = float(size_val) if size_val is not None else None
-        sport_val = item.get("sport")
-
-        pred = {"predicted_team": team, "confidence_pct": 100.0, "edge_pct": 100.0}
-        if sport_val:
-            pred["sport"] = sport_val
-
-        trade, err = _execute_sports_trade(str(tk).strip(), pred, uid, trade_size=size_flt, explicit_side=item_side)
-        if trade:
-            executed_trades.append(trade)
-        else:
-            errors.append({"ticker": tk, "error": err or "Execution failed"})
-
-    return {
-        "status": "ok" if executed_trades else "error",
-        "executed_count": len(executed_trades),
-        "total_items": len(items),
-        "trades": executed_trades,
-        "errors": errors
-    }
+@_engine_root_router.post("/api/engine/markets/force-disconnect-ws")
+def api_force_disconnect_ws():
+    from backend.engine.kalshi_market_cache import get_market_cache_instance
+    cache = get_market_cache_instance()
+    success = cache.force_disconnect_ws()
+    return JSONResponse({"status": "ok" if success else "failed", "ws_killed": success})
 

@@ -58,6 +58,8 @@ ABBR_TO_TEAM_MAP = {v: k for k, v in TEAM_ABBR_MAP.items()}
 
 class TheOddsClient:
     def __init__(self, api_key: Optional[str] = None):
+        import threading
+        self._lock = threading.RLock()
         self.api_key = api_key if api_key is not None else THE_ODDS_API_KEY
         if not self.api_key:
             logger.warning("[TheOddsClient] THE_ODDS_API_KEY is not configured; live odds requests will be skipped.")
@@ -328,4 +330,70 @@ class TheOddsClient:
                                     "provider": "The Odds API",
                                     "event_id": ev_id
                                 }
+        return None
+
+    def get_ufc_odds(self, force_refresh: bool = False) -> Dict[str, Any]:
+        """Fetch UFC odds using local cache or API fallback."""
+        now = time.time()
+        with self._lock:
+            cached_ufc = self._cache.get("ufc_odds", {})
+            last_fetch = self._cache.get("ufc_fetched_at", 0.0)
+            if not force_refresh and (now - last_fetch < 10800.0) and "bouts" in cached_ufc:
+                return cached_ufc
+        return self._cache.get("ufc_odds", {"bouts": []})
+
+    def find_ufc_fight_odds(self, fighter_a: str, fighter_b: str) -> Optional[Dict[str, Any]]:
+        """Finds live odds for a UFC bout between fighter_a and fighter_b."""
+        import re
+
+        def last_name(full: str) -> str:
+            parts = full.strip().lower().split()
+            if len(parts) >= 2 and parts[-2] in ('dos', 'da', 'de', 'del', 'van', 'st'):
+                return ' '.join(parts[-2:])
+            return parts[-1] if parts else ''
+
+        def norm(name: str) -> str:
+            return re.sub(r'[^a-z0-9]', '', (name or '').lower())
+
+        def match_fighters(f1, f2, cand1, cand2):
+            n1, n2 = norm(f1), norm(f2)
+            c1, c2 = norm(cand1), norm(cand2)
+            if (n1 in c1 or c1 in n1) and (n2 in c2 or c2 in n2):
+                return True
+            if (n1 in c2 or c2 in n1) and (n2 in c1 or c1 in n2):
+                return True
+            l1, l2 = last_name(f1), last_name(f2)
+            cl1, cl2 = last_name(cand1), last_name(cand2)
+            return (l1 == cl1 and l2 == cl2) or (l1 == cl2 and l2 == cl1)
+
+        odds_data = self.get_ufc_odds()
+        bouts = odds_data.get("bouts", [])
+        if not bouts:
+            return None
+
+        for b in bouts:
+            h = b.get("home_team", "")
+            away = b.get("away_team", "")
+            if match_fighters(fighter_a, fighter_b, h, away):
+                dk = b.get("draftkings", {})
+                if not dk:
+                    continue
+                odds_a, odds_b = None, None
+                for name, price in dk.items():
+                    n = norm(name)
+                    l = last_name(name)
+                    if (norm(fighter_a) in n or n in norm(fighter_a)) or (last_name(fighter_a) == l):
+                        odds_a = price
+                    elif (norm(fighter_b) in n or n in norm(fighter_b)) or (last_name(fighter_b) == l):
+                        odds_b = price
+                if odds_a is not None and odds_b is not None:
+                    return {
+                        "fighter_a": fighter_a,
+                        "fighter_b": fighter_b,
+                        "odds_a": odds_a,
+                        "odds_b": odds_b,
+                        "bookmaker": "DraftKings",
+                        "commence_time": b.get("commence_time"),
+                        "source": "The Odds API"
+                    }
         return None

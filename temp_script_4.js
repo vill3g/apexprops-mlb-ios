@@ -1,14 +1,36 @@
 
-        const token = localStorage.getItem('saas_token');
-        if (!token) window.location.href = './login.html';
+        // Check URL query parameters for token rehydration, e.g. ?token=... or ?auth_token=...
+        (function() {
+            try {
+                const qp = new URLSearchParams(window.location.search);
+                const queryToken = qp.get('token') || qp.get('auth_token');
+                if (queryToken && queryToken.split('.').length === 3) {
+                    localStorage.setItem('saas_token', queryToken);
+                    document.cookie = "saas_token=" + queryToken + "; path=/; max-age=7776000; SameSite=Lax";
+                    qp.delete('token');
+                    qp.delete('auth_token');
+                    const newSearch = qp.toString() ? '?' + qp.toString() : '';
+                    window.history.replaceState({}, document.title, window.location.pathname + newSearch + window.location.hash);
+                }
+            } catch(e) {}
+        })();
+
+        // Resolve active session token from localStorage or cookie
+        function getCookie(name) {
+            const v = '; ' + document.cookie;
+            const parts = v.split('; ' + name + '=');
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        let token = localStorage.getItem('saas_token') || getCookie('saas_token');
+        if (!token) {
+            window.location.replace('./login.html?logged_out=1');
+        } else if (!localStorage.getItem('saas_token')) {
+            localStorage.setItem('saas_token', token);
+        }
         
         let currentMode = "PAPER";
         let aiEnabled = true; // Assume true since we removed toggle to simplify iPhone UI. We could re-add if requested.
-
-        function logout() {
-            localStorage.removeItem('saas_token');
-            window.location.href = './login.html';
-        }
 
         // ── Tab Visibility & Polling Optimization (Audit Item 1) ──
         window.isTabActive = true;
@@ -107,17 +129,18 @@
         window.syncSoundSettingsUI = function() {
             const isEnabled = localStorage.getItem('sound_enabled') !== 'false';
             soundEngine.enabled = isEnabled;
-            const toggle = document.getElementById('settings-sound-toggle');
-            if (toggle) toggle.checked = isEnabled;
-            const icon = document.getElementById('settings-sound-icon');
-            if (icon) icon.textContent = isEnabled ? '🔊' : '🔇';
-            const statusBadge = document.getElementById('settings-sound-status');
-            if (statusBadge) {
+            document.querySelectorAll('#settings-sound-toggle, #sports-settings-sound-toggle, #inv-settings-sound-toggle').forEach(toggle => {
+                toggle.checked = isEnabled;
+            });
+            document.querySelectorAll('#settings-sound-icon, #sports-settings-sound-icon, #inv-settings-sound-icon').forEach(icon => {
+                icon.textContent = isEnabled ? '🔊' : '🔇';
+            });
+            document.querySelectorAll('#settings-sound-status, #sports-settings-sound-status, #inv-settings-sound-status').forEach(statusBadge => {
                 statusBadge.textContent = isEnabled ? 'ACTIVE' : 'MUTED';
                 statusBadge.className = isEnabled 
                     ? 'text-[9px] font-bold text-emerald-400 uppercase tracking-widest' 
                     : 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
-            }
+            });
         };
 
         window.isTradeExecutionPanelShowing = function() {
@@ -153,19 +176,11 @@
         };
 
         window.updateTimerBidsVisibility = function() {
-            const panel = document.getElementById('trade-execution-panel');
             const bidsContainer = document.getElementById('timer-bids-container');
             if (!bidsContainer) return;
-            const isHidden = (panel && (panel.style.display === 'none' || window.getComputedStyle(panel).display === 'none')) || (localStorage.getItem('showTradeExecutionPanel') === 'false');
-            if (isHidden) {
-                bidsContainer.classList.remove('hidden');
-                bidsContainer.classList.add('flex');
-                bidsContainer.style.display = 'flex';
-            } else {
-                bidsContainer.classList.add('hidden');
-                bidsContainer.classList.remove('flex');
-                bidsContainer.style.display = 'none';
-            }
+            bidsContainer.classList.remove('hidden');
+            bidsContainer.classList.add('flex');
+            bidsContainer.style.display = 'flex';
         };
 
         window.toggleTradeExecutionPanel = function(explicitVal) {
@@ -334,16 +349,26 @@
         };
 
         async function setTradingMode(mode) {
+            const userTok = localStorage.getItem('saas_token') || (typeof token !== 'undefined' ? token : '');
             try {
                 const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/config', {
                     method: "POST",
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userTok}` },
                     body: JSON.stringify({ mode: mode })
                 });
                 if(res.ok) {
                     currentMode = mode;
                     updateModeUI();
-                    loadDashboard();
+                    if (typeof showToast === 'function') {
+                        showToast(`Switched to ${mode} mode`, mode === 'LIVE' ? 'warning' : 'success', 2000);
+                    }
+                    loadDashboard(true);
+                    if (typeof fetchInvestmentsPortfolio === 'function') {
+                        fetchInvestmentsPortfolio();
+                    }
+                    if (window.currentUniverse === 'INVESTMENTS') {
+                        if (typeof fetchInvestmentsFeed === 'function') fetchInvestmentsFeed(true);
+                    }
                 } else {
                     const data = await res.json();
                     alert(data.detail || "Failed to switch mode");
@@ -353,34 +378,75 @@
             }
         }
 
+        window.toggleTradingMode = function() {
+            setTradingMode(currentMode === 'LIVE' ? 'PAPER' : 'LIVE');
+        };
+
         function updateModeUI() {
             const dpMode = document.getElementById('dropdown-mode-badge');
             if (dpMode) {
                 dpMode.textContent = currentMode;
-                dpMode.className = currentMode === 'LIVE' ? 'px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[9px] font-bold uppercase tracking-widest' : 'px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-bold uppercase tracking-widest';
+                dpMode.className = currentMode === 'LIVE' 
+                    ? 'px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:scale-105 transition-all' 
+                    : 'px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-bold uppercase tracking-widest cursor-pointer hover:scale-105 transition-all';
             }
             
             const execMode = document.getElementById('exec-mode-badge');
             if (execMode) {
                 execMode.textContent = currentMode;
-                execMode.className = currentMode === 'LIVE' ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-red-500/20 text-red-300 border border-red-500/40 leading-none shadow-sm' : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 leading-none shadow-sm';
+                execMode.className = currentMode === 'LIVE' 
+                    ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-red-500/20 text-red-300 border border-red-500/40 leading-none shadow-sm cursor-pointer hover:scale-105 transition-all' 
+                    : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 leading-none shadow-sm cursor-pointer hover:scale-105 transition-all';
             }
 
-            const stText = document.getElementById('settings-mode-text');
-            const btnPaper = document.getElementById('btn-mode-paper-settings');
-            const btnLive = document.getElementById('btn-mode-live-settings');
-
-            if (stText && btnPaper && btnLive) {
+            const stTexts = document.querySelectorAll('#settings-mode-text, #sports-settings-mode-text, #inv-settings-mode-text');
+            stTexts.forEach(stText => {
                 stText.textContent = currentMode;
-                if (currentMode === 'LIVE') {
-                    stText.className = 'text-[9px] font-bold text-red-400 uppercase tracking-widest';
-                    btnLive.className = 'flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all z-10 text-white bg-red-500/20';
-                    btnPaper.className = 'flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all z-10 text-gray-500';
-                } else {
-                    stText.className = 'text-[9px] font-bold text-cyan-400 uppercase tracking-widest';
-                    btnPaper.className = 'flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all z-10 text-white bg-cyan-500/20';
-                    btnLive.className = 'flex-1 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-md transition-all z-10 text-gray-500';
-                }
+                stText.className = currentMode === 'LIVE' 
+                    ? 'text-[9px] font-bold text-red-400 uppercase tracking-widest' 
+                    : 'text-[9px] font-bold text-cyan-400 uppercase tracking-widest';
+            });
+
+            const paperBtns = document.querySelectorAll('#btn-mode-paper-settings, #sports-btn-mode-paper-settings, #inv-btn-mode-paper-settings');
+            const liveBtns = document.querySelectorAll('#btn-mode-live-settings, #sports-btn-mode-live-settings, #inv-btn-mode-live-settings');
+
+            if (currentMode === 'LIVE') {
+                liveBtns.forEach(b => { b.className = 'flex-1 py-2 text-[11px] font-bold tracking-wider rounded-lg transition-all z-10 text-white bg-red-500/25 border border-red-500/40 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer'; });
+                paperBtns.forEach(b => { b.className = 'flex-1 py-2 text-[11px] font-bold tracking-wider rounded-lg transition-all z-10 text-gray-400 hover:text-white border border-transparent flex items-center justify-center gap-1.5 cursor-pointer'; });
+            } else {
+                paperBtns.forEach(b => { b.className = 'flex-1 py-2 text-[11px] font-bold tracking-wider rounded-lg transition-all z-10 text-white bg-cyan-500/25 border border-cyan-500/40 shadow-sm flex items-center justify-center gap-1.5 cursor-pointer'; });
+                liveBtns.forEach(b => { b.className = 'flex-1 py-2 text-[11px] font-bold tracking-wider rounded-lg transition-all z-10 text-gray-400 hover:text-white border border-transparent flex items-center justify-center gap-1.5 cursor-pointer'; });
+            }
+
+            const invKpiMode = document.getElementById('inv-kpi-mode-badge');
+            if (invKpiMode) {
+                invKpiMode.textContent = currentMode;
+                invKpiMode.className = currentMode === 'LIVE'
+                    ? 'text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-red-500/20 text-red-300 border border-red-500/35'
+                    : 'text-[8px] font-black px-1.5 py-0.5 rounded uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/35';
+            }
+            const invTicketMode = document.getElementById('inv-ticket-mode-badge');
+            if (invTicketMode) {
+                invTicketMode.textContent = currentMode;
+                invTicketMode.className = currentMode === 'LIVE'
+                    ? 'px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-red-500/20 text-red-300 border border-red-500/35 cursor-pointer'
+                    : 'px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/35 cursor-pointer';
+            }
+
+            // Only show paper trading settings when in PAPER mode across all universes
+            const isPaperMode = (currentMode === 'PAPER');
+            document.querySelectorAll('.paper-only-setting').forEach(el => {
+                el.style.display = isPaperMode ? '' : 'none';
+            });
+
+            // Dynamically contextualize sizing labels across Financial and Sports drawers
+            const finLabel = document.getElementById('fin-trade-size-label');
+            if (finLabel) {
+                finLabel.textContent = isPaperMode ? 'Paper Trade Size ($)' : 'Live Trade Size ($)';
+            }
+            const sportsLabel = document.getElementById('sports-trade-size-label');
+            if (sportsLabel) {
+                sportsLabel.textContent = isPaperMode ? 'Sports Paper Wager ($)' : 'Sports Live Wager ($)';
             }
         }
 
@@ -428,13 +494,13 @@
             
             const doAction = async () => {
                 try {
-                    const payload = { direction: direction, amount_dollars: parseFloat(amt) ,
+                    const activeAsset = overrideAsset || (window.currentAsset || 'BTC');
+                    const payload = { direction: direction, amount_dollars: parseFloat(amt), asset: activeAsset,
                 min_sports_confidence: document.getElementById('sports-conf-slider') ? parseInt(document.getElementById('sports-conf-slider').value) : 70,
                 min_sports_edge: document.getElementById('sports-edge-slider') ? parseInt(document.getElementById('sports-edge-slider').value) : 3,
                 sports_max_wager: document.getElementById('sports-wager-dollars') ? parseInt(document.getElementById('sports-wager-dollars').value) : 10,
                 sports_include_live: document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false
         };
-                    if (overrideAsset) payload.asset = overrideAsset;
                     const res = await fetch((window.API_BASE_URL||'')+'/api/auth/trade/manual', {
                         method: "POST",
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -554,30 +620,59 @@
 
         async function toggleAutoTrader(enabled) {
             try {
-                const headerToggle = document.getElementById('header-auto-toggle');
-                if (headerToggle) headerToggle.checked = enabled;
+                const headerToggles = document.querySelectorAll('#header-auto-toggle, #sports-header-auto-toggle, #inv-header-auto-toggle');
+                headerToggles.forEach(t => { t.checked = enabled; });
 
                 const navAutoBadge = document.getElementById('nav-auto-badge');
                 if (navAutoBadge) {
-                    navAutoBadge.innerText = enabled ? 'AUTO ON' : 'AUTO OFF';
+                    navAutoBadge.innerHTML = enabled ? '<span class="flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>AUTO</span>' : 'AUTO';
                     navAutoBadge.className = enabled
-                        ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm'
-                        : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
+                        ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm'
+                        : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
                 }
 
                 // Update Dynamic Island
                 if (typeof updateDynamicIsland === 'function') updateDynamicIsland(enabled);
 
-                const curA = (window.currentAsset || 'BTC').toLowerCase();
-                const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${curA}/trade/toggle?enabled=${enabled}`, {
+                const inSports = (window.currentUniverse === 'SPORTS');
+                const inInvestments = (window.currentUniverse === 'INVESTMENTS');
+                let targetAsset = inInvestments ? 'INVESTMENTS' : (inSports ? 'SPORTS' : ((window.currentAsset || 'BTC').toLowerCase()));
+                targetAsset = encodeURIComponent(String(targetAsset).replace(/\//g, '_'));
+                const userTok = localStorage.getItem('saas_token') || (typeof token !== 'undefined' ? token : null);
+                const reqHeaders = {};
+                if (userTok) reqHeaders['Authorization'] = `Bearer ${userTok}`;
+                const uidVal = (window.lastDashboardStats && window.lastDashboardStats.user_id) || (window.currentUser && window.currentUser.id);
+                if (uidVal) reqHeaders['X-User-Id'] = String(uidVal);
+
+                const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${targetAsset}/trade/toggle?enabled=${enabled}`, {
                     method: "POST",
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: reqHeaders
                 });
                 if(!res.ok) {
-                    throw new Error("Failed to toggle");
+                    const errData = await res.json().catch(() => ({}));
+                    console.error("Failed toggle response:", res.status, errData);
+                    throw new Error(errData.detail || errData.error || `HTTP ${res.status}`);
+                }
+                const confHeaders = { 'Content-Type': 'application/json' };
+                if (userTok) confHeaders['Authorization'] = `Bearer ${userTok}`;
+                if (uidVal) confHeaders['X-User-Id'] = String(uidVal);
+                fetch(`${window.API_BASE_URL||''}/api/auth/user/config`, {
+                    method: "POST",
+                    headers: confHeaders,
+                    body: JSON.stringify({ ai_enabled: enabled })
+                }).catch(e => console.warn('Could not persist auto toggle config:', e));
+
+                if (typeof showToast === 'function') {
+                    const msg = enabled
+                        ? (inInvestments ? '🏛️ Agentic Auto-Trader Active (Investments)' : (inSports ? '🏈 Auto-Trading Active (Sports Universe)' : '⚡ Auto-Trading Active'))
+                        : '⏸ Auto-Trading Paused';
+                    showToast(msg, enabled ? 'success' : 'info');
                 }
             } catch(e) {
                 console.error("Toggle error:", e);
+                if (typeof showToast === 'function') {
+                    showToast(`⚠️ Failed to toggle auto-trading${e.message ? ': ' + e.message : ''}`, 'error');
+                }
                 // Revert on failure
                 loadConfig();
             }
@@ -698,7 +793,42 @@
                 if (t.checked && !activeAssets.includes(v)) activeAssets.push(v);
             });
             const targetAssetStr = activeAssets.length > 0 ? activeAssets.join(',') : 'BTC';
+            if (typeof window.updateFinancialAssetSelectorVisibility === 'function') {
+                window.updateFinancialAssetSelectorVisibility();
+            }
 
+            // Collect active sports leagues
+            const activeSportsLeagues = [];
+            document.querySelectorAll('input.sports-league-toggle').forEach(t => {
+                const v = String(t.value).trim().toUpperCase();
+                if (t.checked && !activeSportsLeagues.includes(v)) activeSportsLeagues.push(v);
+            });
+            const sportsActiveLeaguesStr = activeSportsLeagues.length > 0 ? activeSportsLeagues.join(',') : 'NFL,MLB,NBA,NHL,NCAAF,NPB/KBO,SOC,UFC,TEN';
+            if (typeof window.updateSportsAssetSelectorVisibility === 'function') {
+                window.updateSportsAssetSelectorVisibility();
+            }
+
+            // Collect allowed sports market types
+            const activeSportsMarketTypes = [];
+            document.querySelectorAll('input.sports-market-toggle').forEach(t => {
+                const v = String(t.value).trim().toUpperCase();
+                if (t.checked && !activeSportsMarketTypes.includes(v)) activeSportsMarketTypes.push(v);
+            });
+            const sportsMarketTypesStr = activeSportsMarketTypes.length > 0 ? activeSportsMarketTypes.join(',') : 'GAME,SPREAD,TOTAL,PROP,INNING';
+
+            // Collect allowed sports player props
+            const activeSportsProps = [];
+            document.querySelectorAll('input.sports-prop-toggle').forEach(t => {
+                const v = String(t.value).trim().toUpperCase();
+                if (t.checked && !activeSportsProps.includes(v)) activeSportsProps.push(v);
+            });
+            const sportsActivePropsStr = activeSportsProps.length > 0 ? activeSportsProps.join(',') : 'ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER';
+
+            // Parse price corridor (min/max ¢ as dollars 0.01 - 0.99)
+            let sMinPrice = parseFloat(document.getElementById('sports-min-price')?.value || 20);
+            if (sMinPrice > 1.0) sMinPrice = sMinPrice / 100.0;
+            let sMaxPrice = parseFloat(document.getElementById('sports-max-price')?.value || 80);
+            if (sMaxPrice > 1.0) sMaxPrice = sMaxPrice / 100.0;
 
             try {
                 const configPayload = {
@@ -712,6 +842,10 @@
                     max_daily_risk: mdr,
                     one_click_trade: document.getElementById('one-click-toggle') ? document.getElementById('one-click-toggle').checked : false,
                     auto_force_trade: autoForce,
+                    gemini_every_interval_enabled: document.getElementById('gemini-every-interval-toggle') ? document.getElementById('gemini-every-interval-toggle').checked : false,
+                    regime_mode: document.getElementById('regime-mode-select') ? document.getElementById('regime-mode-select').value : 'AUTO_ADAPTIVE',
+                    chop_engine_enabled: true,
+                    chop_take_profit_cents: document.getElementById('chop-tp-cents-input') ? parseFloat(document.getElementById('chop-tp-cents-input').value) || 12.0 : 12.0,
                     ignore_pass_technical: techForce,
                     one_shot_ai: oneshot,
                     second_entry_enabled: document.getElementById('second-entry-toggle') ? document.getElementById('second-entry-toggle').checked : false,
@@ -734,16 +868,37 @@
                     xgb_learning_rate: xgbLR,
                     use_kelly_criterion: document.getElementById('kelly-criterion-toggle') ? document.getElementById('kelly-criterion-toggle').checked : false,
                     atr_risk_enabled: document.getElementById('atr-risk-toggle') ? document.getElementById('atr-risk-toggle').checked : false,
-                    trading_universe: window.currentUniverse || 'FINANCIAL',
+                    trading_universe: (window.configuredTradingUniverse === 'CRYPTO' ? 'FINANCIAL' : (window.configuredTradingUniverse || (window.lastDashboardStats && window.lastDashboardStats.trading_universe) || 'FINANCIAL')),
                     min_sports_confidence: document.getElementById('sports-conf-slider') ? parseFloat(document.getElementById('sports-conf-slider').value) : 70.0,
                     min_sports_edge: document.getElementById('sports-edge-slider') ? parseFloat(document.getElementById('sports-edge-slider').value) : 3.0,
-                    sports_max_wager: document.getElementById('sports-wager-dollars') ? parseFloat(document.getElementById('sports-wager-dollars').value) : 10.0,
-                    sports_include_live: document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false
+                    sports_max_wager: parseFloat(document.getElementById('sports-trade-size-dollars')?.value || document.getElementById('sports-wager-dollars')?.value || 10.0),
+                    sports_trade_size_dollars: parseFloat(document.getElementById('sports-trade-size-dollars')?.value || document.getElementById('sports-wager-dollars')?.value || 10.0),
+                    sports_include_live: document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false,
+                    sports_active_leagues: sportsActiveLeaguesStr,
+                    sports_min_price: sMinPrice,
+                    sports_max_price: sMaxPrice,
+                    sports_max_daily_trades: parseInt(document.getElementById('sports-max-daily-trades')?.value || 10),
+                    sports_max_open_trades: parseInt(document.getElementById('sports-max-open-trades')?.value || 5),
+                    sports_max_daily_risk: parseFloat(document.getElementById('sports-max-daily-risk')?.value || 100.0),
+                    sports_tp_enabled: document.getElementById('sports-tp-toggle') ? document.getElementById('sports-tp-toggle').checked : false,
+                    sports_tp_pct: parseFloat(document.getElementById('sports-tp-pct')?.value || 35.0),
+                    sports_use_kelly: document.getElementById('sports-kelly-toggle') ? document.getElementById('sports-kelly-toggle').checked : false,
+                    sports_market_types: sportsMarketTypesStr,
+                    sports_active_props: sportsActivePropsStr,
+                    sports_strategy: window.currentSportsStrategy || 'STANDARD',
+                    sports_max_parlay_legs: parseInt(document.getElementById('sports-max-parlay-legs')?.value || 2),
+                    sports_sport_config: (typeof window.getSportsSportConfig === 'function' ? window.getSportsSportConfig() : null)
                 };
 
                 // Immediately update local cache so background polling doesn't fight this
                 if (window.lastDashboardStats) {
                     Object.assign(window.lastDashboardStats, configPayload);
+                }
+                if (typeof renderTradeSlip === 'function' && window.sportsTradeSlip && window.sportsTradeSlip.length > 0) {
+                    renderTradeSlip();
+                }
+                if (typeof updateParlayPayoutPreviews === 'function') {
+                    updateParlayPayoutPreviews();
                 }
 
                 const res = await fetch((window.API_BASE_URL||'')+'/api/auth/user/config', {
@@ -766,6 +921,78 @@
                 showSettingsToast(`⚠️ Network error — check connection`, 'error');
             }
         }
+
+        // Visual Distinction for Every-Interval Gemini Deep Reasoning
+        window.updateGeminiEveryIntervalVisuals = function(enabled) {
+            // 1. Settings Drawer Badge & Icon
+            const badge = document.getElementById('gemini-every-interval-status-badge');
+            const row = document.getElementById('gemini-every-interval-row');
+            const icon = document.getElementById('gemini-every-interval-icon');
+            if (badge) {
+                if (enabled) {
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>ACTIVE ON';
+                    badge.className = 'px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/50 flex items-center gap-1 shadow-[0_0_10px_rgba(168,85,247,0.4)]';
+                } else {
+                    badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>OFF';
+                    badge.className = 'px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1';
+                }
+            }
+            if (row) {
+                if (enabled) {
+                    row.classList.add('bg-purple-900/25', 'border-purple-500/40', 'shadow-[0_0_20px_rgba(168,85,247,0.15)]');
+                    row.classList.remove('border-transparent');
+                } else {
+                    row.classList.remove('bg-purple-900/25', 'border-purple-500/40', 'shadow-[0_0_20px_rgba(168,85,247,0.15)]');
+                    row.classList.add('border-transparent');
+                }
+            }
+            if (icon) {
+                if (enabled) {
+                    icon.className = 'w-7 h-7 rounded-lg bg-purple-500/30 border border-purple-400/60 text-purple-300 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5 shadow-[0_0_10px_rgba(168,85,247,0.5)]';
+                } else {
+                    icon.className = 'w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center shrink-0 text-xs font-bold mt-0.5';
+                }
+            }
+
+            // 2. Top Navigation Bar Badge
+            const navBadge = document.getElementById('nav-gemini-every-badge');
+            if (navBadge) {
+                if (enabled) {
+                    navBadge.classList.remove('hidden');
+                    navBadge.classList.add('inline-flex');
+                } else {
+                    navBadge.classList.add('hidden');
+                    navBadge.classList.remove('inline-flex');
+                }
+            }
+
+            // 3. Main Dashboard Gemini Dossier Card Banner
+            const banner = document.getElementById('gemini-dossier-force-banner');
+            const card = document.getElementById('gemini-live-dossier-card');
+            if (banner) {
+                if (enabled) {
+                    banner.classList.remove('hidden');
+                    banner.classList.add('flex');
+                } else {
+                    banner.classList.add('hidden');
+                    banner.classList.remove('flex');
+                }
+            }
+            if (card) {
+                if (enabled) {
+                    card.classList.add('ring-1', 'ring-purple-500/50', 'shadow-[0_0_25px_rgba(168,85,247,0.2)]');
+                } else {
+                    card.classList.remove('ring-1', 'ring-purple-500/50', 'shadow-[0_0_25px_rgba(168,85,247,0.2)]');
+                }
+            }
+        };
+
+        window.onGeminiEveryIntervalChange = function(checked) {
+            window.updateGeminiEveryIntervalVisuals(checked);
+            saveUserConfig();
+        };
+
+        window.saveConfig = saveUserConfig;
 
         async function saveKeys() {
             const keyId = document.getElementById('kalshi-key').value;
@@ -816,7 +1043,13 @@
 
         async function loadConfig() {
             try {
-                const curA = (window.currentAsset || 'BTC').toLowerCase();
+                const inSports = (window.currentUniverse === 'SPORTS');
+                const inInvestments = (window.currentUniverse === 'INVESTMENTS');
+                if (inInvestments) {
+                    if (typeof fetchInvestmentsConfig === 'function') fetchInvestmentsConfig();
+                    return;
+                }
+                const curA = inSports ? 'sports' : (window.currentAsset || 'BTC').toLowerCase();
                 const res = await fetch(`${window.API_BASE_URL||''}/api/engine/${curA}/trade/config`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -824,13 +1057,13 @@
                     const c = await res.json();
                     
                     if(c.enabled !== undefined) {
-                        const headerToggle = document.getElementById('header-auto-toggle');
-                        if(headerToggle) headerToggle.checked = c.enabled;
+                        const headerToggles = document.querySelectorAll('#header-auto-toggle, #sports-header-auto-toggle');
+                        headerToggles.forEach(t => { t.checked = c.enabled; });
                         
                         const navAutoBadge = document.getElementById('nav-auto-badge');
                         if(navAutoBadge) {
-                            navAutoBadge.innerText = c.enabled ? 'AUTO ON' : 'AUTO OFF';
-                            navAutoBadge.className = c.enabled ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm' : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
+                            navAutoBadge.innerHTML = c.enabled ? '<span class="flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>AUTO</span>' : 'AUTO';
+                            navAutoBadge.className = c.enabled ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm' : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
                         }
                         // Sync Dynamic Island glow with server state
                         if (typeof updateDynamicIsland === 'function') updateDynamicIsland(c.enabled);
@@ -842,7 +1075,8 @@
         
         let knownOpenTrades = new Set();
 
-        let knownCompletedTrades = new Set();
+        var knownCompletedTrades = new Set();
+        let _knownInitializedModes = new Set();
         window.enableIosNotifications = localStorage.getItem("enableIosNotifications") !== "false";
 
         window.toggleIosNotifications = function(checked) {
@@ -851,7 +1085,6 @@
             if (checked && "Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission().then(permission => {
                     if (permission === "granted") {
-                        new Notification("ShadowTrade AI", { body: "System notifications are now active. You will receive alerts on your lockscreen." });
                         if (typeof showToast === "function") showToast("System notifications enabled!", "success");
                     }
                 });
@@ -861,7 +1094,8 @@
         window.iosNotify = function(title, subtitle, type="success") {
             if (!window.enableIosNotifications) return;
 
-            if ("Notification" in window && Notification.permission === "granted") {
+            const isUserInApp = (document.visibilityState === 'visible') || (typeof document.hasFocus === 'function' && document.hasFocus()) || Boolean(window.isTabActive);
+            if (!isUserInApp && "Notification" in window && Notification.permission === "granted") {
                 try {
                     new Notification(title, { body: subtitle });
                 } catch(e) {}
@@ -875,18 +1109,9 @@
                 document.body.appendChild(container);
             }
             const toast = document.createElement('div');
-            const icon = type === "success" ? "🤑" : (type === "error" ? "💥" : "🔔");
-            const bg = type === "success" ? "bg-gradient-to-r from-emerald-950/90 to-[#1c1c1e]/90 border-emerald-500/30" : (type === "error" ? "bg-gradient-to-r from-rose-950/90 to-[#1c1c1e]/90 border-rose-500/30" : "bg-[#1c1c1e]/90 border-white/10");
-            toast.className = `flex items-center gap-3 w-full max-w-sm p-3.5 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl border ${bg} transition-all duration-500 ease-out translate-y-[-150%] opacity-0`;
-            toast.innerHTML = `
-                <div class="w-10 h-10 shrink-0 flex items-center justify-center text-xl bg-black/40 rounded-full border border-white/10 shadow-inner">
-                    ${icon}
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-[13px] font-black tracking-wide text-white">${title}</span>
-                    <span class="text-[11px] font-medium text-gray-300 mt-0.5">${subtitle}</span>
-                </div>
-            `;
+            const badgeColor = type === 'success' ? 'border-emerald-500/40 bg-slate-900/95 text-emerald-400' : 'border-rose-500/40 bg-slate-900/95 text-rose-400';
+            toast.className = `px-4 py-2.5 rounded-xl border ${badgeColor} shadow-lg backdrop-blur-md text-xs font-bold transition-all duration-300 translate-y-[-150%] opacity-0`;
+            toast.innerHTML = `<div class="font-extrabold">${title}</div><div class="text-[11px] text-slate-300 font-normal">${subtitle || ''}</div>`;
             container.appendChild(toast);
             requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.remove('translate-y-[-150%]', 'opacity-0')));
             setTimeout(() => {
@@ -894,7 +1119,7 @@
                 setTimeout(() => toast.remove(), 500);
             }, 5000);
             try { if(type === "success" && window.soundEngine) window.soundEngine.play('order_fill'); } catch(e){}
-        }
+        };
 
         let initialLoad = true;
 
@@ -933,7 +1158,7 @@
                     if (!window._adminUsersLoaded) {
                         window._adminUsersLoaded = true;
                         const script = document.createElement('script');
-                        script.src = './js/admin_users.js?v=1791013020';
+                        script.src = './js/admin_users.js?v=1792013050';
                         document.body.appendChild(script);
                     }
                 } else {
@@ -941,14 +1166,34 @@
                 }
             }
             
-            const drawer = document.getElementById('settingsDrawer');
-            const isSettingsOpen = drawer && !drawer.classList.contains('hidden');
-            const isFocusInSettings = drawer && drawer.contains(document.activeElement);
+            const finDrawer = document.getElementById('financialSettingsDrawer');
+            const sportsDrawer = document.getElementById('sportsSettingsDrawer');
+            const invDrawer = document.getElementById('investmentsSettingsDrawer');
+            const isSettingsOpen = (finDrawer && !finDrawer.classList.contains('hidden')) || (sportsDrawer && !sportsDrawer.classList.contains('hidden')) || (invDrawer && !invDrawer.classList.contains('hidden'));
+            const isFocusInSettings = (finDrawer && finDrawer.contains(document.activeElement)) || (sportsDrawer && sportsDrawer.contains(document.activeElement)) || (invDrawer && invDrawer.contains(document.activeElement));
 
             // If the user has already loaded settings and the settings drawer is currently open or focused,
             // DO NOT overwrite inputs/toggles under the user's cursor unless explicitly forced!
             if (!force && window.userSettingsPopulated && (isSettingsOpen || isFocusInSettings)) {
                 return;
+            }
+
+            if (s.trading_mode) {
+                currentMode = s.trading_mode;
+                if (typeof updateModeUI === 'function') updateModeUI();
+            }
+
+            if (s.ai_enabled !== undefined) {
+                const autoToggles = document.querySelectorAll('#header-auto-toggle, #sports-header-auto-toggle, #inv-header-auto-toggle');
+                autoToggles.forEach(t => { t.checked = !!s.ai_enabled; });
+                const navAutoBadge = document.getElementById('nav-auto-badge');
+                if (navAutoBadge) {
+                    navAutoBadge.innerHTML = s.ai_enabled ? '<span class="flex items-center justify-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>AUTO</span>' : 'AUTO';
+                    navAutoBadge.className = s.ai_enabled
+                        ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 leading-none shadow-sm'
+                        : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center flex items-center justify-center bg-gray-800 text-gray-400 border border-gray-700 leading-none shadow-sm';
+                }
+                if (typeof updateDynamicIsland === 'function') updateDynamicIsland(!!s.ai_enabled);
             }
 
             if (s.trade_size_dollars !== undefined && document.getElementById('trade-size-dollars')) {
@@ -982,7 +1227,14 @@
                 }
             }
             if (s.trading_universe !== undefined) {
-                if (typeof selectUniverse === 'function') selectUniverse(s.trading_universe);
+                const tu = String(s.trading_universe).toUpperCase();
+                if (typeof setAutoTradingUniverse === 'function') {
+                    setAutoTradingUniverse(tu, true);
+                }
+                if (!window.currentUniverse || force) {
+                    const viewTab = (tu === 'SPORTS') ? 'SPORTS' : (tu === 'INVESTMENTS' ? 'INVESTMENTS' : 'FINANCIAL');
+                    if (typeof selectUniverse === 'function') selectUniverse(viewTab);
+                }
             }
             if (s.min_sports_confidence !== undefined && document.getElementById('sports-conf-slider')) {
                 document.getElementById('sports-conf-slider').value = s.min_sports_confidence;
@@ -996,11 +1248,107 @@
                     document.getElementById('sports-edge-val').innerText = '+' + s.min_sports_edge + '.0%';
                 }
             }
-            if (s.sports_max_wager !== undefined && document.getElementById('sports-wager-dollars')) {
-                document.getElementById('sports-wager-dollars').value = s.sports_max_wager;
+            const sportsSize = s.sports_trade_size_dollars !== undefined ? s.sports_trade_size_dollars : s.sports_max_wager;
+            if (sportsSize !== undefined) {
+                if (document.getElementById('sports-trade-size-dollars')) {
+                    if (document.activeElement?.id !== 'sports-trade-size-dollars') {
+                        document.getElementById('sports-trade-size-dollars').value = sportsSize;
+                    }
+                }
+                if (document.getElementById('sports-wager-dollars')) {
+                    document.getElementById('sports-wager-dollars').value = sportsSize;
+                }
             }
             if (s.sports_include_live !== undefined && document.getElementById('sports-include-live-toggle')) {
                 document.getElementById('sports-include-live-toggle').checked = !!s.sports_include_live;
+            }
+            // Sports leagues multi-select
+            if (s.sports_active_leagues !== undefined) {
+                const leagues = (s.sports_active_leagues || '').split(',').map(l => l.trim().toUpperCase());
+                document.querySelectorAll('input.sports-league-toggle').forEach(t => {
+                    t.checked = leagues.includes(String(t.value).trim().toUpperCase());
+                });
+                if (typeof window.updateSportsAssetSelectorVisibility === 'function') {
+                    window.updateSportsAssetSelectorVisibility();
+                }
+            }
+            // Sports market types
+            if (s.sports_market_types !== undefined) {
+                const mtypes = (s.sports_market_types || '').split(',').map(m => m.trim().toUpperCase());
+                document.querySelectorAll('input.sports-market-toggle').forEach(t => {
+                    const v = String(t.value).trim().toUpperCase();
+                    t.checked = mtypes.includes(v) || (v === 'PROP' && (mtypes.includes('PLAYER_PROP') || mtypes.includes('PROPS')));
+                });
+            }
+            if (s.sports_active_props !== undefined) {
+                const ptypes = (s.sports_active_props || '').split(',').map(m => m.trim().toUpperCase());
+                document.querySelectorAll('input.sports-prop-toggle').forEach(t => {
+                    t.checked = ptypes.includes(String(t.value).trim().toUpperCase());
+                });
+            }
+            if (typeof window.sportsPanelsFromSettings === 'function') window.sportsPanelsFromSettings(s);
+            // Price corridor
+            if (s.sports_min_price !== undefined && document.getElementById('sports-min-price')) {
+                if (document.activeElement?.id !== 'sports-min-price') {
+                    const minCents = Math.round(s.sports_min_price * (s.sports_min_price <= 1.0 ? 100 : 1));
+                    document.getElementById('sports-min-price').value = minCents;
+                }
+            }
+            if (s.sports_max_price !== undefined && document.getElementById('sports-max-price')) {
+                if (document.activeElement?.id !== 'sports-max-price') {
+                    const maxCents = Math.round(s.sports_max_price * (s.sports_max_price <= 1.0 ? 100 : 1));
+                    document.getElementById('sports-max-price').value = maxCents;
+                }
+            }
+            // Max daily wagers & risk
+            if (s.sports_max_daily_trades !== undefined && document.getElementById('sports-max-daily-trades')) {
+                if (document.activeElement?.id !== 'sports-max-daily-trades') {
+                    document.getElementById('sports-max-daily-trades').value = s.sports_max_daily_trades;
+                }
+            }
+            if (s.sports_max_open_trades !== undefined && document.getElementById('sports-max-open-trades')) {
+                if (document.activeElement?.id !== 'sports-max-open-trades') {
+                    document.getElementById('sports-max-open-trades').value = s.sports_max_open_trades;
+                }
+            }
+            if (s.sports_max_daily_risk !== undefined && document.getElementById('sports-max-daily-risk')) {
+                if (document.activeElement?.id !== 'sports-max-daily-risk') {
+                    document.getElementById('sports-max-daily-risk').value = s.sports_max_daily_risk;
+                }
+            }
+            // Mid-game Take-Profit
+            if (s.sports_tp_enabled !== undefined && document.getElementById('sports-tp-toggle')) {
+                document.getElementById('sports-tp-toggle').checked = !!s.sports_tp_enabled;
+            }
+            if (s.sports_tp_pct !== undefined && document.getElementById('sports-tp-pct')) {
+                if (document.activeElement?.id !== 'sports-tp-pct') {
+                    document.getElementById('sports-tp-pct').value = s.sports_tp_pct;
+                }
+            }
+            // Kelly Criterion
+            if (s.sports_use_kelly !== undefined && document.getElementById('sports-kelly-toggle')) {
+                document.getElementById('sports-kelly-toggle').checked = !!s.sports_use_kelly;
+            }
+            // Sports Strategy & Parlay settings
+            if (s.sports_max_parlay_legs !== undefined) {
+                const legVal = Math.max(2, Math.min(30, parseInt(s.sports_max_parlay_legs) || 2));
+                if (document.getElementById('sports-max-parlay-legs') && document.activeElement?.id !== 'sports-max-parlay-legs') {
+                    document.getElementById('sports-max-parlay-legs').value = String(legVal);
+                }
+                if (document.getElementById('sports-parlay-legs-input') && document.activeElement?.id !== 'sports-parlay-legs-input') {
+                    document.getElementById('sports-parlay-legs-input').value = String(legVal);
+                }
+                if (legVal < 10 && document.getElementById('strat-card-power-legs') && document.activeElement?.id !== 'strat-card-power-legs') {
+                    document.getElementById('strat-card-power-legs').value = String(legVal);
+                } else if (legVal >= 10 && document.getElementById('strat-card-ultra-legs') && document.activeElement?.id !== 'strat-card-ultra-legs') {
+                    document.getElementById('strat-card-ultra-legs').value = String(legVal);
+                }
+            }
+            if (s.sports_strategy !== undefined && typeof applySportsStrategyUI === 'function') {
+                applySportsStrategyUI(s.sports_strategy);
+            }
+            if (typeof updateParlayPayoutPreviews === 'function') {
+                updateParlayPayoutPreviews();
             }
             if (s.paper_trade_size_dollars !== undefined && document.getElementById('paper-trade-size-dollars')) {
                 if (document.activeElement.id !== 'paper-trade-size-dollars') {
@@ -1080,6 +1428,9 @@
                 document.querySelectorAll('input.asset-toggle').forEach(t => {
                     t.checked = assets.includes(String(t.value).toUpperCase());
                 });
+                if (typeof window.updateFinancialAssetSelectorVisibility === 'function') {
+                    window.updateFinancialAssetSelectorVisibility();
+                }
             }
 
             const oneClickEl = document.getElementById('one-click-toggle');
@@ -1099,6 +1450,26 @@
                     ftText.innerText = forceEl.checked ? 'ON' : 'OFF';
                     ftText.className = forceEl.checked ? 'text-[9px] font-bold text-purple-400 uppercase tracking-widest' : 'text-[9px] font-bold text-gray-500 uppercase tracking-widest';
                 }
+            }
+
+            const geminiEveryEl = document.getElementById('gemini-every-interval-toggle');
+            if (geminiEveryEl && s.gemini_every_interval_enabled !== undefined) {
+                geminiEveryEl.checked = !!s.gemini_every_interval_enabled;
+                if (typeof window.updateGeminiEveryIntervalVisuals === 'function') {
+                    window.updateGeminiEveryIntervalVisuals(!!s.gemini_every_interval_enabled);
+                }
+            }
+            if (document.getElementById('regime-mode-select') && s.regime_mode) {
+                document.getElementById('regime-mode-select').value = s.regime_mode;
+                const rContainer = document.querySelector('[data-target="regime-mode-select"]');
+                if (rContainer) {
+                    const rText = rContainer.querySelector('.selected-text');
+                    const rOpt = document.getElementById('regime-mode-select').querySelector(`option[value="${s.regime_mode}"]`);
+                    if (rText && rOpt) rText.textContent = rOpt.textContent;
+                }
+            }
+            if (document.getElementById('chop-tp-cents-input') && s.chop_take_profit_cents !== undefined) {
+                document.getElementById('chop-tp-cents-input').value = s.chop_take_profit_cents;
             }
             if (s.ignore_pass_technical !== undefined && document.getElementById('technical-force-toggle')) {
                 document.getElementById('technical-force-toggle').checked = !!s.ignore_pass_technical;
@@ -1184,56 +1555,100 @@
                 }
             }
 
+            // Investments Settings Drawer population
+            const setInvField = (id, val) => {
+                const el = document.getElementById(id);
+                if (el && val !== undefined && val !== null && document.activeElement !== el) {
+                    if (el.type === 'checkbox') el.checked = !!val;
+                    else el.value = val;
+                }
+            };
+            setInvField('inv-auto-toggle', s.investments_enabled);
+            setInvField('inv-mode-select', s.investments_trading_mode);
+            setInvField('inv-rh-auth-mode', s.rh_auth_mode);
+            setInvField('inv-rh-username', s.robinhood_username);
+            setInvField('inv-paper-balance', s.investments_paper_balance);
+            setInvField('inv-trade-size', s.investments_trade_size_dollars);
+            setInvField('inv-paper-trade-size', s.investments_paper_trade_size_dollars);
+            setInvField('inv-max-open-positions', s.investments_max_open_positions);
+            setInvField('inv-max-daily-trades', s.investments_max_daily_trades);
+            setInvField('inv-max-daily-risk', s.investments_max_daily_risk ?? s.investments_max_daily_loss_dollars);
+            setInvField('inv-asset-classes', s.investments_asset_classes);
+            setInvField('inv-min-confidence', s.investments_min_confidence ?? s.investments_min_ai_confidence);
+            setInvField('inv-min-rvol', s.investments_min_rvol);
+            setInvField('inv-options-delta', s.investments_options_delta_target);
+            setInvField('inv-options-dte', s.investments_options_dte_window);
+            setInvField('inv-options-spread', s.investments_options_max_spread_pct);
+            setInvField('inv-options-oi', s.investments_options_min_oi);
+            setInvField('inv-eod-flatten-toggle', s.investments_eod_auto_flatten ?? s.investments_auto_flatten_eod);
+            setInvField('inv-trailing-stop-toggle', s.investments_trailing_stop_enabled);
+            setInvField('inv-stock-tp', s.investments_stock_tp_pct ?? s.investments_take_profit_pct);
+            setInvField('inv-stock-sl', s.investments_stock_sl_pct ?? s.investments_stop_loss_pct);
+            setInvField('inv-option-tp', s.investments_option_tp_pct);
+            setInvField('inv-option-sl', s.investments_option_sl_pct);
+            setInvField('inv-watchlist', s.investments_watchlist);
+
             if (typeof syncCustomDropdowns === 'function') {
                 syncCustomDropdowns();
             }
             window.userSettingsPopulated = true;
         }
 
-        async function loadDashboard() {
-            if (document.hidden || !window.isTabActive) return;
+        let _hasInitialDashboardLoaded = false;
+        let _loadDashboardInFlight = false;
+        async function loadDashboard(force = false) {
+            if ((document.hidden || !window.isTabActive) && !force && _hasInitialDashboardLoaded) return;
+            if (_loadDashboardInFlight && !force) return;
+            _loadDashboardInFlight = true;
             try {
+                token = localStorage.getItem('saas_token') || getCookie('saas_token') || token;
                 const res = await fetch((window.API_BASE_URL||'')+'/api/auth/dashboard_stats', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    credentials: 'include'
                 });
                 if(!res.ok) {
                     if(res.status === 401) logout();
                     return;
                 }
                 const s = await res.json();
-                
+                _hasInitialDashboardLoaded = true;
                 window.lastDashboardStats = s;
-
-                // iOS Notifications for newly closed trades
-                if (s.recent_trades && Array.isArray(s.recent_trades)) {
-                    s.recent_trades.forEach(t => {
-                        const status = String(t.status || '').toUpperCase();
-                        const tradeId = String(t.id);
-                        if (status === 'CLOSED' || status.includes('WIN') || status.includes('LOSS')) {
-                            if (!knownCompletedTrades.has(tradeId)) {
-                                if (!initialLoad) {
-                                    const pnl = parseFloat(t.live_pnl !== undefined ? t.live_pnl : (t.pnl_dollars || t.pnl || 0));
-                                    const isWin = status.includes('WIN') || pnl > 0;
-                                    const assetStr = String(t.asset || t.ticker || 'Asset').toUpperCase().replace('KX', '').replace('15M', '');
-                                    if (isWin) {
-                                        window.iosNotify('Trade Won! 🎉', `${assetStr} profit secured: +$${pnl.toFixed(2)}`, 'success');
-                                    } else {
-                                        window.iosNotify('Trade Closed', `${assetStr} loss incurred: -$${Math.abs(pnl).toFixed(2)}`, 'error');
-                                    }
-                                }
-                                knownCompletedTrades.add(tradeId);
-                            }
-                        }
-                    });
-                }
-
-                
-
 
                 if (currentMode !== s.trading_mode) {
                     currentMode = s.trading_mode || "PAPER";
                     updateModeUI();
                 }
+
+                // First time loading a mode (e.g. initial load or switching between LIVE/PAPER),
+                // seed all existing completed trades into knownCompletedTrades so they don't trigger false alerts
+                const isNewModeLoad = !_knownInitializedModes.has(currentMode);
+
+                // iOS Notifications for newly closed trades (mode-scoped and deduplicated by contract)
+                if (s.recent_trades && Array.isArray(s.recent_trades)) {
+                    s.recent_trades.forEach(t => {
+                        const status = String(t.status || '').toUpperCase();
+                        const tradeMode = String(t.mode || currentMode).toUpperCase();
+                        const scopedTradeId = `${tradeMode}_${t.id}`;
+                        const contractOutcomeKey = `${tradeMode}_${t.ticker}_${String(t.side || '').toUpperCase()}_${status}`;
+                        if (status === 'CLOSED' || status.includes('WIN') || status.includes('LOSS')) {
+                            if (!knownCompletedTrades.has(scopedTradeId)) {
+                                if (!initialLoad && !isNewModeLoad && !knownCompletedTrades.has(contractOutcomeKey)) {
+                                    const pnl = parseFloat(t.live_pnl !== undefined ? t.live_pnl : (t.pnl_dollars || t.pnl || 0));
+                                    const isWin = status.includes('WIN') || pnl > 0;
+                                    const assetStr = String(t.asset || t.ticker || 'Asset').toUpperCase().replace('KX', '').replace('15M', '');
+                                    if (isWin) {
+                                        window.iosNotify(`Trade Won! [${tradeMode}]`, `${assetStr} profit secured: +$${pnl.toFixed(2)}`, 'success');
+                                    } else {
+                                        window.iosNotify(`Trade Closed [${tradeMode}]`, `${assetStr} loss incurred: -$${Math.abs(pnl).toFixed(2)}`, 'error');
+                                    }
+                                }
+                                knownCompletedTrades.add(scopedTradeId);
+                                knownCompletedTrades.add(contractOutcomeKey);
+                            }
+                        }
+                    });
+                }
+                _knownInitializedModes.add(currentMode);
 
                 if (s.api_configured) {
                     document.getElementById('connection-status').innerText = "SECURE";
@@ -1243,17 +1658,20 @@
                     document.getElementById('connection-status').className = "text-[9px] uppercase font-bold text-kalshi-red tracking-wider";
                 }
 
+                const hasValidBalance = s.balance_dollars !== undefined && s.balance_dollars !== null && !isNaN(Number(s.balance_dollars));
+                const balNum = hasValidBalance ? Number(s.balance_dollars) : null;
+
                 if(currentMode === "PAPER") {
-                    if (s.balance_dollars !== undefined && s.balance_dollars !== null) {
-                        document.getElementById('val-balance').innerText = `$${s.balance_dollars.toFixed(2)}`;
+                    if (balNum !== null) {
+                        document.getElementById('val-balance').innerText = `$${balNum.toFixed(2)}`;
                         document.getElementById('val-balance').classList.remove('text-kalshi-red');
                     } else {
                         document.getElementById('val-balance').innerText = "--";
                         document.getElementById('val-balance').classList.remove('text-kalshi-red');
                     }
                 } else {
-                    if (s.balance_dollars !== undefined && s.balance_dollars !== null) {
-                        document.getElementById('val-balance').innerText = `$${s.balance_dollars.toFixed(2)}`;
+                    if (balNum !== null) {
+                        document.getElementById('val-balance').innerText = `$${balNum.toFixed(2)}`;
                         document.getElementById('val-balance').classList.remove('text-kalshi-red');
                     } else {
                         document.getElementById('val-balance').innerText = "Auth Error";
@@ -1261,45 +1679,37 @@
                     }
                 }
 
-                const pnl = s.total_pnl || 0;
+                const pnl = Number(s.total_pnl) || 0;
                 const pnlEl = document.getElementById('val-pnl');
                 pnlEl.innerText = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
                 pnlEl.className = `text-sm font-black tabular-nums ${pnl >= 0 ? 'text-kalshi-green' : 'text-kalshi-red'}`;
                 
-                document.getElementById('val-winrate').innerText = `${s.win_rate}%`;
+                document.getElementById('val-winrate').innerText = `${s.win_rate ?? 0}%`;
 
-                                // Update nav bar center Open Trade PnL
-                const openTrades = (s.recent_trades || []).filter(t => String(t.status || '').toUpperCase() === "OPEN");
-                const hasOpenTrades = openTrades.length > 0;
-                const livePnlContainer = document.getElementById('nav-live-pnl-container');
-                const livePnlVal = document.getElementById('nav-live-pnl-val');
-                if (livePnlContainer && livePnlVal) {
-                    if (hasOpenTrades) {
-                        livePnlContainer.classList.remove('hidden');
-                        livePnlContainer.classList.add('flex');
-                        let lPnl = 0;
-                        if (s.live_open_pnl !== undefined && s.live_open_pnl !== null) {
-                            lPnl = Number(s.live_open_pnl);
-                        } else {
-                            lPnl = openTrades.reduce((acc, t) => acc + (t.live_pnl !== undefined ? Number(t.live_pnl) : (t.pnl_dollars !== undefined ? Number(t.pnl_dollars) : 0)), 0);
-                        }
-                        if (isNaN(lPnl)) lPnl = 0;
-                        const isPos = lPnl > -0.005;
-                        livePnlVal.textContent = (isPos ? '+$' : '-$') + Math.abs(lPnl).toFixed(2);
-                        livePnlVal.className = `text-lg sm:text-xl font-black tabular-nums leading-none tracking-tight ${isPos ? 'text-emerald-400' : 'text-rose-400'}`;
-                    } else {
-                        livePnlContainer.classList.add('hidden');
-                        livePnlContainer.classList.remove('flex');
-                    }
+                // Update nav bar center Open Trade PnL (isolated strictly to active universe)
+                if (typeof window.updateNavLivePnl === 'function') {
+                    window.updateNavLivePnl(s);
                 }
 
-                // Update nav bar
+                // Update nav bar safely (never call .toFixed on null!)
                 const navBal = document.getElementById('nav-balance');
-                if (navBal && s.balance_dollars !== undefined) navBal.textContent = '$' + s.balance_dollars.toFixed(2);
+                if (navBal) {
+                    if (window.currentUniverse === 'INVESTMENTS') {
+                        const invBal = window.cachedInvestmentsPortfolio?.portfolio_value ?? window.cachedInvestmentsPortfolio?.buying_power ?? s.investments_paper_balance ?? balNum;
+                        navBal.textContent = invBal !== null && invBal !== undefined ? '$' + Number(invBal).toFixed(2) : '$0.00';
+                    } else if (balNum !== null) {
+                        navBal.textContent = '$' + balNum.toFixed(2);
+                    } else {
+                        navBal.textContent = '$0.00';
+                    }
+                }
                 const navPnl = document.getElementById('nav-pnl');
                 if (navPnl) {
-                    navPnl.textContent = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
-                    navPnl.className = 'text-[11px] font-bold tabular-nums ' + (pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+                    const effectivePnl = (window.currentUniverse === 'INVESTMENTS' && window.cachedInvestmentsPortfolio?.day_pnl_dollars !== undefined)
+                        ? Number(window.cachedInvestmentsPortfolio.day_pnl_dollars)
+                        : pnl;
+                    navPnl.textContent = (effectivePnl >= 0 ? '+' : '') + '$' + effectivePnl.toFixed(2);
+                    navPnl.className = 'text-[11px] font-bold tabular-nums ' + (effectivePnl >= 0 ? 'text-emerald-400' : 'text-red-400');
                 }
 
                 // Update profile dropdown
@@ -1317,7 +1727,7 @@
                 
                 // Update avatar and username
                 if (s.profile_pic) {
-                    if (s.profile_pic.startsWith('/static/')) s.profile_pic = 'https://moneyprinter.ngrok.app' + s.profile_pic;
+                    if (s.profile_pic.startsWith('/static/') && window.API_BASE_URL) s.profile_pic = window.API_BASE_URL + s.profile_pic;
                     const navAv = document.getElementById('nav-avatar');
                     const dropAv = document.getElementById('dropdown-avatar');
                     if (navAv) navAv.src = s.profile_pic;
@@ -1334,7 +1744,7 @@
                 const execMode = document.getElementById('exec-mode-badge');
                 if (execMode) {
                     execMode.textContent = currentMode;
-                    execMode.className = currentMode === 'LIVE' ? 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-red-500/20 text-red-300 border border-red-500/40 leading-none shadow-sm' : 'px-1.5 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 leading-none shadow-sm';
+                    execMode.className = currentMode === 'LIVE' ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-red-500/20 text-red-300 border border-red-500/40 leading-none shadow-sm' : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 leading-none shadow-sm';
                 }
 
                 
@@ -1542,9 +1952,11 @@
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 <div class="text-[8px] font-bold uppercase tracking-widest text-gray-500">NET PNL</div>
                                 <div class="text-xs font-black tabular-nums ${pnlColor}">${pnlStr}</div>
-                                <button onclick="copyTraderSettings(${t.id}, '${t.username}')" class="px-2 py-0.5 mt-0.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-kalshi-border active:scale-95 cursor-pointer">
-                                    COPY
+                                ${!t.is_self ? `
+                                <button id="btn-copy-settings-${t.id}" onclick="copyTraderSettings(${t.id}, '${t.username}')" class="px-2 py-0.5 mt-0.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-[8px] font-bold uppercase tracking-wider transition-colors border border-kalshi-border active:scale-95 cursor-pointer">
+                                    Copy Settings
                                 </button>
+                                ` : ''}
                             </div>
                         </div>
 
@@ -1656,16 +2068,28 @@
         };
         
         window.copyTraderSettings = async function(targetId, username) {
-            if (!confirm(`Are you sure you want to copy the trading settings from ${username}? This will overwrite your current configuration.`)) return;
+            if (!confirm(`Are you sure you want to copy the trading settings from ${username}? This will overwrite your current configuration (your wager sizes will be preserved).`)) return;
             
             try {
+                const userToken = localStorage.getItem('saas_token') || (typeof token !== 'undefined' ? token : '');
                 const res = await fetch(`${window.API_BASE_URL||''}/api/auth/community/copy_settings/${targetId}`, {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + userToken }
                 });
                 let data = {}; try { data = await res.json(); } catch(e){} if(res.ok) {
-                    alert(`Successfully copied settings from ${username}!`);
-                    loadDashboard(); // Refresh UI with new settings
+                    if (data.result && data.result.copied_settings && typeof populateUserSettings === 'function') {
+                        const mergedStats = Object.assign({}, window.lastDashboardStats || {}, data.result.copied_settings);
+                        window.lastDashboardStats = mergedStats;
+                        populateUserSettings(mergedStats, true);
+                    }
+                    alert(data.message || `Successfully copied settings from ${username}!`);
+                    await loadDashboard(); // Refresh UI with new settings
+                    if (window.lastDashboardStats && typeof populateUserSettings === 'function') {
+                        populateUserSettings(window.lastDashboardStats, true);
+                    }
+                    if (typeof openCommunityModal === 'function' && !document.getElementById('communityModal')?.classList.contains('hidden')) {
+                        openCommunityModal();
+                    }
                 } else {
                     alert('Failed to copy settings: ' + (data.detail || 'Unknown error'));
                 }
@@ -1761,22 +2185,229 @@
 
                 // Recent trades
                     const container = document.getElementById('tradesContainer');
-                    const __isSportTrade = (t) => {
+                    window.__isInvestmentTrade = function(t) {
+                        if (!t) return false;
+                        const a = String(t.asset || '').toUpperCase();
+                        if (a === 'INVESTMENTS' || a === 'STOCK' || a === 'OPTION' || a === 'EQUITY') return true;
+                        let meta = t.metadata;
+                        if (typeof meta === 'string') {
+                            try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+                        }
+                        return Boolean(meta && (
+                            String(meta.universe || '').toUpperCase() === 'INVESTMENTS' ||
+                            String(meta.vehicle || '').toUpperCase() === 'STOCK' ||
+                            String(meta.vehicle || '').toUpperCase() === 'OPTION'
+                        ));
+                    };
+                    window.__isSportTrade = function(t) {
+                        if (!t) return false;
+                        if (window.__isInvestmentTrade && window.__isInvestmentTrade(t)) return false;
                         const a = String(t.asset || '').toUpperCase();
                         const tk = String(t.ticker || '').toUpperCase();
                         let meta = t.metadata;
                         if (typeof meta === 'string') {
                             try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
                         }
-                        const hasSportProp = t.sport || (meta && (meta.sport || meta.league));
-                        const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tk) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tk) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(a);
-                        const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+                        let ml = t.ml_reasoning;
+                        if (typeof ml === 'string') {
+                            try { ml = JSON.parse(ml); } catch(e) { ml = {}; }
+                        }
+                        const hasSportProp = Boolean(t.sport || t.predicted_team || (meta && (meta.sport || meta.league)) || (ml && (ml.sport || ml.predicted_team)));
+                        const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP|MVECROSSCATEGORY|MVE)/.test(tk) ||
+                                               /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN)-/.test(tk) ||
+                                               tk.startsWith('KALSHI-') ||
+                                               tk.includes('KXMVECROSSCATEGORY') ||
+                                               ['NFL','MLB','NBA','NCAAF','NCAAB','WNBA','NPB','KBO','NPB/KBO','NPB_KBO','NHL','SOC','UFC','TEN','MMA','SPORTS','MULTIVARIATE_COMBO'].includes(a);
+                        const isSportsStyle = String(t.trading_style || '').toUpperCase().startsWith('SPORTS') || String(t.trading_style || '').toUpperCase().includes('COMBO') || String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
                         return isSportsStyle || hasSportProp || isSportsTicker;
                     };
-                    const __inSports = window.currentUniverse === 'SPORTS';
-                    let universeFiltered = (s.recent_trades || []).filter(t => __inSports ? __isSportTrade(t) : !__isSportTrade(t));
-                    const recent = universeFiltered.slice(0, 15);
-                    if (recent.length === 0) {
+                    window.__getSportInfo = function(t) {
+                        if (!t) return { sport: 'SPORTS', team: 'Team', icon: '🏆' };
+                        let sport = t.sport || '';
+                        let team = t.predicted_team || t.team || '';
+                        let meta = t.metadata;
+                        if (typeof meta === 'string') {
+                            try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+                        }
+                        if (!sport && meta) {
+                            sport = meta.sport || meta.league || '';
+                        }
+                        if (!team && meta) {
+                            team = meta.predicted_team || meta.team || meta.name || '';
+                        }
+                        let ml = t.ml_reasoning;
+                        if (typeof ml === 'string') {
+                            try { ml = JSON.parse(ml); } catch(e) { ml = {}; }
+                        }
+                        if (!sport && ml) {
+                            sport = ml.sport || '';
+                        }
+                        if (!team && ml) {
+                            team = ml.predicted_team || ml.team || '';
+                        }
+                        const tk = String(t.ticker || '').toUpperCase();
+                        if (!sport) {
+                            const m = tk.match(/^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|NPB|KBO|SOC|UFC|MMA|TEN)/) ||
+                                      tk.match(/^KX([A-Z]{3,5}?)(?:GAME|-|$)/) ||
+                                      tk.match(/^KX([A-Z]{3,5})/);
+                            if (m) sport = m[1];
+                            else if (tk.startsWith('KALSHI-')) {
+                                const parts = tk.split('-');
+                                if (parts.length > 1) sport = parts[1];
+                                if (!team && parts.length > 2) team = parts[2];
+                            }
+                        }
+                        if (!sport && t.asset && ['NFL','MLB','NBA','NCAAF','NCAAB','WNBA','NPB','KBO','NPB/KBO','NPB_KBO','NHL','SOC','UFC','TEN','MMA','SPORTS'].includes(String(t.asset).toUpperCase())) {
+                            sport = String(t.asset).toUpperCase();
+                        }
+                        sport = (sport || 'SPORTS').toUpperCase();
+                        if (sport === 'SOCCER') sport = 'SOC';
+                        if (sport === 'TENNIS') sport = 'TEN';
+                        if (sport === 'MMA') sport = 'UFC';
+                        if (sport === 'NPB_KBO') sport = 'NPB/KBO';
+
+                        if (!team && t.reason) {
+                            const mEdge = t.reason.match(/AI Edge:\s*([^(]+)/i);
+                            if (mEdge) team = mEdge[1].trim();
+                        }
+                        if (!team && tk.startsWith('KALSHI-')) {
+                            const parts = tk.split('-');
+                            if (parts.length > 2) team = parts[2];
+                        }
+                        if (!team) {
+                            team = t.side || 'YES';
+                        }
+
+                        // Extract Prop Type, Line, Spread Amount, O/U Amount, Strike Details
+                        let propType = t.prop_type || (meta && meta.prop_type) || (ml && ml.prop_type) || '';
+                        let line = t.line || (meta && meta.line) || (ml && ml.line) || '';
+                        let spreadAmount = t.spread_amount || (meta && meta.spread_amount) || (ml && ml.spread_amount) || '';
+                        let overUnderAmount = t.over_under_amount || (meta && meta.over_under_amount) || (ml && ml.over_under_amount) || '';
+                        let strikeDetails = t.strike_details || (meta && meta.strike_details) || (ml && ml.strike_details) || '';
+
+                        // Check for player prop patterns from strikeDetails, reason, or ticker
+                        const isPlayerPropSeries = [
+                            'KXNHLGOAL', 'KXNHLSHOT', 'KXNHLSOG', 'KXNHLAST', 'KXNHLPTS',
+                            'KXMLBHR', 'KXMLBHIT', 'KXMLBKS', 'KXMLBRBI',
+                            'KXNFLTD', 'KXNFLPASS', 'KXNFLRUSH', 'KXNFLREC',
+                            'KXNBAPTS', 'KXNBAREB', 'KXNBAAST', 'KXNBATHREE', 'KXNBA3PT',
+                            'GOAL', 'SHOT', 'SOG', 'STRIKEOUT', 'TOUCHDOWN', 'PROP'
+                        ].some(k => tk.includes(k));
+
+                        // Only the market text and the part of the reason before "|" can name a player:
+                        // the rest is "AI Edge: Team (Conf: 70.0%, ...)", and "Conf: 70" used to be read
+                        // as a player prop called "Conf" with a line of 70 ("70 Props").
+                        const reasonHead = String(t.reason || '').split('|')[0];
+                        const mPlayer = (strikeDetails + ' ' + reasonHead).match(/([A-Z][a-zA-Z\.\'\-\s]{2,35}?):\s*(\d+\+?|\d+\.\d+|\d+)\s*([a-zA-Z\s]*)/);
+                        if (mPlayer) {
+                            const pName = mPlayer[1].trim();
+                            if (!/^(total|totals|over|under|spread|run line|puck line|moneyline|game|winner|match|conf|confidence|edge|ai edge|prob|probability)\b/i.test(pName)) {
+                                if (!team || team.includes('/') || team.includes('vs') || team.length <= 4) {
+                                    team = pName;
+                                }
+                                propType = 'Player Prop';
+                                const pLineNum = mPlayer[2].trim();
+                                let pStat = (mPlayer[3] || '').trim();
+                                if (!pStat) {
+                                    if (tk.includes('GOAL')) pStat = 'Goals';
+                                    else if (tk.includes('SHOT') || tk.includes('SOG')) pStat = 'Shots';
+                                    else if (tk.includes('HR') || tk.includes('HOMERUN')) pStat = 'Home Runs';
+                                    else if (tk.includes('KS') || tk.includes('STRIKEOUT')) pStat = 'Strikeouts';
+                                    else if (tk.includes('TD') || tk.includes('TOUCHDOWN')) pStat = 'Touchdowns';
+                                    else if (tk.includes('PASS')) pStat = 'Pass Yds';
+                                    else if (tk.includes('RUSH')) pStat = 'Rush Yds';
+                                    else if (tk.includes('REC')) pStat = 'Receptions';
+                                    else if (tk.includes('PTS')) pStat = 'Points';
+                                    else if (tk.includes('REB')) pStat = 'Rebounds';
+                                    else if (tk.includes('AST')) pStat = 'Assists';
+                                    else pStat = 'Props';
+                                } else {
+                                    pStat = pStat.charAt(0).toUpperCase() + pStat.slice(1);
+                                }
+                                line = `${pLineNum} ${pStat}`;
+                                strikeDetails = `${pName}: ${line}`;
+                            }
+                        } else if (isPlayerPropSeries) {
+                            propType = 'Player Prop';
+                        }
+
+                        if (!propType) {
+                            if (tk.includes('SPREAD') || tk.includes('RUNLINE')) propType = 'Spread';
+                            else if (tk.includes('TOTAL') || tk.includes('OVER') || tk.includes('UNDER')) propType = 'Total (O/U)';
+                            else propType = 'Moneyline';
+                        }
+
+                        if (!line && t.reason) {
+                            const mLine = t.reason.match(/\[([^\]]+)\]\s*([^|]+)/);
+                            if (mLine && mLine[2]) line = mLine[2].trim();
+                        }
+                        if (!line && propType === 'Moneyline') {
+                            line = 'Moneyline';
+                        }
+
+                        // Enrich line if it's missing the stat unit (e.g. just "1+" or "2+")
+                        if (propType === 'Player Prop' && line && /^\d+\+?$/.test(line.trim())) {
+                            let statUnit = 'Goals';
+                            if (tk.includes('SHOT') || tk.includes('SOG')) statUnit = 'Shots';
+                            else if (tk.includes('HR')) statUnit = 'Home Runs';
+                            else if (tk.includes('KS') || tk.includes('STRIKEOUT')) statUnit = 'Strikeouts';
+                            else if (tk.includes('TD')) statUnit = 'Touchdowns';
+                            else if (tk.includes('PTS')) statUnit = 'Points';
+                            line = `${line.trim()} ${statUnit}`;
+                        }
+
+                        const iconMap = {
+                            'NFL': '🏈',
+                            'NCAAF': '🏈',
+                            'MLB': '⚾',
+                            'NBA': '🏀',
+                            'NCAAB': '🏀',
+                            'WNBA': '🏀',
+                            'NHL': '🏒',
+                            'NPB': '⚾',
+                            'KBO': '⚾',
+                            'NPB/KBO': '⚾',
+                            'NPB_KBO': '⚾',
+                            'SOC': '⚽',
+                            'SOCCER': '⚽',
+                            'UFC': '🥊',
+                            'MMA': '🥊',
+                            'TEN': '🎾',
+                            'TENNIS': '🎾'
+                        };
+                        const icon = iconMap[sport] || '🏆';
+
+                        return {
+                            sport: sport,
+                            team: team,
+                            icon: icon,
+                            propType: propType,
+                            line: line,
+                            spreadAmount: spreadAmount,
+                            overUnderAmount: overUnderAmount,
+                            strikeDetails: strikeDetails
+                        };
+                    };
+                    const __isSportTrade = window.__isSportTrade;
+                    const __getSportInfo = window.__getSportInfo;
+                    window.renderTradesContainer = function(statsObj) {
+                        const sTrades = statsObj || window.lastDashboardStats || {};
+                        const __inSports = window.currentUniverse === 'SPORTS';
+                        const __inInvestments = window.currentUniverse === 'INVESTMENTS';
+                        const isInvFn = window.__isInvestmentTrade || (() => false);
+                        const activeMode = String(sTrades.trading_mode || currentMode || 'PAPER').toUpperCase();
+                        let universeFiltered = (sTrades.recent_trades || [])
+                            .filter(t => String(t.mode || 'PAPER').toUpperCase() === activeMode)
+                            .filter(t => {
+                                if (__inInvestments) return isInvFn(t);
+                                if (__inSports) return window.__isSportTrade(t) && !isInvFn(t);
+                                return !window.__isSportTrade(t) && !isInvFn(t);
+                            });
+                        const recent = universeFiltered.slice(0, 15);
+                        const tradesKey = JSON.stringify(recent.map(t => [t.id, t.status, t.live_pnl, t.pnl_dollars, t.pnl, t.side, t.exit_reason])) + '_' + (__inSports ? 'S' : 'F') + '_' + activeMode;
+                        if (window._lastTradesContainerKey === tradesKey) return;
+                        window._lastTradesContainerKey = tradesKey;
+                        if (recent.length === 0) {
                         container.innerHTML = '<div class="text-center py-6 text-[10px] text-gray-500 font-mono bg-[#131b2c] rounded-xl border border-kalshi-border">No recent trades found</div>';
                     } else {
                         let htmlString = '';
@@ -1795,11 +2426,13 @@
                             const pnlStr = pnlVal > 0 ? "+$" + pnlVal.toFixed(2) : (pnlVal < 0 ? "-$" + Math.abs(pnlVal).toFixed(2) : "$0.00");
 
                             if (t.status === 'OPEN') {
+                                const isSportTrade = window.__isSportTrade(t);
+                                const addBtn = isSportTrade ? '' : `<button onclick="event.stopPropagation(); executeManualTrade('${t.side}', '${t.asset || ''}')" class="px-1.5 py-0.5 bg-blue-600/25 text-blue-400 hover:bg-blue-600/40 rounded text-[8px] font-bold border border-blue-500/40 transition-all flex items-center gap-0.5 cursor-pointer"><span>&#10133;</span> ADD</button>`;
                                 if (pnlVal > 0) {
                                     statusBadge = `
                                         <div class="flex items-center gap-1">
                                             <span class="text-[9px] font-bold text-yellow-400 animate-pulse">OPEN</span>
-                                            <button onclick="event.stopPropagation(); executeManualTrade('${t.side}', '${t.asset || ''}')" class="px-1.5 py-0.5 bg-blue-600/25 text-blue-400 hover:bg-blue-600/40 rounded text-[8px] font-bold border border-blue-500/40 transition-all flex items-center gap-0.5 cursor-pointer"><span>&#10133;</span> ADD</button>
+                                            ${addBtn}
                                             <button onclick="event.stopPropagation(); takeProfitTrade('${t.id}')" class="px-1.5 py-0.5 bg-emerald-600/25 text-emerald-400 hover:bg-emerald-600/40 rounded text-[8px] font-bold border border-emerald-500/40 transition-all flex items-center gap-0.5 cursor-pointer"><span>💰</span> TAKE PROFIT</button>
                                             <button onclick="event.stopPropagation(); closeTrade('${t.id}')" class="px-1.5 py-0.5 bg-red-600/20 text-red-500 hover:bg-red-600/30 rounded text-[8px] font-bold border border-red-500/30 transition-colors cursor-pointer">CLOSE</button>
                                         </div>
@@ -1808,7 +2441,7 @@
                                     statusBadge = `
                                         <div class="flex items-center gap-1">
                                             <span class="text-[9px] font-bold text-yellow-400 animate-pulse">OPEN</span>
-                                            <button onclick="event.stopPropagation(); executeManualTrade('${t.side}', '${t.asset || ''}')" class="px-1.5 py-0.5 bg-blue-600/25 text-blue-400 hover:bg-blue-600/40 rounded text-[8px] font-bold border border-blue-500/40 transition-all flex items-center gap-0.5 cursor-pointer"><span>&#10133;</span> ADD</button>
+                                            ${addBtn}
                                             <button onclick="event.stopPropagation(); closeTrade('${t.id}')" class="px-1.5 py-0.5 bg-red-600/20 text-red-500 hover:bg-red-600/30 rounded text-[8px] font-bold border border-red-500/30 transition-colors cursor-pointer">CLOSE</button>
                                         </div>
                                     `;
@@ -1842,6 +2475,7 @@
                                 badges.push('<span class="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase bg-amber-500/15 text-amber-300 border border-amber-500/35">MANUAL</span>');
                             } else {
                                 let styleStr = (t.trading_style && t.trading_style !== "REVERSAL") ? String(t.trading_style).replace(/_/g, ' ') : "🤖 AUTO";
+                                if (styleStr.includes("GEMINI")) styleStr = "🧠 GEMINI REASONING";
                                 if (styleStr.includes("SECOND ENTRY") || styleStr.includes("THIRD ENTRY") || styleStr.includes("STOP LOSS REENTRY") || styleStr.includes("REENTRY")) {
                                     styleStr = "🤖 AUTO";
                                 }
@@ -1937,108 +2571,199 @@
                             const hasValidStrike = (t.strike !== null && t.strike !== undefined && t.strike !== '' && !isNaN(rawStrikeNum) && isFinite(rawStrikeNum) && rawStrikeNum > 0);
                             const formattedStrike = hasValidStrike ? ('$' + rawStrikeNum.toLocaleString(undefined, {maximumFractionDigits: 0})) : '---';
 
+                            // ── Compact trade card ───────────────────────────────────────────
+                            // One line for what was bought, one for where/when, one for the money.
+                            // (Replaces the old 5-row card: the badges repeated the same source three
+                            // times, "OUT 0c" showed on open trades, and the breakdown banner duplicated
+                            // the tap target.) Tapping the card still opens the full details modal.
+                            const rxEsc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                            const rxTk = String(t.ticker || '').toUpperCase();
+                            const rxIsSport = window.__isSportTrade(t);
+                            let rxTitle = '', rxMeta = '';
+                            if (rxIsSport) {
+                                const isComboTrade = (t.combo_id || String(t.trading_style || '').toUpperCase() === 'SPORTS_COMBO' || rxTk.includes('KXMVECROSSCATEGORY') || String(t.sport || '').toUpperCase() === 'MULTIVARIATE_COMBO');
+                                const si = window.__getSportInfo(t) || {};
+                                let seg = '';
+                                if (/KXNHL1P/.test(rxTk)) seg = '1st Period';
+                                else if (/KXNHL2P/.test(rxTk)) seg = '2nd Period';
+                                else if (/KXNHL3P/.test(rxTk)) seg = '3rd Period';
+                                else if (/KXMLBF5/.test(rxTk)) seg = 'First 5 Inn';
+                                const pt = seg || si.propType || 'Moneyline';
+                                const team = si.team || '';
+                                if (isComboTrade) {
+                                    rxTitle = t.predicted_team || t.team || 'Mega Parlay Combo';
+                                    rxMeta = '⚡ COMBO · ' + (t.line || (t.prop_type || 'Kalshi Multivariate Parlay'));
+                                } else if (pt === 'Player Prop') rxTitle = team + (si.line ? ' · ' + si.line : '');
+                                else if (pt === 'Spread') rxTitle = team + ' ' + (si.spreadAmount || (si.line && si.line !== 'Spread' ? si.line : 'spread'));
+                                else if (/total|o\/u/i.test(pt)) rxTitle = si.strikeDetails || (si.overUnderAmount ? 'O/U ' + si.overUnderAmount : si.line) || team;
+                                else if (seg) rxTitle = team + ' wins ' + seg.toLowerCase();
+                                else rxTitle = team + ' to win';
+                                if (!isComboTrade) {
+                                    const schedLabel = (window.__gameInfoLabel && typeof window.__gameInfoLabel === 'function') ? window.__gameInfoLabel(t) : '';
+                                    rxMeta = (si.icon || '🏟️') + ' ' + (si.sport || 'SPORTS') + ' · ' + (/total|o\/u/i.test(pt) ? 'Total' : pt) + (schedLabel ? ' · ' + schedLabel : '');
+                                }
+                            } else {
+                                let a = String(t.asset || '').toUpperCase();
+                                if (!a || a === 'NONE') {
+                                    a = ['BTC', 'ETH', 'GOLD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NDQ', 'SOL', 'DOGE'].find(x => rxTk.includes(x)) || 'BTC';
+                                }
+                                const icons = { BTC: '₿', ETH: 'Ξ', GOLD: '🪙', NDQ: '📈', SOL: '🚀', DOGE: '🐕' };
+                                rxTitle = a + (hasValidStrike ? ' · strike ' + formattedStrike : '');
+                                rxMeta = (icons[a] || '💵') + ' ' + a + (t.trading_style && !isManual ? ' · ' + String(t.trading_style).replace(/_/g, ' ').toLowerCase() : '');
+                            }
+
+                            const rxIsOpen = String(t.status || '').toUpperCase() === 'OPEN';
+                            const rxQty = Number(t.count || t.size || 0) || 0;
+                            const rxFmtCents = (val) => {
+                                if (val == null || val === '' || !isFinite(parseFloat(val))) return null;
+                                const c = parseFloat(val) * 100;
+                                return (Math.abs(c - Math.round(c)) > 0.04) ? c.toFixed(1) : String(Math.round(c));
+                            };
+                            const rxIn = t.entry_price != null ? rxFmtCents(t.entry_price) : null;
+                            const rxOutRaw = rxIsOpen ? (t.current_bid ?? t.current_price ?? t.cur_price) : t.exit_price;
+                            const rxOut = (rxOutRaw != null && rxOutRaw !== '' && isFinite(parseFloat(rxOutRaw)) && (!rxIsOpen || parseFloat(rxOutRaw) > 0)) ? rxFmtCents(rxOutRaw) : null;
+                            const rxCost = (t.entry_price != null && isFinite(parseFloat(t.entry_price))) ? (rxQty * parseFloat(t.entry_price)) : null;
+                            let rxPos = rxQty ? rxQty + ' × ' + (rxIn != null ? rxIn + '¢' : '--') : (rxIn != null ? rxIn + '¢' : '');
+                            if (rxCost != null) rxPos += ' = $' + rxCost.toFixed(2);
+                            if (rxOut != null) rxPos += rxIsOpen ? ' · now ' + rxOut + '¢' : ' → ' + rxOut + '¢';
+                            if (t.mve_leg_stats && t.mve_leg_stats.legs_total) {
+                                const ls = t.mve_leg_stats;
+                                rxPos += ` · ${ls.legs_won || 0}/${ls.legs_total} won`;
+                            }
+
+                            let rxConf = '';
+                            const mConf = String(t.reason || '').match(/Conf:\s*([\d.]+)%/i);
+                            if (mConf) rxConf = Math.round(parseFloat(mConf[1])) + '% conf';
+                            else if (t.confidence != null) rxConf = Math.round(t.confidence) + '% conf';
+
+                            const rxTags = [];
+                            rxTags.push(mode === 'LIVE' ? '<span class="rx-tag rx-live">LIVE</span>' : '<span class="rx-tag rx-paper">PAPER</span>');
+                            rxTags.push(isManual ? '<span class="rx-tag rx-manual">MANUAL</span>' : '<span class="rx-tag">AUTO</span>');
+                            if (t.combo_id || String(t.trading_style || '').toUpperCase() === 'SPORTS_COMBO') rxTags.push('<span class="rx-tag bg-cyan-500/20 text-cyan-300 border border-cyan-500/35">COMBO</span>');
+                            if (rxConf) rxTags.push('<span class="rx-tag">' + rxConf + '</span>');
+                            if (isReversal) rxTags.push('<span class="rx-tag rx-warn">REVERSAL</span>');
+                            if (exitReason && !['KALSHI_POSITION_RECONCILED', 'AI_SIGNAL', 'SETTLEMENT', 'MANUAL'].includes(exitReason) && !/AI_COPY|REVERSAL|SECOND_ENTRY|THIRD_ENTRY|STOP_LOSS_REENTRY/.test(exitReason)) {
+                                rxTags.push('<span class="rx-tag rx-warn">' + rxEsc(exitReason.replace(/_/g, ' ')) + '</span>');
+                            }
+                            if (resultBadge) rxTags.push(resultBadge.replace(/class="[^"]*"/, 'class="rx-tag ' + (resultBadge.includes('CORRECT') ? 'rx-win' : 'rx-loss') + '"'));
+
+                            let rxState = '', rxActions = '';
+                            if (rxIsOpen) {
+                                rxState = '<span class="rx-state rx-open">OPEN</span>';
+                                if (!rxIsSport) rxActions += `<button type="button" class="rx-act" onclick="event.stopPropagation(); executeManualTrade('${t.side}', '${t.asset || ''}')">+ Add</button>`;
+                                if (pnlVal > 0) rxActions += `<button type="button" class="rx-act rx-act-tp" onclick="event.stopPropagation(); takeProfitTrade('${t.id}')">TP</button>`;
+                                rxActions += `<button type="button" class="rx-act rx-act-close" onclick="event.stopPropagation(); closeTrade('${t.id}')">Close</button>`;
+                            } else if (isWin) rxState = '<span class="rx-state rx-win">WIN</span>';
+                            else if (isLoss) rxState = '<span class="rx-state rx-loss">LOSS</span>';
+                            else rxState = '<span class="rx-state">CLOSED</span>';
+                            const rxWhen = entryTime + (!rxIsOpen && exitTime && exitTime !== '--' ? ' → ' + exitTime : '');
+                            const rxEdgeCls = rxIsOpen ? 'rx-b-open' : isWin ? 'rx-b-win' : isLoss ? 'rx-b-loss' : 'rx-b-closed';
+
                             htmlString += `
-                                <div onclick="openTradeDetailsModal('${tradeKey}')" class="bg-[#131b2c] hover:bg-[#152033] cursor-pointer rounded-xl shadow-sm border border-kalshi-border ${borderClass} hover:border-kalshi-blue/60 transition-all flex flex-col mb-2 overflow-hidden group active:scale-[0.99]" title="Click to view AI breakdown & full trade details">
-                                    <!-- Asset Type Detection -->
-                                    ${(() => {
-                                        let assetType = String(t.asset || '').toUpperCase();
-                                        if (!assetType || assetType === 'NONE') {
-                                            const tk = String(t.ticker || '').toUpperCase();
-                                            if (tk.includes('BTC')) assetType = 'BTC';
-                                            else if (tk.includes('ETH')) assetType = 'ETH';
-                                            else if (tk.includes('GOLD')) assetType = 'GOLD';
-                                            else if (tk.includes('EURUSD')) assetType = 'EURUSD';
-                                            else if (tk.includes('GBPUSD')) assetType = 'GBPUSD';
-                                            else if (tk.includes('USDJPY')) assetType = 'USDJPY';
-                                            else if (tk.includes('AUDUSD')) assetType = 'AUDUSD';
-                                            else if (tk.includes('NDQ')) assetType = 'NDQ';
-                                            else if (tk.includes('SOL')) assetType = 'SOL';
-                                            else if (tk.includes('DOGE')) assetType = 'DOGE';
-                                            else assetType = 'BTC';
-                                        }
-                                        let assetBadgeClass = 'bg-slate-500/20 text-slate-300 border-slate-500/40';
-                                        let assetIcon = '';
-                                        if (assetType === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40'; assetIcon = '₿ '; }
-                                        else if (assetType === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; assetIcon = 'Ξ '; }
-                                        else if (assetType === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; assetIcon = '🪙 '; }
-                                            else if (assetType === 'EURUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                                            else if (assetType === 'GBPUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                                            else if (assetType === 'USDJPY') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                                            else if (assetType === 'AUDUSD') { assetBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'; assetIcon = '💵 '; }
-                                            else if (assetType === 'NDQ') { assetBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40'; assetIcon = '📈 '; }
-                                            else if (assetType === 'SOL') { assetBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40'; assetIcon = '🚀 '; }
-                                            else if (assetType === 'DOGE') { assetBadgeClass = 'bg-orange-500/20 text-orange-300 border-orange-500/40'; assetIcon = '🐕 '; }
-                                        window._currentAssetBadge = `<span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border ${assetBadgeClass}">${assetIcon}${assetType}</span>`;
-                                        return '';
-                                    })()}
-                                    <!-- Row 1: Direction + Asset + Strike + PnL -->
-                                    <div class="flex justify-between items-center px-3 pt-2.5 pb-1.5">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[13px] font-black tracking-wider ${dirColor}">${dir}</span>
-                                            ${window._currentAssetBadge || ''}
-                                            <span class="text-[11px] font-bold text-gray-400">Strike <span class="text-white">${formattedStrike}</span></span>
-                                            ${resultBadge}
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[12px] font-black tabular-nums ${pnlColor}">${pnlStr}</span>
-                                            ${statusBadge}
-                                        </div>
+                                <div onclick="openTradeDetailsModal('${tradeKey}')" class="rx-card ${rxEdgeCls}" title="Tap for full trade details">
+                                    <div class="rx-row">
+                                        <span class="rx-side ${dir === 'YES' ? 'rx-yes' : 'rx-no'}">${rxEsc(dir || '—')}</span>
+                                        <span class="rx-title">${rxEsc(rxTitle)}</span>
+                                        <span class="rx-pnl ${pnlColor}">${pnlStr}</span>
                                     </div>
-
-                                    <!-- Row 2: Entry/Exit prices + Size Spent -->
-                                    <div class="flex items-center gap-3 px-3 pb-1.5 text-[10px] text-gray-400 font-mono">
-                                        <span>IN <span class="text-white font-bold">${entryPct}</span></span>
-                                        <span class="text-gray-600">→</span>
-                                        <span>OUT <span class="text-white font-bold">${exitPct}</span></span>
-                                        <span class="ml-auto bg-black/40 px-1.5 py-0.5 rounded border border-kalshi-border text-[9px] font-bold uppercase tracking-widest text-gray-300">Size <span class="text-white">$${(t.count * (t.entry_price || 0)).toFixed(2)}</span></span>
+                                    <div class="rx-row rx-sub">
+                                        <span class="rx-meta">${rxEsc(rxMeta)}</span>
+                                        <span class="rx-when">${rxEsc(rxWhen)}</span>
+                                        ${rxActions ? `<span class="rx-acts">${rxActions}</span>` : rxState}
                                     </div>
-
-                                    <!-- Row 3: Times -->
-                                    <div class="flex items-center gap-3 px-3 pb-1.5 text-[9px] text-gray-500 font-mono">
-                                        <span>&#9656; ${entryTime}</span>
-                                        <span class="text-gray-600">→</span>
-                                        <span>&#9632; ${exitTime}</span>
-                                        <span class="ml-auto text-gray-600">${t.ticker ? t.ticker.split('-').slice(-2).join('-') : ''}</span>
-                                    </div>
-
-                                    <!-- Row 4: Badges -->
-                                    <div class="flex flex-wrap gap-1 px-3 pb-2">
-                                        ${uniqueBadges.join(' ')}
-                                    </div>
-
-                                    <!-- Row 5: Sleek Click Breakdown Banner -->
-                                    <div class="flex items-center justify-between px-3 py-1.5 bg-black/25 border-t border-white/5 text-[9px] text-gray-400 font-mono group-hover:text-gray-300">
-                                        <span class="flex items-center gap-1.5">
-                                            <span class="text-[10px]">🔍</span> Tap for AI/ML breakdown
-                                        </span>
-                                        <span class="text-kalshi-blue font-bold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">Details →</span>
+                                    <div class="rx-row rx-sub">
+                                        <span class="rx-pos">${rxEsc(rxPos)}</span>
+                                        <span class="rx-tags">${rxTags.join('')}</span>
+                                        <span class="rx-go">›</span>
                                     </div>
                                 </div>
                             `;
                         });
                         container.innerHTML = htmlString;
+                        if (window.__fetchGameInfo && typeof window.__fetchGameInfo === 'function') {
+                            window.__fetchGameInfo(recent.filter(x => window.__isSportTrade && window.__isSportTrade(x)).map(x => x.ticker));
+                        }
                     }
+                };
+                
+                
+                window.renderTradesContainer(s);
                 if (typeof updateActivePositionHud === 'function') updateActivePositionHud(s);
+                if (initialLoad) initialLoad = false;
             } catch (err) {
                 console.error("loadDashboard error:", err);
+            } finally {
+                _loadDashboardInFlight = false;
             }
         }
 
         let chartInitialized = false;
-        async function init() {
-            if (!window.isTabActive) return;
+        let lwChart, candleSeries, lineSeries, volumeSeries;
+        let lastBidTs = 0;
+        let isChartInitializing = false;
+        // Poll Gemini Live Dossier for active asset
+        async function updateGeminiLiveDossier() {
             try {
-                // Retry chart init until it succeeds
-                if (!chartInitialized && document.getElementById('lw-chart-container') && !document.querySelector('#lw-chart-container canvas')) {
-                    await initChart();
-                    if (document.querySelector('#lw-chart-container canvas')) {
-                        chartInitialized = true;
+                const asset = window.currentAsset || 'BTC';
+                const res = await fetch(`/api/engine/${asset}/gemini/live-dossier`);
+                if (!res.ok) return;
+                const data = await res.json();
+                const card = document.getElementById('gemini-live-dossier-card');
+                if (!card) return;
+                if (window.currentTradingUniverse === 'INVESTMENTS' || window.currentTradingUniverse === 'SPORTS') {
+                    card.style.display = 'none';
+                    return;
+                } else {
+                    card.style.display = 'block';
+                }
+                if (data && data.has_decision) {
+                    const dirEl = document.getElementById('gemini-dossier-dir-badge');
+                    const confEl = document.getElementById('gemini-dossier-conf-badge');
+                    const reasonEl = document.getElementById('gemini-dossier-reason');
+                    const modelEl = document.getElementById('gemini-dossier-model');
+                    const dir = String(data.direction || 'PASS').toUpperCase();
+                    if (dirEl) {
+                        dirEl.textContent = dir;
+                        dirEl.className = dir === 'YES' ? 'text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : (dir === 'NO' ? 'text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40');
+                    }
+                    if (confEl && data.confidence) confEl.textContent = `${Math.round(data.confidence)}% Conviction`;
+                    if (reasonEl && data.reason) reasonEl.textContent = data.reason;
+                    if (modelEl && data.model) modelEl.textContent = String(data.model).toUpperCase();
+                    const updatedEl = document.getElementById('gemini-dossier-updated');
+                    if (updatedEl && data.timestamp) {
+                        const secAgo = Math.max(0, Math.round(Date.now() / 1000 - data.timestamp));
+                        updatedEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span> Evaluated ${secAgo}s ago`;
                     }
                 }
-                if(typeof loadConfig === 'function') await loadConfig();
-                if(typeof loadDashboard === 'function') await loadDashboard();
-                if(typeof updateTimerBidsVisibility === 'function') updateTimerBidsVisibility();
-                if(typeof checkUpdateAnnouncement === 'function') checkUpdateAnnouncement();
+            } catch(e) {
+                // non-blocking
+            }
+        }
+        setInterval(updateGeminiLiveDossier, 10000);
+        setTimeout(updateGeminiLiveDossier, 2500);
+
+        function init() {
+            try {
+                // Non-blocking background chart initialization
+                if (!chartInitialized && document.getElementById('lw-chart-container') && !document.querySelector('#lw-chart-container canvas')) {
+                    initChart().then(() => {
+                        if (document.querySelector('#lw-chart-container canvas')) {
+                            chartInitialized = true;
+                        }
+                    }).catch(e => console.warn('[Chart] initChart non-blocking error:', e));
+                }
+
+                // Data fetching runs without waiting on chart
+                if (window.isTabActive) {
+                    const now = Date.now();
+                    if (!window._lastConfigLoadTs || (now - window._lastConfigLoadTs) > 10000) {
+                        window._lastConfigLoadTs = now;
+                        if (typeof loadConfig === 'function') loadConfig().catch(e => console.warn('[Config] error:', e));
+                    }
+                    if (typeof loadDashboard === 'function') loadDashboard().catch(e => console.warn('[Dashboard] error:', e));
+                    if (typeof updateTimerBidsVisibility === 'function') updateTimerBidsVisibility();
+                    if (typeof checkUpdateAnnouncement === 'function') checkUpdateAnnouncement();
+                }
             } catch(e) { console.error("Init error:", e); }
         }
         
@@ -2052,14 +2777,34 @@
             if (toggle3) toggle3.checked = showPanel;
             
             const panel = document.getElementById('trade-execution-panel');
-            if (panel) panel.style.display = showPanel ? 'block' : 'none';
+            if (panel) {
+                if (window.currentUniverse === 'INVESTMENTS' || window.currentUniverse === 'SPORTS') {
+                    panel.style.display = 'none';
+                } else {
+                    panel.style.display = showPanel ? 'block' : 'none';
+                }
+            }
             if (typeof updateTimerBidsVisibility === 'function') updateTimerBidsVisibility();
             if (typeof updatePositionScannerCloseButton === 'function') updatePositionScannerCloseButton();
         }
 
         // Apply immediately and on lifecycle events
         applyTradePanelPreference();
-        document.addEventListener('DOMContentLoaded', applyTradePanelPreference);
+        
+        // Immediate and unconditional initial dashboard data fetch
+        if (typeof loadDashboard === 'function') {
+            loadDashboard(true).catch(e => console.warn('[Init] loadDashboard(true) error:', e));
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                init();
+                applyTradePanelPreference();
+            });
+        } else {
+            init();
+        }
+
         window.addEventListener('load', () => {
             init();
             applyTradePanelPreference();
@@ -2074,10 +2819,6 @@
         
     
         // ── Real BTC 15m Chart + Live Kalshi Bids ──
-        let lwChart, candleSeries, lineSeries, volumeSeries;
-        let lastBidTs = 0;
-
-        let isChartInitializing = false;
         async function initChart() {
             if (chartInitialized || isChartInitializing) return;
             isChartInitializing = true;
@@ -2141,6 +2882,10 @@
                     color:'#0052ff40',
                 });
                 lwChart.priceScale('vol').applyOptions({ scaleMargins:{ top:0.85, bottom:0 } });
+                window.lwChart = lwChart;
+                window.candleSeries = candleSeries;
+                window.lineSeries = lineSeries;
+                window.volumeSeries = volumeSeries;
 
                 await fetchChartData();
                 hideChartLoader();
@@ -2158,8 +2903,7 @@
                 if (!window.chartIntervalsRegistered) {
                     window.chartIntervalsRegistered = true;
                     setInterval(fetchChartData, 15000);
-                    setInterval(fetchLiveBids, 800);
-                    setInterval(loadDashboard, 1000);
+                    if (typeof scheduleNextLiveBids === 'function') scheduleNextLiveBids(BASE_LIVE_BIDS_INTERVAL_MS);
                 }
                 chartInitialized = true;
             } catch(err) {
@@ -2347,7 +3091,7 @@
             }
         }
 
-        window.currentUniverse = 'FINANCIAL';
+        window.currentUniverse = localStorage.getItem('preferred_universe') || null;
         
         window.toggleUniverseDropdown = function(e) {
             e.stopPropagation();
@@ -2375,12 +3119,206 @@
             }
         });
 
+        window.updateNavLivePnl = function(statsObj) {
+            const s = statsObj || window.lastDashboardStats || {};
+            const __inSports = window.currentUniverse === 'SPORTS';
+            const __inInvestments = window.currentUniverse === 'INVESTMENTS';
+            const activeMode = String(s.trading_mode || currentMode || 'PAPER').toUpperCase();
+            const isSportTradeFn = window.__isSportTrade || (() => false);
+            const isInvTradeFn = window.__isInvestmentTrade || (() => false);
+            let openTrades = (s.recent_trades || [])
+                .filter(t => String(t.status || '').toUpperCase() === 'OPEN')
+                .filter(t => String(t.mode || 'PAPER').toUpperCase() === activeMode)
+                .filter(t => {
+                    if (__inInvestments) return isInvTradeFn(t);
+                    if (__inSports) return isSportTradeFn(t) && !isInvTradeFn(t);
+                    return !isSportTradeFn(t) && !isInvTradeFn(t);
+                });
+
+            if (__inInvestments && Array.isArray(window.cachedInvestmentsPositions) && window.cachedInvestmentsPositions.length > 0) {
+                openTrades = window.cachedInvestmentsPositions;
+            }
+
+            const hasOpenTrades = openTrades.length > 0;
+            const livePnlContainer = document.getElementById('nav-live-pnl-container');
+            const livePnlVal = document.getElementById('nav-live-pnl-val');
+            if (livePnlContainer && livePnlVal) {
+                if (hasOpenTrades) {
+                    livePnlContainer.classList.remove('hidden');
+                    livePnlContainer.classList.add('flex');
+                    let lPnl = openTrades.reduce((acc, t) => {
+                        let p = (t.live_pnl !== undefined && t.live_pnl !== null) ? Number(t.live_pnl) : (t.pnl_dollars !== undefined ? Number(t.pnl_dollars) : 0);
+                        return acc + (isNaN(p) ? 0 : p);
+                    }, 0);
+                    if (isNaN(lPnl)) lPnl = 0;
+                    const isPos = lPnl > -0.005;
+                    livePnlVal.textContent = (isPos ? '+$' : '-$') + Math.abs(lPnl).toFixed(2);
+                    livePnlVal.className = `text-sm sm:text-base font-black tabular-nums leading-none tracking-tight ${isPos ? 'text-emerald-400' : 'text-rose-400'}`;
+                } else {
+                    livePnlContainer.classList.add('hidden');
+                    livePnlContainer.classList.remove('flex');
+                }
+            }
+        };
+
+        window.updateFinancialAssetSelectorVisibility = function() {
+            // When in SPORTS or INVESTMENTS universe, financial asset buttons are hidden by selectUniverse()
+            if (window.currentUniverse === 'SPORTS' || window.currentUniverse === 'INVESTMENTS') return;
+
+            const assetBtnMap = {
+                'BTC': 'btn-asset-btc',
+                'ETH': 'btn-asset-eth',
+                'SOL': 'btn-asset-sol',
+                'DOGE': 'btn-asset-doge'
+            };
+
+            const toggles = document.querySelectorAll('input.asset-toggle');
+            let selectedAssets = [];
+
+            if (toggles && toggles.length > 0) {
+                toggles.forEach(t => {
+                    const v = String(t.value || '').trim().toUpperCase();
+                    if (t.checked && v && !selectedAssets.includes(v)) {
+                        selectedAssets.push(v);
+                    }
+                });
+            }
+
+            // Fallback: if user settings are not yet populated into DOM or nothing checked, check window.lastDashboardStats
+            if (selectedAssets.length === 0 && window.lastDashboardStats && window.lastDashboardStats.target_asset) {
+                selectedAssets = String(window.lastDashboardStats.target_asset).split(',').map(a => a.trim().toUpperCase()).filter(Boolean);
+            }
+
+            // Default safe fallback if user has no assets selected at all
+            if (selectedAssets.length === 0) {
+                selectedAssets = ['BTC'];
+            }
+
+            // Show only enabled asset buttons, hide unselected ones
+            Object.keys(assetBtnMap).forEach(sym => {
+                const btn = document.getElementById(assetBtnMap[sym]);
+                if (!btn) return;
+                const isEnabled = selectedAssets.includes(sym);
+                if (isEnabled) {
+                    btn.style.display = '';
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.style.display = 'none';
+                    btn.classList.add('hidden');
+                }
+            });
+
+            // If the currently viewed asset is now disabled/hidden, auto-switch to the first enabled asset
+            const curAsset = (window.currentAsset || 'BTC').toUpperCase();
+            if (!selectedAssets.includes(curAsset)) {
+                const fallbackAsset = selectedAssets[0] || 'BTC';
+                if (typeof selectDashboardAsset === 'function') {
+                    selectDashboardAsset(fallbackAsset);
+                }
+            }
+        };
+
+        window.updateSportsAssetSelectorVisibility = function() {
+            // When in FINANCIAL or INVESTMENTS universe, sports asset buttons are hidden by selectUniverse()
+            if (window.currentUniverse === 'FINANCIAL' || window.currentUniverse === 'INVESTMENTS') return;
+
+            const sportsBtnMap = {
+                'NFL': 'btn-asset-nfl',
+                'NCAAF': 'btn-asset-ncaaf',
+                'NBA': 'btn-asset-nba',
+                'MLB': 'btn-asset-mlb',
+                'NHL': 'btn-asset-nhl',
+                'NPB/KBO': 'btn-asset-npb-kbo',
+                'SOC': 'btn-asset-soc',
+                'UFC': 'btn-asset-ufc',
+                'TEN': 'btn-asset-ten'
+            };
+
+            const toggles = document.querySelectorAll('input.sports-league-toggle');
+            let selectedLeagues = [];
+
+            if (toggles && toggles.length > 0) {
+                toggles.forEach(t => {
+                    const v = String(t.value || '').trim().toUpperCase();
+                    if (t.checked && v && !selectedLeagues.includes(v)) {
+                        selectedLeagues.push(v);
+                    }
+                });
+            }
+
+            // Fallback: check window.lastDashboardStats if toggles aren't populated yet
+            if (selectedLeagues.length === 0 && window.lastDashboardStats && window.lastDashboardStats.sports_active_leagues) {
+                selectedLeagues = String(window.lastDashboardStats.sports_active_leagues).split(',').map(l => l.trim().toUpperCase()).filter(Boolean);
+            }
+
+            // Fallback: check per-sport config in localStorage if present
+            if (selectedLeagues.length === 0) {
+                try {
+                    const savedCfg = JSON.parse(localStorage.getItem('st_sports_sport_cfg_v1') || '{}');
+                    Object.keys(savedCfg).forEach(k => {
+                        if (savedCfg[k] && savedCfg[k].on) {
+                            const normK = k.toUpperCase();
+                            if (!selectedLeagues.includes(normK)) selectedLeagues.push(normK);
+                        }
+                    });
+                } catch(_) {}
+            }
+
+            // Default safe fallback if user has no sports leagues enabled at all: show all supported sports
+            if (selectedLeagues.length === 0) {
+                selectedLeagues = ['NFL', 'MLB', 'NBA', 'NHL', 'NCAAF', 'NPB/KBO', 'SOC', 'UFC', 'TEN'];
+            }
+
+            // Show only enabled sport buttons, hide disabled ones
+            Object.keys(sportsBtnMap).forEach(league => {
+                const btn = document.getElementById(sportsBtnMap[league]);
+                if (!btn) return;
+                const isEnabled = selectedLeagues.includes(league) ||
+                    ((league === 'NPB/KBO' || league === 'NPB' || league === 'KBO') && (selectedLeagues.includes('NPB/KBO') || selectedLeagues.includes('NPB') || selectedLeagues.includes('KBO'))) ||
+                    ((league === 'SOC' || league === 'SOCCER') && (selectedLeagues.includes('SOC') || selectedLeagues.includes('SOCCER'))) ||
+                    ((league === 'TEN' || league === 'TENNIS') && (selectedLeagues.includes('TEN') || selectedLeagues.includes('TENNIS'))) ||
+                    ((league === 'UFC' || league === 'MMA') && (selectedLeagues.includes('UFC') || selectedLeagues.includes('MMA')));
+
+                if (isEnabled) {
+                    btn.style.display = 'inline-flex';
+                    btn.classList.remove('hidden');
+                } else {
+                    btn.style.display = 'none';
+                    btn.classList.add('hidden');
+                }
+            });
+
+            // If the currently filtered sport is now disabled/hidden, auto-switch to 'ALL' or first enabled sport
+            const curFilter = String(window.sportsFilter || 'ALL').toUpperCase();
+            if (curFilter !== 'ALL') {
+                const isCurEnabled = selectedLeagues.some(l => {
+                    if (curFilter === l) return true;
+                    if ((curFilter === 'NPB/KBO' || curFilter === 'NPB' || curFilter === 'KBO') && (l === 'NPB/KBO' || l === 'NPB' || l === 'KBO')) return true;
+                    if ((curFilter === 'SOC' || curFilter === 'SOCCER') && (l === 'SOC' || l === 'SOCCER')) return true;
+                    if ((curFilter === 'TEN' || curFilter === 'TENNIS') && (l === 'TEN' || l === 'TENNIS')) return true;
+                    if ((curFilter === 'UFC' || curFilter === 'MMA') && (l === 'UFC' || l === 'MMA')) return true;
+                    return false;
+                });
+                if (!isCurEnabled) {
+                    if (typeof filterSportsEvents === 'function') {
+                        filterSportsEvents('ALL');
+                    }
+                }
+            }
+        };
+
         window.selectUniverse = function(universe) {
             window.currentUniverse = universe;
+            try { localStorage.setItem('preferred_universe', universe); } catch(_) {}
             document.body.classList.toggle('universe-sports', universe === 'SPORTS');
+            document.body.classList.toggle('universe-investments', universe === 'INVESTMENTS');
             const label = document.getElementById('market-universe-label');
-            if (label) label.innerText = universe === 'SPORTS' ? 'SPORTS' : 'MARKETS';
-            
+            if (label) {
+                if (universe === 'SPORTS') label.innerText = 'SPORTS';
+                else if (universe === 'INVESTMENTS') label.innerText = 'INVESTMENTS';
+                else label.innerText = 'CRYPTO';
+            }
+
             const dd = document.getElementById('universe-dropdown');
             if (dd) {
                 dd.classList.add('opacity-0', 'scale-95');
@@ -2389,69 +3327,300 @@
                 }, 200);
             }
             
-            const finAssets = document.querySelectorAll('#btn-asset-btc, #btn-asset-eth, #btn-asset-gold');
-            const moreAssetsWrapper = document.getElementById('btn-asset-more') ? document.getElementById('btn-asset-more').parentElement : null;
+            const finAssets = document.querySelectorAll('.asset-btn');
             const sportsAssets = document.querySelectorAll('.asset-btn-sports');
-            
-            const fAs = document.getElementById('finance-asset-settings');
-            const fRs = document.getElementById('finance-risk-settings');
-            const sRs = document.getElementById('sports-risk-settings');
+            const invAssets = document.querySelectorAll('.asset-btn-investments');
 
-            if(universe === 'SPORTS') {
-                finAssets.forEach(el => { el.style.display = 'none'; });
-                if (moreAssetsWrapper) moreAssetsWrapper.style.display = 'none';
-                sportsAssets.forEach(el => { el.style.display = 'inline-block'; el.classList.remove('hidden'); });
-                
-                if(fAs) fAs.classList.add('hidden');
-                if(fRs) fRs.classList.add('hidden');
-                if(sRs) sRs.classList.remove('hidden');
+            const lw = document.getElementById('lw-chart-container');
+            const sbt = document.getElementById('stats-bar-target');
+            const spl = document.getElementById('sports-event-list');
+            const invView = document.getElementById('investments-universe-view');
+            const slip = document.getElementById('sports-trade-slip-panel');
+            const chartLoader = document.getElementById('chart-loader');
+            const tradeExecPanel = document.getElementById('trade-execution-panel');
+            const activeHud = document.getElementById('activePositionHud');
+            const recentExecPanel = document.getElementById('recent-executions-panel');
+            const invTicketPanel = document.getElementById('investments-order-ticket-panel');
+            const invLedgerPanel = document.getElementById('investments-ledger-panel');
 
-                document.getElementById('lw-chart-container').style.display = 'none';
-                document.getElementById('stats-bar-target').style.display = 'none';
-                document.getElementById('sports-event-list').style.display = 'block';
-                document.getElementById('sports-event-list').classList.remove('hidden');
+            if (universe === 'INVESTMENTS') {
+                finAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                sportsAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                invAssets.forEach(el => { el.style.display = 'inline-flex'; el.classList.remove('hidden'); });
+
+                if (lw) lw.style.display = 'none';
+                if (sbt) sbt.style.display = 'none';
+                if (chartLoader) chartLoader.style.display = 'none';
+                if (spl) { spl.style.display = 'none'; spl.classList.add('hidden'); }
+                if (slip) { slip.classList.add('hidden'); slip.classList.remove('flex'); }
+                if (tradeExecPanel) { tradeExecPanel.style.display = 'none'; }
+                if (activeHud) { activeHud.style.display = 'none'; activeHud.classList.add('hidden'); }
+                if (recentExecPanel) { recentExecPanel.style.display = 'none'; recentExecPanel.classList.add('hidden'); }
+
+                if (invView) { invView.style.display = 'block'; invView.classList.remove('hidden'); }
+                if (invTicketPanel) { invTicketPanel.style.display = 'flex'; invTicketPanel.classList.remove('hidden'); invTicketPanel.classList.add('flex'); }
+                if (invLedgerPanel) { invLedgerPanel.style.display = 'flex'; invLedgerPanel.classList.remove('hidden'); invLedgerPanel.classList.add('flex'); }
+
+                if (typeof fetchInvestmentsFeed === 'function') {
+                    fetchInvestmentsFeed();
+                }
+                if (typeof initInvestmentsTapeWebSocket === 'function') {
+                    initInvestmentsTapeWebSocket();
+                }
+            } else if (universe === 'SPORTS') {
+                invAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                finAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
+                if (typeof window.updateSportsAssetSelectorVisibility === 'function') {
+                    window.updateSportsAssetSelectorVisibility();
+                } else {
+                    sportsAssets.forEach(el => { el.style.display = 'inline-flex'; el.classList.remove('hidden'); });
+                }
+
+                if (lw) lw.style.display = 'none';
+                if (sbt) sbt.style.display = 'none';
+                if (chartLoader) chartLoader.style.display = 'none';
+                if (invView) { invView.style.display = 'none'; invView.classList.add('hidden'); }
+                if (invTicketPanel) { invTicketPanel.style.display = 'none'; invTicketPanel.classList.add('hidden'); invTicketPanel.classList.remove('flex'); }
+                if (invLedgerPanel) { invLedgerPanel.style.display = 'none'; invLedgerPanel.classList.add('hidden'); invLedgerPanel.classList.remove('flex'); }
+                if (tradeExecPanel) { tradeExecPanel.style.display = 'none'; }
+                if (activeHud) { activeHud.style.display = ''; activeHud.classList.remove('hidden'); }
+                if (recentExecPanel) { recentExecPanel.style.display = ''; recentExecPanel.classList.remove('hidden'); }
+                if (spl) { spl.style.display = 'block'; spl.classList.remove('hidden'); }
                 
+                if (typeof renderTradeSlip === 'function') renderTradeSlip();
+
+                // Cache-first rendering: Render sports events immediately from cache to eliminate blanking/pulse loader
+                if (window.__sportsEventsCache && window.__sportsEventsCache.length > 0 && typeof renderSportsEvents === 'function') {
+                    renderSportsEvents();
+                }
+
                 if (window.activeSportsEventMarket) {
                     const found = Array.from(sportsAssets).find(b => b.innerText.includes(window.activeSportsEventMarket));
-                    if(found) found.click();
-                    else filterSportsEvents('NFL');
+                    if (found) found.click();
+                    else filterSportsEvents(window.sportsFilter || 'ALL');
                 } else {
-                    filterSportsEvents('NFL');
+                    filterSportsEvents(window.sportsFilter || 'ALL');
                 }
             } else {
-                finAssets.forEach(el => { el.style.display = ''; el.classList.remove('hidden'); });
-                if (moreAssetsWrapper) moreAssetsWrapper.style.display = '';
+                invAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
                 sportsAssets.forEach(el => { el.style.display = 'none'; el.classList.add('hidden'); });
-                
-                if(fAs) fAs.classList.remove('hidden');
-                if(fRs) fRs.classList.remove('hidden');
-                if(sRs) sRs.classList.add('hidden');
+                if (typeof window.updateFinancialAssetSelectorVisibility === 'function') {
+                    window.updateFinancialAssetSelectorVisibility();
+                } else {
+                    finAssets.forEach(el => { el.style.display = ''; el.classList.remove('hidden'); });
+                }
 
-                document.getElementById('lw-chart-container').style.display = 'block';
-                document.getElementById('stats-bar-target').style.display = 'flex';
-                document.getElementById('sports-event-list').style.display = 'none';
-                document.getElementById('sports-event-list').classList.add('hidden');
+                if (invView) { invView.style.display = 'none'; invView.classList.add('hidden'); }
+                if (invTicketPanel) { invTicketPanel.style.display = 'none'; invTicketPanel.classList.add('hidden'); invTicketPanel.classList.remove('flex'); }
+                if (invLedgerPanel) { invLedgerPanel.style.display = 'none'; invLedgerPanel.classList.add('hidden'); invLedgerPanel.classList.remove('flex'); }
+                if (spl) { spl.style.display = 'none'; spl.classList.add('hidden'); }
+                if (slip) { slip.classList.add('hidden'); slip.classList.remove('flex'); }
+                if (activeHud) { activeHud.style.display = ''; activeHud.classList.remove('hidden'); }
+                if (recentExecPanel) { recentExecPanel.style.display = ''; recentExecPanel.classList.remove('hidden'); }
+                if (typeof applyTradePanelPreference === 'function') applyTradePanelPreference();
 
-                const found = Array.from(finAssets).find(b => b.innerText.includes(window.activeAsset));
-                if(found) found.click();
-                else if (typeof selectDashboardAsset === 'function') selectDashboardAsset('BTC');
+                if (lw) lw.style.display = 'block';
+                if (sbt) sbt.style.display = 'flex';
+
+                // Immediate resize & fitContent in requestAnimationFrame to eliminate canvas dimensions collapse
+                requestAnimationFrame(() => {
+                    const chart = lwChart || window.lwChart;
+                    if (chart && lw) {
+                        const w = lw.clientWidth || lw.offsetWidth;
+                        const h = lw.clientHeight || lw.offsetHeight;
+                        if (w > 0 && h > 0) {
+                            try { chart.applyOptions({ width: w, height: h }); } catch(_) {}
+                        }
+                        try {
+                            if (chart.timeScale) chart.timeScale().fitContent();
+                        } catch(_) {}
+                    }
+                });
+
+                const activeTarget = window.currentAsset || 'BTC';
+                if (typeof selectDashboardAsset === 'function') {
+                    selectDashboardAsset(activeTarget, true);
+                }
+            }
+
+            if (window.lastDashboardStats) {
+                if (typeof window.renderTradesContainer === 'function') window.renderTradesContainer(window.lastDashboardStats);
+                if (typeof updateActivePositionHud === 'function') updateActivePositionHud(window.lastDashboardStats);
+                if (typeof window.updateNavLivePnl === 'function') window.updateNavLivePnl(window.lastDashboardStats);
+            }
+            // Tab switching is decoupled: purely client-side view selection, no implicit backend mutation
+        };
+
+        window.configuredTradingUniverse = 'CRYPTO';
+
+        // Synchronize on/off universe toggle checkboxes across all settings drawers
+        window.syncUniverseToggles = function(activeUniverses) {
+            const hasCrypto = activeUniverses.has('CRYPTO') || activeUniverses.has('FINANCIAL');
+            const hasSports = activeUniverses.has('SPORTS');
+            const hasInv = activeUniverses.has('INVESTMENTS');
+
+            document.querySelectorAll('#univ-toggle-crypto, #sports-univ-toggle-crypto, #inv-univ-toggle-crypto').forEach(el => { el.checked = hasCrypto; });
+            document.querySelectorAll('#univ-toggle-sports, #sports-univ-toggle-sports, #inv-univ-toggle-sports').forEach(el => { el.checked = hasSports; });
+            document.querySelectorAll('#univ-toggle-investments, #sports-univ-toggle-investments, #inv-univ-toggle-investments').forEach(el => { el.checked = hasInv; });
+
+            const badges = document.querySelectorAll('#auto-universe-label-badge, #sports-auto-universe-label-badge, #inv-auto-universe-label-badge');
+            badges.forEach(badge => {
+                const count = (hasCrypto ? 1 : 0) + (hasSports ? 1 : 0) + (hasInv ? 1 : 0);
+                if (count === 3) {
+                    badge.innerText = 'ALL UNIVERSES';
+                    badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30';
+                } else if (count === 2) {
+                    if (hasCrypto && hasSports) {
+                        badge.innerText = 'CRYPTO + SPORTS';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30';
+                    } else if (hasCrypto && hasInv) {
+                        badge.innerText = 'CRYPTO + STOCKS';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/30';
+                    } else {
+                        badge.innerText = 'SPORTS + STOCKS';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-teal-500/15 text-teal-300 border border-teal-500/30';
+                    }
+                } else if (count === 1) {
+                    if (hasCrypto) {
+                        badge.innerText = 'CRYPTO';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-cyan-500/15 text-cyan-400 border border-cyan-500/30';
+                    } else if (hasSports) {
+                        badge.innerText = 'SPORTS';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30';
+                    } else {
+                        badge.innerText = 'INVESTMENTS';
+                        badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+                    }
+                } else {
+                    badge.innerText = 'NONE ACTIVE';
+                    badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 border border-red-500/30';
+                }
+            });
+        };
+
+        window.setAutoTradingUniverse = function(univ, skipSave = false) {
+            const raw = String(univ || 'CRYPTO').toUpperCase().trim();
+            const activeSet = new Set();
+            if (raw === 'ALL' || raw === 'BOTH') {
+                if (raw === 'BOTH') {
+                    activeSet.add('CRYPTO');
+                    activeSet.add('SPORTS');
+                } else {
+                    activeSet.add('CRYPTO');
+                    activeSet.add('SPORTS');
+                    activeSet.add('INVESTMENTS');
+                }
+            } else if (raw.includes(',')) {
+                raw.split(',').forEach(p => {
+                    const clean = p.trim().toUpperCase();
+                    if (clean === 'FINANCIAL' || clean === 'CRYPTO') activeSet.add('CRYPTO');
+                    else if (clean === 'SPORTS') activeSet.add('SPORTS');
+                    else if (clean === 'INVESTMENTS') activeSet.add('INVESTMENTS');
+                });
+            } else {
+                if (raw === 'FINANCIAL' || raw === 'CRYPTO' || raw === 'CRYPTO/FOREX' || raw === 'CRYPTO_FOREX') {
+                    activeSet.add('CRYPTO');
+                } else if (raw === 'SPORTS') {
+                    activeSet.add('SPORTS');
+                } else if (raw === 'INVESTMENTS') {
+                    activeSet.add('INVESTMENTS');
+                }
+            }
+
+            // Fallback: at least one universe active if empty
+            if (activeSet.size === 0) activeSet.add('CRYPTO');
+
+            window.configuredTradingUniverse = activeSet.has('INVESTMENTS') && activeSet.has('SPORTS') && activeSet.has('CRYPTO') ? 'ALL'
+                : (activeSet.has('CRYPTO') && activeSet.has('SPORTS') ? 'BOTH'
+                : (activeSet.has('SPORTS') ? 'SPORTS' : (activeSet.has('INVESTMENTS') ? 'INVESTMENTS' : 'CRYPTO')));
+
+            window.syncUniverseToggles(activeSet);
+
+            if (!skipSave && typeof saveConfig === 'function') {
+                saveConfig();
+            }
+        };
+
+        window.onUniverseToggleChange = function(univType, isChecked) {
+            const cryptoToggle = document.getElementById('univ-toggle-crypto') || document.getElementById('sports-univ-toggle-crypto') || document.getElementById('inv-univ-toggle-crypto');
+            const sportsToggle = document.getElementById('univ-toggle-sports') || document.getElementById('sports-univ-toggle-sports') || document.getElementById('inv-univ-toggle-sports');
+            const invToggle = document.getElementById('univ-toggle-investments') || document.getElementById('sports-univ-toggle-investments') || document.getElementById('inv-univ-toggle-investments');
+
+            let hasCrypto = cryptoToggle ? cryptoToggle.checked : true;
+            let hasSports = sportsToggle ? sportsToggle.checked : false;
+            let hasInv = invToggle ? invToggle.checked : false;
+
+            if (univType === 'crypto') hasCrypto = isChecked;
+            if (univType === 'sports') hasSports = isChecked;
+            if (univType === 'investments') hasInv = isChecked;
+
+            // Ensure at least one universe remains on
+            if (!hasCrypto && !hasSports && !hasInv) {
+                if (univType === 'crypto') hasCrypto = true;
+                else if (univType === 'sports') hasSports = true;
+                else hasInv = true;
+                if (typeof showToast === 'function') {
+                    showToast("At least one trading universe must remain active", "warning");
+                }
+            }
+
+            const activeSet = new Set();
+            if (hasCrypto) activeSet.add('CRYPTO');
+            if (hasSports) activeSet.add('SPORTS');
+            if (hasInv) activeSet.add('INVESTMENTS');
+
+            let newUniv = 'FINANCIAL';
+            if (hasCrypto && hasSports && hasInv) {
+                newUniv = 'ALL';
+            } else if (hasCrypto && hasSports) {
+                newUniv = 'BOTH';
+            } else if (hasCrypto && hasInv) {
+                newUniv = 'FINANCIAL,INVESTMENTS';
+            } else if (hasSports && hasInv) {
+                newUniv = 'SPORTS,INVESTMENTS';
+            } else if (hasSports) {
+                newUniv = 'SPORTS';
+            } else if (hasInv) {
+                newUniv = 'INVESTMENTS';
+            } else {
+                newUniv = 'FINANCIAL';
+            }
+
+            window.configuredTradingUniverse = newUniv;
+            window.syncUniverseToggles(activeSet);
+
+            if (typeof saveConfig === 'function') {
+                saveConfig();
             }
         };
 
         const SPORT_ICONS = {
             'NFL': '🏈',
+            'FOOTBALL': '🏈',
+            'NCAAF': '🏈',
             'MLB': '⚾',
+            'BASEBALL': '⚾',
+            'NBA': '🏀',
+            'NCAAB': '🏀',
+            'WNBA': '🏀',
             'NHL': '🏒',
+            'HOCKEY': '🏒',
             'NPB': '⚾',
             'KBO': '⚾',
             'NPB/KBO': '⚾',
             'NPB_KBO': '⚾',
             'SOC': '⚽',
             'SOCCER': '⚽',
+            'EPL': '⚽',
+            'MLS': '⚽',
+            'UEFA': '⚽',
+            'WC': '⚽',
             'UFC': '🥊',
             'MMA': '🥊',
             'TEN': '🎾',
-            'TENNIS': '🎾'
+            'TENNIS': '🎾',
+            'ATP': '🎾',
+            'WTA': '🎾'
         };
 
         window.filterSportsEvents = function(sport) {
@@ -2483,38 +3652,162 @@
         };
 
         function isSportMatch(evt, f) {
+            if (!evt || typeof evt !== 'object') return false;
             if (!f || f === 'ALL') return true;
             const filterNorm = f.toUpperCase();
             const eSport = String(evt.sport || '').toUpperCase();
             const eLeague = String(evt.league || evt.metadata?.league || '').toUpperCase();
             const eSeries = String(evt.series_ticker || evt.metadata?.series_ticker || '').toUpperCase();
+            const eTicker = String(evt.event_ticker || evt.ticker || evt.metadata?.event_ticker || evt.metadata?.market_ticker || '').toUpperCase();
 
             if (filterNorm === 'NPB/KBO' || filterNorm === 'NPB_KBO' || filterNorm === 'NPB-KBO' || filterNorm === 'NPB' || filterNorm === 'KBO') {
                 return eSport.includes('NPB') || eSport.includes('KBO') ||
                        eLeague.includes('NPB') || eLeague.includes('KBO') ||
-                       eSeries.includes('NPB') || eSeries.includes('KBO');
+                       eSeries.includes('NPB') || eSeries.includes('KBO') ||
+                       /^KX(NPB|KBO)/.test(eTicker);
             }
             if (filterNorm === 'SOC' || filterNorm === 'SOCCER') {
-                return eSport === 'SOC' || eSport === 'SOCCER' || eLeague === 'SOC' || eSeries.includes('EPL') || eSeries.includes('MLS') || eSeries.includes('UEFA') || eSeries.includes('WC');
+                return eSport === 'SOC' || eSport === 'SOCCER' || eSport === 'EPL' || eSport === 'MLS' ||
+                       eLeague === 'SOC' || eLeague === 'SOCCER' || eLeague === 'EPL' || eLeague === 'MLS' || eLeague === 'UEFA' || eLeague === 'WC' ||
+                       eSeries.includes('EPL') || eSeries.includes('MLS') || eSeries.includes('UEFA') || eSeries.includes('UCL') || eSeries.includes('UEL') || eSeries.includes('UECL') || eSeries.includes('WC') || eSeries.includes('SOC') ||
+                       /^KX(EPL|MLS|UEFA|UCL|UEL|UECL|WC|SOC|LALIGA|SERIEA|BUNDES|LIGUE|LIGA|EFL|USL|CONMEBOL|ARG|DIMAYOR|BRAS|ERED|SAUDI|SCOT)/.test(eTicker);
             }
             if (filterNorm === 'TEN' || filterNorm === 'TENNIS') {
-                return eSport === 'TEN' || eSport === 'TENNIS' || eLeague === 'TEN' || eSeries.includes('ATP') || eSeries.includes('WTA');
+                return eSport === 'TEN' || eSport === 'TENNIS' || eSport === 'ATP' || eSport === 'WTA' ||
+                       eLeague === 'TEN' || eLeague === 'TENNIS' || eLeague === 'ATP' || eLeague === 'WTA' ||
+                       eSeries.includes('ATP') || eSeries.includes('WTA') || eSeries.includes('TEN') ||
+                       /^KX(ATP|WTA|TEN)/.test(eTicker);
             }
             if (filterNorm === 'UFC' || filterNorm === 'MMA') {
-                return eSport === 'UFC' || eSport === 'MMA' || eLeague === 'UFC' || eSeries.includes('UFC');
+                return eSport === 'UFC' || eSport === 'MMA' ||
+                       eLeague === 'UFC' || eLeague === 'MMA' ||
+                       eSeries.includes('UFC') || eSeries.includes('MMA') ||
+                       /^KXUFC/.test(eTicker);
             }
-            return eSport === filterNorm || eLeague === filterNorm || eSeries.includes(filterNorm);
+            if (filterNorm === 'MLB' || filterNorm === 'BASEBALL') {
+                return eSport === 'MLB' || eSport === 'BASEBALL' ||
+                       eLeague === 'MLB' || eLeague === 'BASEBALL' ||
+                       eSeries.includes('MLB') || /^KXMLB/.test(eTicker);
+            }
+            if (filterNorm === 'NFL' || filterNorm === 'FOOTBALL') {
+                return eSport === 'NFL' || eSport === 'FOOTBALL' ||
+                       eLeague === 'NFL' || eLeague === 'FOOTBALL' ||
+                       eSeries.includes('NFL') || /^KXNFL/.test(eTicker);
+            }
+            if (filterNorm === 'NBA' || filterNorm === 'BASKETBALL') {
+                return eSport === 'NBA' || eLeague === 'NBA' || /^KXNBA/.test(eSeries) || /^KXNBA/.test(eTicker);
+            }
+            if (filterNorm === 'NCAAF' || filterNorm === 'CFB') {
+                return eSport === 'NCAAF' || eSport === 'CFB' || eLeague === 'NCAAF' || eLeague === 'CFB' ||
+                       /^KXNCAAF/.test(eSeries) || /^KXNCAAF/.test(eTicker);
+            }
+            if (filterNorm === 'NHL' || filterNorm === 'HOCKEY') {
+                return eSport === 'NHL' || eSport === 'HOCKEY' ||
+                       eLeague === 'NHL' || eLeague === 'HOCKEY' ||
+                       eSeries.includes('NHL') || /^KXNHL/.test(eTicker);
+            }
+            return eSport === filterNorm || eLeague === filterNorm || eSeries.includes(filterNorm) || eTicker.includes(filterNorm);
         }
 
         window.__sportsLoading = false;
         window.__sportsReqId = 0;
+
+        
+        
+        
+        function expandMatchupNames(str, sport) {
+            if (!str || typeof str !== 'string') return str;
+            var sp = String(sport || '').toUpperCase();
+            var map = {
+                // MLB
+                "ARI": "Arizona Diamondbacks", "ATL": "Atlanta Braves", "BAL": "Baltimore Orioles", "BOS": "Boston Red Sox",
+                "CHC": "Chicago Cubs", "CWS": "Chicago White Sox", "CHW": "Chicago White Sox", "CIN": "Cincinnati Reds",
+                "CLE": "Cleveland Guardians", "COL": (sp === "NHL") ? "Colorado Avalanche" : "Colorado Rockies",
+                "DET": "Detroit Tigers", "HOU": "Houston Astros", "KC": "Kansas City Royals", "KCR": "Kansas City Royals",
+                "LAA": "Los Angeles Angels", "LAD": "Los Angeles Dodgers", "MIA": "Miami Marlins", "MIL": "Milwaukee Brewers",
+                "MIN": "Minnesota Twins", "NYM": "New York Mets", "NYY": "New York Yankees", "OAK": "Oakland Athletics",
+                "PHI": "Philadelphia Phillies", "PIT": "Pittsburgh Pirates", "SD": "San Diego Padres", "SDP": "San Diego Padres",
+                "SF": "San Francisco Giants", "SFG": "San Francisco Giants", "SEA": "Seattle Mariners", "STL": "St. Louis Cardinals",
+                "TB": "Tampa Bay Rays", "TBR": "Tampa Bay Rays", "TEX": "Texas Rangers", "TOR": "Toronto Blue Jays",
+                "WSH": "Washington Nationals", "WAS": "Washington Nationals",
+                // NFL
+                "BUF": "Buffalo Bills", "CAR": "Carolina Panthers", "CHI": "Chicago Bears", "DAL": "Dallas Cowboys",
+                "DEN": "Denver Broncos", "GB": "Green Bay Packers", "GBP": "Green Bay Packers", "IND": "Indianapolis Colts",
+                "JAC": "Jacksonville Jaguars", "JAX": "Jacksonville Jaguars", "LV": "Las Vegas Raiders", "LVR": "Las Vegas Raiders",
+                "LAC": "Los Angeles Chargers", "LAR": "Los Angeles Rams", "NE": "New England Patriots", "NEP": "New England Patriots",
+                "NO": "New Orleans Saints", "NOS": "New Orleans Saints", "NYG": "New York Giants", "NYJ": "New York Jets",
+                "TEN": "Tennessee Titans",
+                // NBA
+                "BKN": "Brooklyn Nets", "CHA": "Charlotte Hornets", "GSW": "Golden State Warriors", "MEM": "Memphis Grizzlies",
+                "NOP": "New Orleans Pelicans", "OKC": "Oklahoma City Thunder", "ORL": "Orlando Magic", "PHX": "Phoenix Suns",
+                "POR": "Portland Trail Blazers", "SAC": "Sacramento Kings", "SAS": "San Antonio Spurs", "UTA": "Utah Jazz",
+                // NHL
+                "ANA": "Anaheim Ducks", "CGY": "Calgary Flames", "CBJ": "Columbus Blue Jackets", "EDM": "Edmonton Oilers",
+                "FLA": "Florida Panthers", "LAK": "Los Angeles Kings", "MTL": "Montreal Canadiens", "NSH": "Nashville Predators",
+                "NJD": "New Jersey Devils", "NYI": "New York Islanders", "NYR": "New York Rangers", "OTT": "Ottawa Senators",
+                "SJS": "San Jose Sharks", "TBL": "Tampa Bay Lightning", "VAN": "Vancouver Canucks", "VGK": "Vegas Golden Knights",
+                "WPG": "Winnipeg Jets",
+                // UCL / Soccer
+                "MCI": "Manchester City", "MUN": "Manchester United", "RMA": "Real Madrid", "BAR": "Barcelona", "FCB": "Bayern Munich",
+                "BVB": "Borussia Dortmund", "ATM": "Atletico Madrid", "PSG": "Paris Saint-Germain", "INT": "Inter Milan", "ACM": "AC Milan"
+            };
+            return str.replace(/\b([A-Z]{2,4})\b/g, function(match, code) {
+                return map[code] || match;
+            });
+        }
 
         function renderSportsEvents() {
             const container = document.getElementById('sports-events-container');
             if (!container) return;
             const all = window.__sportsEventsCache || [];
             const f = window.sportsFilter || 'ALL';
-            const list = all.filter(e => isSportMatch(e, f));
+            const includeLive = document.getElementById('sports-include-live-toggle') ? document.getElementById('sports-include-live-toggle').checked : false;
+            const nowSec = Date.now() / 1000;
+            const currentStrat = window.currentSportsStrategy || 'STANDARD';
+
+            const filterEvents = (enforceUserSettings, enforceStrategy, enforceNoLive) => {
+                return all.filter(e => {
+                    if (!isSportMatch(e, f)) return false;
+                    if (e.market_type === 'Futures' || e.prop_type === 'Futures') return false; // Exclude Futures from default list
+                    if (/KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(String(e.event_ticker || e.ticker || '') + ' ' + String(e.title || ''))) return false; // season win totals
+                    if (enforceUserSettings && f === 'ALL' && typeof window.sportsEventAllowed === 'function' && !window.sportsEventAllowed(e)) return false; // Sports & Markets settings
+
+                    // Filter by active sports betting strategy (if specific strategy selected)
+                    if (enforceStrategy && currentStrat !== 'ALL_ACTIVE' && f === 'ALL') {
+                        const eStrat = e.strategy_tag || 'STANDARD';
+                        const eConf = parseFloat(e.confidence_pct || 0);
+                        if (currentStrat === 'POWER_COMBO' || currentStrat === 'ULTRA_COMBO' || currentStrat === 'MEGA_PARLAY') {
+                            if (eStrat !== 'FLOOR_TOTALS' && eStrat !== 'MILESTONE_PROPS' && eConf < 60.0) return false;
+                        } else if (currentStrat === 'FLOOR_TOTALS') {
+                            if (eStrat !== 'FLOOR_TOTALS') return false;
+                        } else if (currentStrat === 'MILESTONE_PROPS') {
+                            if (eStrat !== 'MILESTONE_PROPS') return false;
+                        }
+                    }
+                    // Hide finished games: explicit final status, or started longer ago than the sport's usual length.
+                    {
+                        const st = String(e.status || (e.metadata || {}).status || '').toLowerCase();
+                        if (e.is_final || /^(final|completed|closed|ended|post|finished)/.test(st)) return false;
+                        const se = parseFloat(e.start_epoch) || 0;
+                        if (se > 0) {
+                            const sp = String(e.sport || e.league || '').toUpperCase();
+                            const capH = /TEN|TENNIS/.test(sp) ? 6 : /MLB|NPB|KBO/.test(sp) ? 5.5 : /NFL|NCAAF/.test(sp) ? 4.5 : /NHL|NBA/.test(sp) ? 3.5 : /SOC|EPL|MLS/.test(sp) ? 3.2 : /UFC/.test(sp) ? 9 : 5;
+                            if (nowSec - se > capH * 3600) return false;
+                        }
+                    }
+                    const startEpoch = parseFloat(e.start_epoch) || 0;
+                    const isLive = startEpoch > 0 && startEpoch < nowSec && !/KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(String(e.event_ticker||e.ticker||'')+' '+String(e.title||''));
+                    if (enforceNoLive && isLive && !includeLive) return false;
+                    if ((f === 'SOC' || String(e.sport).toUpperCase() === 'SOCCER') && e.is_today === false && enforceStrategy) return false;
+                    return true;
+                });
+            };
+
+            let list = filterEvents(true, true, true);
+            if (list.length === 0 && all.length > 0) list = filterEvents(true, false, true);
+            if (list.length === 0 && all.length > 0) list = filterEvents(false, false, true);
+            if (list.length === 0 && all.length > 0) list = filterEvents(false, false, false);
+
             const label = f === 'ALL' ? 'any sport' : f;
 
             if (list.length === 0) {
@@ -2525,103 +3818,1111 @@
                 }
                 return;
             }
-            container.innerHTML = '';
-            list.forEach(evt => {
+
+            // ── helpers ──────────────────────────────────────────────────────
+            const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const jsq = (v) => String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+            const GENERIC = new Set(['the', 'and', 'city', 'team', 'club', 'vs', 'game', 'wins', 'win', 'will']);
+            const tokens = (s) => new Set(String(s || '').toLowerCase().match(/[a-z0-9]+/g)?.filter(w => w.length >= 3 && !GENERIC.has(w)) || []);
+            const cents = (m, side) => {
+                if (!m) return null;
+                const d = m[side + '_ask_dollars'];
+                if (d != null && d !== '') { const v = Math.round(parseFloat(d) * 100); return isFinite(v) ? v : null; }
+                const c = m[side + '_ask'];
+                if (c != null && c !== '') {
+                    let v = parseFloat(c);
+                    if (!isFinite(v)) return null;
+                    // The market cache sends dollars (0.37), older feeds sent cents (37).
+                    if (v > 0 && (v < 1 || (/\./.test(String(c)) && v <= 1))) v = v * 100;
+                    return Math.round(v);
+                }
+                return null;
+            };
+            const tradable = (c) => c != null && c > 0 && c < 100;
+            const mktName = (m) => String(m.yes_sub_title || m.subtitle || (m.ticker || '').split('-').pop() || 'YES').replace(/^yes\s*/i, '').trim();
+            const teamMatches = (team, m) => {
+                if (!team || !m) return false;
+                const t = String(team).toLowerCase();
+                const sub = mktName(m).toLowerCase();
+                if (sub && sub.length >= 3 && (t.includes(sub) || sub.includes(t))) return true;
+                const a = tokens(team), b = tokens(sub + ' ' + (m.title || ''));
+                for (const w of a) if (b.has(w)) return true;
+                return false;
+            };
+            // NPB/KBO start time: the Kalshi ticker carries the date and start time in US Eastern
+            // (KXKBOGAME-26OCT100400SSGKIA = Oct 10, 4:00 AM ET), matching Kalshi's milestone start_date.
+            const MON3 = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+            const etWallToEpoch = (y, mo, d, hh, mm) => {
+                const target = Date.UTC(y, mo, d, hh, mm) / 1000;
+                let guess = target + 4 * 3600;
+                try {
+                    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    for (let i = 0; i < 2; i++) {
+                        const parts = fmt.formatToParts(new Date(guess * 1000));
+                        const g = (k) => +((parts.find(p => p.type === k) || {}).value || 0);
+                        const wall = Date.UTC(g('year'), g('month') - 1, g('day'), g('hour') % 24, g('minute')) / 1000;
+                        guess += target - wall;
+                    }
+                } catch (e) { /* keep EDT guess */ }
+                return guess;
+            };
+            // Same format for MLB (KXMLBGAME-26OCT102000CWSCLE = Oct 10, 8:00 PM ET) and its prop series.
+            const asianBaseballStart = (evt) => {
+                const tk = String(evt.event_ticker || evt.ticker || '');
+                const m = /^KX(?:NPB|KBO|MLB)[A-Z0-9]*-(\d{2})([A-Z]{3})(\d{2})(\d{2})(\d{2})(?=[A-Z])/.exec(tk);
+                if (m && MON3[m[2]] != null && +m[4] < 24 && +m[5] < 60) return etWallToEpoch(2000 + (+m[1]), MON3[m[2]], +m[3], +m[4], +m[5]);
+                return 0;
+            };
+            const fmtStartEpoch = (sec, approx) => {
+                const d = new Date(sec * 1000); if (isNaN(d)) return '';
+                const now = new Date();
+                const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+                const t = (approx ? '~' : '') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                return (sameDay ? 'Today' : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })) + ' · ' + t;
+            };
+            // NFL start time: the ticker has the date only (KXNFLGAME-26OCT11CINMIA). Kalshi schedules each
+            // NFL game market to close 48 h after kickoff and to expire 3 h after it, so either gives the
+            // kickoff. Use it only when both agree and the Eastern date matches the ticker's date;
+            // otherwise show just the ticker's date (never a guessed time).
+            const etDateKey = (sec) => {
+                try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(sec * 1000)); } catch (e) { return ''; }
+            };
+            // Kalshi's start-time offsets, checked against its schedule: NFL, NHL and soccer games expire
+            // 3 h and close 48 h after the start; UFC bouts expire 5 h and close 14 days after the bout's
+            // estimated slot (shown with "~", since fight times depend on how earlier bouts go).
+            const kalshiTimeRule = (evt, tk) => {
+                if (/^KX(?:NFL|NHL)[A-Z0-9]*-/.test(tk)) return { exp: 3, close: 48 };
+                if (/^KXUFC[A-Z0-9]*-/.test(tk)) return { exp: 5, close: 336, approx: true };
+                if (/^(SOC|SOCCER|EPL|MLS)$/i.test(String(evt.sport || '')) || /^KX(?:EPL|MLS)GAME-/.test(tk)) return { exp: 3, close: 48 };
+                return null;
+            };
+            // Start epoch from Kalshi's market times (0 if the check fails). Used for the label and the sort.
+            const ruleStartEpoch = (evt) => {
+                const tk = String(evt.event_ticker || evt.ticker || '');
+                const rule = kalshiTimeRule(evt, tk);
+                if (!rule) return 0;
+                const m = /^KX[A-Z0-9]*-(\d{2})([A-Z]{3})(\d{2})(?![0-9])/.exec(tk);
+                if (!m || MON3[m[2]] == null) return 0;
+                const tickerKey = (2000 + (+m[1])) + '-' + String(MON3[m[2]] + 1).padStart(2, '0') + '-' + String(+m[3]).padStart(2, '0');
+                const mk = (evt.markets || []).find(x => x && (x.close_time || x.expected_expiration_time)) || {};
+                const fromClose = mk.close_time ? Date.parse(mk.close_time) / 1000 - rule.close * 3600 : NaN;
+                const fromExp = mk.expected_expiration_time ? Date.parse(mk.expected_expiration_time) / 1000 - rule.exp * 3600 : NaN;
+                return (isFinite(fromClose) && isFinite(fromExp) && Math.abs(fromClose - fromExp) < 60 && etDateKey(fromClose) === tickerKey) ? fromClose : 0;
+            };
+            const nflWhen = (evt) => {
+                const tk = String(evt.event_ticker || evt.ticker || '');
+                const rule = kalshiTimeRule(evt, tk);
+                if (!rule) return '';
+                const m = /^KX[A-Z0-9]*-(\d{2})([A-Z]{3})(\d{2})(?![0-9])/.exec(tk);
+                if (!m || MON3[m[2]] == null) return '';
+                const y = 2000 + (+m[1]), mo = MON3[m[2]], d = +m[3];
+                const tickerKey = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                const dateOnly = new Date(y, mo, d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+                const sec = ruleStartEpoch(evt);
+                return sec > 0 ? fmtStartEpoch(sec, rule.approx) : dateOnly;
+            };
+            // Tennis: Kalshi's market times don't track the order of play, so use the scheduled start
+            // that comes with the AI pick (ESPN), but only if it's within a few days of the ticker date.
+            const tennisWhen = (evt, md) => {
+                const sec = tennisStartEpoch(evt, md);
+                return sec > 0 ? fmtStartEpoch(sec) : '';
+            };
+            const tennisStartEpoch = (evt, md) => {
+                md = md || {};
+                const tk = String(evt.event_ticker || evt.ticker || '');
+                const m = /^KX(?:ATP|WTA)MATCH-(\d{2})([A-Z]{3})(\d{2})/.exec(tk);
+                if (!m || MON3[m[2]] == null) return 0;
+                const tkDay = Date.UTC(2000 + (+m[1]), MON3[m[2]], +m[3]) / 1000;
+
+                // Prefer verified Kalshi start_epoch if available and within window
+                if (evt.start_epoch && isFinite(evt.start_epoch) && evt.start_epoch > 0) {
+                    if (evt.start_epoch >= tkDay - 86400 && evt.start_epoch <= tkDay + 3 * 86400) {
+                        return evt.start_epoch;
+                    }
+                }
+
+                const am = (evt.ai_prediction && evt.ai_prediction.metadata) || {};
+                const raw = String(am.start_label || am.game_time || md.start_label || md.game_time || evt.game_time || '');
+                if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(raw)) return 0;
+                const sec = Date.parse(/Z|[+-]\d{2}:?\d{2}$/.test(raw) ? raw : raw + 'Z') / 1000;
+                if (!isFinite(sec) || sec < tkDay - 86400 || sec > tkDay + 3 * 86400) return 0;
+                return sec;
+            };
+            const fmtWhen = (evt, md, isLive) => {
+                if (isLive) return '<span class="spc-live"><i></i>LIVE</span>';
+                const abStart = asianBaseballStart(evt);
+                if (abStart > 0) return esc(fmtStartEpoch(abStart));
+                const nfl = nflWhen(evt);
+                if (nfl) return esc(nfl);
+                const ten = tennisWhen(evt, md);
+                if (ten) return esc(ten);
+                let when = evt.game_time || md.game_time || md.start_label || evt.start_time || '';
+                when = String(when).replace(/\s*@\s*/, ' · ').trim();
+                if (evt.is_today && when) when = 'Today · ' + when.replace(/^[A-Z][a-z]{2}\s+\d{1,2}\s*·\s*/, '');
+                return esc(when || 'Upcoming');
+            };
+            // Same start label as the card, for the "Market & Prediction Intel" popup.
+            window.__sportsStartLabel = (evt) => {
+                try {
+                    if (!evt) return '';
+                    const ab = asianBaseballStart(evt);
+                    if (ab > 0) return fmtStartEpoch(ab);
+                    return nflWhen(evt) || tennisWhen(evt, evt.metadata || {}) || '';
+                } catch (e) { return ''; }
+            };
+
+            // ── build view models ────────────────────────────────────────────
+            const cards = list.map(evt => {
                 const md = evt.metadata || {};
                 const sport = String(evt.sport || '').toUpperCase();
                 const league = String(evt.league || md.league || sport).toUpperCase();
                 const icon = SPORT_ICONS[sport] || SPORT_ICONS[league] || '🏟️';
-                const name = evt.predicted_team || md.name || md.player_or_team || 'Unknown';
-                const pick = md.line || md.target_desc || evt.market_type || 'Game Winner';
-                
-                let matchup = md.matchup || evt.opponent || '';
-                if (matchup && name !== 'Unknown') {
-                    let parts = matchup.split(/\s*(?:vs\.?|@|v)\s*/i);
-                    if (parts.length === 2) {
-                        if (name.toLowerCase().includes(parts[0].toLowerCase()) || parts[0].toLowerCase().includes(name.toLowerCase())) {
-                            matchup = 'vs ' + parts[1];
-                        } else if (name.toLowerCase().includes(parts[1].toLowerCase()) || parts[1].toLowerCase().includes(name.toLowerCase())) {
-                            matchup = 'vs ' + parts[0];
-                        }
+                const startEpoch = parseFloat(evt.start_epoch) || 0;
+                const isLive = startEpoch > 0 && startEpoch < nowSec && !/KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(String(evt.event_ticker||evt.ticker||'')+' '+String(evt.title||''));
+
+                const rawMatchup = evt.matchup || md.matchup || evt.opponent || md.name || 'Sports Matchup';
+                let matchup = expandMatchupNames(String(rawMatchup).replace(/:\s*(Spread|Total\s*Runs?|Totals?|Game|Moneyline).*$/i, '').trim() || rawMatchup, sport || league);
+
+                let propType = evt.prop_type || md.prop_type || evt.market_type || md.market_type_label || '';
+                if (!propType || /vs/i.test(propType) || propType.length > 20) {
+                    const tk = String(evt.event_ticker || '').toUpperCase();
+                    if (['KXNHLGOAL', 'KXNHLSHOT', 'KXMLBHRR', 'KXMLBHIT', 'KXMLBHR', 'KXMLBKS', 'KXNFLTD', 'PROP', 'GOAL', 'SHOT', 'HRR'].some(k => tk.includes(k))) propType = 'Player Prop';
+                    else if (tk.includes('SPREAD')) propType = 'Spread';
+                    else if (tk.includes('TOTAL')) propType = 'Total (O/U)';
+                    else propType = 'Moneyline';
+                }
+                const markets = Array.isArray(evt.markets) ? evt.markets.filter(m => m && m.ticker) : [];
+                const strike = evt.strike_details || md.strike_details || '';
+
+                // Period / innings / half markets and futures are not game moneylines. The server
+                // used to label them "Moneyline" and attach the full-game AI pick, so a 1st-period
+                // card read "AI: Anaheim 58% to win". Detect them (also from the ticker, so this
+                // works before the server is restarted) and show the game pick only as a lean.
+                const tkU = [evt.event_ticker, evt.ticker, evt.series_ticker, md.series_ticker].map(x => String(x || '').toUpperCase()).join(' ');
+                const segText = [strike, evt.title, evt.sub_title, markets[0] && markets[0].title, markets[0] && markets[0].yes_sub_title].map(x => String(x || '')).join(' ').toLowerCase();
+                let segment = evt.segment || md.segment || '';
+                if (!segment) {
+                    if (/KXNHL1P/.test(tkU) || /\b(1st|first) period\b/.test(segText)) segment = '1st Period';
+                    else if (/KXNHL2P/.test(tkU) || /\b(2nd|second) period\b/.test(segText)) segment = '2nd Period';
+                    else if (/KXNHL3P/.test(tkU) || /\b(3rd|third) period\b/.test(segText)) segment = '3rd Period';
+                    else if (/KXMLBF5/.test(tkU) || /\bfirst (5|five) innings?\b/.test(segText)) segment = 'First 5 Inn';
+                    else if (/\b(1st|first) half\b/.test(segText)) segment = '1st Half';
+                    else if (/\b(2nd|second) half\b/.test(segText)) segment = '2nd Half';
+                    else if (/\b(1st|first) quarter\b/.test(segText)) segment = '1st Quarter';
+                }
+                if (segment && (propType === 'Moneyline' || propType === 'Period')) propType = 'Period';
+                const looksFutures = /(^|\s)(KXNFLWINS|KXWC)(-|\s|$)/.test(tkU) || (propType === 'Moneyline' && markets.length > 3);
+                if (propType === 'Futures' || looksFutures && propType === 'Moneyline') propType = 'Futures';
+                const isPeriod = propType === 'Period';
+                const isFutures = propType === 'Futures';
+
+                const isML = propType === 'Moneyline';
+                const isProp = propType === 'Player Prop';
+                const isSeason = /KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(tkU + ' ' + String(evt.title || ''));
+                const isTotal = /total|o\/u/i.test(propType) && !isSeason;
+                const line = evt.line || md.line || '';
+                const spreadAmount = evt.spread_amount || md.spread_amount || '';
+                const ouAmount = evt.over_under_amount || md.over_under_amount || '';
+
+                let conf = parseFloat(evt.confidence_pct) || 0;
+                const srvEdge = parseFloat(evt.edge_pct) || 0;
+                const rawPick = evt.ai_pick || (evt.has_ai_prediction ? evt.predicted_team : '') || '';
+                const rawHasPick = !!(conf > 0 && rawPick && !/ vs /i.test(rawPick) && rawPick.toLowerCase() !== matchup.toLowerCase()) && !(window.sportsGameLevelPickOnProp && window.sportsGameLevelPickOnProp(evt, null));
+                // A full-game pick on a period / futures card is only a lean, never "the" pick.
+                const leanTeam = evt.ai_lean_team || ((isPeriod || isFutures) && rawHasPick ? rawPick : null);
+                const leanPct = parseFloat(evt.ai_lean_pct) || ((isPeriod || isFutures) && rawHasPick ? conf : 0);
+                const hasPick = rawHasPick && !isPeriod && !isFutures;
+                const pick = hasPick ? rawPick : null;
+                const ticker = evt.ticker || evt.event_ticker || md.name || '';
+                const extra = `{prop_type:'${jsq(propType)}', line:'${jsq(line)}', spread_amount:'${jsq(spreadAmount)}', over_under_amount:'${jsq(ouAmount)}', strike_details:'${jsq(strike)}', sport:'${jsq(sport || league)}', matchup:'${jsq(matchup)}'}`;
+
+                // Buttons. Moneyline: one button per team market, each priced from its own
+                // market (the old card showed the first market's price next to the AI pick,
+                // which was often the other team's price).
+                let buttons = [];
+                let pickPrice = null;
+                if ((isML || isPeriod || isFutures) && markets.length >= 2) {
+                    const shown = isFutures ? [...markets].sort((a, b) => (cents(b, 'yes') || 0) - (cents(a, 'yes') || 0)).slice(0, 3) : markets.slice(0, 3);
+                    shown.forEach(m => {
+                        const name = mktName(m);
+                        const price = cents(m, 'yes');
+                        const isPickSide = hasPick && teamMatches(pick, m);
+                        if (isPickSide && tradable(price)) pickPrice = price;
+                        buttons.push({
+                            cls: isPickSide ? 'spc-btn spc-btn-pick' : 'spc-btn',
+                            k: name, p: tradable(price) ? price + '¢' : '—',
+                            onclick: `addPredictionToSlip('${jsq(ticker)}', '${jsq(name)} (YES)', '${isPickSide ? conf.toFixed(1) : 'N/A'}', '${isPickSide && pickPrice != null ? (conf - pickPrice).toFixed(1) : 'N/A'}', 'YES', ${extra})`
+                        });
+                    });
+                } else {
+                    // Binary market (spread, total, prop, or a moneyline with one market).
+                    const m0 = markets[0] || null;
+                    const yesC = m0 ? cents(m0, 'yes') : (evt.yes_ask != null ? Math.round(evt.yes_ask * 100) : null);
+                    let noC = m0 ? cents(m0, 'no') : (evt.no_ask != null ? Math.round(evt.no_ask * 100) : null);
+                    if (noC == null && yesC != null) noC = 100 - yesC;
+                    const parts = matchup.split(/\s+(?:vs\.?|@|v)\s+/i).map(s => s.trim()).filter(Boolean);
+                    const yesTeam = m0 ? mktName(m0) : (pick || parts[0] || 'YES');
+                    let yesSub = yesTeam, noSub = 'Not ' + yesTeam;
+                    if (propType === 'Spread' && spreadAmount) yesSub = spreadAmount;
+                    if (isTotal && ouAmount) { yesSub = 'Over ' + ouAmount; noSub = 'Under ' + ouAmount; }
+                    if (isSeason) { const wm = segText.match(/\d+\+\s*wins?/i); yesSub = wm ? wm[0] : 'Yes'; noSub = 'Fewer'; }
+                    if (propType === 'Spread') noSub = '';
+                    if (isProp) { yesSub = line || 'Yes'; noSub = ''; }
+                    if (isML && hasPick && m0) pickPrice = teamMatches(pick, m0) ? yesC : noC;
+                    const yesLabel = (isProp ? (pick || yesTeam) : (isTotal && ouAmount ? `${matchup} — Over ${ouAmount}` : yesTeam)) + ' (YES)';
+                    const noLabel = (isProp ? (pick || yesTeam) : (isTotal && ouAmount ? `${matchup} — Under ${ouAmount}` : yesTeam)) + ' (NO)';
+                    const btnTicker = (isTotal && m0 && m0.ticker) ? m0.ticker : ticker;
+                    buttons.push({
+                        cls: 'spc-btn spc-btn-yes', k: 'YES', p: tradable(yesC) ? yesC + '¢' : '—',
+                        onclick: `addPredictionToSlip('${jsq(btnTicker)}', '${jsq(yesLabel)}', '${hasPick ? conf.toFixed(1) : 'N/A'}', '${hasPick ? srvEdge.toFixed(1) : 'N/A'}', 'YES', ${extra})`
+                    });
+                    buttons.push({
+                        cls: 'spc-btn spc-btn-no', k: 'NO', p: tradable(noC) ? noC + '¢' : '—',
+                        onclick: `addPredictionToSlip('${jsq(btnTicker)}', '${jsq(noLabel)}', 'N/A', 'N/A', 'NO', ${extra})`
+                    });
+                }
+
+                // AI line. Edge is model probability minus the price you would pay, so it is
+                // only shown where the price belongs to the picked side (moneyline).
+                let edgeVal = null;
+                if (hasPick && isML && pickPrice != null) edgeVal = conf - pickPrice;
+
+                // Extract Master Capper conviction evaluation & H2H indicators
+                const capperObj = (evt.ai_prediction && evt.ai_prediction.metadata && evt.ai_prediction.metadata.capper)
+                    || (evt.ai_prediction && evt.ai_prediction.capper)
+                    || (evt.metadata && evt.metadata.capper)
+                    || evt.capper;
+                const cGrade = (capperObj && capperObj.grade) || evt.capper_grade || '';
+                const cStars = (capperObj && capperObj.stars) || evt.capper_stars || '';
+                const cTier = (capperObj && capperObj.tier_label) || evt.capper_tier || '';
+                const cNetEv = (capperObj && capperObj.net_ev_pct != null) ? capperObj.net_ev_pct : evt.net_ev_pct;
+
+                // Editorial Consensus & Tactical Intelligence badge
+                const edConsensus = evt.editorial_consensus || (evt.metadata && evt.metadata.editorial_consensus) || (evt.ai_prediction && evt.ai_prediction.metadata && evt.ai_prediction.metadata.editorial_consensus) || (evt.tactical_intel && evt.tactical_intel.alignment);
+                const edSource = evt.editorial_source || (evt.metadata && evt.metadata.editorial_source) || (evt.tactical_intel && evt.tactical_intel.source) || 'Editorial';
+                let consensusBadge = '';
+                if (edConsensus === 'AGREES') {
+                    consensusBadge = `<span class="spc-tag spc-tag-sharp" style="background:rgba(16,185,129,0.18);border-color:rgba(16,185,129,0.4);color:#34d399;" title="${esc(edSource)} editorial analysis agrees with AI model pick">🟢 ${esc(edSource.replace(' Match Preview','').replace(' / PFF',''))}: Agrees</span>`;
+                } else if (edConsensus === 'DIVERGES') {
+                    consensusBadge = `<span class="spc-tag spc-tag-lean" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.4);color:#fbbf24;" title="${esc(edSource)} editorial analysis diverges from AI model pick">🟠 ${esc(edSource.replace(' Match Preview','').replace(' / PFF',''))}: Diverges</span>`;
+                } else if (edConsensus === 'CONFIRMED_DATA') {
+                    consensusBadge = `<span class="spc-tag spc-tag-edge" style="background:rgba(59,130,246,0.18);border-color:rgba(59,130,246,0.4);color:#60a5fa;" title="Verified tactical intel & starting lineup/goalie data active">🛡️ Intel Active</span>`;
+                }
+
+                let capperBadge = '';
+                if (cGrade) {
+                    const cCls = cGrade === 'A+' ? 'spc-tag-lock' : cGrade === 'A' ? 'spc-tag-sharp' : 'spc-tag-edge';
+                    capperBadge = `<span class="spc-tag spc-tag-capper ${cCls}" title="Master Capper Grade: ${esc(cGrade)} ${esc(cStars)} (${esc(cTier)})">${esc(cGrade)} ${esc(cStars)}</span>`;
+                }
+                const h2hNote = (capperObj && Array.isArray(capperObj.capper_notes)) ? capperObj.capper_notes.find(n => /h2h|series|rivalry|head-to-head/i.test(n)) : null;
+                const h2hBadge = h2hNote ? `<span class="spc-tag spc-tag-h2h" title="${esc(h2hNote)}">⚔️ H2H</span>` : '';
+                const netEvHtml = (cNetEv != null && cNetEv > 0)
+                    ? `<span class="spc-edge spc-edge-ev" title="Net Expected Value after Kalshi fees">+${Number(cNetEv).toFixed(1)}% EV</span>`
+                    : '';
+
+                let stratBadge = '';
+                const evtStrat = evt.strategy_tag || '';
+                if (evtStrat === 'FLOOR_TOTALS') {
+                    stratBadge = `<span class="spc-tag" style="background:rgba(16,185,129,0.2);border-color:rgba(16,185,129,0.4);color:#34d399;" title="Floor Anchor Alternate Total (~87% historical hit rate)">🔥 Floor Anchor</span>`;
+                } else if (evtStrat === 'MILESTONE_PROPS') {
+                    stratBadge = `<span class="spc-tag" style="background:rgba(6,182,212,0.2);border-color:rgba(6,182,212,0.4);color:#22d3ee;" title="Milestone Contact Prop (~75% historical hit rate)">🎯 Milestone</span>`;
+                }
+
+                let ai;
+                if (isPeriod || isFutures || (!hasPick && leanTeam)) {
+                    const what = isFutures ? 'futures' : isPeriod ? String(segment || 'period').toLowerCase() : isTotal ? 'totals' : String(propType).toLowerCase();
+                    ai = leanTeam
+                        ? `<span class="spc-tag spc-tag-lean" title="The AI predicts full games only. This is its full-game pick, not a ${esc(what)} prediction.">GAME LEAN</span>${stratBadge}${consensusBadge}${capperBadge}${h2hBadge}<span class="spc-ai-pick">${esc(leanTeam)}</span><span class="spc-ai-num">${leanPct.toFixed(0)}% full game</span>${netEvHtml}<span class="spc-ai-go">›</span>`
+                        : `<span class="spc-ai-none">No AI model for ${esc(what)} markets</span><span class="spc-ai-go">Analyze ⚡</span>`;
+                } else if (!hasPick) {
+                    ai = `<span class="spc-ai-none">${isProp ? 'No AI model for player props yet' : 'No AI pick yet'}</span><span class="spc-ai-go">Analyze ⚡</span>`;
+                } else if (isProp) {
+                    ai = `<span class="spc-tag spc-tag-est" title="Not a model prediction: based on the market price">EST</span>${stratBadge}${consensusBadge}${capperBadge}<span class="spc-ai-pick">${esc(pick)}</span><span class="spc-ai-num">${conf.toFixed(0)}%</span>${netEvHtml}<span class="spc-ai-go">›</span>`;
+                } else if (isML) {
+                    const edgeHtml = edgeVal == null ? ''
+                        : edgeVal >= 0.5 ? `<span class="spc-edge spc-edge-pos">+${edgeVal.toFixed(0)} edge</span>`
+                        : `<span class="spc-edge spc-edge-neg">${edgeVal.toFixed(0)} edge</span>`;
+                    ai = `<span class="spc-tag">AI</span>${stratBadge}${consensusBadge}${capperBadge}${h2hBadge}<span class="spc-ai-pick">${esc(pick)}</span><span class="spc-ai-num ${conf >= 65 ? 'spc-hi' : ''}">${conf.toFixed(0)}% to win</span>${edgeHtml}${netEvHtml}<span class="spc-ai-go">›</span>`;
+                } else {
+                    // Spread / total cards are matched to the game's moneyline pick; the % is a
+                    // win probability, not the chance this spread or total hits.
+                    ai = `<span class="spc-tag spc-tag-lean">AI LEAN</span>${stratBadge}${consensusBadge}${capperBadge}${h2hBadge}<span class="spc-ai-pick">${esc(pick)}</span><span class="spc-ai-num">${conf.toFixed(0)}% to win</span>${netEvHtml}<span class="spc-ai-go">›</span>`;
+                }
+
+                // Detail line under the matchup (prop / spread / total specifics).
+                // Multi-market cards (moneyline / period winner) show every side as a button, so the
+                // first market's text ("Anaheim wins the 1st period") would only describe one side
+                // and read like a pick. Show it only on single-market cards.
+                let detail = '';
+                const multiSide = (isML || isPeriod || isFutures) && markets.length >= 2;
+                if (!isML && !multiSide && strike && strike.toLowerCase() !== matchup.toLowerCase()) {
+                    detail = strike;
+                }
+
+                const typeCls = (isPeriod || isFutures || isSeason) ? 'spc-type-period' : isProp ? 'spc-type-prop' : propType === 'Spread' ? 'spc-type-spread' : isTotal ? 'spc-type-total' : 'spc-type-ml';
+                const typeLabel = isSeason ? 'Season' : isPeriod ? (segment || 'Period') : isTotal ? 'Total' : propType;
+                const linePill = (!isSeason && line && line !== 'Moneyline' && line !== propType && line !== segment && line !== 'Futures' && !detail.includes(line)) ? `<span class="spc-line">${esc(line)}</span>` : '';
+
+                // Rank: when Floor/Combo/Mega Parlay strategy is active, prioritize Floor Anchor Totals & Milestone Props first.
+                const isComboOrFloorStrat = ['FLOOR_TOTALS', 'MILESTONE_PROPS', 'POWER_COMBO', 'ULTRA_COMBO', 'MEGA_PARLAY'].includes(currentStrat);
+                const isFloorOrMilestoneCard = (evtStrat === 'FLOOR_TOTALS' || evtStrat === 'MILESTONE_PROPS');
+                const tier = (isComboOrFloorStrat && isFloorOrMilestoneCard) ? -1 : ((hasPick && isML && edgeVal != null && edgeVal >= 0.5) ? 0 : (hasPick && !isProp) ? 1 : (hasPick ? 2 : 3));
+                const score = tier === 0 ? edgeVal : conf;
+
+                const html = `
+                    <div class="spc-main">
+                        <div class="spc-meta">
+                            <span class="spc-lg">${icon} ${esc(league)}</span>
+                            <span class="spc-type ${typeCls}">${esc(typeLabel)}</span>${linePill}
+                            <span class="spc-when">${fmtWhen(evt, md, isLive)}</span>
+                        </div>
+                        <div class="spc-match" data-ai="1">
+                            <div class="spc-title">${esc(matchup)}</div>
+                            ${detail ? `<div class="spc-detail">${esc(detail)}</div>` : ''}
+                        </div>
+                        <div class="spc-ai" data-ai="1">${ai}</div>
+                    </div>
+                    <div class="spc-btns spc-n${buttons.length}">
+                        ${buttons.map(b => `<button type="button" class="${b.cls}" onclick="event.stopPropagation(); ${b.onclick}"><span class="spc-k">${esc(b.k)}</span><span class="spc-p">${esc(b.p)}</span></button>`).join('')}
+                    </div>`;
+                // Sort by the same start time the card displays (backend start_epoch is off for some sports).
+                const shownStart = asianBaseballStart(evt) || ruleStartEpoch(evt) || tennisStartEpoch(evt, md) || startEpoch;
+                return { evt, ticker, html, tier, score, start: shownStart || 9e12, isLive };
+            });
+
+            cards.sort((a, b) => (a.tier - b.tier) || (a.start - b.start) || (b.score - a.score));
+
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            cards.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'spc-card' + (c.isLive ? ' spc-is-live' : '') + (c.tier === 0 ? ' spc-is-best' : '');
+                el.innerHTML = c.html;
+                el.querySelectorAll('[data-ai]').forEach(n => n.addEventListener('click', () => querySportsAI(c.ticker, c.evt)));
+                frag.appendChild(el);
+            });
+            container.appendChild(frag);
+        }
+
+        // =========================================================================
+        // SPORTS BETTING STRATEGY HUB & COMBOS
+        // =========================================================================
+        window.currentSportsStrategy = 'STANDARD';
+
+        const SPORTS_STRATEGIES = {
+            'STANDARD': {
+                name: 'Standard Value AI',
+                badge: 'Standard Value AI',
+                stat: 'Classic EV',
+                summary: 'Mainline moneylines and spreads with AI model edge',
+                color: 'amber'
+            },
+            'FLOOR_TOTALS': {
+                name: 'Floor Anchor Totals',
+                badge: 'Floor Anchor Totals',
+                stat: '~90% Win Rate',
+                summary: 'Lower alternate lines: SOC Over 0.5, NHL Over 2.5/3.5, MLB Over 5.5, NFL Over 31.5',
+                color: 'emerald'
+            },
+            'MILESTONE_PROPS': {
+                name: 'Milestone Props',
+                badge: 'Milestone Props',
+                stat: '~75% Win Rate',
+                summary: 'Floor player milestones: MLB 1+ HRR (0.5), NBA 15+ Pts',
+                color: 'cyan'
+            },
+            'POWER_COMBO': {
+                name: 'Power-2 Combos',
+                badge: 'Power-2 Combos',
+                stat: '~72% Win Rate (+40% ROI)',
+                summary: 'Bundles top 2 floor anchor legs into high-probability parlays',
+                color: 'purple'
+            },
+            'ULTRA_COMBO': {
+                name: 'Ultra-Floor Mega Parlay (15-20 Legs)',
+                badge: 'Ultra-Floor Mega Parlay',
+                stat: '15-20 Legs (~95% ea)',
+                summary: 'Bundles 15–20 deep floor lines across all sports (SOC O0.5, NHL O2.5, NFL O28.5)',
+                color: 'rose'
+            },
+            'ALL_ACTIVE': {
+                name: 'All Strategies Active',
+                badge: 'All Strategies Active',
+                stat: 'Full Coverage',
+                summary: 'Trades across standard lines, floor anchors, and player props',
+                color: 'blue'
+            }
+        };
+
+        function toggleSportsStrategyMenu() {
+            const opts = document.getElementById('sports-strategy-options');
+            const chev = document.getElementById('sports-strategy-chevron');
+            if (!opts) return;
+            const isHidden = opts.classList.contains('hidden');
+            opts.classList.toggle('hidden', !isHidden);
+            if (chev) chev.style.transform = isHidden ? 'rotate(180deg)' : '';
+        }
+        window.toggleSportsStrategyMenu = toggleSportsStrategyMenu;
+
+        function getCurrentSportsTradeSize() {
+            const el = document.getElementById('sports-trade-size-dollars') || document.getElementById('sports-wager-dollars');
+            const raw = el && el.value ? parseFloat(el.value) : (window.lastDashboardStats?.sports_trade_size_dollars || window.lastDashboardStats?.sports_max_wager || 10.0);
+            return (!isNaN(raw) && raw > 0) ? raw : 10.0;
+        }
+        window.getCurrentSportsTradeSize = getCurrentSportsTradeSize;
+
+        function getSelectedParlayLegs(forStrat) {
+            if (forStrat === 'POWER_COMBO') {
+                const pEl = document.getElementById('strat-card-power-legs');
+                if (pEl && pEl.value) {
+                    const v = parseInt(pEl.value);
+                    if (!isNaN(v) && v >= 2) return Math.min(30, v);
+                }
+            } else if (forStrat === 'ULTRA_COMBO') {
+                const uEl = document.getElementById('strat-card-ultra-legs');
+                if (uEl && uEl.value) {
+                    const v = parseInt(uEl.value);
+                    if (!isNaN(v) && v >= 2) return Math.min(30, v);
+                }
+            }
+            const hubEl = document.getElementById('sports-parlay-legs-input') || document.getElementById('sports-max-parlay-legs');
+            const val = parseInt(hubEl && hubEl.value ? hubEl.value : (window.lastDashboardStats?.sports_max_parlay_legs || 2));
+            return (!isNaN(val) && val >= 2) ? Math.min(30, val) : 2;
+        }
+        window.getSelectedParlayLegs = getSelectedParlayLegs;
+
+        function computeComboMetrics(legsOrCount, customWager, isUltraHint) {
+            const wager = (customWager !== undefined && customWager > 0) ? customWager : getCurrentSportsTradeSize();
+            let multiplier = 1.0;
+            let jointProb = 1.0;
+            let count = 2;
+
+            if (Array.isArray(legsOrCount) && legsOrCount.length >= 1) {
+                count = legsOrCount.length;
+                legsOrCount.forEach(l => {
+                    let p = parseFloat(l.price || (l.price_cents ? l.price_cents / 100 : 0.85));
+                    if (isNaN(p) || p <= 0.04) p = 0.85;
+                    if (p >= 0.99) p = 0.95;
+                    multiplier *= (1.0 / p);
+                    let c = parseFloat(l.conf !== undefined ? l.conf : (l.confidence !== undefined ? l.confidence : 88.0));
+                    if (isNaN(c) || c <= 0) c = 88.0;
+                    jointProb *= Math.min(0.99, Math.max(0.10, c / 100.0));
+                });
+            } else {
+                count = Math.max(2, Math.min(30, parseInt(legsOrCount) || 2));
+                const isUltra = isUltraHint !== undefined ? isUltraHint : (count >= 10 || window.currentSportsStrategy === 'ULTRA_COMBO');
+                const cache = Array.isArray(window.__sportsEventsCache) ? window.__sportsEventsCache : [];
+                const floorPool = cache.filter(e => {
+                    const ask = parseFloat(e.yes_ask || 0);
+                    return ask >= 0.35 && ask <= 0.97 && (e.strategy_tag === 'FLOOR_TOTALS' || e.strategy_tag === 'MILESTONE_PROPS' || parseFloat(e.confidence_pct || 0) >= 65);
+                }).sort((a, b) => parseFloat(b.confidence_pct || 0) - parseFloat(a.confidence_pct || 0));
+
+                for (let i = 0; i < count; i++) {
+                    if (i < floorPool.length) {
+                        let p = parseFloat(floorPool[i].yes_ask || (isUltra ? 0.91 : 0.84));
+                        if (p <= 0.10 || p >= 0.99) p = isUltra ? 0.91 : 0.84;
+                        let c = parseFloat(floorPool[i].confidence_pct || (isUltra ? 94.0 : 88.0));
+                        multiplier *= (1.0 / p);
+                        jointProb *= Math.min(0.985, Math.max(0.50, c / 100.0));
+                    } else {
+                        const fallbackPrice = isUltra ? 0.915 : 0.84;
+                        const fallbackConf = isUltra ? 0.945 : 0.885;
+                        multiplier *= (1.0 / fallbackPrice);
+                        jointProb *= fallbackConf;
                     }
                 }
-                
-                const when = md.start_label || md.game_time || evt.game_time || evt.start_time || '';
-                const edge = parseFloat(evt.edge_pct) || 0;
-                const conf = parseFloat(evt.confidence_pct) || 0;
-                const edgeCls = edge > 0 ? 'text-emerald-400' : 'text-gray-500';
-                const confCls = conf >= 65 ? 'text-emerald-400' : (conf >= 55 ? 'text-amber-300' : 'text-gray-300');
+            }
 
-                const el = document.createElement('div');
-                el.className = 'bg-black/40 border border-white/5 rounded-lg px-2.5 py-2 hover:border-cyan-500/30 transition-colors cursor-pointer group';
-                el.onclick = () => querySportsAI(evt.event_ticker || md.name || '', evt);
-                el.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-1.5 min-w-0">
-                            <span class="text-[11px] shrink-0">${icon}</span>
-                            <span class="text-[12px] font-bold text-white truncate">${name}</span>
-                            <span class="text-[10px] font-semibold text-cyan-300 truncate">${pick}</span>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-                            <span class="${confCls} font-bold">${conf > 0 ? conf.toFixed(0) + '%' : 'AI Ready'}</span>
-                            ${edge > 0 ? `<span class="${edgeCls}">+${edge.toFixed(1)}%</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between gap-2 mt-0.5 text-[9.5px] text-gray-500">
-                        <span class="truncate">
-                            <span class="px-1 py-0.2 bg-white/10 text-cyan-300 rounded font-semibold text-[9px] mr-1">${league}</span>
-                            ${matchup || ''}${matchup && when ? ' · ' : ''}${when || ''}
-                        </span>
-                        <span class="shrink-0 uppercase tracking-wider font-bold text-cyan-400 group-hover:text-cyan-300 transition-colors">⚡ AI Predict & Trade</span>
-                    </div>
-                `;
-                container.appendChild(el);
+            const payout = Math.round(wager * multiplier * 100) / 100;
+            const profit = Math.round((payout - wager) * 100) / 100;
+            const roiPct = Math.round((multiplier - 1.0) * 1000) / 10;
+            const jointWinPct = Math.round(jointProb * 1000) / 10;
+
+            return { count, wager, multiplier, payout, profit, roiPct, jointWinPct };
+        }
+        window.computeComboMetrics = computeComboMetrics;
+
+        function updateParlayPayoutPreviews() {
+            const wager = getCurrentSportsTradeSize();
+            const fmtMoney = (v) => v >= 1000 ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.toFixed(2);
+            const fmtWager = Number.isInteger(wager) ? wager.toString() : wager.toFixed(2);
+
+            // 1. Update Power Combo Card
+            const powerLegs = getSelectedParlayLegs('POWER_COMBO');
+            const pMetrics = computeComboMetrics(powerLegs, wager, false);
+            const pPayoutEl = document.getElementById('strat-card-power-payout');
+            if (pPayoutEl) pPayoutEl.textContent = `$${fmtWager} → Pays $${fmtMoney(pMetrics.payout)} (+$${fmtMoney(pMetrics.profit)})`;
+            const pWinEl = document.getElementById('strat-card-power-win');
+            if (pWinEl) pWinEl.textContent = `~${pMetrics.jointWinPct}% Win`;
+            const pRoiEl = document.getElementById('strat-card-power-roi');
+            if (pRoiEl) pRoiEl.textContent = `+${Math.round(pMetrics.roiPct)}% ROI`;
+            const pTitleEl = document.getElementById('strat-card-power-title');
+            if (pTitleEl) pTitleEl.textContent = `⚡ Power-${powerLegs} Combo`;
+
+            // 2. Update Ultra Mega Parlay Card
+            const ultraLegs = getSelectedParlayLegs('ULTRA_COMBO');
+            const uMetrics = computeComboMetrics(ultraLegs, wager, true);
+            const uPayoutEl = document.getElementById('strat-card-ultra-payout');
+            if (uPayoutEl) uPayoutEl.textContent = `$${fmtWager} → Pays $${fmtMoney(uMetrics.payout)} (+$${fmtMoney(uMetrics.profit)})`;
+            const uWinEl = document.getElementById('strat-card-ultra-win');
+            if (uWinEl) uWinEl.textContent = `~${uMetrics.jointWinPct}% Joint`;
+            const uRoiEl = document.getElementById('strat-card-ultra-roi');
+            if (uRoiEl) uRoiEl.textContent = `+${Math.round(uMetrics.roiPct)}% ROI`;
+            const uTitleEl = document.getElementById('strat-card-ultra-title');
+            if (uTitleEl) uTitleEl.textContent = `🎰 Mega Parlay (${ultraLegs} Legs)`;
+
+            // 3. Update Strategy Hub Bar Pill & Build Button
+            const activeLegs = getSelectedParlayLegs();
+            const hasActiveComboSlip = Array.isArray(window.sportsTradeSlip) && window.sportsTradeSlip.length >= 2 && window.sportsTradeSlipMode === 'combo';
+            const barMetrics = hasActiveComboSlip
+                ? computeComboMetrics(window.sportsTradeSlip, wager)
+                : computeComboMetrics(activeLegs, wager, activeLegs >= 10 || window.currentSportsStrategy === 'ULTRA_COMBO');
+
+            const barPayoutPill = document.getElementById('sports-strategy-payout-pill');
+            if (barPayoutPill) {
+                barPayoutPill.textContent = `$${fmtWager} → $${fmtMoney(barMetrics.payout)} (+$${fmtMoney(barMetrics.profit)})`;
+            }
+
+            const buildBtn = document.getElementById('btn-build-power-slip');
+            if (buildBtn && !buildBtn.disabled) {
+                const isUltra = (window.currentSportsStrategy === 'ULTRA_COMBO' || activeLegs >= 10);
+                const btnMetrics = computeComboMetrics(activeLegs, wager, isUltra);
+                buildBtn.innerHTML = `<span>⚡</span> Build ${activeLegs}-Leg Slip (+$${fmtMoney(btnMetrics.profit)})`;
+                if (isUltra) {
+                    buildBtn.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold transition-all shadow-sm cursor-pointer';
+                } else {
+                    buildBtn.className = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold transition-all shadow-sm cursor-pointer';
+                }
+            }
+
+            // 4. Update Settings Drawer Parlay Preview
+            const drawerPreview = document.getElementById('sports-drawer-parlay-preview');
+            if (drawerPreview) {
+                const dMetrics = computeComboMetrics(activeLegs, wager, activeLegs >= 10);
+                drawerPreview.textContent = `$${fmtWager} Trade Size × ${activeLegs} Legs (${dMetrics.multiplier.toFixed(2)}×) → Pays $${fmtMoney(dMetrics.payout)} (+$${fmtMoney(dMetrics.profit)})`;
+            }
+        }
+        window.updateParlayPayoutPreviews = updateParlayPayoutPreviews;
+
+        function onParlayLegsInput(val, commitAndRebuild = false) {
+            let n = parseInt(val);
+            if (isNaN(n)) {
+                if (!commitAndRebuild) return;
+                n = 2;
+            }
+            n = Math.max(2, Math.min(30, n));
+
+            const ids = ['sports-parlay-legs-input', 'sports-max-parlay-legs', 'slip-parlay-legs-input'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && (commitAndRebuild || document.activeElement !== el)) {
+                    el.value = String(n);
+                }
+            });
+
+            if (n < 10) {
+                const pEl = document.getElementById('strat-card-power-legs');
+                if (pEl && document.activeElement !== pEl) pEl.value = String(n);
+            } else {
+                const uEl = document.getElementById('strat-card-ultra-legs');
+                if (uEl && document.activeElement !== uEl) uEl.value = String(n);
+            }
+
+            updateParlayPayoutPreviews();
+
+            if (commitAndRebuild) {
+                if (typeof saveUserConfig === 'function') saveUserConfig();
+                if (window.sportsTradeSlipMode === 'combo' && window.sportsTradeSlip && window.sportsTradeSlip.length > 0) {
+                    buildPowerComboSlip(n);
+                }
+            }
+        }
+        window.onParlayLegsInput = onParlayLegsInput;
+
+        function adjustParlayLegs(delta, rebuildIfCombo = false) {
+            const cur = getSelectedParlayLegs();
+            const next = Math.max(2, Math.min(30, cur + delta));
+            const hubEl = document.getElementById('sports-parlay-legs-input');
+            if (hubEl) hubEl.value = String(next);
+            onParlayLegsInput(next, rebuildIfCombo);
+        }
+        window.adjustParlayLegs = adjustParlayLegs;
+
+        function setParlayLegsFromCard(stratKey, val, isTyping = false) {
+            let n = parseInt(val);
+            if (isNaN(n)) return;
+            n = Math.max(2, Math.min(30, n));
+
+            if (stratKey === 'POWER_COMBO' && document.getElementById('strat-card-power-legs') && !isTyping) {
+                document.getElementById('strat-card-power-legs').value = String(n);
+            }
+            if (stratKey === 'ULTRA_COMBO' && document.getElementById('strat-card-ultra-legs') && !isTyping) {
+                document.getElementById('strat-card-ultra-legs').value = String(n);
+            }
+            const hubEl = document.getElementById('sports-parlay-legs-input');
+            if (hubEl) hubEl.value = String(n);
+            const drawerEl = document.getElementById('sports-max-parlay-legs');
+            if (drawerEl) drawerEl.value = String(n);
+
+            updateParlayPayoutPreviews();
+            if (!isTyping) {
+                selectSportsStrategy(stratKey, n);
+            }
+        }
+        window.setParlayLegsFromCard = setParlayLegsFromCard;
+
+        function onSportsTradeSizeInput(val, commitSave = false) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num > 0) {
+                const mainInput = document.getElementById('sports-trade-size-dollars');
+                if (mainInput && document.activeElement !== mainInput) mainInput.value = String(num);
+                const hiddenInput = document.getElementById('sports-wager-dollars');
+                if (hiddenInput) hiddenInput.value = String(num);
+                const slipInput = document.getElementById('slip-wager-dollars-input');
+                if (slipInput && document.activeElement !== slipInput) slipInput.value = String(num);
+                if (window.lastDashboardStats) {
+                    window.lastDashboardStats.sports_trade_size_dollars = num;
+                    window.lastDashboardStats.sports_max_wager = num;
+                }
+            }
+            updateParlayPayoutPreviews();
+            updateSlipPayoutLive();
+            updateExecuteBtnText();
+            if (commitSave && typeof saveUserConfig === 'function') {
+                saveUserConfig();
+            }
+        }
+        window.onSportsTradeSizeInput = onSportsTradeSizeInput;
+
+        function applySportsStrategyUI(stratKey) {
+            stratKey = (stratKey || 'STANDARD').toUpperCase();
+            if (!SPORTS_STRATEGIES[stratKey]) stratKey = 'STANDARD';
+            window.currentSportsStrategy = stratKey;
+
+            const def = SPORTS_STRATEGIES[stratKey];
+            const badge = document.getElementById('sports-active-strategy-badge');
+            const statPill = document.getElementById('sports-strategy-stat-pill');
+            const summary = document.getElementById('sports-strategy-summary-text');
+            const drawerBadge = document.getElementById('sports-drawer-strategy-badge');
+
+            if (badge) badge.innerText = def.badge;
+            if (statPill) statPill.innerText = def.stat;
+            if (summary) summary.innerText = def.summary;
+            if (drawerBadge) drawerBadge.innerText = def.name;
+
+            updateParlayPayoutPreviews();
+
+            // Highlight cards in dropdown
+            document.querySelectorAll('.sports-strat-card').forEach(card => {
+                const s = card.getAttribute('data-strat');
+                const isSelected = (s === stratKey);
+                const dot = card.querySelector('.strat-radio span');
+                if (isSelected) {
+                    card.classList.remove('border-white/10', 'bg-black/40');
+                    card.classList.add('border-amber-500/50', 'bg-amber-500/10');
+                    if (dot) dot.classList.remove('hidden');
+                } else {
+                    card.classList.add('border-white/10', 'bg-black/40');
+                    card.classList.remove('border-amber-500/50', 'bg-amber-500/10');
+                    if (dot) dot.classList.add('hidden');
+                }
+            });
+
+            // Highlight pills in settings drawer
+            const pillMap = {
+                'STANDARD': 'sports-pill-strat-standard',
+                'FLOOR_TOTALS': 'sports-pill-strat-floor',
+                'MILESTONE_PROPS': 'sports-pill-strat-props',
+                'POWER_COMBO': 'sports-pill-strat-combo',
+                'ULTRA_COMBO': 'sports-pill-strat-ultra'
+            };
+            Object.keys(pillMap).forEach(k => {
+                const btn = document.getElementById(pillMap[k]);
+                if (btn) {
+                    if (k === stratKey) {
+                        btn.className = 'p-2 rounded-xl border border-amber-500/40 bg-amber-500/20 text-white text-[10px] font-bold flex flex-col items-center gap-0.5 transition-all cursor-pointer';
+                    } else {
+                        btn.className = 'p-2 rounded-xl border border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5 text-[10px] font-bold flex flex-col items-center gap-0.5 transition-all cursor-pointer';
+                    }
+                }
             });
         }
+        window.applySportsStrategyUI = applySportsStrategyUI;
+
+        async function selectSportsStrategy(stratKey, explicitLegs) {
+            if (explicitLegs !== undefined) {
+                onParlayLegsInput(explicitLegs, false);
+            } else if (stratKey === 'ULTRA_COMBO' && getSelectedParlayLegs() < 10) {
+                const uLegs = getSelectedParlayLegs('ULTRA_COMBO') || 15;
+                onParlayLegsInput(uLegs >= 10 ? uLegs : 15, false);
+            } else if (stratKey === 'POWER_COMBO' && getSelectedParlayLegs() >= 10) {
+                const pLegs = getSelectedParlayLegs('POWER_COMBO') || 2;
+                onParlayLegsInput(pLegs < 10 ? pLegs : 2, false);
+            }
+            applySportsStrategyUI(stratKey);
+            // Close options drawer
+            const opts = document.getElementById('sports-strategy-options');
+            if (opts && !opts.classList.contains('hidden')) {
+                toggleSportsStrategyMenu();
+            }
+            // Ensure we are on the SPORTS universe view when interacting with sports strategies
+            if (window.currentUniverse !== 'SPORTS' && typeof window.selectUniverse === 'function') {
+                window.selectUniverse('SPORTS');
+            }
+            // Save config to server (non-blocking)
+            if (typeof saveUserConfig === 'function') {
+                saveUserConfig();
+            }
+            // Re-fetch and re-render sports events according to the newly active strategy
+            if (typeof loadSportsEvents === 'function') {
+                loadSportsEvents();
+            } else if (typeof renderSportsEvents === 'function') {
+                renderSportsEvents();
+            }
+            // Automatically build the combo slip when user selects Mega Parlay or Power Combos
+            if (stratKey === 'ULTRA_COMBO' || stratKey === 'MEGA_PARLAY') {
+                buildPowerComboSlip(explicitLegs || getSelectedParlayLegs('ULTRA_COMBO') || 15);
+            } else if (stratKey === 'POWER_COMBO') {
+                buildPowerComboSlip(explicitLegs || getSelectedParlayLegs('POWER_COMBO') || 2);
+            } else {
+                showToast(`Active Strategy set to: ${SPORTS_STRATEGIES[stratKey].name}`, 'success');
+            }
+        }
+        window.selectSportsStrategy = selectSportsStrategy;
+
+        async function buildPowerComboSlip(requestedCount) {
+            const strat = window.currentSportsStrategy || 'POWER_COMBO';
+            const customLegs = requestedCount !== undefined ? parseInt(requestedCount) : getSelectedParlayLegs();
+            const count = Math.max(2, Math.min(30, !isNaN(customLegs) ? customLegs : (strat === 'ULTRA_COMBO' ? 15 : 2)));
+            const isUltra = (strat === 'ULTRA_COMBO' || strat === 'MEGA_PARLAY' || count >= 10);
+            const wager = getCurrentSportsTradeSize();
+
+            // Sync leg count inputs
+            ['sports-parlay-legs-input', 'sports-max-parlay-legs', 'slip-parlay-legs-input'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = String(count);
+            });
+
+            const btn = document.getElementById('btn-build-power-slip');
+            const origHtml = btn ? btn.innerHTML : null;
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳</span> Building ${count}-Leg Slip...`;
+            }
+            
+            showToast(`Scanning sports slate for top ${count} floor anchor lines ($${wager} trade size)...`, 'info');
+            try {
+                const token = localStorage.getItem('saas_token') || localStorage.getItem('app_api_token') || '';
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                let comboData = null;
+                try {
+                    const targetStrat = isUltra ? 'ULTRA_COMBO' : strat;
+                    const endpoint = `/api/engine/sports/combo/recommend?count=${count}&strategy=${encodeURIComponent(targetStrat)}&trade_size=${encodeURIComponent(wager)}`;
+                    const res = await fetch((window.API_BASE_URL || '') + endpoint, { headers });
+                    if (res.ok) comboData = await res.json();
+                } catch(e) {}
+
+                let legs = comboData && comboData.legs && comboData.legs.length >= 2 ? comboData.legs : null;
+
+                // Fallback: build from client cache if recommend endpoint had fewer than 2 legs
+                if ((!legs || legs.length < Math.min(count, 2)) && window.__sportsEventsCache && window.__sportsEventsCache.length > 0) {
+                    const pool = [...window.__sportsEventsCache]
+                        .filter(e => e.ai_pick && parseFloat(e.confidence_pct || 0) >= 50.0 && parseFloat(e.yes_ask || 0.85) <= 0.98)
+                        .sort((a, b) => {
+                            const aDay = a.is_today ? 100 : 0;
+                            const bDay = b.is_today ? 100 : 0;
+                            const aBonus = (a.strategy_tag === 'FLOOR_TOTALS' ? 25 : (a.strategy_tag === 'MILESTONE_PROPS' ? 15 : 0));
+                            const bBonus = (b.strategy_tag === 'FLOOR_TOTALS' ? 25 : (b.strategy_tag === 'MILESTONE_PROPS' ? 15 : 0));
+                            return (bDay + parseFloat(b.confidence_pct || 0) + bBonus) - (aDay + parseFloat(a.confidence_pct || 0) + aBonus);
+                        });
+                    if (pool.length >= 2) {
+                        legs = pool.slice(0, count).map(e => ({
+                            ticker: (e.markets && e.markets[0] ? e.markets[0].ticker : e.ticker),
+                            team: e.ai_pick || e.predicted_team || 'Over 2.5 Goals',
+                            side: e.pick_side || 'YES',
+                            price: parseFloat(e.yes_ask || 0.85),
+                            confidence: parseFloat(e.confidence_pct || 88.0),
+                            edge: parseFloat(e.edge_pct || 5.0),
+                            prop_type: e.market_type || 'Total',
+                            line: e.strike_details || (e.strategy_tag === 'FLOOR_TOTALS' ? 'Floor Line' : 'Moneyline'),
+                            sport: e.sport || 'SPORTS',
+                            matchup: e.matchup || e.title
+                        }));
+                    }
+                }
+
+                if (!legs || legs.length < 2) {
+                    showToast('No active floor anchor lines currently on slate. Try again closer to game time!', 'warning');
+                    return;
+                }
+
+                // Ensure SPORTS universe is active so the Trade Slip panel is visible
+                window.currentUniverse = 'SPORTS';
+                document.body.classList.add('universe-sports');
+
+                // Populate window.sportsTradeSlip
+                window.sportsTradeSlip = legs.map(l => ({
+                    ticker: l.ticker,
+                    team: l.team,
+                    type: l.prop_type || 'Floor Total',
+                    prop_type: l.prop_type || 'Total',
+                    line: l.line || 'Floor Line',
+                    side: l.side || 'YES',
+                    conf: l.confidence || 90,
+                    edge: l.edge || 5,
+                    price: l.price || (l.price_cents ? l.price_cents / 100 : 0.5),
+                    sport: l.sport || 'SPORTS',
+                    matchup: l.matchup || l.team
+                }));
+                window.sportsTradeSlipMode = 'combo';
+                if (typeof renderTradeSlip === 'function') {
+                    renderTradeSlip();
+                }
+                updateParlayPayoutPreviews();
+                const panel = document.getElementById('sports-trade-slip-panel');
+                if (panel) {
+                    panel.classList.remove('sp-collapsed', 'hidden');
+                    panel.classList.add('flex');
+                    try { panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(_) {}
+                }
+                const metrics = computeComboMetrics(window.sportsTradeSlip, wager);
+                showToast(`⚡ ${legs.length}-Leg Parlay built! $${wager.toFixed(2)} Wager → Pays $${metrics.payout.toFixed(2)} (+$${metrics.profit.toFixed(2)} / +${metrics.roiPct}% ROI)`, 'success');
+            } catch (err) {
+                console.error('[buildPowerComboSlip] Error:', err);
+                showToast('Failed to build combo slip. Please select picks manually.', 'error');
+            } finally {
+                if (btn && origHtml) {
+                    btn.disabled = false;
+                    applySportsStrategyUI(window.currentSportsStrategy || 'POWER_COMBO');
+                }
+            }
+        }
+        window.buildPowerComboSlip = buildPowerComboSlip;
 
         // Global Trade Slip state
         window.sportsTradeSlip = [];
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTradeSlip();
+            updateParlayPayoutPreviews();
+        });
+
+        function updateSlipPayoutLive() {
+            const box = document.getElementById('sp-slip-payout-summary');
+            if (!box || !window.sportsTradeSlip || window.sportsTradeSlip.length === 0) return;
+            const currentMode = window.sportsTradeSlipMode || 'single';
+            const wager = getCurrentSportsTradeSize();
+            const fmt = (v) => v >= 1000 ? v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.toFixed(2);
+
+            if (currentMode === 'combo') {
+                const m = computeComboMetrics(window.sportsTradeSlip, wager);
+                box.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] font-mono mb-1">
+                        <span class="text-purple-300 font-bold uppercase tracking-wider">⚡ ${m.count}-Leg Parlay Payout</span>
+                        <span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-black">${m.multiplier.toFixed(2)}× Multiplier</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5 text-center font-mono bg-black/50 p-1.5 rounded-lg border border-white/5">
+                        <div>
+                            <div class="text-[8px] text-gray-400 uppercase">Trade Size</div>
+                            <div class="text-[11px] font-black text-white">$${fmt(m.wager)}</div>
+                        </div>
+                        <div>
+                            <div class="text-[8px] text-gray-400 uppercase">Total Payout</div>
+                            <div class="text-[11px] font-black text-cyan-300">$${fmt(m.payout)}</div>
+                        </div>
+                        <div>
+                            <div class="text-[8px] text-gray-400 uppercase">Net Profit</div>
+                            <div class="text-[11px] font-black text-emerald-400">+$${fmt(m.profit)}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-[9px] font-mono text-gray-400 mt-1 px-0.5">
+                        <span>Joint Win Prob: <strong class="text-amber-300">${m.jointWinPct}%</strong></span>
+                        <span class="text-emerald-400 font-bold">+${m.roiPct}% Projected ROI</span>
+                    </div>
+                `;
+            } else {
+                const n = window.sportsTradeSlip.length;
+                const totalOutlay = n * wager;
+                let totalSingleProfit = 0;
+                window.sportsTradeSlip.forEach(item => {
+                    const p = Math.max(0.05, Math.min(0.98, parseFloat(item.price || 0.5)));
+                    totalSingleProfit += wager * ((1.0 / p) - 1.0);
+                });
+                box.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] font-mono">
+                        <span class="text-cyan-300 font-bold">${n} Single Trade${n > 1 ? 's' : ''} × $${fmt(wager)}</span>
+                        <span class="text-white font-black">Outlay: $${fmt(totalOutlay)}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[9px] font-mono text-gray-400 mt-0.5">
+                        <span>Est. Total Profit if all hit:</span>
+                        <span class="text-emerald-400 font-bold">+$${fmt(totalSingleProfit)}</span>
+                    </div>
+                `;
+            }
+        }
+        window.updateSlipPayoutLive = updateSlipPayoutLive;
 
         function renderTradeSlip() {
             let panel = document.getElementById('sports-trade-slip-panel');
-            if (!panel) {
-                panel = document.createElement('div');
-                panel.id = 'sports-trade-slip-panel';
-                panel.className = 'fixed right-4 bottom-20 w-80 bg-[#0c0c10]/95 backdrop-blur-2xl border border-cyan-500/30 rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.8)] z-[100] hidden flex-col';
-                document.body.appendChild(panel);
-            }
-            if (window.sportsTradeSlip.length === 0) {
+            if (!panel) return;
+            
+            if (!window.sportsTradeSlip || window.sportsTradeSlip.length === 0 || (window.currentUniverse && window.currentUniverse !== 'SPORTS')) {
                 panel.classList.add('hidden');
                 panel.classList.remove('flex');
+                panel.innerHTML = '';
                 return;
             }
+
             panel.classList.remove('hidden');
             panel.classList.add('flex');
             
+            const currentMode = window.sportsTradeSlipMode || 'single';
+            const sportsTradeSize = getCurrentSportsTradeSize();
+            const slipLegsCount = window.sportsTradeSlip.length;
             let html = `
-                <div class="p-3 border-b border-white/10 bg-gradient-to-r from-cyan-900/30 to-transparent flex justify-between items-center rounded-t-2xl">
-                    <div class="text-xs font-black text-cyan-300 uppercase tracking-wider">🧾 Trade Slip (${window.sportsTradeSlip.length})</div>
-                    <button onclick="window.sportsTradeSlip=[]; renderTradeSlip();" class="text-gray-400 hover:text-white">✖</button>
+                <div class="sp-slip-head p-3 border-b border-white/10 bg-gradient-to-r from-cyan-900/30 to-transparent flex justify-between items-center rounded-t-xl">
+                    <button type="button" onclick="document.getElementById('sports-trade-slip-panel').classList.toggle('sp-collapsed')" class="sp-slip-title text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">🧾 Trade Slip (${slipLegsCount} Legs)<span class="sp-slip-chevron">▾</span></button>
+                    <button onclick="window.sportsTradeSlip=[]; renderTradeSlip(); updateParlayPayoutPreviews();" class="sp-slip-clear text-gray-400 hover:text-white" aria-label="Clear slip">✖</button>
                 </div>
-                <div class="p-3 space-y-2 max-h-60 overflow-y-auto">
+                <!-- Custom Legs & Trade Size Quick Toolbar -->
+                <div class="px-3 py-2 bg-black/60 border-b border-white/10 flex items-center justify-between gap-2 text-[10px] font-mono">
+                    <div class="flex items-center gap-1">
+                        <span class="text-gray-400 font-bold uppercase text-[9px]">Legs:</span>
+                        <button type="button" onclick="adjustParlayLegs(-1, true)" class="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white font-black flex items-center justify-center cursor-pointer">−</button>
+                        <input type="number" id="slip-parlay-legs-input" min="2" max="30" value="${slipLegsCount}" onchange="buildPowerComboSlip(this.value)" class="w-8 bg-[#0b101a] border border-cyan-500/40 rounded text-center font-bold text-amber-300 py-0.5 outline-none">
+                        <button type="button" onclick="adjustParlayLegs(1, true)" class="w-4 h-4 rounded bg-white/10 hover:bg-white/20 text-white font-black flex items-center justify-center cursor-pointer">+</button>
+                        <button type="button" onclick="buildPowerComboSlip(document.getElementById('slip-parlay-legs-input')?.value || ${slipLegsCount})" class="ml-0.5 px-1.5 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/35 text-[8.5px] font-bold cursor-pointer" title="Rebuild combo with this many legs">↻ Auto-Fill</button>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-gray-400 font-bold uppercase text-[9px]">Wager $:</span>
+                        <input type="number" id="slip-wager-dollars-input" min="1" max="1000" value="${sportsTradeSize}" oninput="onSportsTradeSizeInput(this.value, false)" onchange="onSportsTradeSizeInput(this.value, true)" class="w-12 bg-[#0b101a] border border-amber-500/40 rounded text-right px-1 py-0.5 font-bold text-white outline-none">
+                    </div>
+                </div>
+                <div class="sp-slip-list p-3 space-y-2 max-h-56 overflow-y-auto">
             `;
             window.sportsTradeSlip.forEach((item, index) => {
+                const sportIcons = {
+                    'NHL': '🏒', 'NFL': '🏈', 'MLB': '⚾', 'NBA': '🏀', 'SOC': '⚽', 'SOCCER': '⚽',
+                    'UFC': '🥊', 'MMA': '🥊', 'TEN': '🎾', 'TENNIS': '🎾', 'NCAAF': '🏈', 'NCAAB': '🏀',
+                    'NPB': '⚾', 'KBO': '⚾'
+                };
+                const rawSport = (item.sport || '').toUpperCase();
+                const icon = sportIcons[rawSport] || (rawSport.includes('NHL') ? '🏒' : rawSport.includes('NFL') ? '🏈' : rawSport.includes('TEN') ? '🎾' : '🏆');
+                const sportLabel = rawSport ? (rawSport.replace('SOCCER', 'SOC').replace('TENNIS', 'TEN')) : 'SPORTS';
+
+                const propType = item.prop_type || 'Pick';
+                let propBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/35';
+                if (propType === 'Spread') propBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/35';
+                else if (propType.includes('Total') || propType.includes('O/U')) propBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/35';
+                else if (propType === 'Player Prop') propBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/35';
+
+                // Clean matchup headline
+                let matchupDisplay = item.matchup || '';
+                if (!matchupDisplay || matchupDisplay.toLowerCase().includes('over') || matchupDisplay.toLowerCase().includes('under') || matchupDisplay.length < 5) {
+                    matchupDisplay = item.team || item.ticker;
+                }
+                matchupDisplay = matchupDisplay.replace(/:\s*(Total|Spread|Game).*$/i, '').trim();
+
+                // Clean Target Line detail
+                let lineDisplay = item.line || '';
+                if (!lineDisplay || lineDisplay === 'Moneyline' || lineDisplay === 'Floor Line') {
+                    if (item.strike_details && item.strike_details !== 'Moneyline') lineDisplay = item.strike_details;
+                    else if (propType.includes('Total') && item.team && (item.team.includes('Over') || item.team.includes('Under'))) lineDisplay = item.team;
+                    else lineDisplay = item.team;
+                }
+                // Strip redundant "Full Game:" prefixes
+                lineDisplay = lineDisplay.replace(/^Full Game:\s*/i, '').trim();
+
+                const sideColor = (item.side || 'YES').toUpperCase() === 'YES' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
+                const priceCents = item.price ? Math.round(item.price * 100) : (item.price_cents || null);
+                const priceTag = priceCents ? `<span class="px-1.5 py-0.5 rounded font-mono text-[9px] font-bold bg-white/5 border border-white/10 text-cyan-300">@ ${priceCents}¢</span>` : '';
+
                 html += `
-                    <div class="p-2 bg-black/40 border border-white/5 rounded relative group">
-                        <button onclick="window.sportsTradeSlip.splice(${index}, 1); renderTradeSlip();" class="absolute top-1 right-1 text-gray-500 hover:text-rose-400 hidden group-hover:block">✖</button>
-                        <div class="text-[10px] text-gray-400 truncate">${item.ticker}</div>
-                        <div class="text-xs font-bold text-white">${item.team}</div>
-                        <div class="text-[9px] text-emerald-400 mt-1">Conf: ${item.conf}% | Edge: ${item.edge}%</div>
+                    <div class="p-2.5 bg-black/50 border border-white/10 hover:border-cyan-500/30 rounded-xl relative group transition-all">
+                        <button onclick="window.sportsTradeSlip.splice(${index}, 1); renderTradeSlip(); updateParlayPayoutPreviews();" aria-label="Remove pick" class="sp-slip-remove absolute top-2 right-2 text-gray-500 hover:text-rose-400 cursor-pointer p-0.5 transition-colors">✖</button>
+                        
+                        <!-- Top Row: League & Matchup -->
+                        <div class="flex items-center gap-1.5 mb-1.5 pr-6">
+                            <span class="px-1.5 py-0.5 rounded font-bold text-[8.5px] uppercase bg-cyan-950/60 text-cyan-300 border border-cyan-800/40">${icon} ${sportLabel}</span>
+                            <span class="text-[11px] font-bold text-gray-200 truncate" title="${matchupDisplay}">${matchupDisplay}</span>
+                        </div>
+                        
+                        <!-- Middle Row: Target Line & Side & Price -->
+                        <div class="flex items-center justify-between gap-1.5 mb-1 bg-white/5 p-1.5 rounded-lg border border-white/5">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <span class="px-1.5 py-0.5 rounded font-black text-[9px] uppercase border ${sideColor}">${item.side || 'YES'}</span>
+                                <span class="text-[11px] font-bold text-white truncate">${lineDisplay}</span>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                ${priceTag}
+                            </div>
+                        </div>
+                        
+                        <!-- Bottom Row: AI Model Stats & Ticker Suffix -->
+                        <div class="flex items-center justify-between text-[9px] font-mono text-gray-400 pt-0.5">
+                            <span class="text-emerald-400 font-bold">${item.conf !== 'N/A' && item.conf ? `AI Conf: ${item.conf}% · Edge: +${item.edge || 0}%` : 'Selected Pick'}</span>
+                            <span class="text-[8.5px] text-gray-500 font-mono truncate max-w-[110px]">${item.ticker ? item.ticker.split('-').slice(-1)[0] : ''}</span>
+                        </div>
                     </div>
                 `;
             });
             html += `
                 </div>
-                <div class="p-3 border-t border-white/10">
-                    <button onclick="executeTradeSlip()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors" id="btn-execute-slip">Approve & Execute Trades</button>
+                <div class="sp-slip-foot p-3 border-t border-white/10 space-y-2">
+                    <!-- Dynamic Payout & Profit Breakdown Box -->
+                    <div id="sp-slip-payout-summary" class="p-2 rounded-xl bg-gradient-to-br from-purple-950/35 via-[#0d1424] to-black border border-purple-500/30"></div>
+                    <div class="sp-slip-type flex justify-center gap-4 text-xs font-bold text-gray-300">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="trade_type" value="single" ${currentMode === 'single' ? 'checked' : ''} onchange="window.sportsTradeSlipMode='single'; updateSlipPayoutLive(); updateExecuteBtnText(); updateParlayPayoutPreviews();" class="accent-cyan-500">
+                            Single Trades
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="trade_type" value="combo" ${currentMode === 'combo' ? 'checked' : ''} onchange="window.sportsTradeSlipMode='combo'; updateSlipPayoutLive(); updateExecuteBtnText(); updateParlayPayoutPreviews();" class="accent-cyan-500">
+                            Combo (Parlay)
+                        </label>
+                    </div>
+                    <button onclick="executeTradeSlip()" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors cursor-pointer" id="btn-execute-slip"></button>
                 </div>
             `;
             panel.innerHTML = html;
+            updateSlipPayoutLive();
+            updateExecuteBtnText();
+        }
+
+        function updateExecuteBtnText() {
+            const btn = document.getElementById('btn-execute-slip');
+            if (!btn || btn.disabled) return;
+            const sportsTradeSize = getCurrentSportsTradeSize();
+            const isCombo = (window.sportsTradeSlipMode === 'combo');
+            if (isCombo && window.sportsTradeSlip && window.sportsTradeSlip.length >= 2) {
+                const m = computeComboMetrics(window.sportsTradeSlip, sportsTradeSize);
+                btn.textContent = `Execute ${m.count}-Leg Combo ($${sportsTradeSize} → Pays $${m.payout.toFixed(2)} / +$${m.profit.toFixed(2)})`;
+            } else {
+                btn.textContent = isCombo ? `Approve & Execute Combo ($${sportsTradeSize})` : `Approve & Execute ${window.sportsTradeSlip?.length || ''} Trade${(window.sportsTradeSlip?.length || 1) > 1 ? 's' : ''} ($${sportsTradeSize} ea)`;
+            }
+        }
+        window.updateExecuteBtnText = updateExecuteBtnText;
+
+        function showToast(msg, type = 'info') {
+            let container = document.getElementById('toastContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toastContainer';
+                container.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 pointer-events-none w-11/12 max-w-sm';
+                document.body.appendChild(container);
+            }
+            const el = document.createElement('div');
+            el.className = `px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg text-white pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 ${
+                type === 'success' ? 'bg-emerald-600' :
+                type === 'error' ? 'bg-rose-600' :
+                type === 'warning' ? 'bg-amber-600' : 'bg-cyan-600'
+            }`;
+            el.textContent = msg;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                setTimeout(() => el.remove(), 300);
+            }, 4000);
         }
 
         async function executeTradeSlip() {
@@ -2631,13 +4932,95 @@
                 btn.textContent = 'EXECUTING...';
             }
             
-            for (const item of window.sportsTradeSlip) {
-                try {
-                    const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/execute?event_ticker=' + encodeURIComponent(item.ticker), { method: 'POST' });
-                    const data = await res.json();
-                    if (!res.ok) console.error("Trade failed", data);
-                } catch(e) {
-                    console.error("Execution error", e);
+            let isCombo = (window.sportsTradeSlipMode === 'combo');
+            const typeEls = document.getElementsByName('trade_type');
+            for (let i = 0; i < typeEls.length; i++) {
+                if (typeEls[i].checked) {
+                    isCombo = (typeEls[i].value === 'combo');
+                    window.sportsTradeSlipMode = typeEls[i].value;
+                }
+            }
+            
+            const sportsTradeSize = parseFloat(document.getElementById('sports-trade-size-dollars')?.value || document.getElementById('sports-wager-dollars')?.value || 10.0) || 10.0;
+            
+            if (isCombo && (!window.sportsTradeSlip || window.sportsTradeSlip.length < 2)) {
+                showToast('Combo (Parlay) requires at least 2 picks in your trade slip. Add another pick or select Single Trades.', 'warning');
+                if (btn) {
+                    btn.disabled = false;
+                    updateExecuteBtnText();
+                }
+                return;
+            }
+
+            // Orders are always placed for the logged-in account: the server reads the user
+            // from the login token. Never guess an account id here.
+            const slipToken = localStorage.getItem('saas_token');
+            const sessionExpired = () => {
+                showToast('Session expired. Please log in again to place trades.', 'error');
+            };
+            if (!slipToken || slipToken === 'null' || slipToken === 'undefined') {
+                sessionExpired();
+                if (btn) {
+                    btn.disabled = false;
+                    updateExecuteBtnText();
+                }
+                return;
+            }
+            const slipHeaders = { 'Authorization': 'Bearer ' + slipToken };
+
+            try {
+                if (isCombo) {
+                    try {
+                        const tickers = window.sportsTradeSlip.map(i => i.ticker).join(',');
+                        const teams = window.sportsTradeSlip.map(i => i.team).join(',');
+                        const sides = window.sportsTradeSlip.map(i => i.side || (i.team && i.team.includes('(NO)') ? 'NO' : 'YES')).join(',');
+                        const authH = slipHeaders;
+                        const comboUrl = (window.API_BASE_URL || '') + '/api/engine/sports/combo?event_tickers=' + encodeURIComponent(tickers) + '&teams=' + encodeURIComponent(teams) + '&sides=' + encodeURIComponent(sides) + '&trade_size=' + encodeURIComponent(sportsTradeSize);
+                        const res = await fetch(comboUrl, { method: 'POST', headers: authH });
+                        if (res.status === 401) { sessionExpired(); return; }
+                        const data = await res.json();
+                        if (res.ok && data.combo_executed) {
+                            if (data.is_single_kalshi_combo) {
+                                showToast(`⚡ Single Kalshi Combo Ticket Placed! (${data.total_requested} legs on ${data.kalshi_market_ticker})`, 'success');
+                            } else {
+                                showToast(`Combo trade executed (${data.trades.length} legs)`, 'success');
+                            }
+                        } else {
+                            const errText = data.error || (data.errors && data.errors.length ? data.errors.map(e => e.error).join('; ') : 'Combo execution failed');
+                            showToast(`Combo failed: ${errText}`, 'error');
+                            console.error("Combo Trade failed", data);
+                        }
+                    } catch(e) {
+                        showToast(`Combo network error: ${e.message}`, 'error');
+                        console.error("Execution error", e);
+                    }
+                } else {
+                    for (const item of window.sportsTradeSlip) {
+                        try {
+                            const team = item.team;
+                            const explicitSide = item.side || (team && team.includes('(NO)') ? 'NO' : 'YES');
+                            const sideParam = `&side=${encodeURIComponent(explicitSide)}`;
+                            const url = (window.API_BASE_URL || '') + '/api/engine/sports/execute?event_ticker=' + encodeURIComponent(item.ticker) + '&manual_team=' + encodeURIComponent(team) + '&trade_size=' + encodeURIComponent(sportsTradeSize) + sideParam;
+                            const authH = slipHeaders;
+                            const res = await fetch(url, { method: 'POST', headers: authH });
+                            if (res.status === 401) { sessionExpired(); return; }
+                            const data = await res.json();
+                            if (res.ok && data.executed) {
+                                showToast(`Trade placed: ${data.trade?.ticker || item.ticker} (${data.trade?.mode || 'LIVE'})`, 'success');
+                            } else {
+                                showToast(`Trade failed: ${data.error || 'Execution failed'}`, 'error');
+                                console.error("Trade failed", data);
+                            }
+                        } catch(e) {
+                            showToast(`Trade network error: ${e.message}`, 'error');
+                            console.error("Execution error", e);
+                        }
+                    }
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    updateExecuteBtnText();
                 }
             }
             
@@ -2647,11 +5030,15 @@
             // Reload the events to clear processing states
             loadSportsEvents(window.sportsFilter);
             
+            if (typeof loadDashboard === 'function') {
+                loadDashboard();
+            }
             // Re-fetch trades
             if (typeof fetchKalshiTrades === 'function') {
                 setTimeout(fetchKalshiTrades, 1500);
             }
         }
+        window.executeSportsTradeSlip = executeTradeSlip;
 
         function closeSportsAIPopup() {
             const popup = document.getElementById('sports-ai-popup');
@@ -2660,78 +5047,234 @@
             }
         }
 
-        function addPredictionToSlip(ticker, team, conf, edge) {
-            window.sportsTradeSlip.push({ ticker, team, conf, edge });
+        function addPredictionToSlip(ticker, team, conf, edge, side='YES', extraDetails={}) {
+            if (!Array.isArray(window.sportsTradeSlip)) window.sportsTradeSlip = [];
+            window.sportsTradeSlip.push({ ticker, team, conf, edge, side, ...(extraDetails || {}) });
             renderTradeSlip();
             closeSportsAIPopup();
+            if (typeof showToast === 'function') {
+                showToast(`Added ${team} to Trade Slip`, 'success');
+            }
+            const panel = document.getElementById('sports-trade-slip-panel');
+            if (panel && !panel.classList.contains('hidden')) {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         async function querySportsAI(ticker, evt) {
             if (!ticker) return;
+            const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             
             closeSportsAIPopup();
             
+            const fullEvt = evt || (window.__sportsEventsCache ? window.__sportsEventsCache.find(x => x.event_ticker === ticker) : {}) || {};
+            const md = fullEvt.metadata || {};
+            const sport = String(fullEvt.sport || md.sport || 'SPORTS').toUpperCase();
+            const league = String(fullEvt.league || md.league || sport).toUpperCase();
+            const icon = (typeof SPORT_ICONS !== 'undefined' && (SPORT_ICONS[sport] || SPORT_ICONS[league])) ? (SPORT_ICONS[sport] || SPORT_ICONS[league]) : '🏟️';
+            const rawMatchup = fullEvt.matchup || md.matchup || ticker;
+            const cleanMatchup = expandMatchupNames(rawMatchup.replace(/:\s*(Spread|Total\s*Runs?|Totals?|Game|Moneyline).*$/i, '').trim() || rawMatchup, sport || league);
+            const shownStart = (typeof window.__sportsStartLabel === 'function') ? window.__sportsStartLabel(fullEvt) : '';
+            const gameTime = String(shownStart || fullEvt.game_time || md.game_time || 'Upcoming / Today').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
             const popup = document.createElement('div');
             popup.id = 'sports-ai-popup';
-            popup.className = 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-[#0c0c10]/95 backdrop-blur-3xl border border-cyan-500/50 rounded-2xl shadow-[0_20px_70px_rgba(0,200,255,0.15)] z-[9999] overflow-hidden flex flex-col';
+            popup.className = 'sp-ai-popup fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] max-w-md bg-[#0c0c10]/95 backdrop-blur-3xl border border-cyan-500/50 rounded-2xl shadow-[0_20px_70px_rgba(0,200,255,0.15)] z-[9999] overflow-hidden flex flex-col';
             popup.innerHTML = `
-                <div class="p-4 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-900/40 to-transparent flex justify-between items-center">
+                <div class="p-3.5 border-b border-cyan-500/30 bg-gradient-to-r from-cyan-900/40 via-blue-900/20 to-transparent flex justify-between items-center">
                     <div class="text-sm font-black text-white flex items-center gap-2">
-                        <span class="animate-pulse">🤖</span> AI Engine Query
+                        <span class="text-base">${icon}</span>
+                        <span class="px-1.5 py-0.5 rounded font-black text-[9px] uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">${league}</span>
+                        <span class="tracking-wide">Market & Prediction Intel</span>
                     </div>
-                    <button onclick="closeSportsAIPopup()" class="text-gray-400 hover:text-white cursor-pointer">✖</button>
+                    <button onclick="closeSportsAIPopup()" class="text-gray-400 hover:text-white cursor-pointer px-1 text-sm font-bold">✕</button>
                 </div>
-                <div class="p-6 text-center" id="sports-ai-popup-content">
-                    <div class="text-cyan-400 text-sm animate-pulse font-mono mb-2">Analyzing market data...</div>
-                    <div class="text-[10px] text-gray-500">Connecting to Local AI (Port 8057)</div>
+                <div class="p-5" id="sports-ai-popup-content">
+                    <div class="text-center py-6">
+                        <div class="text-cyan-400 text-sm animate-pulse font-mono mb-2">Analyzing market data & odds...</div>
+                        <div class="text-[10px] text-gray-500">Connecting to Local AI & Kalshi Orderbook</div>
+                    </div>
                 </div>
             `;
             document.body.appendChild(popup);
             
             try {
-                const titleParam = evt && (evt.predicted_team || (evt.metadata && evt.metadata.name)) ? '&title=' + encodeURIComponent(evt.predicted_team || evt.metadata.name) : '';
-                const sportParam = evt && (evt.sport || evt.league) ? '&sport=' + encodeURIComponent(evt.sport || evt.league) : '';
-                // Note: execute=false since we just want prediction data
-                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/predict?event_ticker=' + encodeURIComponent(ticker) + '&execute=false' + titleParam + sportParam);
+                const titleText = (fullEvt && (fullEvt.title || fullEvt.matchup || md.matchup || fullEvt.predicted_team || md.name)) || '';
+                const titleParam = titleText ? '&title=' + encodeURIComponent(titleText) : '';
+                const sportParam = fullEvt && (fullEvt.sport || fullEvt.league) ? '&sport=' + encodeURIComponent(fullEvt.sport || fullEvt.league) : '';
+                
+                const token = localStorage.getItem('saas_token') || localStorage.getItem('app_api_token') || '';
+                const fetchOpts = {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                };
+                
+                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/predict?event_ticker=' + encodeURIComponent(ticker) + '&execute=false' + titleParam + sportParam, fetchOpts);
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
+                // Keep the popup on the same pick as the card. /predict can fall back to a fresh on-demand
+                // simulation that disagrees with the model pick shown in the list (it also re-rolls each
+                // time), so when the feed already has a pick for this event, the popup shows that one.
+                try {
+                    const fp = fullEvt.ai_prediction || null;
+                    const feedTeam = fullEvt.has_ai_prediction ? (fullEvt.ai_pick || (fp && fp.predicted_team) || '') : '';
+                    const p0 = data.prediction || {};
+                    const nrm = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (feedTeam && fp && parseFloat(fullEvt.confidence_pct || fp.confidence_pct) > 0 && nrm(p0.predicted_team) !== nrm(feedTeam)) {
+                        data.prediction = Object.assign({}, p0, {
+                            predicted_team: feedTeam,
+                            confidence_pct: fp.confidence_pct != null ? fp.confidence_pct : fullEvt.confidence_pct,
+                            edge_pct: fullEvt.edge_pct != null ? fullEvt.edge_pct : fp.edge_pct,
+                            opponent: fp.opponent || p0.opponent,
+                            market_type: fp.market_type || p0.market_type,
+                            metadata: Object.assign({}, fp.metadata || {})
+                        });
+                    }
+                } catch (e) { /* keep /predict's answer */ }
                 
                 const pred = data.prediction || {};
-                const team = pred.predicted_team || ticker;
-                const conf = pred.confidence_pct != null ? pred.confidence_pct : 'N/A';
-                const edge = pred.edge_pct != null ? pred.edge_pct : 'N/A';
+                const details = data.event_details || {};
+                const propType = details.prop_type || pred.prop_type || fullEvt.prop_type || md.prop_type || 'Moneyline';
+                const line = details.line || pred.line || fullEvt.line || md.line || (propType === 'Moneyline' ? 'Moneyline' : '');
+                const spreadAmount = details.spread_amount || pred.spread_amount || fullEvt.spread_amount || md.spread_amount || '';
+                const overUnderAmount = details.over_under_amount || pred.over_under_amount || fullEvt.over_under_amount || md.over_under_amount || '';
+                const strikeDetails = details.strike_details || pred.strike_details || fullEvt.strike_details || md.strike_details || '';
+
+                const team = pred.predicted_team || fullEvt.predicted_team || ticker;
+                // No invented fallbacks (this used to show 55% / +5% when the AI had nothing).
+                const conf = pred.confidence_pct != null ? parseFloat(pred.confidence_pct).toFixed(1) : (fullEvt.confidence_pct ? parseFloat(fullEvt.confidence_pct).toFixed(1) : 'N/A');
+                const edge = pred.edge_pct != null ? parseFloat(pred.edge_pct).toFixed(1) : (fullEvt.edge_pct ? parseFloat(fullEvt.edge_pct).toFixed(1) : 'N/A');
+                const hasAiPickNow = parseFloat(pred.confidence_pct) > 0 && !!pred.predicted_team && !(window.sportsGameLevelPickOnProp && window.sportsGameLevelPickOnProp(fullEvt, pred));
                 
+                const yesPriceVal = fullEvt.yes_ask != null ? Math.round(fullEvt.yes_ask * 100) : (md.yes_ask != null ? Math.round(md.yes_ask * 100) : null);
+                const noPriceVal = fullEvt.no_ask != null ? Math.round(fullEvt.no_ask * 100) : (md.no_ask != null ? Math.round(md.no_ask * 100) : (yesPriceVal != null ? (100 - yesPriceVal) : null));
+                
+                let propBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                if (propType === 'Spread') propBadgeClass = 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+                else if (propType.includes('Total') || propType.includes('O/U')) propBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                else if (propType === 'Player Prop') propBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+
+                // Extract Master Capper Intelligence
+                const capper = (pred && pred.metadata && pred.metadata.capper)
+                    || (pred && pred.capper)
+                    || (fullEvt && fullEvt.ai_prediction && fullEvt.ai_prediction.metadata && fullEvt.ai_prediction.metadata.capper)
+                    || (fullEvt && fullEvt.metadata && fullEvt.metadata.capper)
+                    || (fullEvt && fullEvt.capper);
+
                 const content = document.getElementById('sports-ai-popup-content');
                 if (content) {
-                    content.innerHTML = \`
-                        <div class="mb-4 text-left space-y-3">
-                            <div>
-                                <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Recommended Pick</div>
-                                <div class="text-lg font-black text-white leading-tight">\${team}</div>
+                    content.innerHTML = `
+                        <div class="space-y-3 text-left">
+                            <!-- Event Matchup & League Details -->
+                            <div class="bg-black/50 p-3 rounded-xl border border-white/10">
+                                <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="px-1.5 py-0.5 rounded font-black text-[9px] uppercase ${propBadgeClass}">${propType}</span>
+                                        ${line && line !== 'Moneyline' && String(line).toLowerCase() !== String(propType).toLowerCase() ? `<span class="px-1.5 py-0.5 rounded font-black text-[9px] bg-cyan-950/80 text-cyan-200 border border-cyan-500/30 font-mono">${line}</span>` : ''}
+                                    </div>
+                                    <span class="text-[9.5px] font-mono text-gray-400">${gameTime}</span>
+                                </div>
+                                <div class="text-[14px] sm:text-[15px] font-black text-white leading-snug">${cleanMatchup}</div>
+                                ${strikeDetails && propType !== 'Moneyline' && strikeDetails.toLowerCase() !== cleanMatchup.toLowerCase() ? `
+                                    <div class="text-[10px] text-gray-300 font-mono mt-1.5 pt-1.5 border-t border-white/5 flex items-center gap-1.5">
+                                        <span class="text-cyan-400 shrink-0">🎯</span>
+                                        <span>${strikeDetails}</span>
+                                    </div>
+                                ` : ''}
                             </div>
-                            <div class="grid grid-cols-2 gap-3 p-3 bg-black/40 rounded-lg border border-white/5">
-                                <div>
-                                    <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Confidence</div>
-                                    <div class="text-sm font-bold \${parseFloat(conf) > 60 ? 'text-emerald-400' : 'text-amber-400'}">\${conf}%</div>
+
+                            <!-- Master Sports Capper Quantitative Conviction Box -->
+                            ${capper && capper.grade ? `
+                                <div class="bg-gradient-to-br from-[#0a1120] via-[#0b162c] to-[#050b16] p-3.5 rounded-xl border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.12)] space-y-2.5">
+                                    <div class="flex items-center justify-between flex-wrap gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2.5 py-0.5 rounded font-black text-[11px] tracking-wide ${capper.grade === 'A+' ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : capper.grade === 'A' ? 'bg-amber-500/25 text-amber-300 border border-amber-500/60' : 'bg-cyan-500/25 text-cyan-300 border border-cyan-500/50'}">
+                                                ${esc(capper.grade)} ${esc(capper.stars)}
+                                            </span>
+                                            <span class="text-[10.5px] font-mono font-bold tracking-wider uppercase text-amber-400">
+                                                ${esc(capper.tier_label || 'MASTER CAPPER')}
+                                            </span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest block">Quarter-Kelly</span>
+                                            <span class="text-[11px] font-black text-cyan-300 font-mono">${capper.kelly_bankroll_pct != null ? Number(capper.kelly_bankroll_pct).toFixed(1) + '% Kelly' : 'Conservative'}</span>
+                                        </div>
+                                    </div>
+
+                                    ${capper.conviction_desc ? `<div class="text-[11px] text-gray-300 leading-snug">${esc(capper.conviction_desc)}</div>` : ''}
+
+                                    <!-- Quantitative Edge Matrix Grid -->
+                                    <div class="grid grid-cols-3 gap-1.5 pt-1.5 border-t border-white/10 text-center font-mono">
+                                        <div class="bg-black/50 p-2 rounded-lg border border-white/5">
+                                            <div class="text-[8.5px] uppercase text-gray-400 font-bold">Model Win</div>
+                                            <div class="text-[12px] font-black text-emerald-400 mt-0.5">${capper.model_win_pct != null ? Number(capper.model_win_pct).toFixed(1) + '%' : conf + '%'}</div>
+                                        </div>
+                                        <div class="bg-black/50 p-2 rounded-lg border border-white/5">
+                                            <div class="text-[8.5px] uppercase text-gray-400 font-bold">Net EV (Post-Fee)</div>
+                                            <div class="text-[12px] font-black ${capper.net_ev_pct >= 5 ? 'text-emerald-400' : capper.net_ev_pct > 0 ? 'text-amber-300' : 'text-gray-400'} mt-0.5">
+                                                ${capper.net_ev_pct != null ? (capper.net_ev_pct > 0 ? '+' : '') + Number(capper.net_ev_pct).toFixed(1) + '%' : '—'}
+                                            </div>
+                                        </div>
+                                        <div class="bg-black/50 p-2 rounded-lg border border-white/5">
+                                            <div class="text-[8.5px] uppercase text-gray-400 font-bold">Kelly Rec ($1k)</div>
+                                            <div class="text-[12px] font-black text-cyan-300 mt-0.5">$${capper.recommended_wager != null ? Number(capper.recommended_wager).toFixed(2) : (capper.kelly_bankroll_pct != null ? (Number(capper.kelly_bankroll_pct) * 10).toFixed(2) : '10.00')}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- H2H Matchup & Situational Notes -->
+                                    ${(capper.capper_notes && capper.capper_notes.length) ? `
+                                        <div class="pt-1.5 border-t border-white/10 space-y-1">
+                                            <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                                <span>⚔️ Head-to-Head & Situational Dynamics</span>
+                                            </div>
+                                            <div class="space-y-1">
+                                                ${capper.capper_notes.map(note => `
+                                                    <div class="text-[10px] text-gray-200 bg-white/5 p-1.5 rounded border border-white/5 flex items-start gap-1.5 leading-snug">
+                                                        <span class="text-amber-400 shrink-0 font-bold">▸</span>
+                                                        <span>${esc(note)}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                <div>
-                                    <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Calculated Edge</div>
-                                    <div class="text-sm font-bold text-cyan-400">\${edge}%</div>
+                            ` : ''}
+
+                            <!-- Recommended Pick Hero Box -->
+                            <div class="bg-gradient-to-br from-emerald-950/40 via-black/70 to-[#0e1626] p-3 rounded-xl border border-emerald-500/40">
+                                <div class="flex items-center justify-between mb-0.5">
+                                    <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">${(fullEvt.prop_type === 'Period' || fullEvt.segment || /KXNHL[123]P|KXMLBF5/.test(String(fullEvt.event_ticker || ticker).toUpperCase())) ? '✦ AI full-game lean' : '✦ AI Recommended Pick'}</span>
+                                    ${spreadAmount ? `<span class="text-[9px] font-mono text-purple-300 font-bold">Spread: ${spreadAmount}</span>` : (overUnderAmount && /\d/.test(String(overUnderAmount)) ? `<span class="text-[9px] font-mono text-amber-300 font-bold">Line: ${overUnderAmount}</span>` : '')}
                                 </div>
+                                <div class="text-[16px] font-black text-white leading-tight">${hasAiPickNow ? team : 'No AI pick for this market'}</div>
+                            </div>
+
+                            <!-- AI analysis: why this pick (js/sports-trade-details.js) -->
+                            ${window.renderSportsAIAnalysis ? window.renderSportsAIAnalysis(data, fullEvt) : ''}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col gap-2 mt-4 pt-1 border-t border-white/5">
+                            <div class="flex gap-2">
+                                ${hasAiPickNow ? `<button onclick="addPredictionToSlip('${ticker}', '${team.replace(/'/g, "\\'")}', '${conf}', '${edge}', 'YES', {prop_type:'${propType}', line:'${line.replace(/'/g, "\\'")}', spread_amount:'${spreadAmount}', over_under_amount:'${overUnderAmount}', strike_details:'${strikeDetails.replace(/'/g, "\\'")}'})" class="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-[10px] uppercase tracking-wider rounded-lg transition-all active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer">
+                                    + Add AI Pick
+                                </button>` : ''}
+                                <button onclick="addPredictionToSlip('${ticker}', '${team.replace(/'/g, "\\'")} (Manual YES)', 'N/A', 'N/A', 'YES', {prop_type:'${propType}', line:'${line.replace(/'/g, "\\'")}', spread_amount:'${spreadAmount}', over_under_amount:'${overUnderAmount}', strike_details:'${strikeDetails.replace(/'/g, "\\'")}'})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider rounded-lg transition-all active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer">
+                                    + YES
+                                </button>
+                                <button onclick="addPredictionToSlip('${ticker}', '${team.replace(/'/g, "\\'")} (Manual NO)', 'N/A', 'N/A', 'NO', {prop_type:'${propType}', line:'${line.replace(/'/g, "\\'")}', spread_amount:'${spreadAmount}', over_under_amount:'${overUnderAmount}', strike_details:'${strikeDetails.replace(/'/g, "\\'")}'})" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] uppercase tracking-wider rounded-lg transition-all active:scale-95 shadow-[0_0_15px_rgba(225,29,72,0.4)] cursor-pointer">
+                                    + NO
+                                </button>
                             </div>
                         </div>
-                        <button onclick="addPredictionToSlip('\${ticker}', '\${team.replace(/'/g, "\\'")}', '\${conf}', '\${edge}')" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                            Add to Trade Slip
-                        </button>
-                    \`;
+                    `;
                 }
             } catch (e) {
                 const content = document.getElementById('sports-ai-popup-content');
                 if (content) {
-                    content.innerHTML = \`
-                        <div class="text-rose-400 text-sm mb-4">Error querying AI: \${e.message}</div>
+                    content.innerHTML = `
+                        <div class="text-rose-400 text-sm mb-4">Error querying AI: ${e.message}</div>
                         <button onclick="closeSportsAIPopup()" class="py-2 px-4 bg-gray-800 text-white rounded">Close</button>
-                    \`;
+                    `;
                 }
             }
         }
@@ -2751,7 +5294,13 @@
 
             try {
                 const sportParam = targetSport && targetSport !== 'ALL' ? '&sport=' + encodeURIComponent(targetSport) : '';
-                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/events?t=' + Date.now() + sportParam, {cache: 'no-store'});
+                const stratParam = window.currentSportsStrategy ? '&strategy=' + encodeURIComponent(window.currentSportsStrategy) : '';
+                const token = localStorage.getItem('saas_token') || localStorage.getItem('app_api_token') || '';
+                const fetchOpts = {
+                    cache: 'no-store',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                };
+                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/sports/events?t=' + Date.now() + sportParam + stratParam, fetchOpts);
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
@@ -2767,6 +5316,7 @@
                 }
                 window.__sportsLoading = false;
                 renderSportsEvents();
+                if (typeof updateParlayPayoutPreviews === 'function') updateParlayPayoutPreviews();
             } catch (e) {
                 if (reqId !== window.__sportsReqId) return;
                 window.__sportsLoading = false;
@@ -2774,14 +5324,17 @@
                     container.innerHTML = '<div class="col-span-full text-center text-red-400 text-xs py-6">Failed to load picks: ' + e.message + '</div>';
                 } else {
                     renderSportsEvents();
+                    if (typeof updateParlayPayoutPreviews === 'function') updateParlayPayoutPreviews();
                 }
             }
         }
-        async function selectDashboardAsset(asset) {
+        async function selectDashboardAsset(asset, isTabSwitch = false) {
             asset = (asset || 'BTC').toUpperCase();
-            if (window.currentAsset === asset && window.lastCandle && document.querySelector('#lw-chart-container canvas')) {
-                return;
-            }
+            
+            const hasExistingChart = Boolean((lwChart || window.lwChart) && document.querySelector('#lw-chart-container canvas'));
+            const hasCachedData = Boolean(window.lastCandle || (window.candlesCache && window.candlesCache[asset]));
+            const isSameAsset = (window.currentAsset === asset);
+
             window.currentAsset = asset;
             
             // Visual styles
@@ -2802,71 +5355,91 @@
             ['BTC', 'ETH', 'GOLD', 'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'NDQ', 'SOL', 'DOGE'].forEach(a => {
                 const btn = document.getElementById('btn-asset-' + a.toLowerCase());
                 if (!btn) return;
-                
-                // For main buttons (BTC, ETH, GOLD)
-                if (['BTC', 'ETH', 'GOLD'].includes(a)) {
-                    btn.className = 'asset-btn flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ' + 
-                        (a === asset ? activeStyles[a] : inactiveStyle);
-                } else {
-                    // For dropdown buttons
-                    btn.className = 'asset-btn py-2 px-3 rounded-lg text-[11px] font-bold transition-all flex items-center gap-2 border cursor-pointer text-left w-full ' + 
-                        (a === asset ? activeStyles[a] : 'bg-transparent text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200');
+                const isSelected = (a === asset);
+                btn.className = 'asset-btn shrink-0 py-1 px-2.5 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer ' + 
+                    (isSelected ? activeStyles[a] : inactiveStyle);
+                if (isSelected) {
+                    try { btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch(e) {}
                 }
             });
-            
-            // Reset transient HUD values for the new asset without blanking the chart canvas
-            window.lastCandle = null;
 
-            // Update dropdown button
-            const moreBtn = document.getElementById('btn-asset-more');
-            const moreText = document.getElementById('btn-asset-more-text');
-            if (moreBtn && moreText) {
-                if (!['BTC', 'ETH', 'GOLD'].includes(asset)) {
-                    moreBtn.className = 'py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer shadow-sm w-auto px-3 ' + activeStyles[asset];
-                    const iconMap = {'NDQ':'📈', 'EURUSD':'💵', 'GBPUSD':'💷', 'USDJPY':'💴', 'AUDUSD':'🇦🇺', 'SOL':'🚀', 'DOGE':'🐕'};
-                    moreText.innerHTML = (iconMap[asset] || '') + ' ' + asset + ' ▼';
-                } else {
-                    moreBtn.className = 'py-1 px-2 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1 border cursor-pointer bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-gray-200 shadow-sm w-12';
-                    moreText.innerHTML = '▼';
-                }
+            // Immediately resize existing chart if available
+            if (hasExistingChart) {
+                requestAnimationFrame(() => {
+                    const chart = lwChart || window.lwChart;
+                    const container = document.getElementById('lw-chart-container');
+                    if (chart && container) {
+                        const w = container.clientWidth || container.offsetWidth;
+                        const h = container.clientHeight || container.offsetHeight;
+                        if (w > 0 && h > 0) {
+                            try { chart.applyOptions({ width: w, height: h }); } catch(_) {}
+                        }
+                        try {
+                            if (chart.timeScale) chart.timeScale().fitContent();
+                        } catch(_) {}
+                    }
+                });
             }
 
-            window.currentKalshiTarget = null;
-            lastBidTs = 0;
-            bidsQueue = [];
-            const bidsBox = document.getElementById('live-bids-container');
-            if (bidsBox) bidsBox.innerHTML = '';
-            
-            const strikeEl = document.getElementById('exec-strike');
-            if (strikeEl) strikeEl.textContent = '$--,---';
-            const spotEl = document.getElementById('exec-spot');
-            if (spotEl) {
-                const knownPrice = window.assetSpotPrices ? window.assetSpotPrices[asset] : null;
-                if (knownPrice && isFinite(knownPrice) && knownPrice > 0) {
-                    spotEl.textContent = '$' + Number(knownPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                } else {
-                    spotEl.textContent = '$--,---';
+            // If switching tabs or if cached data exists for this asset, DO NOT blank HUD or show blocking loader
+            if (typeof initSpotWebSocket === 'function') initSpotWebSocket();
+
+            const isFxAsset = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(asset);
+            const assetDecimals = asset === 'USDJPY' ? 3 : (isFxAsset ? 5 : (asset === 'DOGE' ? 4 : 2));
+            const assetPrefix = isFxAsset ? '' : '$';
+
+            const skipLoaderAndBlanking = isTabSwitch || (isSameAsset && hasExistingChart && hasCachedData);
+
+            if (!skipLoaderAndBlanking) {
+                window.lastCandle = null;
+                window.currentKalshiTarget = null;
+                lastBidTs = 0;
+                bidsQueue = [];
+                const bidsBox = document.getElementById('live-bids-container');
+                if (bidsBox) bidsBox.innerHTML = '';
+                
+                const strikeEl = document.getElementById('exec-strike');
+                if (strikeEl) strikeEl.textContent = '$--,---';
+                const spotEl = document.getElementById('exec-spot');
+                if (spotEl) {
+                    const knownPrice = window.assetSpotPrices ? window.assetSpotPrices[asset] : null;
+                    if (knownPrice && isFinite(knownPrice) && knownPrice > 0) {
+                        spotEl.textContent = assetPrefix + Number(knownPrice).toLocaleString(undefined, {minimumFractionDigits: assetDecimals, maximumFractionDigits: assetDecimals});
+                    } else {
+                        spotEl.textContent = '$--,---';
+                    }
                 }
-            }
-            const yesBid = document.getElementById('kalshi-yes');
-            if (yesBid) yesBid.textContent = '--%';
-            const noBid  = document.getElementById('kalshi-no');
-            if (noBid) noBid.textContent = '--%';
-            const cdEl = document.getElementById('exec-countdown');
-            if (cdEl) cdEl.textContent = '--:--';
-            
-            // Show loader spinner
-            showChartLoader();
-            
-            // Fetch fresh chart, Kalshi contract, and live bids in parallel
-            try {
-                await Promise.allSettled([
-                    fetchChartData(true),
-                    fetchKalshiData(true),
+                const yesBid = document.getElementById('kalshi-yes');
+                if (yesBid) yesBid.textContent = '--%';
+                const noBid  = document.getElementById('kalshi-no');
+                if (noBid) noBid.textContent = '--%';
+                const cdEl = document.getElementById('exec-countdown');
+                if (cdEl) cdEl.textContent = '--:--';
+                
+                showChartLoader();
+                try {
+                    await Promise.allSettled([
+                        fetchChartData(true),
+                        fetchKalshiData(true),
+                        fetchLiveBids()
+                    ]);
+                } finally {
+                    hideChartLoader();
+                }
+            } else {
+                // Smooth background refresh without blocking spinner or blanking HUD
+                const spotEl = document.getElementById('exec-spot');
+                if (spotEl) {
+                    const knownPrice = window.assetSpotPrices ? window.assetSpotPrices[asset] : null;
+                    if (knownPrice && isFinite(knownPrice) && knownPrice > 0) {
+                        spotEl.textContent = assetPrefix + Number(knownPrice).toLocaleString(undefined, {minimumFractionDigits: assetDecimals, maximumFractionDigits: assetDecimals});
+                    }
+                }
+                Promise.allSettled([
+                    fetchChartData(false),
+                    fetchKalshiData(false),
                     fetchLiveBids()
-                ]);
-            } finally {
-                hideChartLoader();
+                ]).catch(err => console.warn('[Chart] background refresh warning', err));
             }
         }
 
@@ -2909,6 +5482,13 @@
                 }
 
                 try {
+                    const isFxChart = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(reqAsset);
+                    const chartPrec = reqAsset === 'USDJPY' ? 3 : (isFxChart ? 5 : (reqAsset === 'DOGE' ? 4 : 2));
+                    const chartMinMove = Number((1 / Math.pow(10, chartPrec)).toFixed(chartPrec));
+                    const pFmt = { type: 'price', precision: chartPrec, minMove: chartMinMove };
+                    if (candleSeries) candleSeries.applyOptions({ priceFormat: pFmt });
+                    if (lineSeries) lineSeries.applyOptions({ priceFormat: pFmt });
+
                     const isLine = window.currentChartType === 'line';
                     if (isLine && lineSeries) {
                         const lineData = cleanCandles.map(c => ({ time: c.time, value: c.close }));
@@ -2925,6 +5505,8 @@
                         if (cleanVol.length) volumeSeries.setData(cleanVol);
                     }
                     window.lastCandle = cleanCandles[cleanCandles.length - 1];
+                    window.candlesCache = window.candlesCache || {};
+                    window.candlesCache[reqAsset] = cleanCandles;
 
                     // Fit content on asset switch, timeframe change, or initial load
                     if (isSwitch || !window._chartHasFitted) {
@@ -2987,12 +5569,38 @@
             }, 300);
         }
 
+        let liveBidsIntervalMs = 800;
+        const BASE_LIVE_BIDS_INTERVAL_MS = 800;
+        const MAX_LIVE_BIDS_BACKOFF_MS = 30000;
+        let liveBidsTimerId = null;
+
+        function scheduleNextLiveBids(delayMs = liveBidsIntervalMs) {
+            if (liveBidsTimerId) clearTimeout(liveBidsTimerId);
+            liveBidsTimerId = setTimeout(fetchLiveBids, delayMs);
+        }
+        window.scheduleNextLiveBids = scheduleNextLiveBids;
+
         async function fetchLiveBids() {
-            if (document.hidden || !window.isTabActive) return;
+            if (document.hidden || !window.isTabActive) {
+                scheduleNextLiveBids(liveBidsIntervalMs);
+                return;
+            }
             try {
                 const curA = (window.currentAsset || 'BTC').toLowerCase();
                 const res = await fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/kalshi/trades?since=' + lastBidTs);
+                
+                if (res.status === 429) {
+                    // Exponential backoff on HTTP 429: double interval up to 30,000ms (30s)
+                    liveBidsIntervalMs = Math.min(MAX_LIVE_BIDS_BACKOFF_MS, Math.max(BASE_LIVE_BIDS_INTERVAL_MS, liveBidsIntervalMs * 2));
+                    console.warn(`[LiveBids] HTTP 429 rate limit received. Backing off polling interval to ${liveBidsIntervalMs}ms`);
+                    return;
+                }
+
                 if (!res.ok) return;
+
+                // Reset back to base interval upon successful response
+                liveBidsIntervalMs = BASE_LIVE_BIDS_INTERVAL_MS;
+
                 const d = await res.json();
                 
                 const newTrades = d.trades || [];
@@ -3006,6 +5614,9 @@
                     if (!isProcessingBids) processBidsQueue();
                 }
             } catch(_) {}
+            finally {
+                scheduleNextLiveBids(liveBidsIntervalMs);
+            }
         }
 
         function hideChartLoader() {
@@ -3093,11 +5704,24 @@
             }
 
             // Side & Direction
-            const side = String(t.side || t.direction || "YES").toUpperCase();
-            const isYes = side === "YES";
+            const isInvestment = window.__isInvestmentTrade ? window.__isInvestmentTrade(t) : false;
+            let invMeta = t.metadata || {};
+            if (typeof invMeta === 'string') {
+                try { invMeta = JSON.parse(invMeta); } catch(_) { invMeta = {}; }
+            }
+            const invVehicle = isInvestment ? String(t.vehicle || invMeta.vehicle || 'STOCK').toUpperCase() : null;
+            const invSymbol = isInvestment ? String(t.symbol || invMeta.symbol || String(t.ticker || '').split('_')[0] || 'SPY').toUpperCase() : null;
+            const invOptType = isInvestment && invVehicle === 'OPTION' ? String(t.option_type || invMeta.option_type || 'CALL').toUpperCase() : null;
+
+            const side = String(t.side || t.direction || (isInvestment ? "BUY" : "YES")).toUpperCase();
+            const isYes = side === "YES" || side === "BUY";
             const sideBadge = document.getElementById('tdm-side-badge');
             if (sideBadge) {
-                sideBadge.textContent = isYes ? "BID YES" : "BID NO";
+                if (isInvestment) {
+                    sideBadge.textContent = invVehicle === 'OPTION' ? `${side} ${invOptType}` : `${side} SHARES`;
+                } else {
+                    sideBadge.textContent = isYes ? "BID YES" : "BID NO";
+                }
                 sideBadge.className = isYes
                     ? "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/35"
                     : "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/35";
@@ -3105,7 +5729,7 @@
 
             // Ticker & Strike
             const ticker = t.ticker || "KXBTC15M";
-            let rawStrike = t.strike || t.strike_price || t.target_price || t.target;
+            let rawStrike = t.strike || invMeta.strike || t.strike_price || t.target_price || t.target;
             if (!rawStrike && t.market_snapshot) {
                 try {
                     const ms = typeof t.market_snapshot === 'string' ? JSON.parse(t.market_snapshot) : t.market_snapshot;
@@ -3117,11 +5741,30 @@
                 ? sNum.toLocaleString(undefined, { maximumFractionDigits: 2 })
                 : null;
 
-            const assetType = String(t.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => ticker.includes(x)) || 'BTC')).toUpperCase();
+            const isSport = !isInvestment && window.__isSportTrade ? window.__isSportTrade(t) : false;
+            const sInfo = isSport && window.__getSportInfo ? window.__getSportInfo(t) : null;
+
+            const assetType = isInvestment ? `📈 ROBINHOOD ${invVehicle}` : (isSport && sInfo ? sInfo.sport : String(t.asset || (['BTC','ETH','GOLD','EURUSD','GBPUSD','USDJPY','AUDUSD','NDQ','SOL','DOGE'].find(x => ticker.includes(x)) || 'BTC')).toUpperCase());
             const tickerEl = document.getElementById('tdm-ticker');
-            if (tickerEl) tickerEl.textContent = `${assetType} · ${ticker}`;
+            if (isSport && sInfo && window.__fetchGameInfo) window.__fetchGameInfo([ticker]);
+            if (tickerEl) tickerEl.textContent = isInvestment ? `${assetType} · ${invSymbol}` : (isSport && sInfo ? `${sInfo.icon} ${sInfo.sport} · ${(window.__gameInfo && window.__gameInfo[ticker] && window.__gameInfo[ticker].title) ? window.__gameInfoLabel(ticker) : ticker}` : `${assetType} · ${ticker}`);
             const strikeTitleEl = document.getElementById('tdm-strike-title');
-            if (strikeTitleEl) strikeTitleEl.textContent = strikeVal ? `Target Strike $${strikeVal}` : 'Target Strike ---';
+            if (strikeTitleEl) {
+                if (isInvestment) {
+                    if (invVehicle === 'OPTION') {
+                        const expStr = t.expiration || invMeta.expiration || '';
+                        strikeTitleEl.textContent = `${invSymbol} $${strikeVal || '--'} ${invOptType}${expStr ? ' · Exp ' + expStr : ''}`;
+                    } else {
+                        strikeTitleEl.textContent = `${invSymbol} Equity Shares (${side})`;
+                    }
+                } else if (isSport && sInfo) {
+                    const linePart = (sInfo.line && sInfo.line !== 'Moneyline') ? ` • ${sInfo.line}` : '';
+                    const propPart = sInfo.propType ? `[${sInfo.propType}] ` : '';
+                    strikeTitleEl.textContent = `${propPart}${sInfo.team}${linePart}`;
+                } else {
+                    strikeTitleEl.textContent = (strikeVal ? `Target Strike $${strikeVal}` : 'Target Strike ---');
+                }
+            }
             const footerTicker = document.getElementById('tdm-footer-ticker');
             if (footerTicker) footerTicker.textContent = ticker;
 
@@ -3159,25 +5802,50 @@
             }
 
             // Financial Metrics
-            const count = parseInt(t.count || t.size || 1) || 1;
+            const count = Number(t.count || t.size || 1) || 1;
             const entryPriceNum = parseFloat(t.entry_price || 0.50);
-            const exitPriceNum = (t.exit_price !== undefined && t.exit_price !== null) ? parseFloat(t.exit_price) : null;
-            const totalCost = count * entryPriceNum;
+            const exitPriceNum = (!isOpen && t.exit_price !== undefined && t.exit_price !== null) ? parseFloat(t.exit_price) : null;
+            const curMarkRaw = t.current_bid ?? t.current_price ?? t.cur_price ?? t.exit_bid;
+            const curMarkNum = (curMarkRaw !== undefined && curMarkRaw !== null && isFinite(parseFloat(curMarkRaw))) ? parseFloat(curMarkRaw) : null;
+            const multiplier = (isInvestment && invVehicle === 'OPTION') ? 100 : 1;
+            const totalCost = count * entryPriceNum * multiplier;
+            const fmtCents = (p) => {
+                const c = p * 100;
+                return (Math.abs(c - Math.round(c)) > 0.04) ? c.toFixed(1) : String(Math.round(c));
+            };
 
             const entryPriceEl = document.getElementById('tdm-entry-price');
-            if (entryPriceEl) entryPriceEl.textContent = `${Math.round(entryPriceNum * 100)}¢ ($${entryPriceNum.toFixed(2)})`;
+            if (entryPriceEl) {
+                if (isInvestment) {
+                    entryPriceEl.textContent = `$${entryPriceNum.toFixed(2)}${invVehicle === 'OPTION' ? ' / contract' : ' / share'}`;
+                } else {
+                    entryPriceEl.textContent = `${fmtCents(entryPriceNum)}¢ ($${entryPriceNum.toFixed(entryPriceNum < 0.1 ? 4 : 2)})`;
+                }
+            }
 
             const exitPriceEl = document.getElementById('tdm-exit-price');
             if (exitPriceEl) {
-                if (exitPriceNum !== null) {
-                    exitPriceEl.textContent = `${Math.round(exitPriceNum * 100)}¢ ($${exitPriceNum.toFixed(2)})`;
+                if (isOpen) {
+                    if (isInvestment) {
+                        exitPriceEl.textContent = curMarkNum !== null ? `Live Mark ($${curMarkNum.toFixed(2)})` : 'Live Mark';
+                    } else {
+                        exitPriceEl.textContent = curMarkNum !== null ? `Active Mark (${fmtCents(curMarkNum)}¢)` : 'Active Mark';
+                    }
+                } else if (exitPriceNum !== null) {
+                    exitPriceEl.textContent = isInvestment ? `$${exitPriceNum.toFixed(2)}` : `${fmtCents(exitPriceNum)}¢ ($${exitPriceNum.toFixed(exitPriceNum < 0.1 ? 4 : 2)})`;
                 } else {
-                    exitPriceEl.textContent = isOpen ? 'Active Mark' : 'Settled';
+                    exitPriceEl.textContent = 'Settled';
                 }
             }
 
             const contractsEl = document.getElementById('tdm-contracts');
-            if (contractsEl) contractsEl.textContent = `${count} ${count === 1 ? 'Contract' : 'Contracts'}`;
+            if (contractsEl) {
+                if (isInvestment && invVehicle === 'STOCK') {
+                    contractsEl.textContent = `${count} ${count === 1 ? 'Share' : 'Shares'}`;
+                } else {
+                    contractsEl.textContent = `${count} ${count === 1 ? 'Contract' : 'Contracts'}`;
+                }
+            }
 
             const totalCostEl = document.getElementById('tdm-total-cost');
             if (totalCostEl) totalCostEl.textContent = `$${totalCost.toFixed(2)}`;
@@ -3185,6 +5853,9 @@
             // Hero Outcome Card
             const heroCard = document.getElementById('tdm-hero-card');
             if (heroCard) {
+                const closeHandler = isInvestment
+                    ? `closeInvestmentPosition('${t.id}'); closeTradeDetailsModal();`
+                    : `closeTrade('${t.id}', 'MANUAL_CLOSE'); closeTradeDetailsModal();`;
                 if (isOpen) {
                     heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 via-[#0d1424] to-black flex flex-col sm:flex-row justify-between sm:items-center gap-3";
                     heroCard.innerHTML = `
@@ -3196,11 +5867,12 @@
                                 <div class="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Active Position Live</div>
                                 <div class="text-2xl font-black text-white tabular-nums">${pnlVal >= 0 ? '+$' + pnlVal.toFixed(2) : '-$' + Math.abs(pnlVal).toFixed(2)}</div>
                                 <div class="text-[10px] text-gray-400 font-mono">Unrealized PnL (Mark-to-Market)</div>
-                            </div>
+                            
+                                <button onclick="${closeHandler}" class="mt-2 sm:mt-2.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"><span>✕</span> Close / Take Profit</button></div>
                         </div>
                         <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
                             <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Direction Target</span>
-                            <span class="text-xs font-black ${isYes ? 'text-emerald-400' : 'text-rose-400'}">${isYes ? (strikeVal ? 'YES (Above $' + strikeVal + ')' : 'YES (Above Target)') : (strikeVal ? 'NO (Below $' + strikeVal + ')' : 'NO (Below Target)')}</span>
+                            <span class="text-xs font-black ${isYes ? 'text-emerald-400' : 'text-rose-400'}">${isInvestment ? (invVehicle === 'OPTION' ? `${invSymbol} $${strikeVal} ${invOptType}` : `${side} ${count} sh ${invSymbol}`) : (isSport && sInfo ? (sInfo.strikeDetails ? `${side} · ${sInfo.strikeDetails}` : `${side} (${sInfo.team}${sInfo.line ? ' ' + sInfo.line : ''})`) : (isYes ? (strikeVal ? 'YES (Above $' + strikeVal + ')' : 'YES (Above Target)') : (strikeVal ? 'NO (Below $' + strikeVal + ')' : 'NO (Below Target)')))}</span>
                         </div>
                     `;
                 } else if (isWin) {
@@ -3219,10 +5891,11 @@
                         </div>
                         <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
                             <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Outcome Result</span>
-                            <span class="text-xs font-black text-emerald-400">Target Met (${isYes ? 'Closed Above' : 'Closed Below'} Strike)</span>
+                            <span class="text-xs font-black text-emerald-400">${isInvestment ? `Closed at $${exitPriceNum !== null ? exitPriceNum.toFixed(2) : entryPriceNum.toFixed(2)}` : (isSport && sInfo ? (sInfo.strikeDetails ? `Target Met: ${sInfo.strikeDetails}` : `Target Met (${sInfo.team} Won)`) : `Target Met (${isYes ? 'Closed Above' : 'Closed Below'} Strike)`)}</span>
                         </div>
                     `;
                 } else if (isLoss) {
+                    const lossPct = totalCost > 0 ? (Math.abs(pnlVal) / totalCost) * 100 : 100;
                     heroCard.className = "relative overflow-hidden rounded-2xl p-4 sm:p-5 border border-rose-500/30 bg-gradient-to-br from-rose-950/30 via-[#0d1424] to-black flex flex-col sm:flex-row justify-between sm:items-center gap-3";
                     heroCard.innerHTML = `
                         <div class="flex items-center gap-3.5">
@@ -3232,12 +5905,12 @@
                             <div>
                                 <div class="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Loss Incurred</div>
                                 <div class="text-2xl font-black text-rose-400 tabular-nums">-$${Math.abs(pnlVal).toFixed(2)}</div>
-                                <div class="text-[10px] text-rose-300/80 font-mono font-bold">-100% Capital Risked ($${totalCost.toFixed(2)})</div>
+                                <div class="text-[10px] text-rose-300/80 font-mono font-bold">-${lossPct.toFixed(1)}% on Capital Risked ($${totalCost.toFixed(2)})</div>
                             </div>
                         </div>
                         <div class="sm:text-right bg-black/40 p-2.5 rounded-xl border border-white/5">
                             <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block mb-0.5">Exit Outcome</span>
-                            <span class="text-xs font-black text-rose-400">${t.exit_reason ? t.exit_reason.replace(/_/g, ' ') : 'Expired Out-of-the-Money'}</span>
+                            <span class="text-xs font-black text-rose-400">${t.exit_reason ? t.exit_reason.replace(/_/g, ' ') : 'Closed Position'}</span>
                         </div>
                     `;
                 } else {
@@ -3382,7 +6055,46 @@
             const summaryEl = document.getElementById('tdm-ai-summary');
             if (summaryEl) {
                 const strikeText = (strikeVal && strikeVal !== '---') ? '$' + strikeVal : 'target';
-                if (isManual) {
+                if (isInvestment) {
+                    const symLabel = invMeta.symbol || t.symbol || (t.ticker || '').split('_')[0] || 'Equity';
+                    const isOpt = invVehicle === 'OPTION';
+                    const optDesc = isOpt ? `${symLabel} $${invMeta.strike || t.strike || ''} ${invMeta.option_type || t.option_type || 'CALL'} (${invMeta.expiration || t.expiration || '0DTE/Weekly'})` : `${symLabel} Common Shares`;
+                    const qtyUnit = isOpt ? `${count} option contract${count === 1 ? '' : 's'}` : `${count} share${count === 1 ? '' : 's'}`;
+                    const tpInfo = (t.tp_price || invMeta.tp_pct) ? ` with Take-Profit (${t.tp_price ? '$' + Number(t.tp_price).toFixed(2) : (invMeta.tp_pct + '%')}) and Stop-Loss (${t.sl_price ? '$' + Number(t.sl_price).toFixed(2) : ((invMeta.sl_pct || 1.0) + '%')}) brackets` : '';
+                    if (isManual) {
+                        summaryEl.innerHTML = `You manually executed a <strong>${side}</strong> order for <strong>${qtyUnit}</strong> of <strong>${optDesc}</strong> at <strong>$${entryPriceNum.toFixed(2)}</strong> ($${totalCost.toFixed(2)} notional cost)${tpInfo} on Robinhood.`;
+                    } else {
+                        let outcomePart = '';
+                        if (isOpen) {
+                            outcomePart = `Position is currently <strong>active</strong> and monitored by the Robinhood Intraday Risk & Bracket Manager.`;
+                        } else if (isWin) {
+                            outcomePart = `The position closed in profit at <strong>$${exitPriceNum !== null ? exitPriceNum.toFixed(2) : entryPriceNum.toFixed(2)}</strong>, realizing <strong>+$${pnlVal.toFixed(2)}</strong>.`;
+                        } else if (isLoss) {
+                            outcomePart = `The position exited at <strong>$${exitPriceNum !== null ? exitPriceNum.toFixed(2) : entryPriceNum.toFixed(2)}</strong> (${t.exit_reason || 'Stop-Loss / Risk Guard'}), realizing <strong>-$${Math.abs(pnlVal).toFixed(2)}</strong>.`;
+                        } else {
+                            outcomePart = `The position closed flat.`;
+                        }
+                        summaryEl.innerHTML = `The 4-Agent Robinhood Desk executed a <strong>${side}</strong> order for <strong>${qtyUnit}</strong> of <strong>${optDesc}</strong> at <strong>$${entryPriceNum.toFixed(2)}</strong> ($${totalCost.toFixed(2)} total cost)${tpInfo} using the <strong>${rawStyle}</strong> strategy with <strong>${confVal.toFixed(1)}% conviction</strong>. ${outcomePart}`;
+                    }
+                } else if (isSport && sInfo) {
+                    const lineNote = (sInfo.line && sInfo.line !== 'Moneyline') ? ` [${sInfo.line}]` : '';
+                    const strikeNote = sInfo.strikeDetails ? ` — <em>${sInfo.strikeDetails}</em>` : '';
+                    if (isManual) {
+                        summaryEl.innerHTML = `You manually executed <strong>${count} ${side} contracts</strong> at <strong>${Math.round(entryPriceNum * 100)}¢</strong> ($${totalCost.toFixed(2)} capital risked), betting on <strong>${sInfo.team}</strong> in <strong>${sInfo.sport}</strong>${lineNote}${strikeNote}.`;
+                    } else {
+                        let outcomePart = '';
+                        if (isOpen) {
+                            outcomePart = `Position is currently <strong>active</strong> and monitoring live game / market state.`;
+                        } else if (isWin) {
+                            outcomePart = `The prediction was <strong>correct</strong>: <strong>${sInfo.team}</strong> delivered the win, returning <strong>+$${pnlVal.toFixed(2)}</strong>.`;
+                        } else if (isLoss) {
+                            outcomePart = `The match resulted in an opposing outcome, resulting in an exit at ${t.exit_price ? Math.round(parseFloat(t.exit_price) * 100) + '¢' : 'settlement'}.`;
+                        } else {
+                            outcomePart = `The position settled flat.`;
+                        }
+                        summaryEl.innerHTML = `The AI system executed <strong>${count} ${side} contracts</strong> at <strong>${Math.round(entryPriceNum * 100)}¢</strong> ($${totalCost.toFixed(2)} total cost) for <strong>${sInfo.team}</strong> in <strong>${sInfo.sport}</strong>${lineNote}${strikeNote} with <strong>${confVal.toFixed(1)}% directional conviction</strong>. ${outcomePart}`;
+                    }
+                } else if (isManual) {
                     summaryEl.innerHTML = `You manually executed <strong>${count} ${side} contracts</strong> at <strong>${Math.round(entryPriceNum * 100)}¢</strong> ($${totalCost.toFixed(2)} capital risked), betting that Bitcoin would settle ${isYes ? 'above' : 'below'} the ${strikeText} strike.`;
                 } else {
                     let outcomePart = '';
@@ -3520,10 +6232,12 @@
                     _currentUpdateId = latestUpdate.id;
                 }
 
+                const flashBadge = document.getElementById('settings-updates-flash-badge');
                 if (unreadList.length > 0 && latestUpdate) {
                     if (bellDot) bellDot.classList.remove('hidden');
                     if (bellPulse) bellPulse.classList.remove('hidden');
                     if (settingsBtnDot) settingsBtnDot.classList.remove('hidden');
+                    if (flashBadge) flashBadge.classList.remove('hidden');
 
                     const dismissedKey = 'kalshi_dismissed_update_' + latestUpdate.id;
                     if (localStorage.getItem(dismissedKey) !== 'true') {
@@ -3534,6 +6248,7 @@
                 } else {
                     if (bellDot) bellDot.classList.add('hidden');
                     if (bellPulse) bellPulse.classList.add('hidden');
+                    if (flashBadge) flashBadge.classList.add('hidden');
                 }
             } catch (err) {
                 console.warn("[Updates] checkUpdateAnnouncement error:", err);
@@ -3625,6 +6340,8 @@
             if (bellPulse) bellPulse.classList.add('hidden');
             const settingsBtnDot = document.getElementById('settings-updates-dot');
             if (settingsBtnDot) settingsBtnDot.classList.add('hidden');
+            const flashBadge = document.getElementById('settings-updates-flash-badge');
+            if (flashBadge) flashBadge.classList.add('hidden');
 
             if (_currentUpdateId) {
                 localStorage.setItem('kalshi_dismissed_update_' + _currentUpdateId, 'true');
@@ -3644,271 +6361,218 @@
         };
 
         // ── Native Mobile Pull-to-Refresh System ──
-        (function initPullToRefresh() {
-            let startY = 0;
-            let startX = 0;
-            let currentY = 0;
-            let isPulling = false;
-            let isRefreshing = false;
-            const PULL_THRESHOLD = 60; // px to trigger refresh
-            const MAX_PULL = 85;
+        window.manualDashboardRefresh = async function(btn) {
+            const icon = document.getElementById('refresh-nav-icon') || btn?.querySelector('svg');
+            if (icon) icon.classList.add('animate-spin');
+            
+            try {
+                if (typeof soundEngine !== 'undefined' && soundEngine.play) soundEngine.play('refresh');
+            } catch(e) {}
 
-            const indicator = document.getElementById('ptr-indicator');
-            const pill = document.getElementById('ptr-pill');
-            const arrow = document.getElementById('ptr-arrow');
-            const spinner = document.getElementById('ptr-spinner');
-            const check = document.getElementById('ptr-check');
-            const text = document.getElementById('ptr-text');
-            const mainContent = document.querySelector('main');
-
-            if (!indicator || !pill) return;
-
-            function isAtTop() {
-                return (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0) <= 2;
-            }
-
-            function isModalOrDrawerOpen() {
-                if (window.isSettingsOpen) return true;
-                if (document.body.style.overflow === 'hidden') return true;
-                const drawer = document.getElementById('settingsDrawer');
-                if (drawer && !drawer.classList.contains('hidden')) return true;
-                const panel = document.getElementById('settingsPanel');
-                if (panel && !panel.classList.contains('translate-x-full')) return true;
-                const detailsModal = document.getElementById('tradeDetailsModal');
-                if (detailsModal && !detailsModal.classList.contains('hidden')) return true;
-                const updateModal = document.getElementById('updateAnnouncementModal');
-                if (updateModal && updateModal.classList.contains('opacity-100')) return true;
-                const dropdown = document.getElementById('profileDropdown');
-                if (dropdown && !dropdown.classList.contains('hidden')) return true;
-                const equityModal = document.getElementById('equityModal');
-                if (equityModal && !equityModal.classList.contains('hidden')) return true;
-                const communityModal = document.getElementById('communityModal');
-                if (communityModal && !communityModal.classList.contains('hidden')) return true;
-                const supportModal = document.getElementById('supportModal');
-                if (supportModal && !supportModal.classList.contains('hidden')) return true;
-                return false;
-            }
-
-            // Touch events (Mobile / iOS)
-            window.addEventListener('touchstart', (e) => {
-                if (isRefreshing || isModalOrDrawerOpen()) return;
-                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAnnouncementModal')) return;
-
-                if (isAtTop() && e.touches.length === 1) {
-                    startY = e.touches[0].clientY;
-                    startX = e.touches[0].clientX;
-                    currentY = startY;
-                    isPulling = true;
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchmove', (e) => {
-                if (!isPulling || isRefreshing || isModalOrDrawerOpen()) return;
-                if (!isAtTop()) {
-                    isPulling = false;
-                    resetUI();
-                    return;
-                }
-
-                currentY = e.touches[0].clientY;
-                const currentX = e.touches[0].clientX;
-                const diffY = currentY - startY;
-                const diffX = currentX - startX;
-
-                if (Math.abs(diffX) > Math.abs(diffY)) return;
-
-                if (diffY > 0) {
-                    const offset = Math.min(Math.pow(diffY, 0.82) * 1.5, MAX_PULL);
-
-                    indicator.style.transition = 'none';
-                    indicator.style.transform = `translateY(${offset}px)`;
-
-                    if (mainContent) {
-                        mainContent.style.transition = 'none';
-                        mainContent.style.transform = `translateY(${offset * 0.3}px)`;
+            try {
+                const promises = [];
+                if (typeof loadDashboard === 'function') promises.push(loadDashboard(true));
+                if (typeof refreshWalletBalances === 'function') promises.push(refreshWalletBalances());
+                if (window.currentUniverse === 'SPORTS') {
+                    if (typeof loadSportsEvents === 'function') {
+                        promises.push(loadSportsEvents(window.sportsFilter));
                     }
-
-                    const progress = Math.min(offset / PULL_THRESHOLD, 1.0);
-                    if (arrow) {
-                        arrow.style.transform = `rotate(${progress * 180}deg)`;
-                    }
-
-                    if (offset >= PULL_THRESHOLD) {
-                        text.textContent = 'Release to refresh';
-                        pill.classList.add('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
-                    } else {
-                        text.textContent = 'Pull to refresh';
-                        pill.classList.remove('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
-                    }
-
-                    if (diffY > 10 && e.cancelable) {
-                        e.preventDefault();
+                } else if (window.currentUniverse === 'INVESTMENTS') {
+                    if (typeof fetchInvestmentsFeed === 'function') {
+                        promises.push(fetchInvestmentsFeed());
                     }
                 }
-            }, { passive: false });
-
-            window.addEventListener('touchend', async () => {
-                if (!isPulling || isRefreshing) return;
-                isPulling = false;
-
-                const diffY = currentY - startY;
-                const offset = Math.min(Math.pow(Math.max(0, diffY), 0.82) * 1.5, MAX_PULL);
-
-                if (offset >= PULL_THRESHOLD) {
-                    await triggerRefresh();
-                } else {
-                    resetUI();
+                await Promise.all(promises);
+                if (typeof showToast === 'function') {
+                    showToast('Dashboard Refreshed ⚡', 'success', 1500);
                 }
-            });
-
-            // Also support Mouse drag down when at top for devtools preview
-            let isMouseDown = false;
-            window.addEventListener('mousedown', (e) => {
-                if (isRefreshing || isModalOrDrawerOpen()) return;
-                if (e.target.closest('#settingsDrawer, #settingsPanel, #settingsBackdrop, #lw-chart-container, input, select, textarea, button, .modal, [role="dialog"], #profileDropdown, #equityModal, #communityModal, #supportModal, #updateAnnouncementModal')) return;
-                if (isAtTop() && e.button === 0) {
-                    startY = e.clientY;
-                    currentY = startY;
-                    isMouseDown = true;
-                }
-            });
-
-            window.addEventListener('mousemove', (e) => {
-                if (!isMouseDown || isRefreshing || isModalOrDrawerOpen()) return;
-                if (!isAtTop()) {
-                    isMouseDown = false;
-                    resetUI();
-                    return;
-                }
-                currentY = e.clientY;
-                const diffY = currentY - startY;
-                if (diffY > 0) {
-                    const offset = Math.min(Math.pow(diffY, 0.82) * 1.5, MAX_PULL);
-                    indicator.style.transition = 'none';
-                    indicator.style.transform = `translateY(${offset}px)`;
-                    if (mainContent) {
-                        mainContent.style.transition = 'none';
-                        mainContent.style.transform = `translateY(${offset * 0.3}px)`;
-                    }
-                    const progress = Math.min(offset / PULL_THRESHOLD, 1.0);
-                    if (arrow) arrow.style.transform = `rotate(${progress * 180}deg)`;
-                    if (offset >= PULL_THRESHOLD) {
-                        text.textContent = 'Release to refresh';
-                        pill.classList.add('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
-                    } else {
-                        text.textContent = 'Pull to refresh';
-                        pill.classList.remove('border-cyan-400', 'shadow-[0_0_20px_rgba(6,182,212,0.4)]');
-                    }
-                }
-            });
-
-            window.addEventListener('mouseup', async () => {
-                if (!isMouseDown || isRefreshing) return;
-                isMouseDown = false;
-                const diffY = currentY - startY;
-                const offset = Math.min(Math.pow(Math.max(0, diffY), 0.82) * 1.5, MAX_PULL);
-                if (offset >= PULL_THRESHOLD) {
-                    await triggerRefresh();
-                } else {
-                    resetUI();
-                }
-            });
-
-            async function triggerRefresh() {
-                isRefreshing = true;
-
-                indicator.style.transition = 'transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                indicator.style.transform = 'translateY(18px)';
-                if (mainContent) {
-                    mainContent.style.transition = 'transform 0.25s ease-out';
-                    mainContent.style.transform = 'translateY(12px)';
-                }
-
-                if (arrow) arrow.classList.add('hidden');
-                if (check) check.classList.add('hidden');
-                if (spinner) spinner.classList.remove('hidden');
-                if (text) text.textContent = 'Refreshing live data...';
-                if (navigator.vibrate) {
-                    try { navigator.vibrate(12); } catch(e){}
-                }
-
-                try {
-                    await Promise.allSettled([
-                        typeof loadDashboard === 'function' ? loadDashboard() : Promise.resolve(),
-                        typeof loadConfig === 'function' ? loadConfig() : Promise.resolve(),
-                        typeof fetchKalshiData === 'function' ? fetchKalshiData() : Promise.resolve(),
-                        typeof fetchChartData === 'function' ? fetchChartData() : Promise.resolve(),
-                        typeof fetchLiveBids === 'function' ? fetchLiveBids() : Promise.resolve(),
-                        typeof fetchDailyQuests === 'function' ? fetchDailyQuests() : Promise.resolve()
-                    ]);
-
-                    if (spinner) spinner.classList.add('hidden');
-                    if (check) check.classList.remove('hidden');
-                    if (text) text.textContent = 'Updated!';
-                    if (pill) {
-                        pill.classList.remove('border-cyan-400');
-                        pill.classList.add('border-emerald-500/50', 'text-emerald-300', 'shadow-[0_0_20px_rgba(16,185,129,0.4)]');
-                    }
-                    if (navigator.vibrate) {
-                        try { navigator.vibrate([15, 40, 15]); } catch(e){}
-                    }
-
-                    await new Promise(r => setTimeout(r, 550));
-                } catch (err) {
-                    console.warn('[PTR] Refresh error:', err);
-                } finally {
-                    resetUI();
-                }
-            }
-
-            function resetUI() {
-                indicator.style.transition = 'transform 0.3s ease-out';
-                indicator.style.transform = 'translateY(-130%)';
-                if (mainContent) {
-                    mainContent.style.transition = 'transform 0.3s ease-out';
-                    mainContent.style.transform = 'translateY(0px)';
-                }
-
+            } catch(err) {
+                console.warn('Manual refresh error:', err);
+            } finally {
                 setTimeout(() => {
-                    isRefreshing = false;
-                    if (arrow) {
-                        arrow.classList.remove('hidden');
-                        arrow.style.transform = 'rotate(0deg)';
-                    }
-                    if (spinner) spinner.classList.add('hidden');
-                    if (check) check.classList.add('hidden');
-                    if (text) text.textContent = 'Pull to refresh';
-                    if (pill) {
-                        pill.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0d1424] border border-cyan-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.85)] text-cyan-300 text-xs font-bold tracking-wider transition-all duration-200';
-                    }
-                }, 320);
+                    if (icon) icon.classList.remove('animate-spin');
+                }, 500);
             }
-        })();
+        };
 
-// ── Active Position HUD System (Audit Item 4) ──
+        // ── Active Position HUD System (Audit Item 4) ──
         let previousOpenTradeCount = 0;
         let lastPlayedCountdownSec = null;
+
+        // Game / match name + start time for sports positions (replaces the raw Kalshi ticker)
+        window.__gameInfo = window.__gameInfo || {};
+        window.__gameInfoPending = window.__gameInfoPending || {};
+
+        window.__parseTickerSchedule = function(tk) {
+            if (!tk) return null;
+            const str = String(tk).toUpperCase();
+            const MONTH_MAP = { JAN: 0, FEB: 1, MAR: 2, APR: 3, MAY: 4, JUN: 5, JUL: 6, AUG: 7, SEP: 8, OCT: 9, NOV: 10, DEC: 11 };
+            // Example: KXWTAMATCH-26OCT11BOUSHN-SHN or KXNFLGAME-26OCT11CLENYJ
+            const m = str.match(/-(\d{2})([A-Z]{3})(\d{2})/i);
+            if (m) {
+                const yr = 2000 + parseInt(m[1], 10);
+                const mo = MONTH_MAP[m[2].toUpperCase()];
+                const da = parseInt(m[3], 10);
+                if (mo != null && !isNaN(da)) {
+                    return new Date(Date.UTC(yr, mo, da, 23, 0, 0));
+                }
+            }
+            return null;
+        };
+
+        window.__formatScheduleCountdown = function(dateObj, statusStr) {
+            if (!dateObj || isNaN(dateObj.getTime())) return '';
+            const now = new Date();
+            const tm = new Date(now); tm.setDate(now.getDate() + 1);
+            let day = dateObj.toDateString() === now.toDateString() ? 'Today'
+                : dateObj.toDateString() === tm.toDateString() ? 'Tomorrow'
+                : dateObj.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+            
+            const hours = dateObj.getHours();
+            const minutes = dateObj.getMinutes();
+            const hasExactTime = !(hours === 0 && minutes === 0) && !(hours === 19 && minutes === 0 && dateObj.toTimeString().includes('00:00:00'));
+            const timeStr = hasExactTime ? dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+            const whenStr = timeStr ? (day + ' ' + timeStr + ' ET') : day;
+
+            const diffMs = dateObj.getTime() - now.getTime();
+            const diffSec = Math.floor(diffMs / 1000);
+            let countdown = '';
+            const st = String(statusStr || '').toLowerCase();
+
+            if (st.includes('live') || st.includes('progress') || (diffSec < 0 && diffSec > -10800 && hasExactTime)) {
+                countdown = '· LIVE';
+            } else if (st.includes('final') || st.includes('closed') || (diffSec <= -10800 && hasExactTime)) {
+                countdown = '· Final';
+            } else if (diffSec > 0) {
+                const min = Math.floor(diffSec / 60);
+                const hrs = Math.floor(min / 60);
+                if (hrs >= 24) {
+                    const days = Math.floor(hrs / 24);
+                    countdown = '(in ' + days + 'd)';
+                } else if (hrs > 0) {
+                    countdown = '(in ' + hrs + 'h)';
+                } else if (min > 0) {
+                    countdown = '(in ' + min + 'm)';
+                }
+            }
+            return [whenStr, countdown].filter(Boolean).join(' ');
+        };
+
+        window.__gameInfoLabel = function(tOrTicker) {
+            const t = (tOrTicker && typeof tOrTicker === 'object') ? tOrTicker : null;
+            const ticker = t ? (t.ticker || '') : String(tOrTicker || '');
+            const gi = window.__gameInfo[ticker];
+            
+            let startDate = null;
+            let status = '';
+            let title = '';
+            let extra = '';
+
+            if (gi) {
+                if (gi.start) {
+                    const parsed = new Date(gi.start);
+                    if (!isNaN(parsed.getTime())) startDate = parsed;
+                }
+                status = gi.status || '';
+                title = gi.title || '';
+                extra = gi.extra || '';
+            }
+
+            if (t) {
+                let meta = t.metadata;
+                if (typeof meta === 'string') {
+                    try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
+                }
+                let rj = t.raw_json;
+                if (typeof rj === 'string') {
+                    try { rj = JSON.parse(rj); } catch(e) { rj = {}; }
+                }
+                if (!title) {
+                    const si = window.__getSportInfo ? window.__getSportInfo(t) : null;
+                    title = (t.matchup || (meta && meta.matchup) || (rj && (rj.matchup || rj.strike_details || rj.market_title)) || (si && si.matchup) || '').trim();
+                }
+                if (!startDate) {
+                    const rawDate = (meta && (meta.start_time || meta.game_time || meta.date || meta.commence_time || meta.start_label)) ||
+                                    (rj && (rj.start_time || rj.game_time || rj.date || rj.commence_time || rj.start_label)) ||
+                                    t.game_time || t.event_date || t.commence_time;
+                    if (rawDate) {
+                        const parsed = new Date(rawDate);
+                        if (!isNaN(parsed.getTime())) startDate = parsed;
+                    }
+                }
+            }
+            if (!startDate) {
+                startDate = window.__parseTickerSchedule(ticker);
+            }
+
+            const scheduleStr = window.__formatScheduleCountdown(startDate, status);
+
+            const parts = [];
+            if (title) parts.push(title);
+            else if (extra) parts.push(extra);
+
+            if (scheduleStr) {
+                parts.push(scheduleStr);
+            } else if (gi) {
+                parts.push('Scheduled');
+            } else {
+                parts.push('Checking game time…');
+            }
+
+            return parts.join(' · ');
+        };
+        window.__fetchGameInfo = function(tickers) {
+            const need = tickers.filter(tk => tk && !window.__gameInfo[tk] && !window.__gameInfoPending[tk]);
+            if (!need.length) return;
+            need.forEach(tk => { window.__gameInfoPending[tk] = Date.now(); });
+            fetch((window.API_BASE_URL || '') + '/api/public/game_info?tickers=' + encodeURIComponent(need.join(',')))
+                .then(r => r.json())
+                .then(j => {
+                    Object.assign(window.__gameInfo, (j && j.games) || {});
+                    need.forEach(tk => { if (!window.__gameInfo[tk]) window.__gameInfo[tk] = { title: '', start: null, extra: '' }; });
+                    if (typeof updateActivePositionHud === 'function' && window.lastDashboardStats) updateActivePositionHud(window.lastDashboardStats);
+                    if (typeof window.renderTradesContainer === 'function' && window.lastDashboardStats) window.renderTradesContainer(window.lastDashboardStats);
+                })
+                .catch(() => { need.forEach(tk => { delete window.__gameInfoPending[tk]; }); });
+        };
 
         function updateActivePositionHud(s) {
             const container = document.getElementById('activePositionHud');
             if (!container) return;
 
-            const __isSportTrade = (t) => {
+            const __isSportTrade = window.__isSportTrade || ((t) => {
                 const a = String(t.asset || '').toUpperCase();
                 const tk = String(t.ticker || '').toUpperCase();
                 let meta = t.metadata;
                 if (typeof meta === 'string') {
                     try { meta = JSON.parse(meta); } catch(e) { meta = {}; }
                 }
-                const hasSportProp = t.sport || (meta && (meta.sport || meta.league));
-                const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP)/.test(tk) || /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|SOC|UFC|MMA|TEN)-/.test(tk) || ['NFL','MLB','NPB','KBO','NHL','SOC','UFC','TEN'].includes(a);
-                const isSportsStyle = String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
+                let ml = t.ml_reasoning;
+                if (typeof ml === 'string') {
+                    try { ml = JSON.parse(ml); } catch(e) { ml = {}; }
+                }
+                const hasSportProp = Boolean(t.sport || t.predicted_team || (meta && (meta.sport || meta.league)) || (ml && (ml.sport || ml.predicted_team)));
+                const isSportsTicker = /^KX(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN|NPB|KBO|GAME|ATP|MVECROSSCATEGORY|MVE)/.test(tk) ||
+                                       /^(NFL|MLB|NBA|NHL|NCAAF|NCAAB|WNBA|SOC|UFC|MMA|TEN)-/.test(tk) ||
+                                       tk.startsWith('KALSHI-') ||
+                                       tk.includes('KXMVECROSSCATEGORY') ||
+                                       ['NFL','MLB','NBA','NCAAF','NCAAB','WNBA','NPB','KBO','NPB/KBO','NPB_KBO','NHL','SOC','UFC','TEN','MMA','SPORTS','MULTIVARIATE_COMBO'].includes(a);
+                const isSportsStyle = String(t.trading_style || '').toUpperCase().startsWith('SPORTS') || String(t.trading_style || '').toUpperCase().includes('COMBO') || String(t.trading_style || '').toUpperCase() === 'SPORTS_AI';
                 return isSportsStyle || hasSportProp || isSportsTicker;
-            };
+            });
             const __inSports = window.currentUniverse === 'SPORTS';
+            const __inInvestments = window.currentUniverse === 'INVESTMENTS';
+            if (__inInvestments) {
+                container.style.display = 'none';
+                container.classList.add('hidden');
+                return;
+            }
+            const isInvTradeFn = window.__isInvestmentTrade || (() => false);
+            const activeMode = String(s.trading_mode || currentMode || 'PAPER').toUpperCase();
             const openTrades = (s.recent_trades || [])
                 .filter(t => String(t.status || '').toUpperCase() === 'OPEN')
-                .filter(t => __inSports ? __isSportTrade(t) : !__isSportTrade(t));
+                .filter(t => String(t.mode || 'PAPER').toUpperCase() === activeMode)
+                .filter(t => __inSports ? (__isSportTrade(t) && !isInvTradeFn(t)) : (!__isSportTrade(t) && !isInvTradeFn(t)));
             
             // Audio trigger on newly opened trade
             if (openTrades.length > previousOpenTradeCount && previousOpenTradeCount === 0) {
@@ -3918,13 +6582,13 @@
 
             if (openTrades.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-[#0e1626]/95 border-t border-cyan-500/20 px-4 py-3 shadow-md flex items-center justify-between">
+                    <div class="bg-[#0e1626]/95 border border-cyan-500/20 rounded-2xl px-4 py-3 shadow-md flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Position Scanner:</span>
                             <span class="text-[10px] font-mono text-emerald-400 font-bold">${__inSports ? 'READY · Watching AI Picks' : 'READY · Bot Scanning Active'}</span>
                         </div>
-                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${__inSports ? 'SPORTS · NFL · MLB · NHL · SOCCER · UFC · TENNIS · NPB/KBO' : (s.trading_style || 'AUTO') + ' · 10 ASSETS (BTC, ETH, GOLD, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ, SOL, DOGE)'}</span>
+                        <span class="text-[9px] font-mono text-gray-400 uppercase tracking-widest">${__inSports ? 'SPORTS · NFL · MLB · NHL · SOCCER · UFC · TENNIS · NPB/KBO' : (s.trading_style || 'AUTO') + ' · CRYPTO ASSETS (BTC, ETH, SOL, DOGE)'}</span>
                     </div>
                 `;
                 return;
@@ -3960,26 +6624,53 @@
 
                 const dir = String(t.side || 'YES').toUpperCase();
                 const isYes = dir === 'YES';
-                const count = t.count || t.size || 1;
-                const entryPrice = t.entry_price ? Math.round(t.entry_price * 100) : 50;
+                const count = Number(t.count || t.size || 1) || 1;
+                const entryPriceDollars = t.entry_price != null ? parseFloat(t.entry_price) : 0.50;
+                const entryCentsRaw = entryPriceDollars * 100;
+                const entryPrice = (Math.abs(entryCentsRaw - Math.round(entryCentsRaw)) > 0.04) ? entryCentsRaw.toFixed(1) : Math.round(entryCentsRaw);
 
-                // User requested format: "YES BTC 11 Contracts @ 50c", "NO ETH 20 Contracts @ 47c", etc.
-                const tradeLabel = `${dir} ${asset} ${count} Contracts @ ${entryPrice}¢`;
+                const isSport = window.__isSportTrade ? window.__isSportTrade(t) : false;
+                const sportInfo = isSport && window.__getSportInfo ? window.__getSportInfo(t) : null;
+                // User requested format: "YES BTC 11 Contracts @ 50c" or "YES Team 11 Contracts @ 50c" for sports
+                const tradeLabel = isSport && sportInfo
+                    ? `${dir} ${sportInfo.team} · ${count} Contracts @ ${entryPrice}¢`
+                    : `${dir} ${asset} ${count} Contracts @ ${entryPrice}¢`;
 
-                // Live PnL
-                const estPnl = t.live_pnl !== undefined ? Number(t.live_pnl) : (t.pnl_dollars !== undefined ? Number(t.pnl_dollars) : 0);
+                // Live PnL - dynamic real-time mark calculation when live bids or spot are available
+                let estPnl = t.live_pnl !== undefined ? Number(t.live_pnl) : (t.pnl_dollars !== undefined ? Number(t.pnl_dollars) : 0);
+                
+                // If this is a financial position and we have fresh Kalshi bids for this asset
+                if (!isSport && window.assetBids && window.assetBids[asset]) {
+                    const bids = window.assetBids[asset];
+                    const activeBid = isYes ? bids.yes_bid : bids.no_bid;
+                    if (activeBid !== undefined && activeBid > 0 && activeBid < 100) {
+                        const curPriceDollars = activeBid / 100;
+                        estPnl = (curPriceDollars - entryPriceDollars) * count;
+                        t.live_pnl = estPnl;
+                    }
+                } else if (!isSport && (asset === (window.currentAsset || 'BTC').toUpperCase())) {
+                    const activeBid = isYes ? window.lastYesBid : window.lastNoBid;
+                    if (activeBid !== undefined && activeBid > 0 && activeBid < 100) {
+                        const curPriceDollars = activeBid / 100;
+                        estPnl = (curPriceDollars - entryPriceDollars) * count;
+                        t.live_pnl = estPnl;
+                    }
+                }
+                
                 totalOpenPnl += estPnl;
                 const pnlColor = estPnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
                 const pnlStr = (estPnl >= 0 ? '+$' : '-$') + Math.abs(estPnl).toFixed(2);
-                const costBasis = (entryPrice / 100) * count;
+                const costBasis = entryPriceDollars * count;
                 const pnlPct = costBasis > 0 ? ((estPnl / costBasis) * 100).toFixed(1) : '0.0';
 
                 // Strike & distance
-                let spot = 0;
-                if (asset === 'BTC') spot = window.lastBtcPrice || window.lastSpotPrice || 0;
-                else if (asset === 'ETH') spot = window.lastEthPrice || 0;
-                else if (asset === 'GOLD') spot = window.lastGoldPrice || 0;
-                else spot = window.lastSpotPrice || 0;
+                let spot = (window.assetSpotPrices && window.assetSpotPrices[asset]) ? window.assetSpotPrices[asset] : 0;
+                if (!spot || spot <= 0) {
+                    if (asset === 'BTC') spot = window.lastBtcPrice || window.lastSpotPrice || 0;
+                    else if (asset === 'ETH') spot = window.lastEthPrice || 0;
+                    else if (asset === 'GOLD') spot = window.lastGoldPrice || 0;
+                    else spot = window.lastSpotPrice || 0;
+                }
 
                 const strikeNum = Number(t.strike || 0);
                 const strike = (!isNaN(strikeNum) && isFinite(strikeNum) && strikeNum > 0) ? strikeNum : null;
@@ -3995,6 +6686,12 @@
 
                 let assetBadgeClass = 'bg-slate-500/20 text-slate-300 border-slate-500/40';
                 let assetIcon = '';
+                if (isSport && sportInfo) {
+                    asset = (sportInfo && sportInfo.sport) || 'SPORTS';
+                    assetBadgeClass = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+                    assetIcon = (sportInfo.icon || '🏈') + ' ';
+                    distanceStr = `<span class="text-cyan-400 font-bold">${sportInfo.team || ''}</span>`;
+                } else 
                 if (asset === 'BTC') { assetBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40'; assetIcon = '₿ '; }
                 else if (asset === 'ETH') { assetBadgeClass = 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'; assetIcon = 'Ξ '; }
                 else if (asset === 'GOLD') { assetBadgeClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'; assetIcon = '🪙 '; }
@@ -4022,16 +6719,17 @@
                             </div>
                         </div>
 
-                        <!-- Line 2: Strike & Distance, Quick Action Buttons -->
+                        <!-- Line 2: Strike & Distance or Sport Info, Quick Action Buttons -->
                         <div class="flex items-center justify-between gap-2 text-[10px] font-mono">
                             <div class="text-gray-400 truncate text-[9px]">
-                                ${strike ? `Strike <span class="text-white font-bold">$${strike.toLocaleString()}</span>` : ''}
-                                ${distanceStr ? `<span class="ml-1.5">${distanceStr}</span>` : ''}
+                                ${isSport && sportInfo
+                                    ? `<span class="text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">${sportInfo.icon} ${sportInfo.sport}</span> <span class="text-gray-300 ml-1 font-sans">${window.__gameInfoLabel ? window.__gameInfoLabel(t) : ''}</span>`
+                                    : (strike ? `Strike <span class="text-white font-bold">$${strike.toLocaleString()}</span>` + (distanceStr ? `<span class="ml-1.5">${distanceStr}</span>` : '') : '')}
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
-                                <button onclick="executeManualTrade('${t.side}', '${t.asset}')" class="py-1 px-2.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                                ${isSport ? '' : `<button onclick="executeManualTrade('${t.side}', '${t.asset}')" class="py-1 px-2.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                                     <span>➕</span> ADD
-                                </button>
+                                </button>`}
                                 <button onclick="takeProfitTrade('${t.id}')" class="py-1 px-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-[9px] font-bold uppercase tracking-wider active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                                     <span>⚡</span> TP
                                 </button>
@@ -4044,11 +6742,13 @@
                 `;
             });
 
+            if (window.__fetchGameInfo) window.__fetchGameInfo(sortedOpen.filter(x => window.__isSportTrade && window.__isSportTrade(x)).map(x => x.ticker));
+
             const totalColor = totalOpenPnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
             const totalStr = (totalOpenPnl >= 0 ? '+$' : '-$') + Math.abs(totalOpenPnl).toFixed(2);
 
             container.innerHTML = `
-                <div class="relative bg-[#0c1220]/95 border-b lg:border lg:border-t-0 lg:border-cyan-500/20 lg:rounded-b-2xl border-cyan-500/20 shadow-md overflow-hidden">
+                <div class="relative bg-[#0c1220]/95 border border-cyan-500/20 rounded-2xl shadow-md overflow-hidden">
                     <div class="bg-black/60 px-3.5 py-1.5 border-b border-white/10 flex items-center justify-between text-[10px] font-mono">
                         <div class="flex items-center gap-2">
                             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -4189,12 +6889,14 @@
             document.body.style.overflow = 'hidden';
 
             try {
+                const token = localStorage.getItem('saas_token') || '';
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
                 const res = await fetch((window.API_BASE_URL||'')+'/api/engine/analytics/equity', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: headers
                 });
                 if (!res.ok) throw new Error('Failed to fetch equity');
                 const data = await res.json();
-                const eq = data.equity || {};
+                const eq = (data && data.points) ? data : (data.equity || data || {});
                 window.currentEquityData = eq;
 
                 // High level metrics
@@ -4365,6 +7067,260 @@
             document.body.style.overflow = 'auto';
         };
 
+        // ── Quant Lab & Strategy Graveyard Engine Script ──
+        window.currentQuantLabTab = 'graveyard';
+
+        window.openQuantLabModal = function(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            document.getElementById('profileDropdown')?.classList.add('hidden');
+            const uDd = document.getElementById('universe-dropdown');
+            if (uDd) {
+                uDd.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => uDd.classList.add('hidden'), 150);
+            }
+            const modal = document.getElementById('quant-lab-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+            document.body.style.overflow = 'hidden';
+            window.fetchQuantLabData();
+        };
+
+        window.closeQuantLabModal = function(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const modal = document.getElementById('quant-lab-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = 'auto';
+        };
+
+        window.switchQuantLabTab = function(tab) {
+            window.currentQuantLabTab = tab;
+            ['graveyard', 'incubator', 'registry'].forEach(t => {
+                const btn = document.getElementById(`tab-btn-ql-${t}`);
+                const panel = document.getElementById(`ql-panel-${t}`);
+                if (t === tab) {
+                    btn?.classList.add('border-purple-500', 'text-purple-300');
+                    btn?.classList.remove('border-transparent', 'text-gray-400');
+                    panel?.classList.remove('hidden');
+                } else {
+                    btn?.classList.remove('border-purple-500', 'text-purple-300');
+                    btn?.classList.add('border-transparent', 'text-gray-400');
+                    panel?.classList.add('hidden');
+                }
+            });
+        };
+
+        window.fetchQuantLabData = async function() {
+            try {
+                const res = await fetch((window.API_BASE_URL || '') + '/api/quant-lab/overview');
+                if (!res.ok) throw new Error("Could not load Quant Lab data");
+                const data = await res.json();
+
+                const failEl = document.getElementById('ql-failures-count');
+                if (failEl) failEl.innerText = data.stats?.total_failures || 0;
+                const incEl = document.getElementById('ql-incubating-count');
+                if (incEl) incEl.innerText = data.incubating_count || 0;
+                const gradEl = document.getElementById('ql-graduated-count');
+                if (gradEl) gradEl.innerText = data.graduated_count || 0;
+
+                window.renderQuantLabGraveyard(data.recent_graveyard || []);
+                window.renderQuantLabIncubator(data.incubating || []);
+                window.renderQuantLabRegistry(data.recent_strategies || []);
+            } catch (e) {
+                console.error("[QuantLab] Error fetching data:", e);
+            }
+        };
+
+        window.renderQuantLabGraveyard = function(entries) {
+            const container = document.getElementById('ql-graveyard-list');
+            if (!container) return;
+            if (!entries || entries.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 font-mono">Strategy Graveyard is clean. No failures logged yet.</div>';
+                return;
+            }
+
+            container.innerHTML = entries.map(e => `
+                <div class="bg-[#121829] border border-rose-500/20 rounded-xl p-3.5 space-y-2 hover:border-rose-500/40 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-white">${e.name || 'Unnamed Strategy'}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                ${e.failure_stage || 'FAILED'}
+                            </span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-mono text-gray-400 bg-white/5">
+                                ${e.asset || 'BTC'} ${e.target_interval || '15m'}
+                            </span>
+                        </div>
+                        <span class="text-[9px] font-mono text-gray-500">${e.created_at || ''}</span>
+                    </div>
+                    <div class="text-[11px] text-gray-300">
+                        <span class="text-gray-500 font-bold uppercase text-[9px] tracking-wider block mb-0.5">Post-Mortem Breakdown:</span>
+                        ${e.post_mortem_summary || 'No breakdown recorded'}
+                    </div>
+                    <div class="bg-black/40 border border-white/5 rounded-lg p-2.5 text-[11px] text-amber-300/90 font-mono">
+                        <span class="text-amber-500 font-bold uppercase text-[9px] tracking-wider block mb-0.5">🛡️ Synthesized Defensive Rule (AI Never Repeats):</span>
+                        ${e.negative_rule || 'No negative rule'}
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.renderQuantLabIncubator = function(strategies) {
+            const container = document.getElementById('ql-incubator-list');
+            if (!container) return;
+            if (!strategies || strategies.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 font-mono">No strategies currently in forward incubation. Run a research cycle to discover and incubate new alphas.</div>';
+                return;
+            }
+
+            container.innerHTML = strategies.map(s => {
+                const tradesList = Array.isArray(s.trades) ? s.trades : [];
+                const tradesRows = tradesList.length > 0 ? tradesList.map(t => {
+                    const isWin = t.pnl > 0;
+                    const pnlColor = isWin ? 'text-emerald-400' : (t.pnl < 0 ? 'text-rose-400' : 'text-gray-400');
+                    const pnlStr = t.status === 'SETTLED' ? ((t.pnl >= 0 ? '+$' : '-$') + Math.abs(t.pnl).toFixed(2)) : 'OPEN';
+                    return `
+                        <div class="flex items-center justify-between py-1.5 px-2 bg-black/40 rounded border border-white/5 font-mono text-[10px]">
+                            <div class="flex items-center gap-1.5 truncate min-w-0">
+                                <span class="px-1 py-0.5 rounded text-[8px] font-black ${t.side === 'YES' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${t.side}</span>
+                                <span class="text-gray-300 truncate font-semibold">${t.ticker}</span>
+                                <span class="text-gray-500">@ $${parseFloat(t.entry_price).toFixed(2)}</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0 ml-2">
+                                <span class="text-[9px] text-gray-500 hidden sm:inline">${t.created_at ? t.created_at.split(' ').slice(1, 3).join(' ') : ''}</span>
+                                <span class="font-bold tabular-nums ${pnlColor}">${pnlStr}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('') : '<div class="text-[10px] text-gray-500 font-mono py-1 text-center">No trades recorded yet. Waiting for market setup.</div>';
+
+                return `
+                <div class="bg-[#121829] border border-amber-500/20 rounded-xl p-3.5 space-y-2.5 hover:border-amber-500/40 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-white">${s.name}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                FORWARD INCUBATING
+                            </span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-mono text-gray-400 bg-white/5">
+                                ${s.asset}
+                            </span>
+                        </div>
+                        <button onclick="promoteQuantLabStrategy('${s.strategy_id}')" class="px-2.5 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded text-[9px] font-bold uppercase tracking-wider border border-emerald-500/40 transition-all cursor-pointer">
+                            Promote to Live
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center bg-black/30 rounded-lg p-2 border border-white/5">
+                        <div>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider block">Trades</span>
+                            <span class="text-xs font-black text-white tabular-nums">${s.trades_count || 0}</span>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider block">Win Rate</span>
+                            <span class="text-xs font-black text-emerald-400 tabular-nums">${s.trades_count > 0 ? ((s.wins_count / s.trades_count) * 100).toFixed(1) + '%' : '--%'}</span>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider block">Forward PnL</span>
+                            <span class="text-xs font-black ${s.total_pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'} tabular-nums">${(s.total_pnl >= 0 ? '+$' : '-$') + Math.abs(s.total_pnl || 0).toFixed(2)}</span>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-bold text-gray-500 uppercase tracking-wider block">Max DD</span>
+                            <span class="text-xs font-black text-amber-400 tabular-nums">${((s.max_drawdown || 0) * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Expandable Forward Execution Log -->
+                    <details class="group bg-black/20 rounded-lg border border-white/5 overflow-hidden">
+                        <summary class="flex items-center justify-between px-3 py-2 text-[10px] font-mono text-gray-400 cursor-pointer hover:text-white select-none transition-colors">
+                            <span class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-amber-400/90">
+                                <span>⚡</span> Forward Paper Trades (${tradesList.length})
+                            </span>
+                            <span class="text-[9px] text-gray-500 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar border-t border-white/5">
+                            ${tradesRows}
+                        </div>
+                    </details>
+                </div>
+                `;
+            }).join('');
+        };
+
+        window.renderQuantLabRegistry = function(strategies) {
+            const container = document.getElementById('ql-registry-list');
+            if (!container) return;
+            if (!strategies || strategies.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-xs text-gray-500 font-mono">No strategies registered yet.</div>';
+                return;
+            }
+
+            container.innerHTML = strategies.map(s => `
+                <div class="bg-[#121829] border border-white/10 rounded-xl p-3.5 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black text-white">${s.name}</span>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/10 text-gray-300">
+                                ${s.status}
+                            </span>
+                            <span class="text-[9px] font-mono text-gray-500">${s.asset}</span>
+                        </div>
+                        <span class="text-[9px] font-mono text-gray-500">${s.created_at || ''}</span>
+                    </div>
+                    <p class="text-[11px] text-gray-300 italic">"${s.hypothesis}"</p>
+                    <div class="bg-black/50 border border-white/5 rounded-lg p-2.5 overflow-x-auto">
+                        <pre class="text-[10px] text-purple-300 font-mono leading-relaxed">${s.code ? s.code.replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'No code'}</pre>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        window.runQuantLabCycle = async function() {
+            const btn = document.getElementById('btn-run-quant-cycle');
+            const spinner = document.getElementById('ql-cycle-spinner');
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch((window.API_BASE_URL || '') + '/api/quant-lab/cycle/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ asset: 'BTC', target_interval: '15m' })
+                });
+                const data = await res.json();
+                if (data.success && data.report) {
+                    const r = data.report;
+                    alert(`Research Cycle Complete!\nStrategy: ${r.name}\nOutcome: ${r.result}\n${r.validation?.passed ? 'Passed backtests and placed into Paper Incubation!' : 'Failed backtest hurdles and committed to Strategy Graveyard.'}`);
+                }
+                await window.fetchQuantLabData();
+            } catch (e) {
+                console.error("[QuantLab] Cycle execution error:", e);
+                alert("Error executing research cycle: " + e.message);
+            } finally {
+                if (btn) btn.disabled = false;
+                if (spinner) spinner.classList.add('hidden');
+            }
+        };
+
+        window.promoteQuantLabStrategy = async function(strategyId) {
+            if (!confirm("Promote this strategy to active production trading?")) return;
+            try {
+                const res = await fetch((window.API_BASE_URL || '') + `/api/quant-lab/strategy/${strategyId}/promote`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || "Strategy promoted!");
+                    window.fetchQuantLabData();
+                }
+            } catch (e) {
+                alert("Error promoting strategy: " + e.message);
+            }
+        };
+
         window.switchEquityChart = function(filter) {
             activeEquityFilter = filter;
             ['all', 'manual', 'bot'].forEach(k => {
@@ -4419,7 +7375,9 @@
             let lastTime = 0;
             for (let i = 0; i < points.length; i++) {
                 let p = points[i];
-                let ts = p.ts ? Math.floor(p.ts) : (Math.floor(Date.now() / 1000) - (points.length - i) * 60);
+                let rawTs = p.ts;
+                let parsedTs = typeof rawTs === 'number' ? rawTs : (Date.parse(rawTs) / 1000);
+                let ts = (!isNaN(parsedTs) && parsedTs > 0) ? Math.floor(parsedTs) : (Math.floor(Date.now() / 1000) - (points.length - i) * 60);
                 if (ts <= lastTime) { ts = lastTime + 1; }
                 data.push({ time: ts, value: p.pnl });
                 lastTime = ts;
@@ -4450,7 +7408,7 @@
                 }
             }
             if (s.btc_price && spot && (window.currentAsset || 'BTC') === 'BTC' && typeof updateSpotPriceDisplay === 'function' && !(typeof spotWsLive === 'function' && spotWsLive())) updateSpotPriceDisplay(Number(s.btc_price), 'BTC');
-            if (s.countdown && countdown) countdown.textContent = s.countdown;
+            if (s.countdown && countdown && !window._kalshiClockSynced) countdown.textContent = s.countdown;
             if (s.yes_prob !== undefined) {
                 const yPct = Math.round(s.yes_prob) + '%';
                 if (yesBtn) yesBtn.textContent = yPct;
@@ -4463,7 +7421,7 @@
             }
             if (s.mode && modeBadge) {
                 modeBadge.textContent = s.mode;
-                modeBadge.className = s.mode === 'LIVE' ? 'px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest bg-red-500/20 text-red-300 border border-red-500/40' : 'px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+                modeBadge.className = s.mode === 'LIVE' ? 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-red-500/20 text-red-300 border border-red-500/40' : 'w-12 py-0.5 rounded text-[7px] font-bold uppercase tracking-widest text-center bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
             }
         }
 
@@ -4557,6 +7515,16 @@
                         diffArrow.classList.add('text-kalshi-red');
                         diffVal.classList.add('text-kalshi-red');
                     }
+                }
+            }
+
+            // Real-time update to Position Scanner & Nav Live PnL on spot price ticks
+            if (window.lastDashboardStats) {
+                if (typeof updateActivePositionHud === 'function') {
+                    updateActivePositionHud(window.lastDashboardStats);
+                }
+                if (typeof window.updateNavLivePnl === 'function') {
+                    window.updateNavLivePnl(window.lastDashboardStats);
                 }
             }
         }
@@ -4660,42 +7628,102 @@
                 asset);
         }
 
+        window._kalshiClockOffsetMs = window._kalshiClockOffsetMs || 0;
+        window._kalshiCloseEpochMs = window._kalshiCloseEpochMs || 0;
+        window._kalshiClockSynced = false;
+
+        function tickExecCountdown() {
+            const cdEl = document.getElementById('exec-countdown');
+            if (!cdEl) return;
+            const nowMs = Date.now() + (window._kalshiClockOffsetMs || 0);
+            const nowSec = Math.floor(nowMs / 1000);
+            let sec = 0;
+            if (window._kalshiCloseEpochMs && window._kalshiCloseEpochMs > nowMs && (window._kalshiCloseEpochMs - nowMs) <= 960000) {
+                sec = Math.max(0, Math.floor(window._kalshiCloseEpochMs / 1000) - nowSec);
+            } else {
+                sec = 900 - (nowSec % 900);
+            }
+            if (sec <= 0 || sec > 900) sec = 900;
+            const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+            const ss = String(sec % 60).padStart(2, '0');
+            const fmt = `${mm}:${ss}`;
+            if (cdEl.textContent !== fmt) {
+                cdEl.textContent = fmt;
+            }
+            if (sec <= 15 && sec > 0 && lastPlayedCountdownSec !== sec && (sec === 15 || sec === 10 || sec === 5)) {
+                lastPlayedCountdownSec = sec;
+                if (window.soundEngine) soundEngine.play('countdown_warning');
+            }
+        }
+        setInterval(tickExecCountdown, 200);
+
         // Fetch Kalshi contract data for execution panel
-        async function fetchKalshiData() {
-            if (document.hidden || !window.isTabActive) return;
+        let _isFetchingKalshi = false;
+        let _hasInitialKalshiLoaded = false;
+        async function fetchKalshiData(force = false) {
+            if ((document.hidden || !window.isTabActive) && !force && _hasInitialKalshiLoaded) return;
+            if (_isFetchingKalshi && !force) return;
+            _hasInitialKalshiLoaded = true;
+            _isFetchingKalshi = true;
             const thisReqId = ++currentKalshiRequestId;
             const reqAsset = (window.currentAsset || 'BTC').toUpperCase();
             const curA = reqAsset.toLowerCase();
 
             try {
+                const tReqStart = Date.now();
                 const [kRes, cRes, tickerRes] = await Promise.all([
                     fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/kalshi'),
                     fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/countdown'),
                     fetch((window.API_BASE_URL||'')+'/api/engine/' + curA + '/ticker'),
                 ]);
+                const tReqMid = (tReqStart + Date.now()) / 2;
 
-                // Drop response if user switched asset while awaiting
-                if (reqAsset !== (window.currentAsset || 'BTC').toUpperCase()) {
+                // Drop response if user switched asset or a newer request superseded this one
+                if (reqAsset !== (window.currentAsset || 'BTC').toUpperCase() || thisReqId < currentKalshiRequestId) {
                     return;
                 }
 
                 if (kRes.ok) {
                     const k = await kRes.json();
                     window.currentKalshiTarget = k.target_price;
+                    if (k.close_epoch_ms && k.close_epoch_ms > 0) {
+                        window._kalshiCloseEpochMs = Number(k.close_epoch_ms);
+                    }
+                    if (k.server_now_ms && k.server_now_ms > 0) {
+                        window._kalshiClockOffsetMs = Number(k.server_now_ms) - tReqMid;
+                        window._kalshiClockSynced = true;
+                    }
 
                     // Save bids for active position PnL computation
-                    if (k.yes_bid !== undefined) window.lastYesBid = Math.round(k.yes_bid * 100);
-                    if (k.no_bid !== undefined) window.lastNoBid = Math.round(k.no_bid * 100);
+                    if (!window.assetBids) window.assetBids = {};
+                    if (k.yes_bid !== undefined) {
+                        window.lastYesBid = Math.round(k.yes_bid * 100);
+                        if (!window.assetBids[reqAsset]) window.assetBids[reqAsset] = {};
+                        window.assetBids[reqAsset].yes_bid = window.lastYesBid;
+                    }
+                    if (k.no_bid !== undefined) {
+                        window.lastNoBid = Math.round(k.no_bid * 100);
+                        if (!window.assetBids[reqAsset]) window.assetBids[reqAsset] = {};
+                        window.assetBids[reqAsset].no_bid = window.lastNoBid;
+                    }
                     
-                    if (window.lastDashboardStats && typeof updateActivePositionHud === 'function') {
-                        updateActivePositionHud(window.lastDashboardStats);
+                    if (window.lastDashboardStats) {
+                        if (typeof updateActivePositionHud === 'function') {
+                            updateActivePositionHud(window.lastDashboardStats);
+                        }
+                        if (typeof window.updateNavLivePnl === 'function') {
+                            window.updateNavLivePnl(window.lastDashboardStats);
+                        }
                     }
 
                     const strikeEl = document.getElementById('exec-strike');
                     if (strikeEl) {
                         const tp = Number(k.target_price);
+                        const isFxStrike = ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD'].includes(reqAsset);
+                        const strikeDec = reqAsset === 'USDJPY' ? 3 : (isFxStrike ? 5 : (reqAsset === 'DOGE' ? 4 : 2));
+                        const strikePfx = isFxStrike ? '' : '$';
                         if (k.target_price && !isNaN(tp) && isFinite(tp) && tp > 0) {
-                            strikeEl.textContent = '$' + tp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            strikeEl.textContent = strikePfx + tp.toLocaleString(undefined, {minimumFractionDigits: strikeDec, maximumFractionDigits: strikeDec});
                         } else if (strikeEl.textContent === '$--,---' || !strikeEl.textContent) {
                             strikeEl.textContent = '$--,---';
                         }
@@ -4720,15 +7748,14 @@
 
                 if (cRes.ok) {
                     const c = await cRes.json();
-                    const cdEl = document.getElementById('exec-countdown');
-                    if (cdEl) cdEl.textContent = c.formatted || c.countdown || '--:--';
-
-                    // Audio cue warning at <= 15s
-                    const sec = c.seconds_left !== undefined ? c.seconds_left : (c.countdown ? parseInt(c.countdown.split(':')[1]) : 99);
-                    if (sec <= 15 && sec > 0 && lastPlayedCountdownSec !== sec && (sec === 15 || sec === 10 || sec === 5)) {
-                        lastPlayedCountdownSec = sec;
-                        soundEngine.play('countdown_warning');
+                    if (c.server_now_ms && c.server_now_ms > 0) {
+                        window._kalshiClockOffsetMs = Number(c.server_now_ms) - tReqMid;
+                        window._kalshiClockSynced = true;
                     }
+                    if (c.close_epoch_ms && c.close_epoch_ms > 0) {
+                        window._kalshiCloseEpochMs = Number(c.close_epoch_ms);
+                    }
+                    tickExecCountdown();
                 }
 
                 if (tickerRes.ok) {
@@ -4736,8 +7763,6 @@
                     if (tickerData && tickerData.price) {
                         const spotVal = Number(tickerData.price);
                         if (isFinite(spotVal) && spotVal > 0) {
-                            // If WebSocket stream is actively updating this asset, let WebSocket drive the live ticks;
-                            // otherwise, update from the periodic ticker snapshot
                             if (!spotWsLive()) {
                                 updateSpotPriceDisplay(spotVal, reqAsset);
                             }
@@ -4745,11 +7770,78 @@
                     }
                 }
             } catch(e) { console.warn('[ExecPanel] fetch err', e); }
+            finally { _isFetchingKalshi = false; }
         }
-        fetchKalshiData();
+        fetchKalshiData(true);
         if (typeof initSpotWebSocket === 'function') initSpotWebSocket();
         if (typeof syncSoundSettingsUI === 'function') syncSoundSettingsUI();
-        setInterval(fetchKalshiData, 1000);
+        setInterval(() => fetchKalshiData(false), 1000);
+
+        // Real-Time 1-Second Open Trade PnL & Position Monitor Tick
+        let _isTickOpenPnlRunning = false;
+        async function tickOpenTradesPnL() {
+            if (_isTickOpenPnlRunning) return;
+            _isTickOpenPnlRunning = true;
+            try {
+                const s = window.lastDashboardStats;
+                if (!s) return;
+
+                // Identify assets of open trades
+                const openTrades = (s.recent_trades || []).filter(t => String(t.status || '').toUpperCase() === 'OPEN');
+                if (openTrades.length > 0) {
+                    const openAssets = new Set();
+                    openTrades.forEach(t => {
+                        const isSport = window.__isSportTrade ? window.__isSportTrade(t) : false;
+                        const isInv = window.__isInvestmentTrade ? window.__isInvestmentTrade(t) : false;
+                        if (!isSport && !isInv) {
+                            let a = String(t.asset || '').toUpperCase();
+                            if (!a || a === 'NONE') {
+                                const tk = String(t.ticker || '').toUpperCase();
+                                if (tk.includes('BTC')) a = 'BTC';
+                                else if (tk.includes('ETH')) a = 'ETH';
+                                else if (tk.includes('SOL')) a = 'SOL';
+                                else if (tk.includes('DOGE')) a = 'DOGE';
+                            }
+                            if (a && a !== (window.currentAsset || 'BTC').toUpperCase()) {
+                                openAssets.add(a);
+                            }
+                        }
+                    });
+
+                    // Fetch bids for non-active open assets if any
+                    if (openAssets.size > 0) {
+                        await Promise.all(Array.from(openAssets).map(async (asset) => {
+                            try {
+                                const res = await fetch((window.API_BASE_URL || '') + '/api/engine/' + asset.toLowerCase() + '/kalshi');
+                                if (res.ok) {
+                                    const kd = await res.json();
+                                    if (!window.assetBids) window.assetBids = {};
+                                    if (!window.assetBids[asset]) window.assetBids[asset] = {};
+                                    if (kd.yes_bid !== undefined) window.assetBids[asset].yes_bid = Math.round(kd.yes_bid * 100);
+                                    if (kd.no_bid !== undefined) window.assetBids[asset].no_bid = Math.round(kd.no_bid * 100);
+                                }
+                            } catch(e) {}
+                        }));
+                    }
+                }
+
+                // Recalculate and update PnL everywhere every 1 second
+                if (typeof updateActivePositionHud === 'function') {
+                    updateActivePositionHud(s);
+                }
+                if (typeof window.updateNavLivePnl === 'function') {
+                    window.updateNavLivePnl(s);
+                }
+                if (typeof window.renderTradesContainer === 'function') {
+                    window.renderTradesContainer(s);
+                }
+            } catch(err) {
+                console.warn('[RealtimePnL] tick err', err);
+            } finally {
+                _isTickOpenPnlRunning = false;
+            }
+        }
+        setInterval(tickOpenTradesPnL, 1000);
 
         // Close profile dropdown when clicking outside
         document.addEventListener('click', function(e) {

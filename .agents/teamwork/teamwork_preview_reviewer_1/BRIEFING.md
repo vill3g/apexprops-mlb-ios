@@ -1,79 +1,59 @@
-# BRIEFING — 2026-09-30T19:33:34Z
+# BRIEFING — 2026-10-09T15:16:00Z
 
 ## Mission
-Independently review all deliverables against Requirements R1, R2, R3 and Acceptance Criteria 1, 2, 3; verify mathematical derivations, code correctness, and test execution.
+Act as designated Agent-as-Judge to verify Acceptance Criterion 1: querying `/api/engine/sports/events?sport=TEN` returns events with `ai_prediction` attached.
 
 ## 🔒 My Identity
-- Archetype: teamwork_preview_reviewer
+- Archetype: reviewer_critic
 - Roles: reviewer, critic
 - Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1
-- Original parent: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Milestone: M4 Review
-- Instance: 1 of 2
+- Original parent: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Milestone: Acceptance Criterion 1 Verification
+- Instance: 1 of 1
 
 ## 🔒 Key Constraints
 - Review-only — do NOT modify implementation code
-- Adversarial critic: verify integrity, check for hardcoded test outputs, dummy implementations, shortcuts, fabricated verification
-- Verdict MUST be REQUEST_CHANGES if integrity violations are found
-- Write only to C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1
+- Review and adversarial challenge for Acceptance Criterion 1
+- Integrity check: detect hardcoded tests, facade implementations, bypassed tasks, fabricated outputs
 
 ## Current Parent
-- Conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Updated: 2026-09-30T19:38:00Z
+- Conversation ID: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Updated: 2026-10-09T15:10:19Z
 
 ## Review Scope
-- **Files to review**:
-  - ORIGINAL_REQUEST.md
-  - PROJECT.md
-  - .agents/teamwork/reports/R1_strategy_risk_assessment.md
-  - .agents/teamwork/reports/R2_empirical_backtest_report.md
-  - .agents/teamwork/reports/FINAL_PROFITABILITY_REPORT.md
-  - tests/test_risk_budget.py
-  - tests/test_backtest.py
-  - backend/btc/fees.py
-  - backend/btc/auto_executor/saas_broadcaster.py
-  - backend/btc/auto_executor/executor.py
-  - backend/btc/auto_executor/stop_manager.py
-  - backend/btc/ml_engine.py
-  - backend/btc/backtester_sim.py
-  - backend/scripts/evaluate_previous_trades.py
-  - backend/scripts/backtest_rl.py
-  - backend/btc/backtest.py
-  - backend/data/trades_history.json
-- **Interface contracts**: ORIGINAL_REQUEST.md / PROJECT.md
-- **Review criteria**: correctness, mathematical derivations (taker fees, Half-Kelly sizing, break-even hurdles), test execution, adversarial stress testing
+- **Files to review**: `backend/routes/engine.py`, `backend/sports_bridge/prediction_client.py`, `backend/sports_bridge/executor.py`, `tests/test_sports_dashboard.py`
+- **Interface contracts**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_8\PROJECT.md`, `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md`
+- **Review criteria**: Correctness, integrity, completeness, edge case handling, performance, adversarial resilience
 
 ## Review Checklist
 - **Items reviewed**:
-  - All mandatory reports (R1, R2, FINAL_PROFITABILITY_REPORT)
-  - Unit tests (test_risk_budget.py, test_backtest.py) executed via pytest (6/6 passed)
-  - Empirical backtest scripts (backtest.py, backtest_rl.py, evaluate_previous_trades.py) executed and outputs verified
-  - Mathematical derivations for fees, break-even hurdles, and Half-Kelly sizing verified
-  - Architectural vulnerabilities (strike pinning, night degradation, chop bleed, multi-day drawdown) confirmed
-  - Static HTML marketing mock (backtester_sim.py:36-46) and fee-omission bias (evaluate_previous_trades.py:109-115) verified
-- **Verdict**: APPROVE (Definitive conclusion: NOT PROFITABLE [NEGATIVE EXPECTANCY])
-- **Unverified claims**: None. All claims independently verified and reproduced.
+  - `backend/routes/engine.py` (lines 2850-3050, 3240-3450)
+  - `backend/sports_bridge/prediction_client.py` (lines 535-570, 980-1017)
+  - `backend/sports_bridge/executor.py` (lines 115-140)
+  - `tests/test_sports_dashboard.py` (all 24 test cases)
+- **Verdict**: APPROVE
+- **Unverified claims**: None. All claims independently verified.
 
 ## Attack Surface
 - **Hypotheses tested**:
-  - Benchmark integrity: Verified no cheat codes, hardcoded test results, or dummy implementations in codebase fixes. Pre-existing static mocks and in-sample artifacts were accurately exposed.
-  - Test suite pass: `.venv\Scripts\python.exe -m pytest tests/test_risk_budget.py tests/test_backtest.py -v` passed with 6/6 tests.
-  - Mathematical derivations: Verified 7% taker fee schedule ($0.02 at $0.50, $0.00 at settlement), 52.00% settlement break-even hurdle, 58.0%-63.3% scalping hurdle, True Binary Half-Kelly formula $f^* = (p - b) / (1 - b)$.
-  - Out-of-sample reproducibility: Verified 46.97% ML walk-forward accuracy (Log Loss 0.917), 48.59%-48.75% RL walk-forward win rate (Profit Factor 0.87-0.88), -$6,065.73 historical executed trade loss across 739 trades.
-- **Vulnerabilities found**:
-  - Negative mathematical expectancy (-$0.0325 per contract at $0.50)
-  - Severe high-confidence overconfidence: >80% confidence yields 32.3% win rate, triggering max Half-Kelly capital allocation on worst trades
-  - Midnight risk budget reset without cumulative high-water mark tracking
-  - Night session degradation (46.9% win rate)
-- **Untested angles**:
-  - Live fund order execution with real capital (out of scope per prompt)
+  - `sport=TEN` returns non-empty events with `ai_prediction` dictionary: PASS (47 events, 37 with predictions)
+  - All sports (`NHL`, `MLB`, `NFL`, `TEN`, `SOC`, `UFC`, `NPB/KBO`) return events: PASS (total 420 events)
+  - Lowercase parameters (`sport=ten`): PASS (47 events)
+  - Invalid parameters (`sport=INVALID_XYZ`): PASS (graceful fallback, returns all 420 events)
+  - Empty sport parameter (`sport=`): PASS (returns all 420 events)
+  - Key contract integrity across all sports: PASS (0 missing keys)
+  - Reverse proxy security check (`X-Forwarded-For` without token): PASS (returns 401 Unauthorized)
+  - Automated test suite regression check: PASS (24/24 passed in 93.85s)
+- **Vulnerabilities found**: None. No regressions, no facade implementations, no hardcoded values.
+- **Untested angles**: None.
 
 ## Key Decisions Made
-- Confirmed full satisfaction of Requirements R1, R2, R3 and Acceptance Criteria AC 1, AC 2, AC 3.
-- Issued APPROVE verdict in handoff report.
+- Independent verification completed across all required criteria and stress tests.
+- Issuing APPROVE verdict for Acceptance Criterion 1.
 
 ## Artifact Index
-- DISPATCH.md — Incoming task assignments
-- progress.md — Heartbeat and status tracking
-- BRIEFING.md — Persistent awareness and review notes
-- handoff.md — Comprehensive 5-component review report and verdict
+- `DISPATCH.md` — Inbound task dispatch record
+- `BRIEFING.md` — Persistent working memory and identity
+- `progress.md` — Liveness heartbeat
+- `report.md` — In-depth review and challenge findings
+- `handoff.md` — Final 5-component handoff report with verdict

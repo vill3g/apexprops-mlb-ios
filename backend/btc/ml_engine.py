@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from backend.btc.ml_ensemble import GodTierEnsemble
+from backend.btc.ml_ensemble import VotingEnsemble, GodTierEnsemble
 
 logger = logging.getLogger(__name__)
 
@@ -740,7 +740,7 @@ class MLEngine:
         self.asset = asset
         asset_suffix = "" if asset == "BTC" else f"_{asset}"
         self.history_file = os.path.join(data_dir, f"trades_history{asset_suffix}.json")
-        self.model = GodTierEnsemble()
+        self.model = VotingEnsemble()
         self.is_trained = False
         self.last_trained_mtime = 0.0
         self.last_train_sample_count = 0
@@ -1018,6 +1018,9 @@ class MLEngine:
     def _is_model_compatible(self, loaded) -> bool:
         if not getattr(loaded, "is_normalized", False):
             return False
+        if not hasattr(loaded, "lgb") or not hasattr(loaded, "cb"):
+            logger.warning("[MLEngine] Cached model is missing LightGBM or CatBoost estimators. Invalidating cache.")
+            return False
         scaler = getattr(loaded, "scaler", None)
         if scaler is None:
             model_inner = getattr(loaded, "model", None)
@@ -1163,8 +1166,12 @@ class MLEngine:
                         os.remove(cache_file)
                     except OSError:
                         pass
-            except (FileNotFoundError, OSError, ValueError, TypeError) as e:
-                logger.warning(f"[MLEngine] Failed to load robust cache fallback: {e}")
+            except Exception as e:
+                logger.warning(f"[MLEngine] Failed to load robust cache fallback ({cache_file}): {e}. Removing corrupt cache to retrain cleanly.")
+                try:
+                    os.remove(cache_file)
+                except OSError:
+                    pass
 
         # Enforce OPTIMAL_TRAINING_WINDOW_BARS + 50 warmup context (Task 4)
         if len(df_ind) > OPTIMAL_TRAINING_WINDOW_BARS + 50:
@@ -1345,11 +1352,134 @@ class MLEngine:
             prob = self.model.predict_proba_calibrated(X_pred)[0]
         return float(prob)
 
+    def predict_consensus(self, current_raw_features: dict) -> dict:
+        """
+        Calculates consensus across XGBoost, LightGBM, and CatBoost.
+        Returns dict containing:
+        - ensemble_prob / p_ensemble: float
+        - individual_probs / model_probs: dict of component probabilities
+        - agreement_ratio: float (1.0 for unanimous 3/3, 0.67 for majority 2/3)
+        - is_unanimous: bool
+        - consensus_direction: str ("YES", "NO", "NEUTRAL")
+        - spread: float
+        - variance: float
+        """
+        if not self.is_trained:
+            import threading
+            threading.Thread(target=self.train, daemon=True).start()
+            return {
+                "ensemble_prob": 0.5,
+                "p_ensemble": 0.5,
+                "consensus_direction": "NEUTRAL",
+                "agreement_count": 3,
+                "agreement_ratio": 1.0,
+                "is_unanimous": True,
+                "individual_probs": {"xgb": 0.5, "lgb": 0.5, "cb": 0.5},
+                "model_probs": {"xgboost": 0.5, "lightgbm": 0.5, "catboost": 0.5},
+                "spread": 0.0,
+                "variance": 0.0,
+            }
+
+        current_raw_features = self._normalize_features(current_raw_features)
+
+        feature_vec = []
+        for k in self.feature_keys:
+            default_val = NEUTRAL_FEATURE_DEFAULTS.get(k, 0.0)
+            val = current_raw_features.get(k, default_val)
+            try:
+                val = float(val) if val is not None else default_val
+                if not math.isfinite(val):
+                    val = default_val
+            except (TypeError, ValueError):
+                logger.warning(f"[MLEngine] Unparseable feature {k}={val}. Aborting prediction.")
+                return {
+                    "ensemble_prob": 0.5,
+                    "p_ensemble": 0.5,
+                    "consensus_direction": "NEUTRAL",
+                    "agreement_count": 3,
+                    "agreement_ratio": 1.0,
+                    "is_unanimous": True,
+                    "individual_probs": {"xgb": 0.5, "lgb": 0.5, "cb": 0.5},
+                    "model_probs": {"xgboost": 0.5, "lightgbm": 0.5, "catboost": 0.5},
+                    "spread": 0.0,
+                    "variance": 0.0,
+                }
+            feature_vec.append(val)
+
+        X_pred = np.nan_to_num(np.array([feature_vec]), nan=0.0, posinf=0.0, neginf=0.0)
+        with self._lock:
+            if hasattr(self.model, "predict_consensus"):
+                res = self.model.predict_consensus(X_pred)
+            elif hasattr(self.model, "evaluate_consensus"):
+                res = self.model.evaluate_consensus(X_pred)
+            else:
+                prob = self.model.predict_proba_calibrated(X_pred)[0]
+                res = {
+                    "ensemble_prob": float(prob),
+                    "p_ensemble": float(prob),
+                    "consensus_direction": "YES" if prob > 0.5 else ("NO" if prob < 0.5 else "NEUTRAL"),
+                    "agreement_count": 3,
+                    "agreement_ratio": 1.0,
+                    "is_unanimous": True,
+                    "individual_probs": {"xgb": float(prob), "lgb": float(prob), "cb": float(prob)},
+                    "model_probs": {"xgboost": float(prob), "lightgbm": float(prob), "catboost": float(prob)},
+                    "spread": 0.0,
+                    "variance": 0.0,
+                }
+        return res
+
+    def calculate_kelly_wager(
+        self,
+        current_raw_features: dict = None,
+        market_price: float = 0.50,
+        available_capital: float = None,
+        max_position_cap: float = None,
+        capital: float = None,
+        max_cap: float = None,
+        bankroll: float = None,
+        p_win: float = None,
+        is_unanimous: bool = None,
+        agreement_ratio: float = None,
+        slippage_buffer: float = 0.04,
+        **kwargs
+    ) -> dict:
+        """
+        Calculates dynamic Kelly Criterion contract sizing scaled by model consensus.
+        """
+        from backend.btc.fees import calculate_binary_kelly_position
+
+        avail_cap = available_capital if available_capital is not None else (capital if capital is not None else (bankroll if bankroll is not None else 1000.0))
+        pos_cap = max_position_cap if max_position_cap is not None else (max_cap if max_cap is not None else avail_cap)
+
+        if p_win is None and current_raw_features is not None:
+            consensus = self.predict_consensus(current_raw_features)
+            p_win = consensus.get("p_ensemble", 0.50)
+            if is_unanimous is None:
+                is_unanimous = consensus.get("is_unanimous", False)
+            if agreement_ratio is None:
+                agreement_ratio = consensus.get("agreement_ratio", None)
+        elif p_win is None:
+            p_win = 0.50
+
+        if is_unanimous is None:
+            is_unanimous = False
+
+        return calculate_binary_kelly_position(
+            win_prob=p_win,
+            ask_price=market_price,
+            available_capital=avail_cap,
+            max_position_cap=pos_cap,
+            slippage_buffer=slippage_buffer,
+            is_unanimous=is_unanimous,
+            agreement_ratio=agreement_ratio,
+            **kwargs
+        )
+
 
 
 
 # =====================================================================
-# SINGLETON FACTORY
+# SINGLETON FACTORY & DUAL ENGINE BINDINGS
 # =====================================================================
 _ml_engine_instances = {}
 _ml_engine_lock = threading.Lock()
@@ -1366,3 +1496,6 @@ def get_ml_engine(data_dir: str = None, trading_style: str = "SNIPER", asset: st
                 engine.train()
                 _ml_engine_instances[key] = engine
     return _ml_engine_instances[key]
+
+
+

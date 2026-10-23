@@ -16,7 +16,8 @@ from backend.auth.routes import UserConfigRequest
 from backend.auth.security import create_jwt_token
 from backend.sports_bridge.executor import SportsBridgeExecutor, _parse_trade_timestamp
 from backend.database.trade_store import TradeStore, _trade_epoch
-from backend.routes.engine import _resolve_user_id, _execute_sports_trade
+from backend.routes.engine import _resolve_user_id
+from backend.routes.engine_sports import _execute_sports_trade
 from backend.sports.sports_executor import run_sports_executor
 
 
@@ -299,12 +300,16 @@ def test_sports_bridge_executor_trade_insertion_produces_et_timestamp():
     """Verify SportsBridgeExecutor.run_cycle creates trade with ET formatted string timestamp."""
     executor = SportsBridgeExecutor()
     today_code = datetime.now(ZoneInfo("America/New_York")).strftime("%y%b%d").upper()
+    now_epoch = datetime.now(ZoneInfo("America/New_York")).timestamp()
     good_pred = {
         "sport": "NFL",
         "predicted_team": "Packers",
         "confidence_pct": 75.0,
         "edge_pct": 5.0,
-        "metadata": {"is_upcoming": True, "date": today_code}
+        "start_epoch": now_epoch + 1800.0,
+        "ticker": f"KXNFLGAME-{today_code}GB-GB",
+        "event_ticker": f"KXNFLGAME-{today_code}GB",
+        "metadata": {"is_upcoming": True, "date": today_code, "start_epoch": now_epoch + 1800.0}
     }
     user_conf = {
         "id": 1,
@@ -319,6 +324,8 @@ def test_sports_bridge_executor_trade_insertion_produces_et_timestamp():
         "sports_max_price": 0.80,
         "sports_max_daily_trades": 5,
         "sports_max_daily_risk": 100.0,
+        "sports_include_live": True,
+        "paper_balance": 1000.0,
         "sports_active_leagues": "NFL",
         "sports_market_types": "GAME"
     }
@@ -330,7 +337,8 @@ def test_sports_bridge_executor_trade_insertion_produces_et_timestamp():
         created_trades.append(t_dict)
         return orig_insert(user_id, t_dict)
 
-    with patch("backend.sports_bridge.executor._generate_kalshi_market", return_value=(test_ticker, 0.50, "Packers Win")), \
+    with patch("backend.routes.engine_sports.fetch_sports_events_data", return_value=[]), \
+         patch("backend.sports_bridge.executor._generate_kalshi_market", return_value=(test_ticker, 0.50, "Packers Win", {})), \
          patch.object(executor.client, "fetch_latest_picks", return_value=[good_pred]), \
          patch("backend.sports_bridge.executor.get_all_active_users", return_value=[user_conf]), \
          patch("backend.database.trade_store.TradeStore.insert_trade", side_effect=capture_insert):

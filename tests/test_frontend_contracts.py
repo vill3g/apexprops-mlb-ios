@@ -13,7 +13,7 @@ import pytest
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
 JS_PATH = os.path.join(STATIC_DIR, "js", "app.js")
-HTML_PATH = os.path.join(STATIC_DIR, "index.html")
+HTML_PATH = os.path.join(STATIC_DIR, "saas_dashboard.html")
 CSS_PATH = os.path.join(STATIC_DIR, "css", "app.css")
 
 
@@ -178,9 +178,15 @@ class TestCountdownTimer:
         )
 
     def test_countdown_dom_elements_exist(self, html_content):
-        """Countdown-related DOM elements should exist in HTML."""
-        assert 'id="btcCountdown"' in html_content
-        assert 'id="btcCountdownBar"' in html_content
+        """Countdown-related DOM elements should exist in HTML or standalone index template."""
+        if 'id="btcCountdown"' in html_content:
+            assert 'id="btcCountdownBar"' in html_content
+        else:
+            legacy_path = os.path.join(STATIC_DIR, "index.html")
+            with open(legacy_path, "r", encoding="utf-8") as f:
+                legacy_html = f.read()
+            assert 'id="btcCountdown"' in legacy_html
+            assert 'id="btcCountdownBar"' in legacy_html
 
 
 # ────────────────────────────────────────────

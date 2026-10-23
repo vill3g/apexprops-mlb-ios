@@ -9,7 +9,8 @@ from backend.main import app
 from backend.database.models import get_db_connection, get_user_by_id, update_user_config, get_all_active_users
 from backend.database.trade_store import TradeStore
 from backend.btc.kalshi_trader import KalshiTrader
-from backend.routes.engine import _execute_sports_trade, _resolve_user_id
+from backend.routes.engine_sports import _execute_sports_trade
+from backend.routes.engine import _resolve_user_id
 from backend.sports_bridge.executor import SportsBridgeExecutor, _parse_trade_timestamp
 from backend.auth.security import create_jwt_token
 
@@ -563,7 +564,8 @@ def test_sports_bridge_live_take_profit_close(monkeypatch):
         settled = TradeStore.get_trade_by_id(trade_id)
         assert settled["status"] == "CLOSED"
         assert settled["exit_price"] == 0.65
-        assert settled["pnl"] == round((0.65 - 0.40) * 25, 2)
+        from backend.btc.fees import net_pnl
+        assert settled["pnl"] == net_pnl(0.40, 0.65, 25)  # net of entry + exit fees
         assert "TAKE_PROFIT" in settled["exit_reason"]
     finally:
         conn = get_db_connection()

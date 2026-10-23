@@ -98,11 +98,19 @@ def main():
     stop_event = threading.Event()
     worker_state = {"proc": None}
 
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    env.setdefault("OMP_NUM_THREADS", "2")
+    env.setdefault("MKL_NUM_THREADS", "2")
+    env.setdefault("OPENBLAS_NUM_THREADS", "2")
+    env.setdefault("IN_PROCESS_WORKER", "1")
+
     def supervise_worker():
         delay = 5.0
         while not stop_event.is_set():
             started = time.time()
-            proc = subprocess.Popen(worker_cmd, cwd=APP_DIR)
+            proc = subprocess.Popen(worker_cmd, cwd=APP_DIR, env=env)
             worker_state["proc"] = proc
             while proc.poll() is None and not stop_event.is_set():
                 time.sleep(1.0)
@@ -112,11 +120,12 @@ def main():
             print(f"[!] Worker exited with code {proc.returncode}; restarting in {delay:.0f}s")
             stop_event.wait(delay)
 
-    threading.Thread(target=supervise_worker, daemon=True, name="WorkerSupervisor").start()
+    if env.get("IN_PROCESS_WORKER", "1").strip().lower() in ("0", "false", "no"):
+        threading.Thread(target=supervise_worker, daemon=True, name="WorkerSupervisor").start()
 
     # Launch uvicorn
     try:
-        subprocess.run(cmd, cwd=APP_DIR)
+        subprocess.run(cmd, cwd=APP_DIR, env=env)
     except KeyboardInterrupt:
         pass
     finally:

@@ -1,0 +1,255 @@
+import re
+import difflib
+import unicodedata
+
+SOCCER_ALIASES = {
+    "los angeles g": "la galaxy",
+    "los angeles galaxy": "la galaxy",
+    "la galaxy": "la galaxy",
+    "los angeles f": "los angeles fc",
+    "los angeles fc": "los angeles fc",
+    "lafc": "los angeles fc",
+    "saint louis": "st. louis",
+    "st louis": "st. louis",
+    "st. louis city sc": "st. louis",
+    "st. louis city": "st. louis",
+    "new york rb": "new york red bulls",
+    "red bull new york": "new york red bulls",
+    "nyrb": "new york red bulls",
+    "kansas city": "sporting kansas city",
+    "sporting kc": "sporting kansas city",
+    "salt lake": "real salt lake",
+    "rsl": "real salt lake",
+    "dc united": "d.c. united",
+    "dcu": "d.c. united",
+    "brighton": "brighton & hove albion",
+    "brighton and hove albion": "brighton & hove albion",
+    "tottenham": "tottenham hotspur",
+    "manchester utd": "manchester united",
+    "man utd": "manchester united",
+    "man city": "manchester city",
+    "newcastle": "newcastle united",
+    "west ham": "west ham united",
+    "wolves": "wolverhampton wanderers",
+}
+SOCCER_STOP_WORDS = {'the', 'team', 'club', 'wins', 'fc', 'sc', 'cf', 'new', 'real', 'san', 'st', 'city', 'united', 'is', 'result'}
+
+def recompute_alt_line_prob(original_prob: float, original_line: float, kalshi_line: float, is_over: bool) -> float:
+    diff = kalshi_line - original_line
+    if diff == 0:
+        return original_prob
+        
+    adj = 0.0
+    if is_over:
+        adj = - (diff * 10.0)
+    else:
+        adj = (diff * 10.0)
+        
+    return max(0.1, min(99.9, original_prob + adj))
+
+def match_team_by_id(team_name, custom_strike, milestone):
+    if not custom_strike or not milestone or not milestone.get("details"):
+        return False
+
+    if isinstance(custom_strike, str):
+        try:
+            custom_strike = json.loads(custom_strike)
+        except Exception:
+            return False
+
+    if not isinstance(custom_strike, dict):
+        return False
+
+    target_id = None
+    for k, v in custom_strike.items():
+        if "team" in k or k == "id":
+            target_id = v
+            break
+
+    if not target_id:
+        return False
+        
+    details = milestone["details"]
+    home_id = details.get("home_team_id")
+    away_id = details.get("away_team_id")
+    
+    title = milestone.get("title", "").upper()
+    name_upper = team_name.upper()
+    
+    parts = re.split(r'\s+(?:AT|VS\.?|@)\s+', title)
+    if len(parts) == 2:
+        away_str, home_str = parts[0].strip(), parts[1].strip()
+        
+        def is_match(a, b):
+            return a in b or b in a or (a[:4] in b and len(a)>3)
+            
+        is_away = is_match(name_upper, away_str)
+        is_home = is_match(name_upper, home_str)
+        
+        if is_away and target_id == away_id: return True
+        if is_home and target_id == home_id: return True
+        
+    return False
+
+def _get_price(m, field):
+    if not m:
+        return 0.0
+    val = m.get(field + '_dollars')
+    if val is not None:
+        try: return float(val) * 100.0
+        except: pass
+    val2 = m.get(field)
+    if val2 is not None:
+        try:
+            f = float(val2)
+            return f * 100.0 if f <= 1.0 else f
+        except: pass
+    return 0.0
+
+def find_best_market_for_pick(markets, pick, milestone):
+    if not markets or not pick:
+        return None, True, 0.0, 0.0, False
+        
+    pred_team = pick.get("predicted_team", "")
+    pred_mtype = str(pick.get("market_type") or pick.get("metadata", {}).get("type") or "").upper()
+    conf = pick.get("confidence_pct", 50.0)
+    meta = pick.get("metadata", {})
+    pick_line_raw = meta.get("line") or 0.0
+    
+    try:
+        if isinstance(pick_line_raw, str):
+            m = re.search(r'[\d\.]+', pick_line_raw)
+            pick_line = float(m.group(0)) if m else 0.0
+        elif pick_line_raw:
+            pick_line = float(pick_line_raw)
+        else:
+            m = re.search(r'[\d\.]+', str(pred_team))
+            pick_line = float(m.group(0)) if m else 0.0
+    except:
+        pick_line = 0.0
+
+    is_spread = "SPREAD" in pred_mtype or "PUCK LINE" in pred_mtype or "RUN LINE" in pred_mtype
+    is_total = "TOTAL" in pred_mtype or "OVER" in pred_mtype or "UNDER" in pred_mtype
+    is_prop = "PROP" in pred_mtype or "PLAYER" in pred_mtype
+    
+    if is_total:
+        combined_text = f"{pred_mtype} {pick_line_raw} {pred_team}".upper()
+        is_over = "OVER" in combined_text or "O" in str(pick_line_raw).upper()
+        
+        nearest_mkt = None
+        min_diff = 999.0
+        
+        for m in markets:
+            strike = m.get("floor_strike") or m.get("cap_strike")
+            if strike is None:
+                continue
+            strike_val = float(strike)
+            diff = abs(strike_val - pick_line)
+            if diff < min_diff:
+                min_diff = diff
+                nearest_mkt = m
+                
+        if nearest_mkt:
+            strike_val = float(nearest_mkt.get("floor_strike") or nearest_mkt.get("cap_strike"))
+            new_conf = recompute_alt_line_prob(conf, pick_line, strike_val, is_over)
+            
+            st_type = nearest_mkt.get("strike_type", "")
+            if "greater" in st_type:
+                is_yes = is_over
+            else:
+                is_yes = not is_over
+                
+            yes_price = _get_price(nearest_mkt, "yes_ask") / 100.0
+            no_price = _get_price(nearest_mkt, "no_ask") / 100.0
+            market_price = yes_price if is_yes else no_price
+            edge = 0.0 if market_price <= 0.0 else round(new_conf - (market_price * 100.0), 1)
+            
+            return nearest_mkt, is_yes, edge, new_conf, (min_diff > 0)
+            
+    elif is_spread:
+        is_positive = "+" in str(pick_line_raw) or pick_line > 0
+        pick_val = abs(pick_line)
+        
+        for m in markets:
+            strike = m.get("floor_strike") or m.get("cap_strike")
+            if strike is None: continue
+            if float(strike) != pick_val: continue
+            
+            custom = m.get("custom_strike", {})
+            st_type = m.get("strike_type", "")
+            
+            is_team_match = match_team_by_id(pred_team, custom, milestone)
+            
+            if is_positive:
+                if not is_team_match and "greater" in st_type:
+                    yes_price = _get_price(m, "yes_ask") / 100.0
+                    no_price = _get_price(m, "no_ask") / 100.0
+                    edge = 0.0 if no_price <= 0.0 else round(conf - (no_price * 100.0), 1)
+                    return m, False, edge, conf, False
+            else:
+                if is_team_match and "greater" in st_type:
+                    yes_price = _get_price(m, "yes_ask") / 100.0
+                    edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                    return m, True, edge, conf, False
+                    
+    elif is_prop:
+        pred_player = pick.get("predicted_team", "").upper()
+        for m in markets:
+            sub = (m.get("yes_sub_title") or "").upper()
+            if pred_player in sub:
+                yes_price = _get_price(m, "yes_ask") / 100.0
+                edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                return m, True, edge, conf, False
+
+    else:
+        # Moneyline
+        for m in markets:
+            custom = m.get("custom_strike", {})
+            if match_team_by_id(pred_team, custom, milestone):
+                yes_price = _get_price(m, "yes_ask") / 100.0
+                edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                return m, True, edge, conf, False
+                
+        def strip_accents(s):
+            return ''.join(ch for ch in unicodedata.normalize('NFD', s) if unicodedata.category(ch) != 'Mn').lower()
+
+        pred_clean = strip_accents(pred_team)
+        pred_tokens = {w for w in re.findall(r'[a-z0-9]+', pred_clean) if len(w) >= 3 and w not in ('the', 'team', 'club', 'fc', 'wins')}
+
+        # Draw / Tie in soccer
+        if pred_clean in ("draw", "tie"):
+            for m in markets:
+                sub = strip_accents(m.get("yes_sub_title") or "")
+                title = strip_accents(m.get("title") or "")
+                if "tie" in sub or "tie" in title or "draw" in sub or "draw" in title:
+                    yes_price = _get_price(m, "yes_ask") / 100.0
+                    edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                    return m, True, edge, conf, False
+
+        for m in markets:
+            sub = strip_accents(m.get("yes_sub_title") or "")
+            title = strip_accents(m.get("title") or "")
+            cand = sub or title
+            cand_clean = re.sub(r'\s+wins?$', '', cand).strip()
+            
+            # Alias matching for MLS and Soccer
+            n_pred = SOCCER_ALIASES.get(pred_clean, pred_clean)
+            n_cand = SOCCER_ALIASES.get(cand_clean, cand_clean)
+            if n_pred == n_cand or n_pred in n_cand or n_cand in n_pred:
+                yes_price = _get_price(m, "yes_ask") / 100.0
+                edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                return m, True, edge, conf, False
+
+            cand_tokens = {w for w in re.findall(r'[a-z0-9]+', cand) if len(w) >= 3 and w not in ('the', 'team', 'club', 'fc', 'wins')}
+            if pred_clean and (pred_clean in cand or cand in pred_clean or (pred_tokens and pred_tokens.issubset(cand_tokens)) or (pred_tokens and len(pred_tokens & cand_tokens) >= 1 and (len(pred_tokens) == 1 or len(pred_tokens & cand_tokens) >= len(pred_tokens) - 1))):
+                yes_price = _get_price(m, "yes_ask") / 100.0
+                edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                return m, True, edge, conf, False
+
+            # Fuzzy token matching (handles Russian/Slavic transliterations like Zhelezniakova / Zheleznyakova)
+            if pred_tokens and cand_tokens and any(difflib.SequenceMatcher(None, t1, t2).ratio() >= 0.75 for t1 in pred_tokens for t2 in cand_tokens):
+                yes_price = _get_price(m, "yes_ask") / 100.0
+                edge = 0.0 if yes_price <= 0.0 else round(conf - (yes_price * 100.0), 1)
+                return m, True, edge, conf, False
+                
+    return None, True, 0.0, conf, False

@@ -137,7 +137,7 @@ class ScalpEngine:
                         # 1. FIX: Track price move relative to 15-minute interval open / strike benchmark
                         from backend.btc.data_fetcher import \
                             get_live_15m_target_data
-                        target_data = get_live_15m_target_data()
+                        target_data = get_live_15m_target_data(asset=self.asset)
                         float(target_data.get("target_price") or current_price)
                         interval_pct_change = float(target_data.get("delta_pct") or 0.0)
 
@@ -484,7 +484,15 @@ class ScalpEngine:
 
                 close_res = get_auto_executor(self.asset).close_specific_trade(trade_id, reason=reason, estimated_exit_price=estimated_exit)
                 if not close_res.get("success"):
-                    logger.warning(f"[ScalpEngine] Exit not filled for {trade_id}: {close_res.get('error')}")
+                    err_str = str(close_res.get("error") or "")
+                    logger.warning(f"[ScalpEngine] Exit not filled for {trade_id}: {err_str}")
+                    if "not found" in err_str.lower() or "not open" in err_str.lower():
+                        with self._trade_lock:
+                            if hasattr(self, "_active_positions") and trade_id in self._active_positions:
+                                del self._active_positions[trade_id]
+                            if self._active_trade and self._active_trade.get("id") == trade_id:
+                                self._active_trade.clear()
+                        break
                     time.sleep(1)
                     continue
                 if close_res.get("closed"):

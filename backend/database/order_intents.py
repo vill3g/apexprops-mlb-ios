@@ -138,6 +138,28 @@ def get(account_key: str, ticker: str) -> Optional[dict]:
         return None
 
 
+def list_unresolved(account_key: str, prefix: str = "", min_age_seconds: float = 0.0) -> list:
+    """Claims for this account whose order outcome is still unknown: 'ambiguous' (the response
+    was lost) or 'sending' (the process died mid-order). Only claims older than
+    min_age_seconds are returned, so an order that is being sent right now is left alone."""
+    cutoff = time.time() - float(min_age_seconds or 0.0)
+    try:
+        conn = _connect()
+        try:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT * FROM order_intents WHERE account_key = ? AND ticker LIKE ? "
+                "AND state IN ('ambiguous', 'sending') AND updated_at <= ?",
+                (account_key, f"{prefix}%", cutoff),
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"[OrderIntents] Could not list unresolved intents for {account_key}: {e}")
+        return []
+
+
 def settle_outcome(account_key: str, ticker: str, order_res: dict) -> str:
     """Apply a place_order() result to the claim. Returns 'filled', 'ambiguous' or 'released'."""
     order_res = order_res or {}

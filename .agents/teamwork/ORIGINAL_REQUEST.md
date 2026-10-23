@@ -272,3 +272,141 @@ Update sports trade insertions in `sports_bridge/executor.py` and `engine.py` to
 - [ ] A reviewer agent confirms that a user with `trading_universe` set to 'BOTH' is successfully processed by both the financial and sports auto-executors.
 - [ ] A reviewer agent verifies the frontend polling interval exponentially increases upon receiving HTTP 429s.
 - [ ] A reviewer agent confirms new sports trades are stored in the database with the exact string timestamp format used by BTC trades.
+
+
+## 2026-10-07T20:53:32Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Step 9 — Assembling and Validating
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Upgrade the ShadowTrader AI trading engines by implementing a Proximal Policy Optimization (PPO) reinforcement learning architecture with a Time-Series Transformer Encoder replacing the legacy LSTM block. Simultaneously, upgrade the classical ML Engine to a Voting Classifier ensemble (XGBoost, LightGBM, CatBoost) that dynamically sizes wagers using the Kelly Criterion upon model consensus. The implementation must be highly robust, ensuring zero regressions to existing trading functionality.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. PPO Transformer RL Agent
+Replace the existing Dueling Double DQN agent in the Python backend with a Proximal Policy Optimization (PPO) architecture utilizing a Time-Series Transformer Encoder. The new agent must utilize a continuous action space capable of dynamically outputting order sizing (number of contracts) and target limit prices, rather than just binary YES/NO decisions.
+
+### R2. ML Voting Classifier Ensemble
+Upgrade the ML Engine to a Voting Classifier ensemble that simultaneously trains XGBoost, LightGBM, and CatBoost models. The ensemble must calculate prediction consensus across all three models and natively apply the Kelly Criterion to amplify wager sizes when absolute agreement is reached.
+
+### R3. Seamless Integration
+Integrate the new PPO agent and ML ensemble into the existing `kalshi-ai-trader` live and paper execution paths. The new architectures must not break existing user configurations, dashboard integrations, or manual trading logic.
+
+## Acceptance Criteria
+
+### R1 & R2 Logic Verification (Agent-as-Judge)
+- [ ] A reviewer agent inspects the code and confirms that PyTorch's `nn.TransformerEncoder` and a PPO actor-critic loss function are correctly implemented in the RL agent.
+- [ ] A reviewer agent verifies that `xgboost`, `lightgbm`, and `catboost` are all utilized in a unified voting structure, and that the Kelly Criterion math is present in the wager sizing logic.
+
+### End-to-End Execution Verification (Agent-as-Judge)
+- [ ] A reviewer agent runs the backend server locally, triggers a paper-trading cycle for the new models, and verifies that the models execute a shadow trade successfully without throwing Python runtime exceptions or dimensionality errors.
+
+
+## 2026-10-07T22:35:21Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Step 9 — Assembling and Validating
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Refactor the SaaS dashboard UI to completely decouple the settings menus for the Financial and Sports universes, providing each with its own fully functional, dedicated settings drawer. Optimize the frontend for fast, smooth loading, verify that all buttons and toggles work without interference, and ensure that if the user selects "BOTH" for their auto-trading universe, the setting correctly persists and displays in both menus.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Dedicated Settings Menus
+Separate the currently shared settings drawer into two distinct, independently toggleable UI components in `saas_dashboard.html`: one strictly for the Financial universe (displaying only crypto/forex options) and one strictly for the Sports universe (displaying only sports/props options).
+
+### R2. Universe "BOTH" Persistence
+Ensure that when the user sets their auto-trading universe to "BOTH", the backend correctly saves this state to the database, and the frontend accurately fetches and reflects this "BOTH" selection across both universe settings menus without resetting or hiding it.
+
+### R3. UI/UX Optimization and Verification
+Optimize the frontend rendering logic in `app.js` to eliminate UI stuttering or lag when switching between the Financial and Sports tabs. Verify that all buttons, toggles, sliders, and inputs across both universes are fully functional and correctly save to their backend database equivalents.
+
+## Acceptance Criteria
+
+### R1 & R3 UI Verification (Agent-as-Judge)
+- [ ] A reviewer agent inspects the code and confirms the existence of strictly separated HTML containers for the Financial and Sports settings, and verifies no JavaScript errors are thrown when interacting with them.
+- [ ] A reviewer agent verifies that the UI loading state logic has been optimized for speed and prevents flickering when swapping tabs.
+
+### R2 Backend Persistence (Agent-as-Judge)
+- [ ] A reviewer agent executes a backend test that submits a "BOTH" trading universe update via the settings API, and confirms the database successfully persists the value and returns it accurately on subsequent dashboard loads.
+
+
+## 2026-10-09T14:31:47Z
+
+# Teamwork Project Prompt
+
+> Status: Launched
+> Goal: Craft prompt → get user approval → delegate to teamwork_preview
+> Requested team: Full team
+
+Fix the bug in the kalshi-ai-trader dashboard where only NHL events are displaying, ensuring that active AI predictions for all other sports (like Tennis, NFL, MLB, etc.) correctly match on the backend and render in the UI when their tabs are selected. Additionally, resolve the date-matching discrepancy for Tennis where Kalshi events and ApexProps AI predictions differ by more than 24 hours.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: development
+
+## Requirements
+
+### R1. Fix Backend Matching for All Sports
+Ensure the backend endpoint (`/api/engine/sports/events`) successfully matches AI predictions from the `SportsPredictionClient` to Kalshi events for all supported sports (TEN, NFL, MLB, SOC, UFC, NPB/KBO), returning the `ai_prediction` payload without silently dropping them due to name normalization, date mismatching (e.g. extending the Tennis time window to 48 hours if necessary), or schema errors.
+
+### R2. Fix Frontend Display & Filtering
+Ensure the frontend (`saas_dashboard.html` / `app.js`) correctly processes the returned events for the selected sport tab (e.g., TEN) and renders the prediction cards, removing the erroneous "No active AI picks" message when picks actually exist. Ensure no JavaScript filtering bugs are preventing sports other than NHL from displaying.
+
+## Acceptance Criteria
+
+### Backend Verification (Agent-as-Judge)
+- [ ] A reviewer agent verifies that querying the `/api/engine/sports/events?sport=TEN` endpoint returns events with the `ai_prediction` object successfully attached.
+
+### Frontend Verification (Agent-as-Judge)
+- [ ] A reviewer agent verifies the frontend code to ensure the filtering logic correctly aligns the selected tab (e.g., `TEN`) with the `sport` identifier returned by the backend, ensuring the events are rendered correctly.
+
+
+## 2026-10-13T03:21:49Z
+
+# Teamwork Project Prompt — Phase 1
+
+> Status: Launched
+> Requested team: Full team
+
+Upgrade the AI Quant Lab to an institutional-grade algorithmic research engine starting with Phase 1: Market Regime Detection & Calibrated Probabilistic Alpha Generation, with strict zero-regression testing and full mirror parity.
+
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Market Regime Classification Engine
+Implement an autonomous Market Regime Classifier for financial and prediction market snapshots that categorizes market state into distinct structural regimes (Compression/Mean-Reversion, Trend-Expansion/Momentum, and High-Whipsaw/Event-Risk) using volatility percentiles, directional trend strength (ADX/EMA slopes), and candle dynamics. Expose the classified regime directly in snapshot features.
+
+### R2. Calibrated Probabilistic Signal Generation & Kelly Wager Outputs
+Upgrade strategy generation and code compilation (`alpha_ideator.py` & `strategy_coder.py`) so strategies dynamically condition entry logic on the detected regime. Replace static hardcoded confidence (75%) with a calibrated win probability formula and a dynamic Kelly Criterion sizing fraction based on the model's projected edge over Kalshi market prices.
+
+### R3. Zero-Regression & Full Synchronization Parity
+Ensure all existing Quant Lab functionality (the 6/6 test suite in `tests/test_quant_lab.py`, the Paper Incubator, Strategy Graveyard, and Scheduled Research Cycles) remains 100% intact with zero runtime errors or database schema breakages. Mirror all modified files to `C:\Users\Vill3\Desktop\ShadowTraderAi` with matching SHA-256 hashes.
+
+## Acceptance Criteria
+
+### Regime & Signal Verification (Agent-as-Judge)
+- [ ] A reviewer agent verifies that market snapshots correctly evaluate their regime classification without throwing missing-key or type exceptions.
+- [ ] A reviewer agent verifies that compiled strategy code outputs a dynamic calibrated win probability and Kelly sizing fraction rather than flat static values.
+
+### End-to-End Suite & Parity Verification (Agent-as-Judge)
+- [ ] A reviewer agent executes `pytest tests/test_quant_lab.py` and confirms all existing and new tests pass cleanly with 0 failures.
+- [ ] A reviewer agent verifies that every modified file has an identical SHA-256 checksum across `kalshi-ai-trader` and `ShadowTraderAi`.
+- [ ] A reviewer agent executes a live test research cycle through `QuantLabOrchestrator().run_research_cycle()` for both a financial asset (e.g. BTC) and a sports asset (e.g. TEN) and confirms error-free execution.
+
+
+## 2026-10-13T04:04:29Z
+
+Quota has reset. Please resume Phase 1 from where you left off. Don't redo completed work. Keep zero-regression (tests/test_quant_lab.py must pass) and SHA-256 mirror parity with ShadowTraderAi.

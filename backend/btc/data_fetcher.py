@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
+from typing import Optional, Dict, Any, Union
 from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
@@ -169,10 +170,11 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
     hist = hist.reset_index()
     time_col = "Datetime" if "Datetime" in hist.columns else "Date"
     
-    # Vectorized conversion instead of iterrows
-    hist["time"] = pd.to_datetime(hist[time_col]).astype("int64") // 10**9
+    # Vectorized unit-safe conversion to Unix seconds
+    dt_series = pd.to_datetime(hist[time_col], utc=True)
+    hist["time"] = ((dt_series - pd.Timestamp("1970-01-01", tz="UTC")) // pd.Timedelta("1s")).astype("int64")
     hist = hist.rename(columns={"Open": "open", "High": "high", "Low": "low", "Close": "close", "Volume": "volume"})
-    df = hist[["time", "open", "high", "low", "close", "volume"]].sort_values("time").reset_index(drop=True)
+    df = hist[["time", "open", "high", "low", "close", "volume"]].drop_duplicates(subset=["time"], keep="last").sort_values("time").reset_index(drop=True)
     if timeframe == "4h":
         df = _aggregate_to_4h(df)
     return df
@@ -181,15 +183,61 @@ def _fetch_from_yfinance(timeframe: str = "15m", limit: int = 300) -> pd.DataFra
 
 _historical_15m_cache = None
 
-def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
+def fetch_candles(
+    asset_or_tf: str = "15m",
+    *args,
+    timeframe: Optional[str] = None,
+    limit: Optional[int] = None,
+    asset: Optional[str] = None,
+    **kwargs
+) -> pd.DataFrame:
+    """
+    Fetch OHLCV candles for any timeframe (1m, 5m, 15m, 1h, 4h, 1d) and asset
+    (BTC, ETH, SOL, DOGE) with resilient multi-exchange fallback.
+    """
+    target_asset = "BTC"
+    target_tf = "15m"
+    target_limit = 300
 
-    """
-    Fetch OHLCV candles for any timeframe (1m, 5m, 15m, 1h, 4h, 1d)
-    with resilient multi-exchange fallback.
-    """
-    tf = timeframe.lower()
-    if tf not in TIMEFRAMES:
-        tf = "15m"
+    # Parse limit from args if given positionally
+    if limit is not None:
+        target_limit = int(limit)
+    elif len(args) >= 2 and isinstance(args[1], (int, float)):
+        target_limit = int(args[1])
+    elif len(args) == 1 and isinstance(args[0], (int, float)):
+        target_limit = int(args[0])
+
+    if asset:
+        target_asset = str(asset).upper()
+
+    if timeframe:
+        target_tf = str(timeframe).lower()
+        if asset_or_tf and str(asset_or_tf).upper() in ["BTC", "ETH", "SOL", "DOGE", "GOLD", "EURUSD", "GBPUSD", "AUDUSD", "USDJPY"]:
+            target_asset = str(asset_or_tf).upper()
+    else:
+        # Check positional args
+        if str(asset_or_tf).upper() in ["BTC", "ETH", "SOL", "DOGE", "GOLD", "EURUSD", "GBPUSD", "AUDUSD", "USDJPY"]:
+            target_asset = str(asset_or_tf).upper()
+            if len(args) >= 1 and isinstance(args[0], str) and args[0].lower() in TIMEFRAMES:
+                target_tf = args[0].lower()
+            elif str(asset_or_tf).lower() in TIMEFRAMES:
+                target_tf = str(asset_or_tf).lower()
+        elif str(asset_or_tf).lower() in TIMEFRAMES:
+            target_tf = str(asset_or_tf).lower()
+        else:
+            target_tf = "15m"
+
+    if target_asset != "BTC":
+        try:
+            from backend.engine.multi_asset_fetcher import fetch_asset_candles
+            df_asset = fetch_asset_candles(target_asset, target_tf, target_limit)
+            if df_asset is not None and not df_asset.empty:
+                return df_asset
+        except Exception as e:
+            logger.debug(f"[fetch_candles] multi_asset fallback for {target_asset}: {e}")
+
+    tf = target_tf if target_tf in TIMEFRAMES else "15m"
+    limit = target_limit
 
     fetchers = [
         ("Coinbase", lambda: _fetch_from_coinbase(tf, limit)),
@@ -207,7 +255,7 @@ def fetch_candles(timeframe: str = "15m", limit: int = 300) -> pd.DataFrame:
                 import os
 
                 import pandas as pd
-                if timeframe.lower() == "15m":
+                if tf == "15m":
                     global _historical_15m_cache
                     hist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "historical_candles_btc_15m.csv")
                     if os.path.exists(hist_path):
@@ -493,50 +541,71 @@ _ticker_lock = threading.Lock()
 _target_cache = {}
 _target_lock = threading.Lock()
 
-# Cache for Binance Futures Data
-_futures_cache = {
-    "data": {"funding_rate": 0.0, "open_interest": 0.0},
-    "timestamp": 0.0
-}
+# Cache for Binance Futures Data (Per-Asset)
+_futures_cache = {}
 _futures_lock = threading.Lock()
 
-def get_binance_futures_data() -> dict:
+def get_binance_futures_data(asset: str = "BTC") -> dict:
     """
-    Fetches live BTC funding rate and open interest from Binance Futures public API.
-    Cached for 10 seconds (or 120 seconds on error to prevent blocking delays).
+    Fetches live funding rate and open interest for the given asset (BTC, ETH, SOL, DOGE).
+    Uses US-accessible OKX v5 public Swap API as primary with Binance Futures fallback.
+    Cached for 10 seconds per asset.
     """
+    a_up = str(asset or "BTC").upper().strip()
+    if a_up not in ("BTC", "ETH", "SOL", "DOGE"):
+        a_up = "BTC"
     now = time.time()
     with _futures_lock:
-        if _futures_cache["data"] is not None and (now - _futures_cache["timestamp"] < 10.0):
-            return _futures_cache["data"]
-            
+        entry = _futures_cache.get(a_up)
+        if entry and entry.get("data") is not None and (now - entry.get("timestamp", 0.0) < 10.0):
+            return dict(entry["data"])
+
+    # Primary: US-accessible OKX v5 Public Swap API
     try:
-        # Funding Rate
-        fr_resp = _HTTP_SESSION.get("https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT", timeout=2)
+        inst = f"{a_up}-USDT-SWAP"
+        fr_resp = _HTTP_SESSION.get(f"https://www.okx.com/api/v5/public/funding-rate?instId={inst}", timeout=2.0)
+        oi_resp = _HTTP_SESSION.get(f"https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId={inst}", timeout=2.0)
+        if fr_resp.status_code == 200 and oi_resp.status_code == 200:
+            fr_list = fr_resp.json().get("data", [])
+            oi_list = oi_resp.json().get("data", [])
+            if fr_list and oi_list:
+                funding_rate = float(fr_list[0].get("fundingRate", 0.0) or 0.0)
+                open_interest = float(oi_list[0].get("oiCcy", 0.0) or oi_list[0].get("oi", 0.0) or 0.0)
+                open_interest_usd = float(oi_list[0].get("oiUsd", 0.0) or 0.0)
+                result = {
+                    "asset": a_up,
+                    "funding_rate": funding_rate,
+                    "open_interest": open_interest,
+                    "open_interest_usd": open_interest_usd,
+                }
+                with _futures_lock:
+                    _futures_cache[a_up] = {"timestamp": now, "data": result}
+                return result
+    except Exception as e_okx:
+        logger.debug(f"[DataFetcher] OKX Swap fallback for {a_up}: {e_okx}")
+
+    # Secondary: Binance Futures
+    sym = f"{a_up}USDT"
+    try:
+        fr_resp = _HTTP_SESSION.get(f"https://fapi.binance.com/fapi/v1/premiumIndex?symbol={sym}", timeout=2)
         fr_data = fr_resp.json()
         funding_rate = float(fr_data.get("lastFundingRate", 0.0))
-        
-        # Open Interest
-        oi_resp = _HTTP_SESSION.get("https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT", timeout=2)
+        oi_resp = _HTTP_SESSION.get(f"https://fapi.binance.com/fapi/v1/openInterest?symbol={sym}", timeout=2)
         oi_data = oi_resp.json()
         open_interest = float(oi_data.get("openInterest", 0.0))
-        
         result = {
+            "asset": a_up,
             "funding_rate": funding_rate,
-            "open_interest": open_interest
+            "open_interest": open_interest,
         }
-        
         with _futures_lock:
-            _futures_cache["timestamp"] = now
-            _futures_cache["data"] = result
+            _futures_cache[a_up] = {"timestamp": now, "data": result}
         return result
     except Exception as e:
-        logger.debug(f"[DataFetcher] Binance Futures unavailable (geo-blocked or rate limited): {e}")
-        fallback = {"funding_rate": 0.0, "open_interest": 0.0}
+        logger.debug(f"[DataFetcher] Futures unavailable for {sym}: {e}")
+        fallback = {"asset": a_up, "funding_rate": 0.0, "open_interest": 0.0}
         with _futures_lock:
-            # Cache failure for 120 seconds to prevent hammering network on every request
-            _futures_cache["timestamp"] = now + 120.0
-            _futures_cache["data"] = fallback
+            _futures_cache[a_up] = {"timestamp": now + 120.0, "data": fallback}
         return fallback
 
 # Cache for Fear & Greed (Updates daily, so 1 hour cache is very safe)
@@ -684,30 +753,69 @@ def get_btc_ticker() -> dict:
     return result
 
 
-def get_candle_countdown(timeframe: str = "15m") -> dict:
+def get_candle_countdown(timeframe: str = "15m", asset: str = "BTC") -> dict:
     """
-    Returns seconds and formatted time until the current candle of the selected timeframe closes.
+    Returns seconds and formatted time until the current candle of the selected timeframe closes,
+    calibrated to Kalshi/Exchange UTC server time and anchored to active Kalshi 15m contract close_time.
     Supports: 1m, 5m, 15m, 1h, 4h, 1d.
     """
-    now = datetime.now(timezone.utc)
-    tf = timeframe.lower()
+    try:
+        from .kalshi_client import get_kalshi_utc_now, sync_exchange_clock_offset, _kalshi_cache, _kalshi_cache_lock
+        now = get_kalshi_utc_now()
+        offset_sec = sync_exchange_clock_offset(force=False)
+    except Exception:
+        now = datetime.now(timezone.utc)
+        offset_sec = 0.0
+        _kalshi_cache = {}
+        _kalshi_cache_lock = None
+
+    now_epoch = now.timestamp()
+    now_int = int(now_epoch)
+    tf = (timeframe or "15m").lower()
+    close_epoch = float(((now_int // 900) + 1) * 900)
 
     if tf == "1m":
+        close_epoch = float(((now_int // 60) + 1) * 60)
         seconds_left = 60 - (now.second % 60)
         formatted = f"00:{seconds_left:02d}"
     elif tf == "5m":
+        close_epoch = float(((now_int // 300) + 1) * 300)
         cur = (now.minute * 60) + now.second
         seconds_left = 300 - (cur % 300)
         formatted = f"{seconds_left // 60:02d}:{seconds_left % 60:02d}"
     elif tf == "15m":
-        cur = (now.minute * 60) + now.second
-        seconds_left = 900 - (cur % 900)
+        series_key = f"KX{str(asset or 'BTC').upper()}15M"
+        kalshi_close_epoch = None
+        if _kalshi_cache_lock is not None:
+            with _kalshi_cache_lock:
+                m_cached = _kalshi_cache.get(series_key) or _kalshi_cache.get("KXBTC15M")
+                if isinstance(m_cached, dict):
+                    ce_ms = m_cached.get("close_epoch_ms")
+                    if ce_ms and (ce_ms / 1000.0) > now_epoch and ((ce_ms / 1000.0) - now_epoch) <= 960.0:
+                        kalshi_close_epoch = float(ce_ms) / 1000.0
+                    elif m_cached.get("close_time"):
+                        try:
+                            ct_dt = datetime.fromisoformat(str(m_cached["close_time"]).replace("Z", "+00:00"))
+                            ct_ep = ct_dt.timestamp()
+                            if ct_ep > now_epoch and (ct_ep - now_epoch) <= 960.0:
+                                kalshi_close_epoch = ct_ep
+                        except Exception:
+                            pass
+        if kalshi_close_epoch is not None:
+            close_epoch = kalshi_close_epoch
+            seconds_left = max(0, int(close_epoch - now_int))
+        else:
+            close_epoch = float(((now_int // 900) + 1) * 900)
+            cur = (now.minute * 60) + now.second
+            seconds_left = 900 - (cur % 900)
         formatted = f"{seconds_left // 60:02d}:{seconds_left % 60:02d}"
     elif tf == "1h":
+        close_epoch = float(((now_int // 3600) + 1) * 3600)
         cur = (now.minute * 60) + now.second
         seconds_left = 3600 - cur
         formatted = f"{seconds_left // 60:02d}:{seconds_left % 60:02d}"
     elif tf == "4h":
+        close_epoch = float(((now_int // 14400) + 1) * 14400)
         cur = ((now.hour % 4) * 3600) + (now.minute * 60) + now.second
         seconds_left = 14400 - cur
         hrs = seconds_left // 3600
@@ -715,12 +823,14 @@ def get_candle_countdown(timeframe: str = "15m") -> dict:
         secs = seconds_left % 60
         formatted = f"{hrs:02d}:{mins:02d}:{secs:02d}"
     elif tf == "1d":
+        close_epoch = float(((now_int // 86400) + 1) * 86400)
         cur = (now.hour * 3600) + (now.minute * 60) + now.second
         seconds_left = 86400 - cur
         hrs = seconds_left // 3600
         mins = (seconds_left % 3600) // 60
         formatted = f"{hrs:02d}:{mins:02d}"
     else:
+        close_epoch = float(((now_int // 900) + 1) * 900)
         cur = (now.minute * 60) + now.second
         seconds_left = 900 - (cur % 900)
         formatted = f"{seconds_left // 60:02d}:{seconds_left % 60:02d}"
@@ -728,7 +838,11 @@ def get_candle_countdown(timeframe: str = "15m") -> dict:
     return {
         "timeframe": tf,
         "seconds_left": seconds_left,
-        "formatted": formatted
+        "formatted": formatted,
+        "close_epoch_ms": int(close_epoch * 1000),
+        "server_now_ms": int(now_epoch * 1000),
+        "clock_offset_sec": round(offset_sec, 3),
+        "current_interval_id": str(int(close_epoch) - 900),
     }
 
 
@@ -758,11 +872,13 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
             _live_target_result_cache[asset] = {"timestamp": 0.0, "data": None}
             
         if _live_target_result_cache[asset]["data"] and (now - _live_target_result_cache[asset]["timestamp"] < 0.95):
-            # Update countdown on the fly
+            # Update countdown on the fly using Kalshi-calibrated clock
             cached = dict(_live_target_result_cache[asset]["data"])
-            cd = get_candle_countdown("15m")
+            cd = get_candle_countdown("15m", asset=asset)
             cached["seconds_left"] = cd["seconds_left"]
             cached["formatted_countdown"] = cd["formatted"]
+            cached["close_epoch_ms"] = cd["close_epoch_ms"]
+            cached["server_now_ms"] = cd["server_now_ms"]
             return cached
         # AUDIT FIX #4b: Stampede protection
         _live_target_result_cache[asset]["timestamp"] = now
@@ -770,10 +886,13 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
     from backend.engine.multi_asset_fetcher import get_asset_ticker
     ticker = get_asset_ticker(asset)
     curr_price = float(ticker["price"])
-    countdown = get_candle_countdown("15m")
 
     from zoneinfo import ZoneInfo
-    now_dt = datetime.now(ZoneInfo("America/New_York"))
+    try:
+        from .kalshi_client import get_kalshi_utc_now
+        now_dt = get_kalshi_utc_now().astimezone(ZoneInfo("America/New_York"))
+    except Exception:
+        now_dt = datetime.now(ZoneInfo("America/New_York"))
     curr_15m_start_min = (now_dt.minute // 15) * 15
     interval_start_dt = now_dt.replace(minute=curr_15m_start_min, second=0, microsecond=0)
     interval_id = int(interval_start_dt.timestamp())
@@ -795,7 +914,8 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
             df = fetch_asset_candles(asset, "15m", limit=20)
             n = len(df)
             if n > 0:
-                curr_start_price = round(float(df.iloc[-1]["open"]), 2)
+                prec = 5 if str(asset).upper() == "DOGE" else 2
+                curr_start_price = round(float(df.iloc[-1]["open"]), prec)
                 last_5 = compute_last_5_targets(df)
                 streak_summary = compute_streak_summary(last_5)
 
@@ -830,6 +950,7 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
         target_price = float(kalshi_m["target_price"])
         target_source = "Kalshi Official Strike" if not kalshi_m.get("is_synthetic") else "Simulated (Kalshi Offline)"
 
+    countdown = get_candle_countdown("15m", asset=asset)
     delta = round(curr_price - target_price, 2)
     delta_pct = round((delta / (target_price + 1e-10)) * 100, 3)
     status = "ABOVE" if delta >= 0 else "BELOW"
@@ -848,6 +969,8 @@ def get_live_15m_target_data(asset: str = "BTC") -> dict:
         "volume_24h": ticker["volume_24h"],
         "seconds_left": countdown["seconds_left"],
         "formatted_countdown": countdown["formatted"],
+        "close_epoch_ms": countdown["close_epoch_ms"],
+        "server_now_ms": countdown["server_now_ms"],
         "last_5_targets": last_5_targets,
         "streak_summary": streak_summary,
         "latency_ms": round((time.time() - now) * 1000, 3)
@@ -868,25 +991,33 @@ if __name__ == "__main__":
         logger.info(f"[{tf.upper()}] Fetched {len(df)} candles. Close in: {cd['formatted']} (Latest close: ${df.iloc[-1]['close']:.2f})")
 
 
-_ob_cache = {"time": 0.0, "data": None}
+_ob_cache = {}
 _ob_lock = threading.Lock()
 
-def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
+def get_coinbase_orderbook_imbalance(asset: str = "BTC", depth_percent: float = 0.5) -> dict:
+    # Support legacy callers passing depth_percent as first positional float arg
+    if isinstance(asset, (int, float)):
+        depth_percent = float(asset)
+        asset = "BTC"
+    a_up = str(asset or "BTC").upper().strip()
+    if a_up not in ("BTC", "ETH", "SOL", "DOGE"):
+        a_up = "BTC"
 
     now = time.time()
     with _ob_lock:
-        if _ob_cache["data"] is not None and (now - _ob_cache["time"]) < 4.0:
-            return dict(_ob_cache["data"])
+        entry = _ob_cache.get(a_up)
+        if entry and entry.get("data") is not None and (now - entry.get("time", 0.0)) < 4.0:
+            return dict(entry["data"])
 
     try:
-        url = 'https://api.exchange.coinbase.com/products/BTC-USD/book?level=2'
+        url = f'https://api.exchange.coinbase.com/products/{a_up}-USD/book?level=2'
         resp = _HTTP_SESSION.get(url, headers={'Accept': 'application/json'}, timeout=3)
         if resp.status_code == 200:
             data = resp.json()
             bids = data.get('bids', [])
             asks = data.get('asks', [])
             if not bids or not asks:
-                return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}
+                return {'asset': a_up, 'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}
             best_bid = float(bids[0][0])
             best_ask = float(asks[0][0])
             mid = (best_bid + best_ask) / 2.0
@@ -903,6 +1034,7 @@ def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
                 imb = ((bid_vol - ask_vol) / total_vol) * 100.0
 
             res = {
+                'asset': a_up,
                 'imbalance': round(imb, 2),
                 'bid_vol': round(bid_vol, 2),
                 'ask_vol': round(ask_vol, 2),
@@ -912,10 +1044,9 @@ def get_coinbase_orderbook_imbalance(depth_percent: float = 0.5) -> dict:
                 'ask_wall_size': float(largest_ask_wall[1]) if largest_ask_wall else 0.0
             }
             with _ob_lock:
-                _ob_cache["data"] = res
-                _ob_cache["time"] = now
+                _ob_cache[a_up] = {"data": res, "time": now}
             return res
     except Exception as e:
         pass
 
-    return {'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}
+    return {'asset': a_up, 'imbalance': 0.0, 'bid_vol': 0.0, 'ask_vol': 0.0, 'largest_bid_wall': None, 'largest_ask_wall': None, 'bid_wall_size': 0.0, 'ask_wall_size': 0.0}

@@ -1,12 +1,13 @@
-# Progress — Explorer Survey 1 (Trading Styles & Strategy Logic)
+# Progress — teamwork_preview_explorer_survey_1
 
-Last visited: 2026-09-30T19:10:00Z
-Status: Investigation complete. Drafting analysis.md and handoff.md.
+Last visited: 2026-10-09T14:51:15Z
 
-## Milestones & Status
-- [x] 1. Discover codebase layout and locate trading style/strategy modules
-- [x] 2. Analyze SNIPER, CAPITAL_GUARD, AUTO, and other trading styles (MOMENTUM_SURFER, AMBUSH, PREDICTION, CHOP, SCALP/RL_SCALPER, REVERSAL)
-- [x] 3. Analyze entry, exit, stop-loss/take-profit, sizing, order types, and time-in-force
-- [x] 4. Assess theoretical edge, market regime vulnerabilities, and assumptions
-- [ ] 5. Produce comprehensive analysis.md and handoff.md
-- [ ] 6. Send completion message to parent
+## Status
+- [x] Initialized DISPATCH.md and BRIEFING.md
+- [x] Task 1: Locate `/api/engine/sports/events` route and implementation (`backend/routes/engine.py:2709-3404`)
+- [x] Task 2: Trace Kalshi events retrieval per sport (`_SPORTS_SERIES_MAP`, `_fetch_kalshi_series_events`)
+- [x] Task 3: Trace AI predictions retrieval from `SportsPredictionClient` / ApexProps (`backend/sports_bridge/prediction_client.py:21-446`)
+- [x] Task 4: Analyze matching logic between Kalshi events and AI predictions (identified why only NHL works)
+- [x] Task 5: Document exact file paths, line numbers, and concrete fix recommendations
+- [x] Task 6: Write `report.md` and `handoff.md`
+- [x] Task 7: Send message to parent orchestrator

@@ -1,22 +1,27 @@
-file_path = r"C:\Users\Vill3\Desktop\kalshi-ai-trader\backend\saas_settler.py"
-with open(file_path, "r", encoding="utf-8") as f:
+import re
+
+with open('static/saas_dashboard.html', 'r', encoding='utf-8') as f:
     content = f.read()
 
-content = content.replace('from backend.database.trade_store import TradeStore\n                                        db_trades = TradeStore.get_recent_trades(user_id, limit=50)', 'from backend.database.trade_store import TradeStore\n                                    db_trades = TradeStore.get_recent_trades(user_id, limit=50)')
+old_filter = """            const list = all.filter(e => {
+                if (!isSportMatch(e, f)) return false;
+                const startEpoch = parseFloat(e.start_epoch) || 0;
+                const isLive = startEpoch > 0 && startEpoch < nowSec && !/KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(String(evt.event_ticker||evt.ticker||'')+' '+String(evt.title||''));
+                if (isLive && !includeLive) return false;
+                return true;
+            });"""
 
-# Let's just do a string replace of the block
-old_block = """                                    if ap_yes > 0:
-                                        from backend.database.trade_store import TradeStore
-                                        db_trades = TradeStore.get_recent_trades(user_id, limit=50)"""
+new_filter = """            const list = all.filter(e => {
+                if (!isSportMatch(e, f)) return false;
+                if (e.market_type === 'Futures' || e.prop_type === 'Futures') return false; // Exclude Futures from default list
+                const startEpoch = parseFloat(e.start_epoch) || 0;
+                const isLive = startEpoch > 0 && startEpoch < nowSec && !/KX(?:NFL|NBA|MLB|NHL)WINS|TOTAL WINS|WINS-\d/i.test(String(e.event_ticker||e.ticker||'')+' '+String(e.title||''));
+                if (isLive && !includeLive) return false;
+                return true;
+            });"""
 
-new_block = """                                    from backend.database.trade_store import TradeStore
-                                    db_trades = TradeStore.get_recent_trades(user_id, limit=50)
-                                    if ap_yes > 0:"""
+content = content.replace(old_filter, new_filter)
 
-if old_block in content:
-    content = content.replace(old_block, new_block)
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print("Fixed saas_settler.py db_trades bug")
-else:
-    print("Could not find exact block to replace")
+with open('static/saas_dashboard.html', 'w', encoding='utf-8') as f:
+    f.write(content)
+print("Patched saas_dashboard.html")

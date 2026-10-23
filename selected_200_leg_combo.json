@@ -1,0 +1,1809 @@
+{
+  "leg_count": 200,
+  "earliest_conclusion": "02:45 AM EDT",
+  "latest_conclusion": "04:00 AM EDT",
+  "compounded_price": 0.08775943845126134,
+  "payout_multiplier": 11.394785764899424,
+  "legs": [
+    {
+      "ticker": "KXRAIN-26OCT09-SFO",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in San Francisco on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-T61",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be >61\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSEA-26OCT09-T53",
+      "event_ticker": "KXLOWTSEA-26OCT09",
+      "title": "Will the minimum temperature be >53\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-T71",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be >71\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-T66",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be <66\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-T71",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be >71\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSFO-26OCT09-T77",
+      "event_ticker": "KXHIGHTSFO-26OCT09",
+      "title": "Will the maximum temperature be >77\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSEA-26OCT09-T66",
+      "event_ticker": "KXHIGHTSEA-26OCT09",
+      "title": "Will the maximum temperature be >66\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSAN-26OCT09-T87",
+      "event_ticker": "KXHIGHTSAN-26OCT09",
+      "title": "Will the maximum temperature be >87\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTLV-26OCT09-T94",
+      "event_ticker": "KXHIGHTLV-26OCT09",
+      "title": "Will the maximum temperature be <94\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHLAX-26OCT09-T86",
+      "event_ticker": "KXHIGHLAX-26OCT09",
+      "title": "Will the maximum temperature be >86\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.1399",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-T2.1399",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPNYCHS-26OCT1003-T54.99",
+      "event_ticker": "KXTEMPNYCHS-26OCT1003",
+      "title": "Will the temp in New York City be above 54.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T87.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 87.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPCHIHS-26OCT1003-T65.99",
+      "event_ticker": "KXTEMPCHIHS-26OCT1003",
+      "title": "Will the temp in Chicago Metro Area be above 65.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-T72.75",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T147.2499",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-T75",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be <75\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTDEN-26OCT09-T56",
+      "event_ticker": "KXLOWTDEN-26OCT09",
+      "title": "Will the minimum temperature be >56\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T99.9999",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-T47.75",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTPHX-26OCT09-T99",
+      "event_ticker": "KXHIGHTPHX-26OCT09",
+      "title": "Will the maximum temperature be <99\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHDEN-26OCT09-T89",
+      "event_ticker": "KXHIGHDEN-26OCT09",
+      "title": "Will the maximum temperature be >89\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3244.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-T3244.99",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2649999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-T0.2649999",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91799.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-T91799.99",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T924.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-T924.99",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPLAXHS-26OCT1003-T69.99",
+      "event_ticker": "KXTEMPLAXHS-26OCT1003",
+      "title": "Will the temp in Coastal Los Angeles be above 69.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.94,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXCRYPTOLEAD15M-26OCT100245-ETH",
+      "event_ticker": "KXCRYPTOLEAD15M-26OCT100245",
+      "title": "Which of these cryptocurrencies will have the highest return from Oct 10 - 2:30AM EDT to 2:45AM EDT?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.89,
+      "close_time": "2026-10-10T06:45:00Z"
+    },
+    {
+      "ticker": "KXRAIN-26OCT09-LV",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in Las Vegas on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-T54",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be <54\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSEA-26OCT09-T46",
+      "event_ticker": "KXLOWTSEA-26OCT09",
+      "title": "Will the minimum temperature be <46\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-T64",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be <64\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-B70.5",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be 70-71\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-T64",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be <64\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSFO-26OCT09-T70",
+      "event_ticker": "KXHIGHTSFO-26OCT09",
+      "title": "Will the maximum temperature be <70\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSEA-26OCT09-B65.5",
+      "event_ticker": "KXHIGHTSEA-26OCT09",
+      "title": "Will the maximum temperature be 65-66\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSAN-26OCT09-T80",
+      "event_ticker": "KXHIGHTSAN-26OCT09",
+      "title": "Will the maximum temperature be <80\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTLV-26OCT09-T101",
+      "event_ticker": "KXHIGHTLV-26OCT09",
+      "title": "Will the maximum temperature be >101\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHLAX-26OCT09-B85.5",
+      "event_ticker": "KXHIGHLAX-26OCT09",
+      "title": "Will the maximum temperature be 85-86\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.1199",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-T0.68000",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPNYCHS-26OCT1003-T53.99",
+      "event_ticker": "KXTEMPNYCHS-26OCT1003",
+      "title": "Will the temp in New York City be above 53.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T86.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 86.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPCHIHS-26OCT1003-T64.99",
+      "event_ticker": "KXTEMPCHIHS-26OCT1003",
+      "title": "Will the temp in Chicago Metro Area be above 64.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-T147.2499",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T146.9999",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-B77.5",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be 77-78\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTDEN-26OCT09-T49",
+      "event_ticker": "KXLOWTDEN-26OCT09",
+      "title": "Will the minimum temperature be <49\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T99.7499",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-T122.2499",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTPHX-26OCT09-T106",
+      "event_ticker": "KXHIGHTPHX-26OCT09",
+      "title": "Will the maximum temperature be >106\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHDEN-26OCT09-T82",
+      "event_ticker": "KXHIGHDEN-26OCT09",
+      "title": "Will the maximum temperature be <82\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3239.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-T1755",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2599999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-T0.0100000",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91699.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-T73200",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T919.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-T560",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPLAXHS-26OCT1003-T71.99",
+      "event_ticker": "KXTEMPLAXHS-26OCT1003",
+      "title": "Will the temp in Coastal Los Angeles be above 71.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXRAIN-26OCT09-LAX",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in Los Angeles on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-B60.5",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be 60-61\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSEA-26OCT09-B52.5",
+      "event_ticker": "KXLOWTSEA-26OCT09",
+      "title": "Will the minimum temperature be 52-53\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-B70.5",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be 70-71\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-B68.5",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be 68-69\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-B70.5",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be 70-71\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSFO-26OCT09-B76.5",
+      "event_ticker": "KXHIGHTSFO-26OCT09",
+      "title": "Will the maximum temperature be 76-77\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSEA-26OCT09-B63.5",
+      "event_ticker": "KXHIGHTSEA-26OCT09",
+      "title": "Will the maximum temperature be 63-64\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSAN-26OCT09-B86.5",
+      "event_ticker": "KXHIGHTSAN-26OCT09",
+      "title": "Will the maximum temperature be 86-87\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTLV-26OCT09-B98.5",
+      "event_ticker": "KXHIGHTLV-26OCT09",
+      "title": "Will the maximum temperature be 98-99\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHLAX-26OCT09-B83.5",
+      "event_ticker": "KXHIGHLAX-26OCT09",
+      "title": "Will the maximum temperature be 83-84\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.0999",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.1299500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T85.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 85.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPCHIHS-26OCT1003-T63.99",
+      "event_ticker": "KXTEMPCHIHS-26OCT1003",
+      "title": "Will the temp in Chicago Metro Area be above 63.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B99.875",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T146.7499",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-B75.5",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be 75-76\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTDEN-26OCT09-B51.5",
+      "event_ticker": "KXLOWTDEN-26OCT09",
+      "title": "Will the minimum temperature be 51-52\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T99.4999",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-B99.875",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTPHX-26OCT09-B99.5",
+      "event_ticker": "KXHIGHTPHX-26OCT09",
+      "title": "Will the maximum temperature be 99-100\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHDEN-26OCT09-B88.5",
+      "event_ticker": "KXHIGHDEN-26OCT09",
+      "title": "Will the maximum temperature be 88-89\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3234.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-B3242",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2549999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-B0.262",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91599.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-B91750",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T914.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-B922",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPNYCHS-26OCT1003-T52.99",
+      "event_ticker": "KXTEMPNYCHS-26OCT1003",
+      "title": "Will the temp in New York City be above 52.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPLAXHS-26OCT1003-T70.99",
+      "event_ticker": "KXTEMPLAXHS-26OCT1003",
+      "title": "Will the temp in Coastal Los Angeles be above 70.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-B58.5",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be 58-59\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-B66.5",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be 66-67\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-B64.5",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be 64-65\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSFO-26OCT09-B74.5",
+      "event_ticker": "KXHIGHTSFO-26OCT09",
+      "title": "Will the maximum temperature be 74-75\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSEA-26OCT09-B61.5",
+      "event_ticker": "KXHIGHTSEA-26OCT09",
+      "title": "Will the maximum temperature be 61-62\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSAN-26OCT09-B84.5",
+      "event_ticker": "KXHIGHTSAN-26OCT09",
+      "title": "Will the maximum temperature be 84-85\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTLV-26OCT09-B94.5",
+      "event_ticker": "KXHIGHTLV-26OCT09",
+      "title": "Will the maximum temperature be 94-95\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHLAX-26OCT09-B81.5",
+      "event_ticker": "KXHIGHLAX-26OCT09",
+      "title": "Will the maximum temperature be 81-82\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.0799",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.1099500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPCHIHS-26OCT1003-T62.99",
+      "event_ticker": "KXTEMPCHIHS-26OCT1003",
+      "title": "Will the temp in Chicago Metro Area be above 62.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B99.625",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T146.4999",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXRAIN-26OCT09-PHX",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in Phoenix on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTDEN-26OCT09-B49.5",
+      "event_ticker": "KXLOWTDEN-26OCT09",
+      "title": "Will the minimum temperature be 49-50\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T99.2499",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-B99.625",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTPHX-26OCT09-B105.5",
+      "event_ticker": "KXHIGHTPHX-26OCT09",
+      "title": "Will the maximum temperature be 105-106\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHDEN-26OCT09-B84.5",
+      "event_ticker": "KXHIGHDEN-26OCT09",
+      "title": "Will the maximum temperature be 84-85\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3229.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-B3237",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2499999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-B0.257",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91499.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-B91650",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T909.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-B917",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-T82",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be >82\u00b0 on Oct 9, 2026?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSEA-26OCT09-B46.5",
+      "event_ticker": "KXLOWTSEA-26OCT09",
+      "title": "Will the minimum temperature be 46-47\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T82.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 82.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.95,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-B68.5",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be 68-69\u00b0 on Oct 9, 2026?",
+      "side": "YES",
+      "price": 0.97,
+      "bid": 0.9,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPNYCHS-26OCT1003-T51.99",
+      "event_ticker": "KXTEMPNYCHS-26OCT1003",
+      "title": "Will the temp in New York City be above 51.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.87,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSFO-26OCT09-B72.5",
+      "event_ticker": "KXHIGHTSFO-26OCT09",
+      "title": "Will the maximum temperature be 72-73\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSEA-26OCT09-B59.5",
+      "event_ticker": "KXHIGHTSEA-26OCT09",
+      "title": "Will the maximum temperature be 59-60\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTSAN-26OCT09-B82.5",
+      "event_ticker": "KXHIGHTSAN-26OCT09",
+      "title": "Will the maximum temperature be 82-83\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTLV-26OCT09-B100.5",
+      "event_ticker": "KXHIGHTLV-26OCT09",
+      "title": "Will the maximum temperature be 100-101\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHLAX-26OCT09-B79.5",
+      "event_ticker": "KXHIGHLAX-26OCT09",
+      "title": "Will the maximum temperature be 79-80\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.0599",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.0899500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B99.375",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T146.2499",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXRAIN-26OCT09-DEN",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in Denver on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T98.9999",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-B99.375",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHTPHX-26OCT09-B101.5",
+      "event_ticker": "KXHIGHTPHX-26OCT09",
+      "title": "Will the maximum temperature be 101-102\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHIGHDEN-26OCT09-B82.5",
+      "event_ticker": "KXHIGHDEN-26OCT09",
+      "title": "Will the maximum temperature be 82-83\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3224.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-B3232",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2449999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-B0.252",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91399.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-B91550",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T904.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-B912",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-B54.5",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be 54-55\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-T73",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be >73\u00b0 on Oct 9, 2026?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T84.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 84.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-B81.5",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be 81-82\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTDEN-26OCT09-B53.5",
+      "event_ticker": "KXLOWTDEN-26OCT09",
+      "title": "Will the minimum temperature be 53-54\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-B66.5",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be 66-67\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.92,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-B66.5",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be 66-67\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPCHIHS-26OCT1003-T60.99",
+      "event_ticker": "KXTEMPCHIHS-26OCT1003",
+      "title": "Will the temp in Chicago Metro Area be above 60.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.91,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.0399",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.0699500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B99.125",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T145.9999",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXRAIN-26OCT09-ABQ",
+      "event_ticker": "KXRAIN-26OCT09",
+      "title": "Will it rain in Albuquerque on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T98.7499",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-B99.125",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3219.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-B3227",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2399999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-B0.247",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91299.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-B91450",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T899.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-B907",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLV-26OCT09-B72.5",
+      "event_ticker": "KXLOWTLV-26OCT09",
+      "title": "Will the minimum temperature be 72-73\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSFO-26OCT09-B56.5",
+      "event_ticker": "KXLOWTSFO-26OCT09",
+      "title": "Will the minimum temperature be 56-57\u00b0 on Oct 9, 2026?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.97,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXTEMPMIAH-26OCT1003-T83.99",
+      "event_ticker": "KXTEMPMIAH-26OCT1003",
+      "title": "Will the temp in Miami be above 83.99\u00b0 on Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTPHX-26OCT09-B79.5",
+      "event_ticker": "KXLOWTPHX-26OCT09",
+      "title": "Will the minimum temperature be 79-80\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.97,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTLAX-26OCT09-B68.5",
+      "event_ticker": "KXLOWTLAX-26OCT09",
+      "title": "Will the minimum temperature be 68-69\u00b0 on Oct 9, 2026?",
+      "side": "YES",
+      "price": 0.97,
+      "bid": 0.9,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXLOWTSAN-26OCT09-B64.5",
+      "event_ticker": "KXLOWTSAN-26OCT09",
+      "title": "Will the minimum temperature be 64-65\u00b0 on Oct 9, 2026?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.92,
+      "close_time": "2026-10-10T08:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T2.0199",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.0499500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B98.875",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLD-26OCT1003-T145.7499",
+      "event_ticker": "KXSOLD-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPED-26OCT1003-T98.4999",
+      "event_ticker": "KXHYPED-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXHYPE-26OCT1003-B98.875",
+      "event_ticker": "KXHYPE-26OCT1003",
+      "title": "HYPE price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETHD-26OCT1003-T3214.99",
+      "event_ticker": "KXETHD-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXETH-26OCT1003-B3222",
+      "event_ticker": "KXETH-26OCT1003",
+      "title": "Ethereum price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGED-26OCT1003-T0.2349999",
+      "event_ticker": "KXDOGED-26OCT1003",
+      "title": "Dogecoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXDOGE-26OCT1003-B0.242",
+      "event_ticker": "KXDOGE-26OCT1003",
+      "title": "Dogecoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTCD-26OCT1003-T91199.99",
+      "event_ticker": "KXBTCD-26OCT1003",
+      "title": "Bitcoin price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBTC-26OCT1003-B91350",
+      "event_ticker": "KXBTC-26OCT1003",
+      "title": "Bitcoin price range on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNBD-26OCT1003-T894.99",
+      "event_ticker": "KXBNBD-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXBNB-26OCT1003-B902",
+      "event_ticker": "KXBNB-26OCT1003",
+      "title": "BNB price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRPD-26OCT1003-T1.9999",
+      "event_ticker": "KXXRPD-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXXRP-26OCT1003-B2.0299500",
+      "event_ticker": "KXXRP-26OCT1003",
+      "title": "Ripple price at Oct 10, 2026 at 3am EDT?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    },
+    {
+      "ticker": "KXSOLE-26OCT1003-B98.625",
+      "event_ticker": "KXSOLE-26OCT1003",
+      "title": "SOL price on Oct 10, 2026?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "close_time": "2026-10-10T07:00:00Z"
+    }
+  ]
+}

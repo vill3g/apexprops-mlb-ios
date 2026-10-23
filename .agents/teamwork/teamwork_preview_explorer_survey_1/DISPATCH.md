@@ -1,22 +1,17 @@
-# Dispatch: Explorer Survey 1
+## 2026-10-09T14:34:38Z
+Read C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md first.
+You are teamwork_preview_explorer_survey_1.
+Your working directory is: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1
 
-## Identity & Role
-- Archetype: teamwork_preview_explorer
-- Role: Trading Styles & Strategy Logic Explorer
-- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1
-- Parent Orchestrator: orchestrator_1 (conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a)
+Objective:
+Investigate the backend endpoint `/api/engine/sports/events` and `SportsPredictionClient` in the kalshi-ai-trader codebase.
+Determine why only NHL events are currently displaying/matching, and why active AI predictions for other sports (TEN, NFL, MLB, SOC, UFC, NPB/KBO) are not matching or are being silently dropped.
 
-## Mandatory Input
-- Read the authoritative user request at: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
-
-## Objective
-Investigate the codebase in `C:\Users\Vill3\Desktop\kalshi-ai-trader` to map the core logic of all trading styles:
-- Specifically analyze SNIPER, CAPITAL_GUARD, AUTO, and any other trading styles or modes.
-- Examine how entry criteria, exit criteria, stop-loss/take-profit, position sizing, and order types are determined.
-- Document exact files, functions, classes, and logic flows.
-- Identify theoretical assumptions, potential edge cases, and theoretical edge vs market friction.
-
-## Output
-Write your comprehensive findings and evidence report to:
-`C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1\analysis.md`
-And summarize in `handoff.md`. Send a message when complete.
+Tasks:
+1. Locate `/api/engine/sports/events` route and its implementation (e.g. in `backend/routes/engine.py` or similar).
+2. Trace how Kalshi events are retrieved for each sport.
+3. Trace how AI predictions are fetched from `SportsPredictionClient` (or `http://127.0.0.1:8057` / ApexProps).
+4. Analyze the matching logic between Kalshi events and AI predictions. Identify why only NHL works and other sports fail to match.
+5. Provide exact file paths, function names, line numbers, and concrete recommendations for fixing backend matching.
+6. Write your detailed findings to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_1\report.md` and `handoff.md`.
+7. Send a message to your orchestrator when done.

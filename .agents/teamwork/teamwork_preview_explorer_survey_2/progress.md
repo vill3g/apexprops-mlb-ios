@@ -1,15 +1,12 @@
-# Progress Log - Explorer Survey 2 (ML Prediction Engine & Data Sources Explorer)
+# Progress Log
 
-Last visited: 2026-09-30T19:18:20Z
-Status: Completed
+Last visited: 2026-10-09T14:49:00Z
 
-## Tasks
-- [x] Initialized BRIEFING.md and DISPATCH.md
-- [x] Explore codebase structure and map all source files
-- [x] Trace ML models, architectures, feature extraction, training pipelines, inference logic
-- [x] Trace probability calibration, confidence thresholds, EV calculations, trading signal generation
-- [x] Trace Kalshi API integration, market data ingestion, order book processing, historical data feeds
-- [x] Document exact file paths, class names, line numbers, and logic flow
-- [x] Write analysis.md (`C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_2\analysis.md`)
-- [x] Write handoff.md (`C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_2\handoff.md`)
-- [ ] Send handoff message to orchestrator_1
+- Completed full investigation of Tennis date-matching discrepancy (>24h vs 48h) and multi-sport normalization.
+- Pinpointed exact locations of date/time comparison in `backend/routes/engine.py`, `backend/sports_bridge/prediction_client.py`, and `backend/sports_bridge/executor.py`.
+- Identified root cause of "only NHL displays" (line 3378 of `engine.py`).
+- Identified root cause of Tennis matching failure (missing `player_a`/`player_b` parsing in `engine.py:2885` and 24h cap on line 2948).
+- Identified missing `"ai_prediction"` key in `/api/engine/sports/events` responses.
+- Verified findings empirically via test script (32 Tennis matches matched from `KXATPMATCH`).
+- Authored detailed `report.md` and 5-component `handoff.md`.
+- Updated `BRIEFING.md`. Ready to notify orchestrator.

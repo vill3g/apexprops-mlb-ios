@@ -97,8 +97,27 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
         except (ValueError, TypeError):
             entry_price = 0.50
 
+        # Upgraded PPO continuous outputs
+        dyn_contracts = live_eval.get("dynamic_contracts") if live_eval else None
+        dyn_sizing_factor = live_eval.get("dynamic_sizing_factor") if live_eval else None
+        target_limit_price = live_eval.get("target_limit_price") if live_eval else None
+        v_state = live_eval.get("v_state") if live_eval else None
+
         trade_size = get_rl_trade_size()
-        contracts = max(1, int(trade_size / entry_price))
+        if dyn_sizing_factor is not None:
+            try:
+                trade_size = round(trade_size * max(0.1, min(2.5, float(dyn_sizing_factor))), 2)
+            except (ValueError, TypeError):
+                pass
+
+        if dyn_contracts is not None:
+            try:
+                contracts = max(1, int(dyn_contracts))
+            except (ValueError, TypeError):
+                contracts = max(1, int(trade_size / entry_price))
+        else:
+            contracts = max(1, int(trade_size / entry_price))
+
         cost = round(contracts * entry_price, 2)
 
         shadow_trade = {
@@ -108,13 +127,17 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
             "direction": direction,
             "trade_size": trade_size,
             "contracts": contracts,
+            "dynamic_contracts": dyn_contracts if dyn_contracts is not None else contracts,
+            "dynamic_sizing_factor": round(float(dyn_sizing_factor), 4) if dyn_sizing_factor is not None else 1.0,
+            "target_limit_price": round(float(target_limit_price), 4) if target_limit_price is not None else entry_price,
+            "v_state": round(float(v_state), 4) if v_state is not None else None,
             "cost": cost,
             "entry_price": entry_price,
             "entry_time": time.time(),
             "close_time": close_time,
             "status": "OPEN",
             "pnl": 0.0,
-            "rl_epsilon": round(rl_agent.epsilon, 3),
+            "rl_epsilon": round(getattr(rl_agent, 'epsilon', 0.0), 3),
             "state_vector": state, # Save for RL memory replay later
             "action": action,
             "feature_version": SHADOW_FEATURE_VERSION,
@@ -124,11 +147,11 @@ def execute_shadow_trade(forecast: Dict[str, Any], kalshi_market: dict = None):
             "yes_ask": kalshi_market.get("yes_ask") if kalshi_market else None,
             "no_bid": kalshi_market.get("no_bid") if kalshi_market else None,
             "no_ask": kalshi_market.get("no_ask") if kalshi_market else None,
-            "calibrated_p_yes": live_eval.get("p_yes"),  # market-anchored
-            "model_p_yes": live_eval.get("p_model"),  # calibrated model alone
-            "edge_yes": live_eval.get("edge_yes"),
-            "edge_no": live_eval.get("edge_no"),
-            "live_policy_action": live_eval.get("action"),
+            "calibrated_p_yes": live_eval.get("p_yes") if live_eval else None,
+            "model_p_yes": live_eval.get("p_model") if live_eval else None,
+            "edge_yes": live_eval.get("edge_yes") if live_eval else None,
+            "edge_no": live_eval.get("edge_no") if live_eval else None,
+            "live_policy_action": live_eval.get("action") if live_eval else None,
         }
 
         # Write to rl_shadow_trades.json

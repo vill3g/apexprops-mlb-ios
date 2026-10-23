@@ -63,9 +63,11 @@ def analyze_forex_pair(pair: str, timeframe: str = "15m") -> dict:
                 signal = "SELL"
                 reasons.append(f"Mean Reversion: Price pierced upper BB at {bb_upper:.4f}. RSI overbought ({rsi:.1f}).")
                 
-            # Tighter stops for mean reversion (1x ATR for SL, 1.5x for TP)
-            sl_distance = atr * 1.0
-            tp_distance = atr * 1.5
+            pip_dec = 0.01 if "JPY" in pair.upper() else 0.0001
+            # Tighter stops for mean reversion (min 5 pips, or 1x ATR for SL, 1.5x for TP)
+            min_sl_dist = 5.0 * pip_dec
+            sl_distance = max(min_sl_dist, atr * 1.0)
+            tp_distance = max(min_sl_dist * 1.5, atr * 1.5)
             
         else:
             # Momentum / Breakout Strategy for London/NY
@@ -80,9 +82,11 @@ def analyze_forex_pair(pair: str, timeframe: str = "15m") -> dict:
                 signal = "SELL"
                 reasons.append("SMC Momentum: Bearish trend + Recent Bearish FVG confirmed.")
                 
-            # Wider trend-following stops (1.5x SL, 3x TP)
-            sl_distance = atr * 1.5
-            tp_distance = atr * 3.0
+            # Wider trend-following stops (min 8 pips, or 1.5x SL, 3x TP)
+            pip_dec = 0.01 if "JPY" in pair.upper() else 0.0001
+            min_sl_dist = 8.0 * pip_dec
+            sl_distance = max(min_sl_dist, atr * 1.5)
+            tp_distance = max(min_sl_dist * 2.0, atr * 3.0)
             
         sl = round(price - sl_distance if signal == "BUY" else price + sl_distance, 5)
         tp = round(price + tp_distance if signal == "BUY" else price - tp_distance, 5)

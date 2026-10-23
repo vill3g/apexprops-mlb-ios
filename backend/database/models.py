@@ -131,7 +131,7 @@ def get_db_connection():
 REQUIRED_COLUMNS = {
     "trade_size_dollars": "REAL DEFAULT 5.0",
     "paper_trade_size_dollars": "REAL DEFAULT 50.0",
-    "stop_loss_pct": "REAL DEFAULT 50.0",
+    "stop_loss_pct": "REAL DEFAULT 75.0",
     "stop_loss_enabled": "BOOLEAN DEFAULT 1",
     "one_click_trade": "BOOLEAN DEFAULT 0",
     "auto_force_trade": "BOOLEAN DEFAULT 0",
@@ -146,7 +146,7 @@ REQUIRED_COLUMNS = {
     "trailing_stop_activation_pct": "REAL DEFAULT 35.0",
     "trailing_stop_distance_pct": "REAL DEFAULT 6.0",
     "second_entry_enabled": "BOOLEAN DEFAULT 0",
-    "second_entry_max_ask": "REAL DEFAULT 0.75",
+    "second_entry_max_ask": "REAL DEFAULT 0.62",
     "reentry_after_stop_loss": "BOOLEAN DEFAULT 0",
     "model_choice": "TEXT DEFAULT 'RL_DQN'",
     "train_window": "INTEGER DEFAULT 4000",
@@ -160,6 +160,7 @@ REQUIRED_COLUMNS = {
     "sports_max_wager": "REAL DEFAULT 10.0",
     "sports_trade_size_dollars": "REAL DEFAULT 10.0",
     "sports_include_live": "BOOLEAN DEFAULT 0",
+    "sports_sport_config": "TEXT",
     "xgb_learning_rate": "REAL DEFAULT 0.1",
     "ignore_pass_technical": "BOOLEAN DEFAULT 0",
     "one_shot_ai": "BOOLEAN DEFAULT 0",
@@ -186,7 +187,74 @@ REQUIRED_COLUMNS = {
     "sports_tp_pct": "REAL DEFAULT 35.0",
     "sports_use_kelly": "BOOLEAN DEFAULT 0",
     "sports_market_types": "TEXT DEFAULT 'GAME,SPREAD,TOTAL,PROP'",
+    "sports_active_props": "TEXT DEFAULT 'ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER'",
+    "sports_strategy": "TEXT DEFAULT 'STANDARD'",
+    "sports_max_parlay_legs": "INTEGER DEFAULT 2",
+    # --- INVESTMENTS UNIVERSE (Robinhood US Stocks, ETFs & Equity Options) ---
+    "rh_username_enc": "TEXT DEFAULT NULL",
+    "rh_password_enc": "TEXT DEFAULT NULL",
+    "rh_totp_secret_enc": "TEXT DEFAULT NULL",
+    "rh_api_key_id": "TEXT DEFAULT NULL",
+    "rh_api_private_key_enc": "TEXT DEFAULT NULL",
+    "rh_mcp_url": "TEXT DEFAULT 'https://agent.robinhood.com/mcp/trading'",
+    "rh_mcp_token_enc": "TEXT DEFAULT NULL",
+    "rh_mcp_refresh_token_enc": "TEXT DEFAULT NULL",
+    "rh_mcp_client_id": "TEXT DEFAULT NULL",
+    "rh_auth_mode": "TEXT DEFAULT 'ROBINHOOD_MCP'",
+    "rh_account_type": "TEXT DEFAULT 'CASH'",
+    "investments_paper_balance": "REAL DEFAULT 10000.0",
+    "investments_trade_size_dollars": "REAL DEFAULT 250.0",
+    "investments_paper_trade_size_dollars": "REAL DEFAULT 500.0",
+    "investments_asset_classes": "TEXT DEFAULT 'STOCKS,ETFS,OPTIONS'",
+    "investments_screener_mode": "TEXT DEFAULT 'HYBRID'",
+    "investments_watchlist": "TEXT DEFAULT 'SPY,QQQ,NVDA,TSLA,AAPL,META,AMD,AMZN,MSFT,IWM'",
+    # 15M Crypto/Forex Volatility Spike & Dip Scalper and Pre-Settlement Expiration Guard
+    "spike_dip_strategy_enabled": "BOOLEAN DEFAULT 1",
+    "pre_settlement_guard_enabled": "BOOLEAN DEFAULT 1",
+    "pre_settlement_seconds": "INTEGER DEFAULT 90",
+    # Every-Interval Gemini High-Reasoning Force Execution Mode
+    "gemini_every_interval_enabled": "BOOLEAN DEFAULT 0",
+    # Market Regime Adaptive Engine & Specialized Chop Trader
+    "regime_mode": "TEXT DEFAULT 'AUTO_ADAPTIVE'",
+    "chop_engine_enabled": "BOOLEAN DEFAULT 1",
+    "chop_take_profit_cents": "REAL DEFAULT 12.0",
+    "investments_strategy": "TEXT DEFAULT 'ALL'",
+    "investments_min_confidence": "REAL DEFAULT 72.0",
+    "investments_min_rvol": "REAL DEFAULT 1.3",
+    "investments_max_daily_trades": "INTEGER DEFAULT 8",
+    "investments_max_open_positions": "INTEGER DEFAULT 4",
+    "investments_max_daily_risk": "REAL DEFAULT 500.0",
+    "investments_stock_tp_pct": "REAL DEFAULT 2.5",
+    "investments_stock_sl_pct": "REAL DEFAULT 1.0",
+    "investments_option_tp_pct": "REAL DEFAULT 35.0",
+    "investments_option_sl_pct": "REAL DEFAULT 20.0",
+    "investments_trailing_stop_enabled": "BOOLEAN DEFAULT 1",
+    "investments_trailing_stop_pct": "REAL DEFAULT 0.8",
+    "investments_eod_auto_flatten": "BOOLEAN DEFAULT 1",
+    "investments_extended_hours": "BOOLEAN DEFAULT 0",
+    "investments_allow_fractional": "BOOLEAN DEFAULT 1",
+    "investments_options_delta_target": "REAL DEFAULT 0.45",
+    "investments_options_dte_window": "TEXT DEFAULT '0DTE_WEEKLY'",
+    "investments_options_max_spread_pct": "REAL DEFAULT 8.0",
+    "investments_options_min_oi": "INTEGER DEFAULT 250",
+    "investments_use_kelly": "BOOLEAN DEFAULT 0",
+    # LIVE auto-trading opt-in (default OFF) + professional risk engine
+    "investments_live_autotrade_enabled": "BOOLEAN DEFAULT 0",
+    "investments_live_max_dollars_per_day": "REAL DEFAULT 25.0",
+    "investments_risk_per_trade_pct": "REAL DEFAULT 1.0",
+    "investments_max_exposure_pct": "REAL DEFAULT 50.0",
+    "investments_max_consecutive_losses": "INTEGER DEFAULT 3",
+    "investments_cooldown_minutes": "INTEGER DEFAULT 60",
+    "investments_kill_switch": "BOOLEAN DEFAULT 0",
+    "investments_kill_switch_at": "REAL DEFAULT NULL",
 }
+
+INVESTMENTS_RISK_COLUMNS = (
+    "investments_live_autotrade_enabled", "investments_live_max_dollars_per_day",
+    "investments_risk_per_trade_pct", "investments_max_exposure_pct",
+    "investments_max_consecutive_losses", "investments_cooldown_minutes",
+    "investments_kill_switch", "investments_kill_switch_at",
+)
 
 def init_db():
     conn = get_db_connection()
@@ -219,6 +287,7 @@ def init_db():
         ''')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trades_user_status ON trades(user_id, status)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_trades_user_mode ON trades(user_id, mode)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status)')
 
         cursor.executescript('''
             
@@ -252,8 +321,7 @@ CREATE TABLE IF NOT EXISTS users (
                 trading_mode TEXT DEFAULT 'PAPER',
                 paper_balance REAL DEFAULT 500.0,
                 ai_enabled BOOLEAN DEFAULT 1,
-                trade_size_pct REAL DEFAULT 20.0,
-                stop_loss_pct REAL DEFAULT 50.0,
+                stop_loss_pct REAL DEFAULT 75.0,
                 one_click_trade BOOLEAN DEFAULT 0
             )
         ''')
@@ -406,12 +474,33 @@ def update_user_ai_enabled(user_id: int, enabled: bool):
     except Exception as e:
         logger.warning(f"Failed to invalidate cache: {e}")
 
-VALID_TRADING_UNIVERSES = {"FINANCIAL", "SPORTS", "BOTH", "ALL"}
+VALID_TRADING_UNIVERSES = {"FINANCIAL", "SPORTS", "INVESTMENTS", "BOTH", "ALL"}
+
+def _normalize_trading_universe(universe: str) -> str:
+    if not universe:
+        return "FINANCIAL"
+    raw = str(universe).strip().upper()
+    if raw in VALID_TRADING_UNIVERSES:
+        return raw
+    parts = [p.strip().upper() for p in raw.split(",") if p.strip()]
+    norm_parts = set()
+    for p in parts:
+        if p in ("CRYPTO", "CRYPTO/FOREX", "CRYPTO_FOREX", "FOREX", "FINANCIAL"):
+            norm_parts.add("FINANCIAL")
+        elif p == "SPORTS":
+            norm_parts.add("SPORTS")
+        elif p == "INVESTMENTS":
+            norm_parts.add("INVESTMENTS")
+    if not norm_parts:
+        return "FINANCIAL"
+    if norm_parts == {"FINANCIAL", "SPORTS", "INVESTMENTS"}:
+        return "ALL"
+    if norm_parts == {"FINANCIAL", "SPORTS"}:
+        return "BOTH"
+    return ",".join(sorted(list(norm_parts)))
 
 def update_user_trading_universe(user_id: int, universe: str):
-    norm = str(universe).strip().upper()
-    if norm not in VALID_TRADING_UNIVERSES:
-        raise ValueError(f"Invalid trading_universe '{universe}'. Allowed: {sorted(list(VALID_TRADING_UNIVERSES))}")
+    norm = _normalize_trading_universe(universe)
     conn = get_db_connection()
     try:
         c = conn.cursor()
@@ -504,6 +593,41 @@ def credit_user_paper_balance(user_id: int, amount: float) -> None:
     finally:
         conn.close()
 
+def deduct_user_investments_paper_balance(user_id: int, cost: float) -> bool:
+    """Atomically deduct cost from user's investments paper balance if sufficient funds exist."""
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        c.execute(
+            "UPDATE users SET investments_paper_balance = investments_paper_balance - ? WHERE id = ? AND investments_paper_balance >= ?",
+            (cost, user_id, cost)
+        )
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
+def credit_user_investments_paper_balance(user_id: int, amount: float) -> None:
+    """Atomically credit settlement or profit to user's investments paper balance."""
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE users SET investments_paper_balance = investments_paper_balance + ? WHERE id = ?", (amount, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+def reset_user_investments_paper_balance(user_id: int, balance: float = 10000.0) -> bool:
+    """Reset user's investments paper balance to default."""
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE users SET investments_paper_balance = ? WHERE id = ?", (float(balance), user_id))
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
 def get_user_by_username(username):
     conn = get_db_connection()
     
@@ -555,6 +679,91 @@ def update_user_kalshi_keys(user_id, key_id, priv_key_encrypted):
     finally:
         conn.close()
 
+def save_user_robinhood_credentials(
+    user_id: int,
+    username_enc: Optional[str] = None,
+    password_enc: Optional[str] = None,
+    totp_secret_enc: Optional[str] = None,
+    api_key_id: Optional[str] = None,
+    api_private_key_enc: Optional[str] = None,
+    mcp_url: Optional[str] = None,
+    mcp_token_enc: Optional[str] = None,
+    mcp_refresh_token_enc: Optional[str] = None,
+    mcp_client_id: Optional[str] = None,
+    auth_mode: Optional[str] = "ROBINHOOD_MCP",
+    account_type: Optional[str] = "CASH"
+) -> bool:
+    """Save encrypted Robinhood credentials / API keys / MCP server token & OAuth refresh token."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE users SET 
+                rh_username_enc = COALESCE(?, rh_username_enc),
+                rh_password_enc = COALESCE(?, rh_password_enc),
+                rh_totp_secret_enc = COALESCE(?, rh_totp_secret_enc),
+                rh_api_key_id = COALESCE(?, rh_api_key_id),
+                rh_api_private_key_enc = COALESCE(?, rh_api_private_key_enc),
+                rh_mcp_url = COALESCE(?, rh_mcp_url, 'https://agent.robinhood.com/mcp/trading'),
+                rh_mcp_token_enc = COALESCE(?, rh_mcp_token_enc),
+                rh_mcp_refresh_token_enc = COALESCE(?, rh_mcp_refresh_token_enc),
+                rh_mcp_client_id = COALESCE(?, rh_mcp_client_id),
+                rh_auth_mode = COALESCE(?, rh_auth_mode, 'ROBINHOOD_MCP'),
+                rh_account_type = COALESCE(?, rh_account_type, 'CASH')
+            WHERE id = ?
+            """,
+            (
+                username_enc,
+                password_enc,
+                totp_secret_enc,
+                api_key_id,
+                api_private_key_enc,
+                mcp_url,
+                mcp_token_enc,
+                mcp_refresh_token_enc,
+                mcp_client_id,
+                auth_mode,
+                account_type,
+                user_id
+            )
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+def update_user_investments_config(user_id: int, updates: dict) -> bool:
+    """Updates Investments Universe configuration settings in users table."""
+    allowed_cols = {
+        "rh_auth_mode", "rh_account_type", "rh_mcp_url",
+        "investments_paper_balance",
+        "investments_trade_size_dollars", "investments_paper_trade_size_dollars",
+        "investments_asset_classes", "investments_screener_mode", "investments_watchlist", "investments_strategy",
+        "investments_min_confidence", "investments_min_rvol",
+        "investments_max_daily_trades", "investments_max_open_positions", "investments_max_daily_risk",
+        "investments_stock_tp_pct", "investments_stock_sl_pct",
+        "investments_option_tp_pct", "investments_option_sl_pct",
+        "investments_trailing_stop_enabled", "investments_trailing_stop_pct",
+        "investments_eod_auto_flatten", "investments_extended_hours", "investments_allow_fractional",
+        "investments_options_delta_target", "investments_options_dte_window",
+        "investments_options_max_spread_pct", "investments_options_min_oi", "investments_use_kelly",
+        *INVESTMENTS_RISK_COLUMNS
+    }
+    filtered = {k: v for k, v in updates.items() if k in allowed_cols}
+    if not filtered:
+        return False
+    set_clauses = [f"{col} = ?" for col in filtered.keys()]
+    values = list(filtered.values()) + [int(user_id)]
+    conn = get_db_connection()
+    try:
+        c = conn.cursor()
+        c.execute(f"UPDATE users SET {', '.join(set_clauses)} WHERE id = ?", values)
+        conn.commit()
+        return c.rowcount > 0
+    finally:
+        conn.close()
+
 def get_all_active_users():
     conn = get_db_connection()
     
@@ -579,6 +788,21 @@ def get_all_users():
         return [dict(row) for row in rows]
     finally:
         conn.close()
+
+def update_user_gemini_every_interval(user_id: int, enabled: bool) -> None:
+    """Save user's Every-Interval Gemini High Reasoning Force Mode toggle."""
+    conn = get_db_connection()
+    try:
+        conn.execute("UPDATE users SET gemini_every_interval_enabled = ? WHERE id = ?", (1 if enabled else 0, int(user_id)))
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        from backend.btc.auto_executor import invalidate_saas_users_cache
+        invalidate_saas_users_cache(user_id)
+    except Exception:
+        pass
+
 
 def update_user_edge_gate(user_id: int, enabled=None, min_edge_cents=None) -> None:
     """Save a user's edge-guard settings. None leaves a value unchanged."""
@@ -614,8 +838,29 @@ def admin_update_user(user_id: int, updates: dict) -> bool:
         "second_entry_enabled", "second_entry_max_ask", "reentry_after_stop_loss", "ignore_pass_technical",
         "one_shot_ai", "max_daily_trades", "max_daily_risk",
         "model_choice", "train_window", "regularization_c", "class_weight",
+        "xgb_estimators", "xgb_max_depth", "xgb_learning_rate",
+        "notify_trade_results", "notify_market_trends",
         "edge_gate_enabled", "min_edge_cents", "use_kelly_criterion", "atr_risk_enabled",
-        "target_asset"
+        "spike_dip_strategy_enabled", "pre_settlement_guard_enabled", "pre_settlement_seconds",
+        "gemini_every_interval_enabled",
+        "target_asset", "trading_universe",
+        "min_sports_confidence", "min_sports_edge", "sports_max_wager", "sports_include_live",
+        "sports_trade_size_dollars", "sports_active_leagues", "sports_min_price", "sports_max_price",
+        "sports_max_daily_trades", "sports_max_open_trades", "sports_max_daily_risk",
+        "sports_tp_enabled", "sports_tp_pct", "sports_use_kelly", "sports_market_types",
+        "sports_active_props", "sports_sport_config", "sports_strategy", "sports_max_parlay_legs",
+        "rh_auth_mode", "rh_account_type", "rh_mcp_url", "investments_paper_balance",
+        "investments_trade_size_dollars", "investments_paper_trade_size_dollars",
+        "investments_asset_classes", "investments_screener_mode", "investments_watchlist", "investments_strategy",
+        "investments_min_confidence", "investments_min_rvol",
+        "investments_max_daily_trades", "investments_max_open_positions", "investments_max_daily_risk",
+        "investments_stock_tp_pct", "investments_stock_sl_pct",
+        "investments_option_tp_pct", "investments_option_sl_pct",
+        "investments_trailing_stop_enabled", "investments_trailing_stop_pct",
+        "investments_eod_auto_flatten", "investments_extended_hours", "investments_allow_fractional",
+        "investments_options_delta_target", "investments_options_dte_window",
+        "investments_options_max_spread_pct", "investments_options_min_oi", "investments_use_kelly",
+        *INVESTMENTS_RISK_COLUMNS
     }
     filtered = {k: v for k, v in updates.items() if k in allowed_cols}
     if not filtered:
@@ -790,7 +1035,7 @@ def update_user_config(
     trailing_stop_activation_pct: float = 35.0, 
     trailing_stop_distance_pct: float = 6.0, 
     second_entry_enabled: bool = False,
-    second_entry_max_ask: float = 0.75,
+    second_entry_max_ask: float = 0.62,
     reentry_after_stop_loss: bool = False,
     model_choice: str = "RL_DQN", 
     train_window: int = 4000, 
@@ -804,10 +1049,10 @@ def update_user_config(
     notify_trade_results: bool = True,
     notify_market_trends: bool = True,
     use_kelly_criterion: bool = False,
-    trading_universe: str = "FINANCIAL",
+    trading_universe: Optional[str] = None,
     min_sports_confidence: float = 70.0,
     min_sports_edge: float = 3.0,
-    sports_max_wager: float = 10.0,
+    sports_max_wager: Optional[float] = None,
     sports_include_live: bool = False,
     sports_trade_size_dollars: Optional[float] = None,
     sports_active_leagues: Optional[str] = None,
@@ -819,17 +1064,27 @@ def update_user_config(
     sports_tp_enabled: Optional[bool] = None,
     sports_tp_pct: Optional[float] = None,
     sports_use_kelly: Optional[bool] = None,
-    sports_market_types: Optional[str] = None
+    sports_market_types: Optional[str] = None,
+    sports_active_props: Optional[str] = None,
+    sports_sport_config: Optional[str] = None,
+    sports_strategy: Optional[str] = None,
+    sports_max_parlay_legs: Optional[int] = None
 ):
     if sports_trade_size_dollars is not None:
-        sports_max_wager = float(sports_trade_size_dollars)
+        sports_trade_size_dollars = float(sports_trade_size_dollars)
+        if sports_max_wager is None:
+            sports_max_wager = sports_trade_size_dollars
+    elif sports_max_wager is not None:
+        sports_max_wager = float(sports_max_wager)
+        sports_trade_size_dollars = sports_max_wager
     else:
-        sports_trade_size_dollars = float(sports_max_wager)
+        sports_trade_size_dollars = None
+        sports_max_wager = None
 
-    if trading_universe:
-        norm_universe = str(trading_universe).strip().upper()
-        if norm_universe in VALID_TRADING_UNIVERSES:
-            trading_universe = norm_universe
+    if trading_universe is not None:
+        trading_universe = _normalize_trading_universe(trading_universe)
+    else:
+        trading_universe = None
 
     conn = get_db_connection()
     try:
@@ -843,8 +1098,8 @@ def update_user_config(
                 model_choice = ?, train_window = ?, regularization_c = ?, class_weight = ?, 
                 xgb_estimators = ?, xgb_max_depth = ?, xgb_learning_rate = ?, 
                 ignore_pass_technical = ?, one_shot_ai = ?, notify_trade_results = ?, notify_market_trends = ?,
-                use_kelly_criterion = ?, trading_universe = ?,
-                min_sports_confidence = ?, min_sports_edge = ?, sports_max_wager = ?, sports_trade_size_dollars = ?, sports_include_live = ?,
+                use_kelly_criterion = ?, trading_universe = COALESCE(?, trading_universe, 'FINANCIAL'),
+                min_sports_confidence = ?, min_sports_edge = ?, sports_max_wager = COALESCE(?, sports_max_wager, 10.0), sports_trade_size_dollars = COALESCE(?, sports_trade_size_dollars, sports_max_wager), sports_include_live = ?,
                 sports_active_leagues = COALESCE(?, sports_active_leagues, 'NFL,MLB,NPB/KBO,SOC,UFC,TEN,NHL'),
                 sports_min_price = COALESCE(?, sports_min_price, 0.20),
                 sports_max_price = COALESCE(?, sports_max_price, 0.80),
@@ -854,7 +1109,11 @@ def update_user_config(
                 sports_tp_enabled = COALESCE(?, sports_tp_enabled, 0),
                 sports_tp_pct = COALESCE(?, sports_tp_pct, 35.0),
                 sports_use_kelly = COALESCE(?, sports_use_kelly, 0),
-                sports_market_types = COALESCE(?, sports_market_types, 'GAME,SPREAD,TOTAL,PROP')
+                sports_market_types = COALESCE(?, sports_market_types, 'GAME,SPREAD,TOTAL,PROP'),
+                sports_active_props = COALESCE(?, sports_active_props, 'ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER'),
+                sports_sport_config = COALESCE(?, sports_sport_config),
+                sports_strategy = COALESCE(?, sports_strategy, 'STANDARD'),
+                sports_max_parlay_legs = COALESCE(?, sports_max_parlay_legs, 2)
             WHERE id = ?
         ''', (
             trade_size_dollars, paper_trade_size_dollars, stop_loss_pct, 1 if stop_loss_enabled else 0, 1 if one_click_trade else 0, 1 if auto_force_trade else 0, 
@@ -876,6 +1135,10 @@ def update_user_config(
             sports_tp_pct,
             (1 if sports_use_kelly else 0) if sports_use_kelly is not None else None,
             sports_market_types,
+            sports_active_props,
+            sports_sport_config,
+            sports_strategy,
+            sports_max_parlay_legs,
             user_id
         ))
         conn.commit()
@@ -906,7 +1169,8 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         raise ValueError(f"Target trader #{target_user_id} not found.")
 
     # Strategy, indicators, risk limits, and AI model hyperparameters to copy
-    # NOTE: trade_size_dollars and trade_size_pct are STRICTLY EXCLUDED to preserve caller's capital allocation
+    # NOTE: trade_size_dollars, paper_trade_size_dollars, trade_size_pct, sports_trade_size_dollars, and sports_max_wager
+    # are STRICTLY EXCLUDED to preserve caller's capital allocation.
     copy_fields = {
         "stop_loss_pct": float(source_user.get("stop_loss_pct", 50.0)),
         "stop_loss_enabled": int(bool(source_user.get("stop_loss_enabled", 1))),
@@ -914,20 +1178,21 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "take_profit_enabled": int(bool(source_user.get("take_profit_enabled", 1))),
         "one_click_trade": int(bool(source_user.get("one_click_trade", 0))),
         "auto_force_trade": int(bool(source_user.get("auto_force_trade", 0))),
-        "trading_style": str(source_user.get("trading_style", "AUTO")),
-        "signal_source": str(source_user.get("signal_source", "RL_DQN")),
+        "target_asset": str(source_user.get("target_asset", "BTC") or "BTC"),
+        "trading_style": str(source_user.get("trading_style", "AUTO") or "AUTO"),
+        "signal_source": str(source_user.get("signal_source", "RL_DQN") or "RL_DQN"),
         "max_daily_trades": int(source_user.get("max_daily_trades", 10)),
         "max_daily_risk": float(source_user.get("max_daily_risk", 50.0)),
         "trailing_stop_enabled": int(bool(source_user.get("trailing_stop_enabled", 0))),
         "trailing_stop_activation_pct": float(source_user.get("trailing_stop_activation_pct", 35.0)),
         "trailing_stop_distance_pct": float(source_user.get("trailing_stop_distance_pct", 6.0)),
         "second_entry_enabled": int(bool(source_user.get("second_entry_enabled", 0))),
-        "second_entry_max_ask": float(source_user.get("second_entry_max_ask", 0.75)),
+        "second_entry_max_ask": float(source_user.get("second_entry_max_ask", 0.62)),
         "reentry_after_stop_loss": int(bool(source_user.get("reentry_after_stop_loss", 0))),
-        "model_choice": str(source_user.get("model_choice", "RL_DQN")),
+        "model_choice": str(source_user.get("model_choice", "RL_DQN") or "RL_DQN"),
         "train_window": int(source_user.get("train_window", 4000)),
         "regularization_c": float(source_user.get("regularization_c", 0.5)),
-        "class_weight": str(source_user.get("class_weight", "balanced")),
+        "class_weight": str(source_user.get("class_weight", "balanced") or "balanced"),
         "xgb_estimators": int(source_user.get("xgb_estimators", 300)),
         "xgb_max_depth": int(source_user.get("xgb_max_depth", 5)),
         "xgb_learning_rate": float(source_user.get("xgb_learning_rate", 0.1)),
@@ -936,9 +1201,47 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "edge_gate_enabled": int(bool(source_user.get("edge_gate_enabled", 1))),
         "min_edge_cents": float(source_user.get("min_edge_cents", 0.0) or 0.0),
         "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0))),
+        "atr_risk_enabled": int(bool(source_user.get("atr_risk_enabled", 0))),
+        "trading_universe": str(source_user.get("trading_universe", "FINANCIAL") or "FINANCIAL"),
         "min_sports_confidence": float(source_user.get("min_sports_confidence", 70.0)),
         "min_sports_edge": float(source_user.get("min_sports_edge", 3.0)),
-        "sports_include_live": int(bool(source_user.get("sports_include_live", 0)))
+        "sports_include_live": int(bool(source_user.get("sports_include_live", 0))),
+        "sports_active_leagues": str(source_user.get("sports_active_leagues") or "NFL,MLB,NPB/KBO,SOC,UFC,TEN,NHL"),
+        "sports_min_price": float(source_user.get("sports_min_price") if source_user.get("sports_min_price") is not None else 0.20),
+        "sports_max_price": float(source_user.get("sports_max_price") if source_user.get("sports_max_price") is not None else 0.80),
+        "sports_max_daily_trades": int(source_user.get("sports_max_daily_trades") if source_user.get("sports_max_daily_trades") is not None else 10),
+        "sports_max_open_trades": int(source_user.get("sports_max_open_trades") if source_user.get("sports_max_open_trades") is not None else 5),
+        "sports_max_daily_risk": float(source_user.get("sports_max_daily_risk") if source_user.get("sports_max_daily_risk") is not None else 100.0),
+        "sports_tp_enabled": int(bool(source_user.get("sports_tp_enabled", 0))),
+        "sports_tp_pct": float(source_user.get("sports_tp_pct") if source_user.get("sports_tp_pct") is not None else 35.0),
+        "sports_use_kelly": int(bool(source_user.get("sports_use_kelly", 0))),
+        "sports_market_types": str(source_user.get("sports_market_types") or "GAME,SPREAD,TOTAL,PROP"),
+        "sports_active_props": str(source_user.get("sports_active_props") or "ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER"),
+        "sports_sport_config": source_user.get("sports_sport_config"),
+        "sports_strategy": str(source_user.get("sports_strategy") or "STANDARD"),
+        "sports_max_parlay_legs": int(source_user.get("sports_max_parlay_legs") if source_user.get("sports_max_parlay_legs") is not None else 2),
+        "investments_asset_classes": str(source_user.get("investments_asset_classes") or "STOCKS,ETFS,OPTIONS"),
+        "investments_watchlist": str(source_user.get("investments_watchlist") or "SPY,QQQ,NVDA,TSLA,AAPL,META,AMD,AMZN,MSFT,IWM"),
+        "investments_strategy": str(source_user.get("investments_strategy") or "ALL"),
+        "investments_min_confidence": float(source_user.get("investments_min_confidence") if source_user.get("investments_min_confidence") is not None else 72.0),
+        "investments_min_rvol": float(source_user.get("investments_min_rvol") if source_user.get("investments_min_rvol") is not None else 1.3),
+        "investments_max_daily_trades": int(source_user.get("investments_max_daily_trades") if source_user.get("investments_max_daily_trades") is not None else 8),
+        "investments_max_open_positions": int(source_user.get("investments_max_open_positions") if source_user.get("investments_max_open_positions") is not None else 4),
+        "investments_max_daily_risk": float(source_user.get("investments_max_daily_risk") if source_user.get("investments_max_daily_risk") is not None else 500.0),
+        "investments_stock_tp_pct": float(source_user.get("investments_stock_tp_pct") if source_user.get("investments_stock_tp_pct") is not None else 2.5),
+        "investments_stock_sl_pct": float(source_user.get("investments_stock_sl_pct") if source_user.get("investments_stock_sl_pct") is not None else 1.0),
+        "investments_option_tp_pct": float(source_user.get("investments_option_tp_pct") if source_user.get("investments_option_tp_pct") is not None else 35.0),
+        "investments_option_sl_pct": float(source_user.get("investments_option_sl_pct") if source_user.get("investments_option_sl_pct") is not None else 20.0),
+        "investments_trailing_stop_enabled": int(bool(source_user.get("investments_trailing_stop_enabled", 1))),
+        "investments_trailing_stop_pct": float(source_user.get("investments_trailing_stop_pct") if source_user.get("investments_trailing_stop_pct") is not None else 0.8),
+        "investments_eod_auto_flatten": int(bool(source_user.get("investments_eod_auto_flatten", 1))),
+        "investments_extended_hours": int(bool(source_user.get("investments_extended_hours", 0))),
+        "investments_allow_fractional": int(bool(source_user.get("investments_allow_fractional", 1))),
+        "investments_options_delta_target": float(source_user.get("investments_options_delta_target") if source_user.get("investments_options_delta_target") is not None else 0.45),
+        "investments_options_dte_window": str(source_user.get("investments_options_dte_window") or "0DTE_WEEKLY"),
+        "investments_options_max_spread_pct": float(source_user.get("investments_options_max_spread_pct") if source_user.get("investments_options_max_spread_pct") is not None else 8.0),
+        "investments_options_min_oi": int(source_user.get("investments_options_min_oi") if source_user.get("investments_options_min_oi") is not None else 250),
+        "investments_use_kelly": int(bool(source_user.get("investments_use_kelly", 0))),
     }
 
     set_clauses = [f"{col} = ?" for col in copy_fields.keys()]
@@ -950,7 +1253,13 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         c.execute(f"UPDATE users SET {', '.join(set_clauses)} WHERE id = ?", values)
         conn.commit()
     finally:
-        pass
+        conn.close()
+
+    try:
+        from backend.btc.auto_executor import invalidate_saas_users_cache
+        invalidate_saas_users_cache(int(target_user_id))
+    except Exception as e:
+        logger.warning(f"Failed to invalidate SaaS users cache: {e}")
 
     # Evict executor cache so new settings load cleanly into memory
     try:
@@ -981,7 +1290,6 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "target_username": target_user.get("username"),
         "copied_settings": copy_fields,
         "preserved_trade_size_dollars": target_user.get("trade_size_dollars", 5.0),
-        "preserved_trade_size_pct": target_user.get("trade_size_pct", 20.0),
         "preserved_sports_trade_size_dollars": target_user.get("sports_trade_size_dollars") or target_user.get("sports_max_wager", 10.0)
     }
 

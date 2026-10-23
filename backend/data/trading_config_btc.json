@@ -6,5 +6,7 @@
   "prediction_mode": true,
   "max_daily_risk": 25.0,
   "max_daily_trades": 10,
-  "ai_settings": {}
+  "ai_settings": {
+    "dryRun": true
+  }
 }

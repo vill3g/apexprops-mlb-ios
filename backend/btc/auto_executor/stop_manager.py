@@ -22,7 +22,7 @@ from backend.btc.indicators import add_all_indicators, compute_atr
 from backend.btc.kalshi_trader import filled_count as _filled_count
 from backend.btc.kalshi_trader import kalshi_trader
 from backend.btc.paper_balance import update_balance
-from backend.btc.scalp_engine import scalp_engine
+from backend.btc.scalp_engine import get_scalp_engine, scalp_engine
 from backend.engine.multi_asset_fetcher import \
     fetch_asset_candles as fetch_candles
 from backend.engine.multi_asset_fetcher import \
@@ -139,11 +139,12 @@ class StopManagerMixin:
                             return result
                         self._save_trades_history(trades)
                         try:
-                            with scalp_engine._trade_lock:
-                                if hasattr(scalp_engine, "_active_positions") and trade_id in scalp_engine._active_positions:
-                                    del scalp_engine._active_positions[trade_id]
-                                if scalp_engine._active_trade and scalp_engine._active_trade.get("id") == trade_id:
-                                    scalp_engine._active_trade.clear()
+                            _se = get_scalp_engine(self.asset)
+                            with _se._trade_lock:
+                                if hasattr(_se, "_active_positions") and trade_id in _se._active_positions:
+                                    del _se._active_positions[trade_id]
+                                if _se._active_trade and _se._active_trade.get("id") == trade_id:
+                                    _se._active_trade.clear()
                         except Exception as e:
                             logger.warning(f"Swallowed exception: {e}")
                         return result
@@ -344,19 +345,34 @@ class StopManagerMixin:
 
                             # Remediation 2 & 4: Evaluate Exit Discipline and Anti-Whipsaw Trailing Stop
                             # 1. Anti-Whipsaw Trailing Stop
-                            ts_res = calculate_anti_whipsaw_trailing_stop(entry_price, max_seen_bid, bid_price)
-                            if ts_res.get("should_exit"):
-                                logger.info(f"[AutoExecutor] {ts_res['reason']} for {trade_id} ({side}).")
-                                close_res = self.close_specific_trade(trade_id, reason="TRAILING_TAKE_PROFIT", estimated_exit_price=bid_price)
-                                if close_res.get("success"):
-                                    self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
-                                continue
+                            ts_enabled = bool(self.ai_settings.get("trailing_stop_enabled", self.ai_settings.get("trailingStopEnabled", False)))
+                            ts_act_pct = float(self.ai_settings.get("trailing_stop_activation_pct", self.ai_settings.get("trailingStopActivationPct", 35.0)))
+                            ts_dist_pct = float(self.ai_settings.get("trailing_stop_distance_pct", self.ai_settings.get("trailingStopDistancePct", 6.0)))
+                            if ts_enabled:
+                                ts_res = calculate_anti_whipsaw_trailing_stop(
+                                    entry_price=entry_price,
+                                    max_seen_bid=max_seen_bid,
+                                    current_bid=bid_price,
+                                    ts_activation_pct=ts_act_pct,
+                                    ts_distance_pct=ts_dist_pct
+                                )
+                                if ts_res.get("should_exit"):
+                                    logger.info(f"[AutoExecutor] {ts_res['reason']} for {trade_id} ({side}).")
+                                    close_res = self.close_specific_trade(trade_id, reason="TRAILING_STOP", estimated_exit_price=bid_price)
+                                    if close_res.get("success"):
+                                        self._attempt_profit_reentry(trade, minutes_remaining, spot_price)
+                                    continue
 
-                            # 2. Exit Discipline
+                            # 2. Exit Discipline & Pre-Settlement Expiration Guard
                             exit_res = evaluate_exit_discipline(trade, bid_price, spot_price, strike, time_remaining_sec)
                             if exit_res.get("should_close"):
                                 logger.info(f"[AutoExecutor] EXIT DISCIPLINE: {exit_res['reason']} for {trade_id}.")
-                                reason_str = "TAKE_PROFIT" if "PROFIT" in exit_res['reason'] else "DYNAMIC_STOP_LOSS"
+                                if "PROFIT" in exit_res['reason']:
+                                    reason_str = "TAKE_PROFIT"
+                                elif "PRE_SETTLEMENT" in exit_res['reason']:
+                                    reason_str = "PRE_SETTLEMENT_SALVAGE"
+                                else:
+                                    reason_str = "DYNAMIC_STOP_LOSS"
                                 close_res = self.close_specific_trade(trade_id, reason=reason_str, estimated_exit_price=exit_res["exit_price"])
                                 if close_res.get("success"):
                                     if reason_str == "TAKE_PROFIT":
@@ -665,11 +681,12 @@ class StopManagerMixin:
                     logger.info(f"[AutoExecutor] Profit re-entry: Model confidence {conf:.1f}% below minimum {min_conf}%. Standing down.")
                     return None
     
-                # Check market price on chosen side
+                # Check market price on chosen side (capped at $0.62 unless conviction > 85%)
                 market_price = float(active_m.get(f"{side}_ask", 0.50) or 0.50)
-                max_reentry_ask = float(self.ai_settings.get("profitReentryMaxAsk", 0.75) or 0.75)
-                if market_price >= max_reentry_ask:
-                    logger.info(f"[AutoExecutor] Profit re-entry: {side.upper()} ask is ${market_price:.2f} >= ${max_reentry_ask:.2f} (too expensive/poor risk-reward). Standing down.")
+                reentry_cap = 0.68 if conf > 85.0 else 0.62
+                max_reentry_ask = min(float(self.ai_settings.get("profitReentryMaxAsk", 0.62) or 0.62), reentry_cap)
+                if market_price < 0.46 or market_price >= max_reentry_ask:
+                    logger.info(f"[AutoExecutor] Profit re-entry: {side.upper()} ask is ${market_price:.2f} outside safe corridor [0.46, {max_reentry_ask:.2f}]. Standing down.")
                     return None
 
                 last_exit_price = float(closed_trade.get("exit_price") or closed_trade.get("entry_price") or 0.50)

@@ -20,7 +20,7 @@
     "execDelay": 1,
     "pollInterval": 5,
     "verboseLog": true,
-    "dryRun": false,
+    "dryRun": true,
     "ignorePass": true,
     "ignorePassTechnicalOnly": false,
     "tradingStyle": "SNIPER",

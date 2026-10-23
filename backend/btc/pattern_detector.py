@@ -243,31 +243,39 @@ def detect_candlestick_patterns(df: pd.DataFrame) -> list[dict]:
 
         # A. Descending Triangle (Bearish Breakdown)
         sorted_l = sorted(w_lows[3:12])
-        if abs(sorted_l[0] - sorted_l[2]) / (sorted_l[0] + 1e-6) < 0.0025:
+        floor_level = sorted_l[0]
+        if abs(floor_level - sorted_l[2]) / (floor_level + 1e-6) < 0.0020:
             h1 = max(w_highs[3:6])
             h2 = max(w_highs[6:9])
             h3 = max(w_highs[9:12])
-            if h1 > h2 > h3:
+            curr_close = w_closes[-1]
+            curr_open = w["open"].values[-1]
+            # Require true breakdown pressure: lower highs AND latest candle is bearish pressing/breaking the floor
+            if h1 > h2 > h3 and curr_close < curr_open and curr_close <= floor_level * 1.0010:
                 patterns.append({
                     "name": "Descending Triangle",
                     "type": "BEARISH",
                     "strength": 3,
-                    "description": f"Flat floor support near ${sorted_l[0]:,.0f} compressed by consecutive lower highs. Downward breakdown favored.",
+                    "description": f"Flat floor support near ${floor_level:,.0f} compressed by consecutive lower highs. Downward breakdown favored.",
                     "candle_index": n - 1
                 })
 
         # B. Ascending Triangle (Bullish Breakout)
         sorted_h = sorted(w_highs[3:12], reverse=True)
-        if abs(sorted_h[0] - sorted_h[2]) / (sorted_h[0] + 1e-6) < 0.0025:
+        ceil_level = sorted_h[0]
+        if abs(ceil_level - sorted_h[2]) / (ceil_level + 1e-6) < 0.0020:
             l1 = min(w_lows[3:6])
             l2 = min(w_lows[6:9])
             l3 = min(w_lows[9:12])
-            if l1 < l2 < l3:
+            curr_close = w_closes[-1]
+            curr_open = w["open"].values[-1]
+            # Require true breakout pressure: higher lows AND latest candle is bullish pressing/breaking the ceiling
+            if l1 < l2 < l3 and curr_close > curr_open and curr_close >= ceil_level * 0.9990:
                 patterns.append({
                     "name": "Ascending Triangle",
                     "type": "BULLISH",
                     "strength": 3,
-                    "description": f"Flat ceiling resistance near ${sorted_h[0]:,.0f} pressured by consecutive higher lows. Upward breakout favored.",
+                    "description": f"Flat ceiling resistance near ${ceil_level:,.0f} pressured by consecutive higher lows. Upward breakout favored.",
                     "candle_index": n - 1
                 })
 

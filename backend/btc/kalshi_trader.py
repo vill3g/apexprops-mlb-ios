@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import padding, ed25519
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 # Kalshi's documented production Trade API host.
@@ -133,6 +133,70 @@ def paper_buy_from_book(ticker: str, side: str, count: int, limit_price: float):
     return (filled_int, cost / filled_int)
 
 
+def evaluate_l2_slippage_gate(
+    ticker: str,
+    side: str,
+    requested_count: int,
+    expected_price: float,
+    max_vwap_slippage: float = 0.025,
+) -> Dict[str, Any]:
+    """
+    Walks the real L2 orderbook asks to compute the Volume-Weighted Average Fill Price (VWAP)
+    for `requested_count` contracts and caps contract size so cumulative VWAP slippage never
+    exceeds `max_vwap_slippage` above the reference ask price.
+    """
+    try:
+        req_c = max(1, int(requested_count))
+        exp_p = float(expected_price) if expected_price is not None else 0.50
+    except (TypeError, ValueError):
+        return {"allowed": True, "safe_count": requested_count, "vwap": expected_price, "slippage": 0.0, "book_available": False}
+
+    book = _fetch_order_book(ticker)
+    if not book:
+        return {"allowed": True, "safe_count": req_c, "vwap": exp_p, "slippage": 0.0, "book_available": False}
+
+    opp = "no" if str(side or "").lower().strip() == "yes" else "yes"
+    asks = [(round(1.0 - p, 4), q) for p, q in book.get(opp, []) if q > 0]
+    if not asks:
+        return {"allowed": True, "safe_count": req_c, "vwap": exp_p, "slippage": 0.0, "book_available": False}
+
+    top_ask = asks[0][0]
+    ref_price = max(exp_p, top_ask)
+    max_vwap = ref_price + max_vwap_slippage
+
+    safe_filled = 0
+    cum_cost = 0.0
+    for px, qty in asks:
+        avail_int = int(qty)
+        for _ in range(avail_int):
+            if safe_filled >= req_c:
+                break
+            next_cost = cum_cost + px
+            next_vwap = next_cost / (safe_filled + 1)
+            if next_vwap <= max_vwap + 1e-9:
+                safe_filled += 1
+                cum_cost = next_cost
+            else:
+                break
+        if safe_filled >= req_c:
+            break
+
+    if safe_filled <= 0:
+        safe_filled = 1
+        cum_cost = top_ask
+
+    vwap = round(cum_cost / safe_filled, 4)
+    return {
+        "allowed": True,
+        "safe_count": safe_filled,
+        "requested_count": req_c,
+        "vwap": vwap,
+        "top_ask": top_ask,
+        "slippage": round(vwap - exp_p, 4),
+        "book_available": True,
+    }
+
+
 def paper_sell_from_book(ticker: str, side: str, count: float, floor_price: float):
     """Simulated IOC sell of `side` contracts into the real bids. Returns (filled, vwap) or None."""
     book = _fetch_order_book(ticker)
@@ -167,6 +231,7 @@ def paper_exit_price(ticker: str, side: str, count: float, best_bid: float, cush
 
 class KalshiTrader:
     def __init__(self, key_id: Optional[str] = None, private_key_pem: Optional[str] = None, fail_fast: bool = False):
+        self._is_global_singleton = bool(key_id is None and private_key_pem is None)
         self.key_id = key_id or os.environ.get("KALSHI_KEY_ID")
         self.private_key_pem = private_key_pem or os.environ.get("KALSHI_PRIVATE_KEY")
         self.fail_fast = fail_fast
@@ -183,14 +248,14 @@ class KalshiTrader:
         self._lock = threading.Lock()
 
         self.session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=1)
+        adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=50, max_retries=1)
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
 
         # Dedicated session for order-mutating endpoints (place_order, close_position)
         # with max_retries=0 to prevent duplicate fills on network timeouts.
         self.order_session = requests.Session()
-        order_adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=0)
+        order_adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=50, max_retries=0)
         self.order_session.mount("https://", order_adapter)
         self.order_session.mount("http://", order_adapter)
 
@@ -220,14 +285,17 @@ class KalshiTrader:
         timestamp = str(int(time.time() * 1000))
         msg_string = timestamp + method.upper() + path
 
-        signature = self._private_key_obj.sign(
-            msg_string.encode("utf-8"),
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
+        if isinstance(self._private_key_obj, ed25519.Ed25519PrivateKey):
+            signature = self._private_key_obj.sign(msg_string.encode("utf-8"))
+        else:
+            signature = self._private_key_obj.sign(
+                msg_string.encode("utf-8"),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
         signature_b64 = base64.b64encode(signature).decode("utf-8")
 
         return {
@@ -345,19 +413,25 @@ class KalshiTrader:
         raw = bal_res.get("raw", {})
         breakdown = raw.get("balance_breakdown", [])
 
-        exchanges = []
         exchange_names = {
             0: "Exchange 0 (Main / Cash)",
             1: "Exchange 1 (Rates / Yields)",
             2: "Exchange 2 (Crypto 15M & Commodities)",
-            3: "Exchange 3 (Specialty)"
+            3: "Exchange 3 (Specialty & Sports)"
         }
+        found_map = {}
         for b_item in breakdown:
             idx = b_item.get("exchange_index")
             try:
                 bal = float(b_item.get("balance", 0.0))
             except (ValueError, TypeError):
                 bal = 0.0
+            if idx is not None:
+                found_map[idx] = bal
+
+        exchanges = []
+        for idx in [0, 1, 2, 3]:
+            bal = found_map.get(idx, 0.0)
             exchanges.append({
                 "exchange_index": idx,
                 "name": exchange_names.get(idx, f"Exchange {idx}"),
@@ -367,6 +441,7 @@ class KalshiTrader:
         return {
             "success": True,
             "total_balance": bal_res.get("balance_dollars", 0.0),
+            "portfolio_value": bal_res.get("portfolio_value", 0.0),
             "exchanges": exchanges
         }
 
@@ -382,7 +457,7 @@ class KalshiTrader:
         Amount is converted to centicents (1 dollar = 10,000 centicents).
         """
         try:
-            amt = round(float(amount_dollars), 2)
+            amt = round(float(amount_dollars), 4)
             if amt <= 0:
                 return {"success": False, "error": "Transfer amount must be greater than $0.00."}
         except (ValueError, TypeError):
@@ -613,16 +688,40 @@ class KalshiTrader:
         if not clean_ticker or clean_ticker.endswith("_SYNTH"):
             return {"success": False, "result": "", "error": "No official Kalshi ticker available."}
 
+        # Check in-memory market cache first for instant sub-millisecond status/result
+        try:
+            from backend.engine.kalshi_market_cache import get_market_cache_instance
+            kmc = get_market_cache_instance()
+            if kmc:
+                cached_m = kmc.get_market(clean_ticker)
+                if cached_m and cached_m.get("status") in ("determined", "settled", "finalized"):
+                    res = str(cached_m.get("result") or "").strip().lower()
+                    return {
+                        "success": True,
+                        "result": res if res in {"yes", "no"} else "",
+                        "status": str(cached_m.get("status") or "").lower(),
+                        "market": cached_m,
+                    }
+        except Exception:
+            pass
+
         path = f"/trade-api/v2/markets/{quote(clean_ticker, safe='')}"
         try:
+            req_headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
+            if self.is_authenticated():
+                try:
+                    req_headers = self._sign_headers("GET", path)
+                except Exception:
+                    pass
             resp = self.session.get(
                 f"{BASE_URL}{path}",
-                headers={"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"},
+                headers=req_headers,
                 timeout=5.0,
             )
             if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
                 logger.warning(f"[KalshiTrader] get_market_result {ticker} received HTTP {resp.status_code}, retrying with backoff...")
                 raise requests.exceptions.RequestException(f"HTTP {resp.status_code} Rate Limit / Server Error: {resp.text}")
+
             if resp.status_code != 200:
                 return {
                     "success": False,
@@ -667,6 +766,42 @@ class KalshiTrader:
             except (TypeError, ValueError):
                 return 0.0
 
+        # --- WebSocket Fast Path ---
+        try:
+            from backend.btc.kalshi_ws import get_market_cache, subscribe_to_market
+            subscribe_to_market(clean_ticker)
+            cached = get_market_cache(clean_ticker)
+            if cached:
+                # The WS data sends values in cents usually, scale to dollars.
+                ws_yes_bid = as_dollars(cached, "yes_bid")
+                ws_yes_ask = as_dollars(cached, "yes_ask")
+                ws_no_bid = as_dollars(cached, "no_bid")
+                ws_no_ask = as_dollars(cached, "no_ask")
+                # Kalshi's WS "ticker" channel only carries yes_bid/yes_ask. Reading no_bid
+                # straight from it returned 0.00 for every market, which made the settler treat
+                # every NO stop-loss as an "empty book" and hold NO losers to a $0 settlement.
+                # Derive the NO side from the YES side (no_bid = 1 - yes_ask, no_ask = 1 - yes_bid).
+                if ws_no_bid <= 0.0 and 0.0 < ws_yes_ask < 1.0:
+                    ws_no_bid = round(1.0 - ws_yes_ask, 4)
+                if ws_no_ask <= 0.0 and 0.0 < ws_yes_bid < 1.0:
+                    ws_no_ask = round(1.0 - ws_yes_bid, 4)
+                if ws_yes_bid > 0.0 or ws_yes_ask > 0.0 or ws_no_bid > 0.0:
+                    return {
+                        "success": True,
+                        "ticker": clean_ticker,
+                        "yes_bid": ws_yes_bid,
+                        "yes_ask": ws_yes_ask,
+                        "no_bid": ws_no_bid,
+                        "no_ask": ws_no_ask,
+                        "price": as_dollars(cached, "price"),
+                        "status": cached.get("status", "active"),
+                        "source": "ws",
+                    }
+                # A WS message without any quote fields falls through to REST.
+        except ImportError:
+            pass
+        # --- Fallback to REST ---
+
         path = f"/trade-api/v2/markets/{quote(clean_ticker, safe='')}"
         try:
             headers = {"Accept": "application/json", "User-Agent": "ApexProps-Trader/1.0"}
@@ -694,8 +829,12 @@ class KalshiTrader:
                 "ticker": clean_ticker,
                 "yes_bid": as_dollars(market, "yes_bid"),
                 "no_bid": as_dollars(market, "no_bid"),
+                "yes_ask": as_dollars(market, "yes_ask"),
+                "no_ask": as_dollars(market, "no_ask"),
+                "last_price": as_dollars(market, "last_price"),
                 "exchange_index": market.get("exchange_index"),
                 "market": market,
+                "status": status,
             }
         except requests.exceptions.RequestException:
             raise
@@ -783,22 +922,16 @@ class KalshiTrader:
                 "source": source,
             }
 
-        if not quote_data.get("success"):
-            return quote_data
-        if not 0.0 < exit_price < 1.0:
-            return {"success": False, "error": f"No executable {side} bid is available to close this position."}
+        if getattr(self, "_is_global_singleton", False):
+            logger.error("[SAFEGUARD BLOCKED] Prevented close_position on unauthenticated global KalshiTrader singleton.")
+            return {
+                "success": False,
+                "status": "blocked",
+                "error": "CRITICAL SAFEGUARD: Close position on global KalshiTrader singleton is permanently disabled."
+            }
 
         if not self.is_authenticated():
             return {"success": False, "error": "Kalshi credentials are not configured."}
-
-        # V2 prices always use the YES-price scale. See Kalshi's event order API:
-        # To sell YES: submit an ask at YES bid (with 0.02 slippage cushion to cross book immediately)
-        # To sell NO: submit a bid on YES at 1 - no_bid (with 0.02 slippage cushion)
-        book_side = "ask" if side == "YES" else "bid"
-        if side == "YES":
-            book_price = max(0.01, min(0.99, exit_price - 0.03))
-        else:
-            book_price = min(0.99, max(0.01, (1.0 - exit_price) + 0.03))
 
         pre_positions = []
         try:
@@ -809,11 +942,11 @@ class KalshiTrader:
             logger.warning(f"[KalshiTrader] Failed to snapshot pre-close positions: {pre_err}")
 
         # Self-healing: if Kalshi reports the position is already flat (0.00), return success
-        matching_pos = [p for p in pre_positions if p.get("ticker") == quote_data.get("ticker")]
+        matching_pos = [p for p in pre_positions if p.get("ticker") == ticker]
         if matching_pos:
             actual_side_qty = self._extract_side_position(matching_pos[0], side)
             if actual_side_qty <= 0.0:
-                logger.info(f"[KalshiTrader] Position for {quote_data.get('ticker')} ({side}) is already flat on Kalshi (0.00). Reconciling as closed.")
+                logger.info(f"[KalshiTrader] Position for {ticker} ({side}) is already flat on Kalshi (0.00). Reconciling as closed.")
                 return {
                     "success": True,
                     "mode": "LIVE",
@@ -825,6 +958,20 @@ class KalshiTrader:
                 }
             # Clamp requested count to actual position held so Kalshi's reduce_only doesn't reject if position is smaller
             requested_count = min(requested_count, actual_side_qty)
+
+        if not quote_data.get("success"):
+            return quote_data
+        if not 0.0 < exit_price < 1.0:
+            return {"success": False, "error": f"No executable {side} bid is available to close this position."}
+
+        # V2 prices always use the YES-price scale. See Kalshi's event order API:
+        # To sell YES: submit an ask at YES bid (with 0.02 slippage cushion to cross book immediately)
+        # To sell NO: submit a bid on YES at 1 - no_bid (with 0.02 slippage cushion)
+        book_side = "ask" if side == "YES" else "bid"
+        if side == "YES":
+            book_price = round(max(0.01, min(0.99, exit_price - 0.03)), 2)
+        else:
+            book_price = round(min(0.99, max(0.01, (1.0 - exit_price) + 0.03)), 2)
 
         client_order_id = str(uuid.uuid4())
         path = "/trade-api/v2/portfolio/events/orders"
@@ -982,8 +1129,68 @@ class KalshiTrader:
                     backoff *= 2.0
                     continue
                 return {"success": False, "error": str(e), "positions": []}
+    def get_settlements(self, limit: int = 100, fail_fast: Optional[bool] = None) -> Dict[str, Any]:
+        """
+        Fetch portfolio settlement history from /trade-api/v2/portfolio/settlements.
+        """
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
+        path = f"/trade-api/v2/portfolio/settlements?limit={limit}"
+        max_attempts = 1 if use_fail_fast else 3
+        backoff = 1.0
+        for attempt in range(1, max_attempts + 1):
+            try:
+                headers = self._sign_headers("GET", "/trade-api/v2/portfolio/settlements")
+                resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
+                if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if resp.status_code == 429 and use_fail_fast:
+                        return {"success": False, "error": f"Kalshi 429 rate limit exceeded: {resp.text}", "settlements": []}
+                    if attempt < max_attempts:
+                        time.sleep(backoff)
+                        backoff *= 2.0
+                        continue
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return {"success": True, "settlements": data.get("settlements", [])}
+                return {"success": False, "error": resp.text, "settlements": []}
             except Exception as e:
-                return {"success": False, "error": str(e), "positions": []}
+                if attempt < max_attempts and not use_fail_fast:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                return {"success": False, "error": str(e), "settlements": []}
+
+    def get_fills(self, ticker: Optional[str] = None, limit: int = 50, fail_fast: Optional[bool] = None) -> Dict[str, Any]:
+        """
+        Fetch execution fills history from /trade-api/v2/portfolio/fills.
+        """
+        use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
+        params = f"?limit={limit}"
+        if ticker:
+            params += f"&ticker={quote(ticker, safe='')}"
+        path = f"/trade-api/v2/portfolio/fills{params}"
+        max_attempts = 1 if use_fail_fast else 3
+        backoff = 1.0
+        for attempt in range(1, max_attempts + 1):
+            try:
+                headers = self._sign_headers("GET", "/trade-api/v2/portfolio/fills")
+                resp = self.session.get(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
+                if resp.status_code == 429 or resp.status_code in [502, 503, 504]:
+                    if resp.status_code == 429 and use_fail_fast:
+                        return {"success": False, "error": f"Kalshi 429: {resp.text}", "fills": []}
+                    if attempt < max_attempts:
+                        time.sleep(backoff)
+                        backoff *= 2.0
+                        continue
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return {"success": True, "fills": data.get("fills", [])}
+                return {"success": False, "error": resp.text, "fills": []}
+            except Exception as e:
+                if attempt < max_attempts and not use_fail_fast:
+                    time.sleep(backoff)
+                    backoff *= 2.0
+                    continue
+                return {"success": False, "error": str(e), "fills": []}
 
     def _extract_side_position(self, pos_entry: Dict[str, Any], side: str) -> float:
         """
@@ -1224,6 +1431,48 @@ class KalshiTrader:
             "client_order_id": client_order_id,
             "ticker": ticker,
         }
+
+    def cancel_order(self, order_id: str) -> bool:
+        """Cancel a resting order on Kalshi by order_id."""
+        oid = str(order_id or "").strip()
+        if not oid or not self.is_authenticated():
+            return False
+        try:
+            path = f"/trade-api/v2/portfolio/orders/{quote(oid, safe='')}"
+            headers = self._sign_headers("DELETE", path)
+            resp = self.order_session.delete(f"{BASE_URL}{path}", headers=headers, timeout=5.0)
+            if resp.status_code in (200, 204):
+                logger.info(f"[KalshiTrader] Canceled resting order {oid}")
+                return True
+            logger.debug(f"[KalshiTrader] cancel_order({oid}) returned HTTP {resp.status_code}: {resp.text[:120]}")
+        except Exception as e:
+            logger.warning(f"[KalshiTrader] Error canceling order {oid}: {e}")
+        return False
+
+    def cancel_resting_orders_for_ticker(self, ticker: str) -> int:
+        """Cancel all resting orders for a specific ticker on this Kalshi account."""
+        tk = str(ticker or "").strip()
+        if not tk or not self.is_authenticated():
+            return 0
+        canceled = 0
+        try:
+            path = "/trade-api/v2/portfolio/orders"
+            headers = self._sign_headers("GET", path)
+            resp = self.session.get(
+                f"{BASE_URL}{path}",
+                params={"ticker": tk, "status": "resting", "limit": 50},
+                headers=headers,
+                timeout=5.0,
+            )
+            if resp.status_code == 200:
+                for o in (resp.json() or {}).get("orders", []) or []:
+                    oid = o.get("order_id")
+                    if oid and self.cancel_order(oid):
+                        canceled += 1
+        except Exception as e:
+            logger.debug(f"[KalshiTrader] cancel_resting_orders_for_ticker({tk}) failed: {e}")
+        return canceled
+
     def place_order(self, *args, **kwargs) -> Dict[str, Any]:
         with self._order_submit_lock:
             return self._place_order_internal(*args, **kwargs)
@@ -1242,7 +1491,8 @@ class KalshiTrader:
         order_type: str = "limit",
         slippage_buffer_dollars: Optional[float] = None,
         available_balance: Optional[float] = None,
-        fail_fast: Optional[bool] = None
+        fail_fast: Optional[bool] = None,
+        time_in_force: str = "immediate_or_cancel"
     ) -> Dict[str, Any]:
         """
         Executes an order on an exact Kalshi sports market contract (e.g. KXNFLGAME-..., KXATPMATCH-..., KXMLB-...).
@@ -1251,6 +1501,13 @@ class KalshiTrader:
         signs and submits an IOC limit order to Kalshi's V2 trade API.
         """
         use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
+        if getattr(self, "_is_global_singleton", False) and not dry_run:
+            logger.error("[SAFEGUARD BLOCKED] Prevented live sports order on unauthenticated global KalshiTrader singleton.")
+            return {
+                "success": False,
+                "status": "blocked",
+                "error": "CRITICAL SAFEGUARD: Live orders on global KalshiTrader singleton are permanently disabled. Only explicit authenticated user sessions may execute live."
+            }
         try:
             if not isinstance(count, (int, float)) or count <= 0:
                 return {"success": False, "error": f"Invalid order count: {count}. Must be a positive whole integer."}
@@ -1284,22 +1541,39 @@ class KalshiTrader:
             not clean_ticker.startswith("KX")
         )
 
+        # 2. ALWAYS fetch live quote before executing
+        if not is_dummy:
+            try:
+                q = self.get_market_quote(clean_ticker)
+                if not q.get("success"):
+                    return {"success": False, "error": f"Failed to get live quote for {clean_ticker}: {q.get('error')}"}
+                
+                status = q.get("status", q.get("market", {}).get("status", "open")).lower()
+                if status not in {"active", "open"}:
+                    return {"success": False, "error": f"Market {clean_ticker} is not open for trading (status: {status})."}
+
+                # Update limit_price_dollars to the true live ask
+                if side_clean == "yes":
+                    ask_val = q.get("yes_ask")
+                    if ask_val is None:
+                        m_obj = q.get("market", {})
+                        ask_val = m_obj.get("yes_ask_dollars") or (float(m_obj.get("yes_ask", 0)) / 100.0 if m_obj.get("yes_ask") else None) or m_obj.get("last_price_dollars")
+                else:
+                    ask_val = q.get("no_ask")
+                    if ask_val is None:
+                        m_obj = q.get("market", {})
+                        ask_val = m_obj.get("no_ask_dollars") or (float(m_obj.get("no_ask", 0)) / 100.0 if m_obj.get("no_ask") else None) or (1.0 - float(m_obj.get("last_price_dollars", 0.5)))
+                
+                if ask_val is not None and 0.01 <= float(ask_val) <= 0.99:
+                    limit_price_dollars = round(float(ask_val), 4)
+            except Exception as e:
+                logger.warning(f"Failed to fetch live quote for {clean_ticker}: {e}")
+
+                # Direct native execution in ShadowTrader (no external bridge loopback)
+
+
         if dry_run:
             sim_price = float(limit_price_dollars) if (limit_price_dollars is not None and 0.01 <= float(limit_price_dollars) <= 0.99) else 0.50
-            if not is_dummy:
-                try:
-                    q = self.get_market_quote(clean_ticker)
-                    if q.get("success"):
-                        m_obj = q.get("market", {})
-                        if side_clean == "yes":
-                            ask_val = m_obj.get("yes_ask_dollars") or (float(m_obj.get("yes_ask", 0)) / 100.0 if m_obj.get("yes_ask") else None) or m_obj.get("last_price_dollars")
-                        else:
-                            ask_val = m_obj.get("no_ask_dollars") or (float(m_obj.get("no_ask", 0)) / 100.0 if m_obj.get("no_ask") else None) or (1.0 - float(m_obj.get("last_price_dollars", 0.5)))
-                        if ask_val is not None and 0.01 <= float(ask_val) <= 0.99:
-                            sim_price = round(float(ask_val), 4)
-                except Exception:
-                    pass
-
             cost = round(sim_price * count_int, 4)
             return {
                 "success": True,
@@ -1410,6 +1684,14 @@ class KalshiTrader:
             raw_price = market_ask_flt
 
         outcome_price = max(0.01, min(raw_price + buf, 0.99))
+        if count_int > 1:
+            l2_gate = evaluate_l2_slippage_gate(clean_ticker, side_clean, count_int, raw_price, max_vwap_slippage=min(buf, 0.025))
+            if l2_gate.get("book_available") and l2_gate.get("safe_count", count_int) < count_int:
+                logger.info(
+                    f"[KalshiTrader] L2 Slippage Gate capped sports order {clean_ticker} from {count_int} -> "
+                    f"{l2_gate['safe_count']} contracts (VWAP=${l2_gate['vwap']:.3f}, top_ask=${l2_gate['top_ask']:.2f})"
+                )
+                count_int = int(l2_gate["safe_count"])
 
         bal_res = self.get_balance(force_refresh=True)
         if not bal_res.get("success"):
@@ -1445,46 +1727,56 @@ class KalshiTrader:
             except (ValueError, TypeError):
                 pass
 
-        est_cost = outcome_price * count_int
+        est_cost = round(outcome_price * count_int, 4)
+        est_fee = round(math.ceil(0.07 * count_int * outcome_price * (1.0 - outcome_price) * 100) / 100.0, 2)
+        est_required = round(est_cost + est_fee + 0.02, 2)
 
-        # If order is on a non-zero exchange shard and balance on that shard is insufficient,
-        # automatically transfer required funds from Exchange 0 (Main/Cash)
-        if target_ex != 0 and shard_bal < est_cost:
-            needed = round(math.ceil((est_cost - shard_bal) * 100) / 100.0, 2)
-            if ex0_bal < needed:
-                return {
-                    "success": False,
-                    "error": f"Insufficient funds on Exchange {target_ex} (${shard_bal:.2f}) and Exchange 0 (${ex0_bal:.2f}) to cover required ${est_cost:.2f}."
-                }
-            logger.info(f"[KalshiTrader] Auto-transferring ${needed:.2f} from Exchange 0 to Exchange {target_ex} for sports order...")
-            transfer_res = self.transfer_between_exchanges(
-                source_exchange=0,
-                destination_exchange=target_ex,
-                amount_dollars=needed
-            )
-            if not transfer_res.get("success"):
-                return {
-                    "success": False,
-                    "error": f"Auto-transfer of ${needed:.2f} to Exchange {target_ex} failed: {transfer_res.get('error')}"
-                }
-            shard_bal = round(shard_bal + needed, 2)
+        # Sweep logic: If we don't have enough on target_ex (including Kalshi's fee reserve), sweep from other exchanges
+        if shard_bal < est_required:
+            needed = round(math.ceil((est_required - shard_bal) * 100) / 100.0, 2)
+            
+            # First, check if Exchange 0 has enough (if target_ex != 0)
+            if target_ex != 0 and ex0_bal >= needed:
+                logger.info(f"[KalshiTrader] Auto-transferring ${needed:.2f} from Exchange 0 to Exchange {target_ex}...")
+                self.transfer_between_exchanges(0, target_ex, needed)
+                shard_bal = round(shard_bal + needed, 2)
+            else:
+                # Need to sweep from everywhere else
+                deficit = needed
+                for b_item in breakdown:
+                    if deficit <= 0: break
+                    b_idx = int(b_item.get("exchange_index", 0))
+                    b_val = float(b_item.get("balance", 0.0))
+                    
+                    if b_idx != target_ex and b_val >= 0.01:
+                        # Sweep amount is max of deficit or available (rounded down slightly to avoid precision errors)
+                        sweep_amt = min(deficit, round(b_val - 0.005, 2))
+                        if sweep_amt >= 0.01:
+                            logger.info(f"[KalshiTrader] Sweeping ${sweep_amt:.2f} from Exchange {b_idx} to Exchange {target_ex}...")
+                            self.transfer_between_exchanges(b_idx, target_ex, sweep_amt)
+                            deficit -= sweep_amt
+                            shard_bal = round(shard_bal + sweep_amt, 2)
 
-        live_balance = shard_bal if target_ex != 0 else ex0_bal
+        live_balance = shard_bal
         if live_balance < est_cost:
             return {
                 "success": False,
                 "error": f"Insufficient funds: Balance ${live_balance:.2f} is less than required ${est_cost:.2f}."
             }
 
+        tif_norm = str(time_in_force or "immediate_or_cancel").strip().lower()
+        if tif_norm in ("good_til_cancelled", "good_til_canceled", "good_till_cancelled", "gtc"):
+            tif_norm = "good_till_canceled"
+
         v2_side = "bid" if side_clean == "yes" else "ask"
-        book_price = outcome_price if side_clean == "yes" else (1.0 - outcome_price)
+        book_price = round(outcome_price if side_clean == "yes" else (1.0 - outcome_price), 2)
         v2_payload = {
             "ticker": clean_ticker,
             "client_order_id": client_order_id,
             "side": v2_side,
             "count": f"{count_int}.00",
             "price": f"{book_price:.4f}",
-            "time_in_force": "immediate_or_cancel",
+            "time_in_force": tif_norm,
             "self_trade_prevention_type": "taker_at_cross",
             "post_only": False,
             "cancel_order_on_pause": True,
@@ -1533,6 +1825,25 @@ class KalshiTrader:
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
                 if fill_count == 0:
+                    if tif_norm != "immediate_or_cancel" and res_data.get("order_id"):
+                        return {
+                            "success": True,
+                            "mode": "LIVE",
+                            "order_id": res_data.get("order_id", client_order_id),
+                            "client_order_id": res_data.get("client_order_id", client_order_id),
+                            "ticker": clean_ticker,
+                            "side": side_clean.upper(),
+                            "action": "BUY",
+                            "count": count_int,
+                            "requested_count": count_int,
+                            "requested_price": raw_price,
+                            "filled_price": raw_price,
+                            "total_cost": round(raw_price * count_int, 4),
+                            "slippage_buffer": buf,
+                            "status": "RESTING",
+                            "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
+                            "raw_response": res_data
+                        }
                     try:
                         fresh_q = self.get_market_quote(clean_ticker)
                         if fresh_q.get("success"):
@@ -1660,9 +1971,17 @@ class KalshiTrader:
         order_type: str = "limit",
         slippage_buffer_dollars: Optional[float] = None,
         available_balance: Optional[float] = None,
-        fail_fast: Optional[bool] = None
+        fail_fast: Optional[bool] = None,
+        post_only: bool = False
     ) -> Dict[str, Any]:
         use_fail_fast = self.fail_fast if fail_fast is None else fail_fast
+        if getattr(self, "_is_global_singleton", False) and not dry_run:
+            logger.error("[SAFEGUARD BLOCKED] Prevented live order on unauthenticated global KalshiTrader singleton.")
+            return {
+                "success": False,
+                "status": "blocked",
+                "error": "CRITICAL SAFEGUARD: Live orders on global KalshiTrader singleton are permanently disabled. Only explicit authenticated user sessions may execute live."
+            }
         """
         Executes a buy order on the specified contract side (YES = above target, NO = below target).
         In dry_run=True, simulates the trade against the same real-market constraints a live order
@@ -1732,32 +2051,37 @@ class KalshiTrader:
             # trip (paper has no such delay otherwise, which would make it strictly better-priced
             # than live for an identical signal). Rounded to whole cents.
             raw_price = float(limit_price_dollars) if limit_price_dollars is not None else 0.50
-            simulated_price = round(max(0.01, min(raw_price + buf + PAPER_LATENCY_TAX_DOLLARS, 0.99)), 2)
-
-            sim_depth = _simulated_book_depth(ticker, f"entry_{side_clean}")
-            filled_count = min(count_int, sim_depth) if sim_depth > 0 else count_int
-            
-            if sim_depth == 0:
-                return {
-                    "success": False,
-                    "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live)."
-                }
+            if post_only:
+                buf = 0.0
+                simulated_price = round(max(0.01, min(raw_price, 0.99)), 2)
+                fill_source = "maker_passive_limit"
+                filled_count = count_int
+            else:
+                simulated_price = round(max(0.01, min(raw_price + buf + PAPER_LATENCY_TAX_DOLLARS, 0.99)), 2)
+                sim_depth = _simulated_book_depth(ticker, f"entry_{side_clean}")
+                filled_count = min(count_int, sim_depth) if sim_depth > 0 else count_int
                 
-            fill_source = "estimated_top_of_book"
-
-            # Fix D: walk Kalshi's real order book up to the same limit a live order would send
-            # (ask + slippage buffer). Thin books now partially fill or miss, like a live IOC.
-            book_fill = paper_buy_from_book(ticker, side_clean, count_int, min(0.99, raw_price + buf))
-            if book_fill is not None:
-                book_filled, book_vwap = book_fill
-                if book_filled <= 0:
+                if sim_depth == 0:
                     return {
                         "success": False,
-                        "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live).",
+                        "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live)."
                     }
-                filled_count = book_filled
-                simulated_price = round(max(0.01, min(book_vwap + PAPER_LATENCY_TAX_DOLLARS, raw_price + buf, 0.99)), 4)
-                fill_source = "kalshi_order_book"
+                    
+                fill_source = "estimated_top_of_book"
+
+                # Fix D: walk Kalshi's real order book up to the same limit a live order would send
+                # (ask + slippage buffer). Thin books now partially fill or miss, like a live IOC.
+                book_fill = paper_buy_from_book(ticker, side_clean, count_int, min(0.99, raw_price + buf))
+                if book_fill is not None:
+                    book_filled, book_vwap = book_fill
+                    if book_filled <= 0:
+                        return {
+                            "success": False,
+                            "error": f"No {side_clean.upper()} liquidity on {ticker} at or below ${min(0.99, raw_price + buf):.2f} (simulated IOC missed, same as live).",
+                        }
+                    filled_count = book_filled
+                    simulated_price = round(max(0.01, min(book_vwap + PAPER_LATENCY_TAX_DOLLARS, raw_price + buf, 0.99)), 4)
+                    fill_source = "kalshi_order_book"
 
             cost = round(simulated_price * filled_count, 4)
 
@@ -1853,9 +2177,20 @@ class KalshiTrader:
             )
         ticker = verified_ticker
         
-        # Clamp price with slippage buffer to guarantee Immediate-Or-Cancel (IOC) book cross
-        raw_price = float(limit_price_dollars if limit_price_dollars else 0.65)
-        outcome_price = max(0.01, min(raw_price + buf, 0.99))
+        # Clamp price: if post_only, use raw limit price without taker slippage buffer
+        raw_price = round(float(limit_price_dollars if limit_price_dollars else 0.65), 2)
+        if post_only:
+            outcome_price = round(max(0.01, min(raw_price, 0.99)), 2)
+        else:
+            outcome_price = round(max(0.01, min(raw_price + buf, 0.99)), 2)
+            if count_int > 1:
+                l2_gate = evaluate_l2_slippage_gate(ticker, side_clean, count_int, raw_price, max_vwap_slippage=min(buf, 0.025))
+                if l2_gate.get("book_available") and l2_gate.get("safe_count", count_int) < count_int:
+                    logger.info(
+                        f"[KalshiTrader] L2 Slippage Gate capped 15m order {ticker} from {count_int} -> "
+                        f"{l2_gate['safe_count']} contracts (VWAP=${l2_gate['vwap']:.3f}, top_ask=${l2_gate['top_ask']:.2f})"
+                    )
+                    count_int = int(l2_gate["safe_count"])
 
         # H4: Fail-closed balance check on live trading
         bal_res = self.get_balance(force_refresh=True)
@@ -1864,15 +2199,55 @@ class KalshiTrader:
                 "success": False,
                 "error": f"Live order aborted: Unable to verify Kalshi account balance ({bal_res.get('error', 'Balance check failed')})."
             }
-        live_balance = float(bal_res.get("balance_dollars", 0.0))
+        raw_bal = bal_res.get("raw", {})
+        breakdown = raw_bal.get("balance_breakdown", [])
+        total_live_bal = float(bal_res.get("balance_dollars", 0.0))
         target_ex = verified_market.get("exchange_index")
-        if target_ex is not None:
-            for b_item in bal_res.get("raw", {}).get("balance_breakdown", []):
-                if b_item.get("exchange_index") == target_ex:
-                    live_balance = min(live_balance, float(b_item.get("balance", live_balance)))
-                    break
+        if target_ex is None:
+            target_ex = 0
+
+        ex0_bal = total_live_bal
+        shard_bal = total_live_bal if target_ex == 0 else 0.0
+
+        for b_item in breakdown:
+            try:
+                b_idx = int(b_item.get("exchange_index", 0))
+                b_val = float(b_item.get("balance", 0.0))
+                if b_idx == 0:
+                    ex0_bal = b_val
+                if b_idx == target_ex:
+                    shard_bal = b_val
+            except (ValueError, TypeError):
+                pass
+
         est_cost = outcome_price * count_int
 
+        # Sweep logic: If we don't have enough on target_ex, check if we can sweep from ANY other exchange
+        if shard_bal < est_cost:
+            needed = round(math.ceil((est_cost - shard_bal) * 100) / 100.0, 2)
+            
+            # First, check if Exchange 0 has enough (if target_ex != 0)
+            if target_ex != 0 and ex0_bal >= needed:
+                logger.info(f"[KalshiTrader] Auto-transferring ${needed:.2f} from Exchange 0 to Exchange {target_ex}...")
+                self.transfer_between_exchanges(0, target_ex, needed)
+                shard_bal = round(shard_bal + needed, 2)
+            else:
+                # Need to sweep from everywhere else
+                deficit = needed
+                for b_item in breakdown:
+                    if deficit <= 0: break
+                    b_idx = int(b_item.get("exchange_index", 0))
+                    b_val = float(b_item.get("balance", 0.0))
+                    
+                    if b_idx != target_ex and b_val >= 0.01:
+                        sweep_amt = min(deficit, round(b_val - 0.005, 2))
+                        if sweep_amt >= 0.01:
+                            logger.info(f"[KalshiTrader] Sweeping ${sweep_amt:.2f} from Exchange {b_idx} to Exchange {target_ex}...")
+                            self.transfer_between_exchanges(b_idx, target_ex, sweep_amt)
+                            deficit -= sweep_amt
+                            shard_bal = round(shard_bal + sweep_amt, 2)
+
+        live_balance = shard_bal
         if live_balance < est_cost:
             return {
                 "success": False,
@@ -1884,8 +2259,21 @@ class KalshiTrader:
         # economically a buy-NO, so a NO price must be converted to its
         # complementary YES price before submission.
         # count: fixed-point count string e.g. "1.00"
+        # CRITICAL SAFETY INVARIANT: Never submit "good_till_canceled" or "post_only": True
+        # in synchronous bot execution! Previously, post_only GTC orders returned fill_count=0
+        # ("resting"), which the bot treated as an unfilled IOC failure while leaving the
+        # live order resting on Kalshi's book — causing duplicate stacked orders on subsequent
+        # 4s cycles and mislabeling the fills as MANUAL_KALSHI_SYNC.
+        if post_only:
+            # Convert passive maker price to a crossable taker limit price (market ask + buffer)
+            raw_ask_val = verified_market.get(f"{side_clean}_ask")
+            if raw_ask_val is not None and 0.01 <= float(raw_ask_val) <= 0.99:
+                raw_price = round(float(raw_ask_val), 2)
+            outcome_price = round(max(0.01, min(raw_price + max(buf, 0.04), 0.99)), 2)
+            post_only = False
+
         v2_side = "bid" if side_clean == "yes" else "ask"
-        book_price = outcome_price if side_clean == "yes" else (1.0 - outcome_price)
+        book_price = round(outcome_price if side_clean == "yes" else (1.0 - outcome_price), 2)
         v2_payload = {
             "ticker": ticker,
             "client_order_id": client_order_id,
@@ -1951,6 +2339,12 @@ class KalshiTrader:
                 res_data = resp.json()
                 fill_count = float(res_data.get("fill_count", "0") or "0")
                 if fill_count == 0:
+                    # Safety guard: if Kalshi ever leaves an order resting despite IOC, cancel it immediately
+                    resting_oid = res_data.get("order_id") or (res_data.get("order") or {}).get("order_id")
+                    remaining_cnt = float(res_data.get("remaining_count", res_data.get("remaining_count_fp", "0")) or "0")
+                    if resting_oid and (remaining_cnt > 0 or str(res_data.get("status", "")).lower() == "resting"):
+                        self.cancel_order(resting_oid)
+
                     # ── FAST RETRY FOR IOC ORDERS ──
                     # If IOC order unfilled due to sub-second price movement, re-query active market and retry once
                     try:
@@ -2006,6 +2400,10 @@ class KalshiTrader:
                                                 "created_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
                                                 "raw_response": retry_data
                                             }
+                                        else:
+                                            retry_oid = retry_data.get("order_id") or (retry_data.get("order") or {}).get("order_id")
+                                            if retry_oid:
+                                                self.cancel_order(retry_oid)
                     except Exception as retry_err:
                         logger.warning(f"[KalshiTrader] IOC retry error: {retry_err}")
                         if sent_cid != client_order_id:
@@ -2088,6 +2486,217 @@ class KalshiTrader:
                 pre_positions=pre_positions, requested_count=float(count_int),
                 price=sent_price, slippage_buffer=buf, err=e,
             )
+
+    def create_or_get_multivariate_market(
+        self,
+        legs: list,
+        collection_ticker: str = "KXMVECROSSCATEGORY-R"
+    ) -> dict:
+        """
+        Materializes or fetches an existing multivariate (combo/parlay) market on Kalshi
+        from the specified multivariate event collection (default: KXMVECROSSCATEGORY-R).
+        
+        legs format:
+            [{'event_ticker': '...', 'market_ticker': '...', 'side': 'yes'|'no'}]
+        """
+        if not self.is_authenticated():
+            return {"success": False, "error": "Kalshi authentication required to instantiate combo market."}
+        if not legs or len(legs) < 2:
+            return {"success": False, "error": "At least 2 legs required to form a combo."}
+            
+        path = f"/trade-api/v2/multivariate_event_collections/{collection_ticker}"
+        clean_legs = []
+        for leg in legs:
+            mkt = str(leg.get("market_ticker") or "").strip()
+            evt = str(leg.get("event_ticker") or "").strip()
+            sd = str(leg.get("side") or "yes").lower().strip()
+            if not mkt or not evt:
+                continue
+            clean_legs.append({
+                "event_ticker": evt,
+                "market_ticker": mkt,
+                "side": sd
+            })
+            
+        if len(clean_legs) < 2:
+            return {"success": False, "error": "Valid event and market tickers required for each leg."}
+            
+        body = {
+            "selected_markets": clean_legs,
+            "with_market_payload": True
+        }
+        
+        try:
+            headers = self._sign_headers("POST", path)
+            headers["Content-Type"] = "application/json"
+            resp = self.session.post(f"{BASE_URL}{path}", json=body, headers=headers, timeout=12.0)
+            if resp.status_code in (200, 201):
+                data = resp.json()
+                return {
+                    "success": True,
+                    "market_ticker": data.get("market_ticker"),
+                    "event_ticker": data.get("event_ticker"),
+                    "market": data.get("market", {})
+                }
+            else:
+                err_msg = resp.text
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", {}).get("message") or err_msg
+                except:
+                    pass
+                return {
+                    "success": False,
+                    "status_code": resp.status_code,
+                    "error": f"Kalshi rejected multivariate combo market creation: {err_msg}"
+                }
+        except Exception as e:
+            logger.error(f"[KalshiTrader] Error creating multivariate market: {e}")
+            return {"success": False, "error": str(e)}
+
+    def execute_mve_combo_rfq(
+        self,
+        combo_market_ticker: str,
+        target_cost_dollars: float,
+        target_ex: int = 1
+    ) -> Dict[str, Any]:
+        """
+        Executes a live Multivariate Combo (MVE) order via Kalshi's RFQ + Quote Acceptance engine.
+        1. Ensures sufficient balance on `target_ex` (default Exchange 1 for KXMVECROSSCATEGORY-R).
+        2. Broadcasts an RFQ (`POST /trade-api/v2/communications/rfqs`) with `target_cost_dollars`.
+        3. Polls market maker quotes (`GET /trade-api/v2/communications/quotes`), selects the best `no_bid_dollars`
+           (lowest YES ask price), and accepts it (`PUT /trade-api/v2/communications/quotes/{quote_id}/accept`).
+        4. Polls `GET /trade-api/v2/portfolio/fills` for up to 6.5s to return the confirmed fill.
+        """
+        if not self.is_authenticated():
+            return {"success": False, "error": "Kalshi authentication required for RFQ combo execution."}
+
+        wager = round(max(1.0, float(target_cost_dollars)), 4)
+        bal_res = self.get_balance(force_refresh=True)
+        if not bal_res.get("success"):
+            return {"success": False, "error": f"Unable to verify Kalshi balance: {bal_res.get('error')}"}
+
+        breakdown = bal_res.get("raw", {}).get("balance_breakdown", [])
+        shard_bal = 0.0
+        for b_item in breakdown:
+            try:
+                if int(b_item.get("exchange_index", -1)) == target_ex:
+                    shard_bal = float(b_item.get("balance", 0.0))
+            except Exception:
+                pass
+
+        req_bal = round(wager + 0.10, 2)
+        if shard_bal < req_bal:
+            deficit = round(req_bal - shard_bal, 2)
+            for b_item in breakdown:
+                if deficit <= 0:
+                    break
+                b_idx = int(b_item.get("exchange_index", 0))
+                b_val = float(b_item.get("balance", 0.0))
+                if b_idx != target_ex and b_val >= 0.01:
+                    sweep_amt = min(deficit, round(b_val, 4))
+                    if sweep_amt >= 0.01:
+                        self.transfer_between_exchanges(b_idx, target_ex, sweep_amt)
+                        deficit = round(deficit - sweep_amt, 4)
+                        shard_bal = round(shard_bal + sweep_amt, 4)
+
+        try:
+            rfq_path = "/trade-api/v2/communications/rfqs"
+            rfq_body = {
+                "market_ticker": combo_market_ticker,
+                "target_cost_dollars": f"{wager:.4f}",
+                "rest_remainder": False
+            }
+            r_rfq = self.session.post(f"{BASE_URL}{rfq_path}", json=rfq_body, headers=self._sign_headers("POST", rfq_path), timeout=6.0)
+            if r_rfq.status_code not in (200, 201):
+                return {"success": False, "error": f"RFQ creation failed ({r_rfq.status_code}): {r_rfq.text}"}
+
+            rfq_id = r_rfq.json().get("id")
+            r_det = self.session.get(f"{BASE_URL}{rfq_path}/{rfq_id}", headers=self._sign_headers("GET", f"{rfq_path}/{rfq_id}"), timeout=5.0)
+            creator_uid = r_det.json().get("rfq", {}).get("creator_user_id")
+
+            time.sleep(1.5)
+            q_path = "/trade-api/v2/communications/quotes"
+            rq = self.session.get(
+                f"{BASE_URL}{q_path}",
+                params={"rfq_id": rfq_id, "rfq_creator_user_id": creator_uid},
+                headers=self._sign_headers("GET", q_path),
+                timeout=5.0
+            )
+            quotes = rq.json().get("quotes", []) if rq.status_code == 200 else []
+            open_quotes = [q for q in quotes if q.get("status") == "open" and float(q.get("no_bid_dollars", 0)) > 0]
+            open_quotes.sort(key=lambda x: float(x.get("no_bid_dollars", 0)), reverse=True)
+
+            if not open_quotes:
+                return {"success": False, "error": "No open market maker quotes received for combo RFQ."}
+
+            best_q = open_quotes[0]
+            qid = best_q["id"]
+            no_bid = float(best_q["no_bid_dollars"])
+            yes_price = round(1.0 - no_bid, 4)
+            est_contracts = float(best_q.get("no_contracts_fp") or 1.0)
+
+            acc_path = f"/trade-api/v2/communications/quotes/{qid}/accept"
+            r_acc = self.order_session.put(
+                f"{BASE_URL}{acc_path}",
+                json={"accepted_side": "no"},
+                headers=self._sign_headers("PUT", acc_path),
+                timeout=6.0
+            )
+            if r_acc.status_code not in (200, 204):
+                return {"success": False, "error": f"Quote acceptance rejected ({r_acc.status_code}): {r_acc.text}"}
+
+            # Wait up to 6.5s for maker confirmation (3s window) + HVM execution timer (1s) + fill indexing
+            fills_path = "/trade-api/v2/portfolio/fills"
+            for _ in range(7):
+                time.sleep(1.0)
+                rf = self.session.get(
+                    f"{BASE_URL}{fills_path}",
+                    params={"ticker": combo_market_ticker, "limit": 5},
+                    headers=self._sign_headers("GET", fills_path),
+                    timeout=5.0
+                )
+                if rf.status_code == 200:
+                    fills = rf.json().get("fills", [])
+                    if fills:
+                        f0 = fills[0]
+                        f_cnt = float(f0.get("count_fp") or est_contracts)
+                        f_price = float(f0.get("yes_price_dollars") or yes_price)
+                        f_fee = float(f0.get("fee_cost") or 0.0)
+                        return {
+                            "success": True,
+                            "mode": "LIVE",
+                            "order_id": f0.get("order_id") or qid,
+                            "fill_id": f0.get("fill_id") or f0.get("trade_id"),
+                            "client_order_id": rfq_id,
+                            "ticker": combo_market_ticker,
+                            "side": "YES",
+                            "action": "BUY",
+                            "count": f_cnt,
+                            "filled_price": f_price,
+                            "fee_cost": f_fee,
+                            "total_cost": round(f_cnt * f_price + f_fee, 4),
+                            "status": "FILLED",
+                            "raw_response": f0
+                        }
+
+            return {
+                "success": True,
+                "mode": "LIVE",
+                "order_id": qid,
+                "client_order_id": rfq_id,
+                "ticker": combo_market_ticker,
+                "side": "YES",
+                "action": "BUY",
+                "count": est_contracts,
+                "filled_price": yes_price,
+                "total_cost": wager,
+                "status": "CONFIRMED",
+                "raw_response": best_q
+            }
+        except Exception as e:
+            logger.error(f"[KalshiTrader] execute_mve_combo_rfq error: {e}")
+            return {"success": False, "error": str(e)}
 
 def filled_count(order_res: Dict[str, Any], fallback):
     """Contracts actually filled according to a place_order() result. An IOC order (or a

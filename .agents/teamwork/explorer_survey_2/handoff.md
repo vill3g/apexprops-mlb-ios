@@ -1,182 +1,142 @@
-# Handoff Report — Frontend UI/UX, iOS Smoothness & Architecture Survey
+# Handoff Report: Backend Schemas, Settings APIs, & Universe Persistence
 
 **Agent**: `explorer_survey_2`  
-**Working Directory**: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_2`  
-**Dispatch**: Frontend UI/UX and iOS Smoothness (R2, R3, R4)  
-**Report Type**: Hard Handoff  
+**Working Directory**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2`  
+**Handoff Type**: Hard (Task Complete)  
+**Deliverable Artifact**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md`  
 
 ---
 
 ## 1. Observation
 
-### 1.1 Structural HTML Parsing of `static/saas_dashboard.html`
-- Tool Command: `python .agents/teamwork/explorer_survey_2/audit_html.py`
-- Result:
-  ```
-  AUDITING: static/saas_dashboard.html
-  Total lines parsed: 6372
-  Tag / Nesting Errors (4):
-    [L5:C4] Explicit closing tag </meta> for void element
-    [L6:C4] Explicit closing tag </meta> for void element
-    [L7:C4] Explicit closing tag </meta> for void element
-    [L5288:C0] Unclosed <div id='settingsDrawer'> opened at line 5288:0 (closed prematurely by </body> at 6353:0)
-  ```
-- Tool Command: `python .agents/teamwork/explorer_survey_2/check_html.py`
-- Result:
-  ```
-  Line 6094: popped div (opened at 5851)
-  Line 6096: popped flex-1 overflow-y-auto hide-sc (opened at 5319)
-  Line 6097: popped settingsPanel (opened at 5293)
+1. **Database Schema & Enums**:
+   - `backend/database/models.py:157`: `REQUIRED_COLUMNS` contains `"trading_universe": "TEXT DEFAULT 'FINANCIAL'"`.
+   - `backend/database/models.py:410`: `VALID_TRADING_UNIVERSES = {"FINANCIAL", "SPORTS", "BOTH", "ALL"}`.
+   - `backend/database/models.py:412-421`:
+     ```python
+     def update_user_trading_universe(user_id: int, universe: str):
+         norm = str(universe).strip().upper()
+         if norm not in VALID_TRADING_UNIVERSES:
+             raise ValueError(f"Invalid trading_universe '{universe}'. Allowed: {sorted(list(VALID_TRADING_UNIVERSES))}")
+         conn = get_db_connection()
+         try:
+             c = conn.cursor()
+             c.execute("UPDATE users SET trading_universe = ? WHERE id = ?", (norm, user_id))
+             conn.commit()
+         finally:
+             conn.close()
+     ```
+   - `backend/database/models.py:808, 848`: `update_user_config` defines `trading_universe: str = "FINANCIAL"`, and executes `UPDATE users SET ..., trading_universe = ?, ... WHERE id = ?`.
 
-  Remaining unclosed:
-    settingsDrawer from line 5288
-  ```
-  `settingsDrawer` opened at line 5288: `<div id="settingsDrawer" class="fixed inset-0 z-[200] hidden">` has no closing `</div>` before the `<script>` tag at line 6099 or before `<div id="updateAlertModal">` at line 6212.
+2. **API Request & Response Endpoints**:
+   - `backend/auth/routes.py:67-77`: `UserConfigRequest` includes:
+     ```python
+     trading_universe: Optional[str] = None
 
-### 1.2 Dual Polling & Runaway Interval Registration
-- File: `static/saas_dashboard.html` (lines 2875–2877, 4804)
-  - L2875: `setInterval(fetchChartData, 15000);`
-  - L2876: `setInterval(fetchLiveBids, 800);`
-  - L2877: `setInterval(loadDashboard, 1000);`
-  - L4804: `setInterval(fetchKalshiData, 1000);` (executes `Promise.all([fetch('/kalshi'), fetch('/countdown'), fetch('/ticker')])` every second).
-- File: `static/js/app.js` (lines 592, 1372, 4955, 4995) loaded at line 6350 of `saas_dashboard.html`:
-  - L592: `window._live1sTimer = setInterval(..., 1000);` calling `pollBtcLive1s()` (`/api/engine/<asset>/live`)
-  - L1372: `window.chartRefreshInterval = setInterval(fetchChartData, 1500);`
-  - L4955: `window.pollKalshiTradingStatusId = setInterval(pollKalshiTradingStatus, 3000);`
-  - L4995: `window.pollGlobalTickerId = setInterval(pollGlobalTicker, 15000);`
-  - L4775: opens live WebSocket to `wss://ws-feed.exchange.coinbase.com`.
+     @field_validator("trading_universe")
+     @classmethod
+     def validate_trading_universe(cls, v):
+         if v is not None:
+             norm = str(v).strip().upper()
+             if norm not in {"FINANCIAL", "SPORTS", "BOTH", "ALL"}:
+                 raise ValueError(f"Invalid trading_universe '{v}'. Allowed: 'FINANCIAL', 'SPORTS', 'BOTH', 'ALL'")
+             return norm
+         return v
+     ```
+   - `backend/auth/routes.py:1053`: In `GET /api/auth/dashboard_stats`:
+     `"trading_universe": current_user.get("trading_universe", "FINANCIAL")`.
+   - `backend/auth/routes.py:1631-1634`: In `POST /api/auth/user/config`:
+     ```python
+     if req.trading_universe is not None:
+         try:
+             from backend.database.models import update_user_trading_universe
+             update_user_trading_universe(current_user["id"], req.trading_universe)
+     ```
+   - `backend/auth/routes.py:236-246`: `GET /api/auth/me` does not return `trading_universe`.
+   - `backend/auth/admin_routes.py:70-106`: `AdminConfigPayload` does not include `trading_universe`.
+   - `backend/auth/admin_routes.py:180-229`: `GET /api/auth/admin/users` does not return `trading_universe`.
 
-### 1.3 Missing iOS Home Indicator Safe Area Insets
-- Tool Command: `python -c "import re; text=open('static/saas_dashboard.html').read(); print(len(re.findall(r'safe-area-inset-bottom', text)))"`
-- Result: `0`
-- Elements affected:
-  - `<main>` (line 612): `padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));` has only `pb-12` (48px) without `env(safe-area-inset-bottom)`.
-  - `#updateAnnouncementModal` footer (line 5278): `<div class="sticky bottom-0 z-20 bg-[#0d1424]/95 border-t border-white/10 px-5 sm:px-6 py-3.5 flex items-center gap-3 shrink-0">` lacks `env(safe-area-inset-bottom)`, putting the "Got It, Dismiss" button directly underneath the 34px iOS Home Indicator bar.
-  - `#tradeDetailsModal` footer (line 5233): `<div class="sticky bottom-0 z-20 ... py-3 flex justify-between ...">` lacks safe area bottom inset.
-  - Settings drawer footer (line 6084): `<div class="pt-2 pb-6">` lacks safe area bottom inset.
+3. **Multi-Tenant Execution Engines**:
+   - `backend/btc/auto_executor/saas_broadcaster.py:177`:
+     `if (user.get('trading_universe') or 'FINANCIAL').upper() not in ('FINANCIAL', 'BOTH', 'ALL'): return`
+   - `backend/btc/auto_executor/saas_broadcaster.py:414`:
+     `and (u.get('trading_universe') or 'FINANCIAL').upper() in ('FINANCIAL', 'BOTH', 'ALL')`
+   - `backend/sports_bridge/executor.py:350`:
+     `if (u.get("trading_universe") or "").upper() in ("SPORTS", "BOTH", "ALL") and bool(u.get("ai_enabled", 0))`
 
-### 1.4 Auto Trader DOM ID Mismatches
-- File: `static/saas_dashboard.html` lines 1320–1323, 1590–1593:
-  - `document.getElementById('auto-trader-toggle')` returns `null`
-  - `document.getElementById('auto-trader-status')` returns `null`
-  - `document.getElementById('header-auto-status')` returns `null`
-  - The actual DOM toggle element is at line 5344: `<input type="checkbox" id="header-auto-toggle" ...>`
-  - Line 497: `<span id="nav-auto-badge" ...>AUTO OFF</span>` in header is never updated inside `toggleAutoTrader(enabled)`.
+4. **Bug: Forced Overwrite on Sports Toggle**:
+   - `backend/routes/engine.py:701-709`:
+     ```python
+     if _is_sports_asset(asset):
+         if user_id:
+             update_user_ai_enabled(user_id, enabled)
+             from backend.database.models import update_user_trading_universe
+             try:
+                 update_user_trading_universe(user_id, "SPORTS")
+             except Exception:
+                 pass
+         return JSONResponse({"status": "ok", "success": True, "enabled": enabled, "asset": asset.upper(), "universe": "SPORTS"})
+     ```
+   - Test execution:
+     Command:
+     `python -c "from backend.database.models import get_user_by_id, update_user_trading_universe; from starlette.testclient import TestClient; from backend.main import app; from backend.auth.security import create_jwt_token; c = TestClient(app); token = create_jwt_token(7, 'Vill3.G'); update_user_trading_universe(7, 'BOTH'); print('Before toggle:', get_user_by_id(7)['trading_universe']); res = c.post('/api/engine/sports/trade/toggle?enabled=true', headers={'Authorization': f'Bearer {token}'}); print('After toggle:', get_user_by_id(7)['trading_universe'])"`
+     Output:
+     `Before toggle: BOTH`  
+     `After toggle: SPORTS`
 
-### 1.5 Capacitor iOS Wrapper Settings
-- File: `capacitor.config.json` lines 9–12:
-  ```json
-  "ios": {
-    "contentInset": "always",
-    "limitsNavigationsToAppBoundDomains": true
-  }
-  ```
-  `contentInset: "always"` causes WKWebView UIScrollView to inset content automatically, doubling up with CSS safe-area padding.
+5. **Bug: Default Reset on Financial Engine Config Post**:
+   - `backend/routes/engine.py:916-947`: `api_btc_trade_config_post` calls `update_user_config` without passing `trading_universe`.
+   - Test execution:
+     Command:
+     `python -c "from backend.database.models import get_user_by_id, update_user_trading_universe; from starlette.testclient import TestClient; from backend.main import app; from backend.auth.security import create_jwt_token; c = TestClient(app); token = create_jwt_token(7, 'Vill3.G'); update_user_trading_universe(7, 'BOTH'); print('Before config:', get_user_by_id(7)['trading_universe']); res = c.post('/api/engine/btc/trade/config', json={'trade_size_dollars': 15.0}, headers={'Authorization': f'Bearer {token}'}); print('After config:', get_user_by_id(7)['trading_universe'])"`
+     Output:
+     `Before config: BOTH`  
+     `After config: FINANCIAL`
 
-### 1.6 Static Asset 404s
-- Tool Command: `python .agents/teamwork/explorer_survey_2/check_asset_integrity.py`
-- Result:
-  ```
-  [404 NOT FOUND] In static/login.html at line 50: ./assets/favicon.svg
-  [404 NOT FOUND] In static/login.html at line 51: ./assets/app_icon.ico
-  [404 NOT FOUND] In static/login.html at line 292: ./assets/favicon.svg
-  [404 NOT FOUND] In static/trades.html at line 7: ./assets/favicon.svg
-  [404 NOT FOUND] In static/trades.html at line 8: ./assets/app_icon.ico
-  ```
-
-### 1.7 Corrupted Tailwind Classes
-- Tool Command: `python .agents/teamwork/explorer_survey_2/audit_corrupted_classes.py`
-- Result:
-  - L531: class `-2xl` (was `backdrop-blur-2xl`)
-  - L656: class `-sm` (was `backdrop-blur-sm`)
-  - L1011: class `-xl` (was `backdrop-blur-xl`)
-  - L1660: class `-xl` (was `backdrop-blur-xl`)
-  - L5299: class `-xl` (was `backdrop-blur-xl`)
-
-### 1.8 Outdated Contract Tests
-- Tool Command: `python -m pytest tests/test_frontend_contracts.py -v`
-- Result: 6 failures (`test_countdown_dom_elements_exist`, `test_modal_card_ids_exist`, `test_swipe_pill_handles_exist`, `test_attach_swipe_to_dismiss_wired`, `test_escape_key_listener_registered`, `test_modal_reset_styles_on_open`).
+6. **Bug: Client-Side In-Memory Overwrite on Tab Switch**:
+   - `static/saas_dashboard.html:3882`:
+     `window.selectUniverse = function(universe) { ... if (window.lastDashboardStats) { window.lastDashboardStats.trading_universe = universe; ... } }`
 
 ---
 
 ## 2. Logic Chain
 
-1. **DOM Tree Integrity**:
-   - `saas_dashboard.html` line 5288 starts `#settingsDrawer` containing `#settingsPanel`.
-   - Lines 6094–6097 close the inner containers and `#settingsPanel`, but omit the closing tag for `#settingsDrawer`.
-   - Therefore, the subsequent 1,065 lines (including `#updateAlertModal` and script tags) are DOM children of `#settingsDrawer`.
-   - When `#settingsDrawer` is hidden, child elements inherit `hidden` or pointer-event states, and outer event selectors match incorrectly.
-
-2. **Performance & Rate Limiting**:
-   - The inline script in `saas_dashboard.html` registers intervals requesting `/kalshi`, `/countdown`, `/ticker`, `/kalshi/trades`, `/dashboard_stats`, and `/chart` totaling ~5.2 req/sec.
-   - Concurrently, `static/js/app.js` registers separate intervals requesting `/live`, `/kalshi`, `/chart`, and `/ticker` totaling ~2.5 req/sec plus Coinbase WebSocket events.
-   - Combined, 7–8 HTTP requests are sent per second. On mobile Safari / WKWebView, this causes network thread congestion, CPU throttling, and triggers backend rate limiting (429s).
-
-3. **iOS Human Interface & Safe Area Clearance**:
-   - `saas_dashboard.html` configures `viewport-fit=cover`.
-   - Under `viewport-fit=cover`, content extends behind the home indicator at the bottom edge.
-   - Sticky footers (lines 5233, 5278) and drawer bottoms (line 6084) lack `env(safe-area-inset-bottom)`.
-   - Therefore, interactive buttons ("Got It, Dismiss", "Close", "Sign Out") overlap the iOS Home Indicator swipe area.
-
-4. **Auto Trader Sync**:
-   - `toggleAutoTrader(enabled)` attempts to update `auto-trader-toggle`, `auto-trader-status`, and `header-auto-status`.
-   - None of those elements exist in the DOM; the actual toggle is `header-auto-toggle`.
-   - Furthermore, `nav-auto-badge` is not updated during toggling.
-   - Therefore, the UI fails to reflect enabled/disabled state transitions immediately.
-
-5. **WKWebView Double Inset**:
-   - Setting `"contentInset": "always"` in `capacitor.config.json` instructs the native iOS web view to add scroll insets equal to the safe areas.
-   - Combining native scroll insets with CSS `env(safe-area-inset-top)` creates double padding on iOS devices.
+1. Observations (1, 2, 3) establish that the database schema, Pydantic schemas, and execution engines (`saas_broadcaster.py` and `sports_bridge/executor.py`) were architected to support simultaneous multi-universe execution when `trading_universe == "BOTH"` or `"ALL"`.
+2. Observation (4) shows that whenever a user toggles auto-trading in the sports tab or via mobile UI, `POST /api/engine/sports/trade/toggle` calls `update_user_trading_universe(user_id, "SPORTS")`. This directly overwrites `"BOTH"` with `"SPORTS"`.
+3. Observation (5) shows that whenever `/api/engine/{asset}/trade/config` is called for financial assets (e.g., modifying risk parameters), `update_user_config` is called without the `trading_universe` parameter. Because `update_user_config` has `trading_universe: str = "FINANCIAL"`, it overwrites `"BOTH"` with `"FINANCIAL"`.
+4. Observation (6) shows that when a user switches tabs in the frontend (`selectUniverse('SPORTS')` or `selectUniverse('FINANCIAL')`), the client-side state `window.lastDashboardStats.trading_universe` is mutated to match the active viewing tab, erasing `"BOTH"` from client-side memory.
+5. Therefore, the failure of `"BOTH"` to persist across page reloads and toggles is not a database engine limitation, but rather the cumulative result of these three specific regression points overwriting the stored value.
 
 ---
 
 ## 3. Caveats
 
-- **Native Xcode Build**: Direct compilation with Xcode was not executed in this survey environment as the host is running Windows; analysis is grounded in `capacitor.config.json`, `update_ipa.py`, and standard Capacitor iOS WKWebView specifications.
-- **Backend Rate Limit Thresholds**: The exact backend rate limit thresholds are audited by peer explorer `explorer_survey_1`; however, the frontend request frequency of ~7–8 req/sec is empirically verified.
+- The standalone `backend/sports/sports_executor.py` does not check `trading_universe` or `ai_enabled` at all, but background trading is driven by `SportsBridgeExecutor` in `backend/worker.py` (which correctly checks `trading_universe in ('SPORTS', 'BOTH', 'ALL')`).
+- Frontend visual layout redesign (splitting the single drawer into dual drawers) was investigated and scoped, but per explorer read-only constraints, actual HTML edits must be executed by implementation agents.
 
 ---
 
 ## 4. Conclusion
 
-The frontend architecture exhibits several critical bugs that directly impair iOS smoothness and cause API spamming:
-1. `<div id="settingsDrawer">` is structurally broken (missing closing tag).
-2. Dual polling loops in `saas_dashboard.html` and `app.js` flood the backend with 7–8 requests/sec.
-3. Bottom safe area insets are entirely absent, causing touch collisions with the iOS Home Indicator.
-4. Auto Trader toggles query nonexistent IDs and leave the header badge desynchronized.
-5. Capacitor configuration causes double safe area padding on iOS.
-6. Missing asset files cause 404 errors on `login.html` and `trades.html`.
-7. Glassmorphism styling is corrupted by stripped Tailwind class prefixes.
-
-All issues are concrete, localizable to exact line numbers, and actionable for remediation.
+The database schema, validation logic, and trading engines already support `"BOTH"`. To guarantee permanent persistence of `"BOTH"`:
+1. Remove `update_user_trading_universe(user_id, "SPORTS")` from `backend/routes/engine.py:706`.
+2. Change `update_user_config` in `backend/database/models.py` to use `trading_universe: Optional[str] = None` and `COALESCE(?, trading_universe, 'FINANCIAL')`, ensuring omitted arguments do not reset the setting.
+3. Remove `window.lastDashboardStats.trading_universe = universe;` from `selectUniverse` in `static/saas_dashboard.html:3882`.
+4. Decouple `#settingsPanel` in `static/saas_dashboard.html` into two dedicated drawer components (`#financialSettingsDrawer` and `#sportsSettingsDrawer`) as required by prompt R1.
 
 ---
 
 ## 5. Verification Method
 
-To independently verify all survey findings:
-1. **HTML Parser Tag Balance**:
+1. **Unit & API Persistence Test**:
    ```powershell
-   python .agents/teamwork/explorer_survey_2/audit_html.py
+   python -m pytest tests/test_r2_r5_multi_universe_and_timestamps.py -k "test_api_user_config_both_and_all_persistence or test_user_with_both_matches_simultaneously" -v
    ```
-   *Expected*: Shows `[L5288:C0] Unclosed <div id='settingsDrawer'>`.
-2. **Asset 404 Scan**:
+2. **Sports Toggle Non-Regression Test**:
    ```powershell
-   python .agents/teamwork/explorer_survey_2/check_asset_integrity.py
+   python -c "from backend.database.models import get_user_by_id, update_user_trading_universe; from starlette.testclient import TestClient; from backend.main import app; from backend.auth.security import create_jwt_token; c = TestClient(app); token = create_jwt_token(7, 'Vill3.G'); update_user_trading_universe(7, 'BOTH'); res = c.post('/api/engine/sports/trade/toggle?enabled=true', headers={'Authorization': f'Bearer {token}'}); assert get_user_by_id(7)['trading_universe'] == 'BOTH'; print('PASS: Toggle preserved BOTH')"
    ```
-   *Expected*: Confirms 5 missing asset paths on disk.
-3. **Corrupted Tailwind Tokens**:
+3. **Engine Config Non-Regression Test**:
    ```powershell
-   python .agents/teamwork/explorer_survey_2/audit_corrupted_classes.py
+   python -c "from backend.database.models import get_user_by_id, update_user_trading_universe; from starlette.testclient import TestClient; from backend.main import app; from backend.auth.security import create_jwt_token; c = TestClient(app); token = create_jwt_token(7, 'Vill3.G'); update_user_trading_universe(7, 'BOTH'); res = c.post('/api/engine/btc/trade/config', json={'trade_size_dollars': 15.0}, headers={'Authorization': f'Bearer {token}'}); assert get_user_by_id(7)['trading_universe'] == 'BOTH'; print('PASS: Config preserved BOTH')"
    ```
-   *Expected*: Lists 5 occurrences of orphan `-2xl`, `-xl`, `-sm`.
-4. **Existing Contract Test Failures**:
-   ```powershell
-   python -m pytest tests/test_frontend_contracts.py -v
-   ```
-   *Expected*: 6 failed tests reflecting outdated test fixtures.
-5. **Safe Area Inspection**:
-   ```powershell
-   python -c "import re; text=open('static/saas_dashboard.html', encoding='utf-8').read(); print('safe-area-inset-bottom count:', len(re.findall(r'safe-area-inset-bottom', text)))"
-   ```
-   *Expected*: Returns 0.

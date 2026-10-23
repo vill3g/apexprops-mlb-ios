@@ -1,139 +1,77 @@
-# Handoff Report: Explorer Survey 3
-
-**Agent:** explorer_survey_3  
-**Working Directory:** `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_3`  
-**Report Type:** Hard Handoff (Investigation & Survey Complete)  
-**Date:** 2026-10-02  
-**Detailed Companion Report:** `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_3\survey_report.md`  
+# Handoff Report: Frontend JS, State, Performance & UX Survey
+**Agent**: `explorer_survey_3`  
+**Recipient**: `parent` (ID: `269a1b7a-33d9-4136-b7da-906e573af819`) / Lead SWE  
+**Date**: 2026-10-07  
+**Working Directory**: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_3`  
 
 ---
 
 ## 1. Observation
-
-Direct observations and evidence from code analysis and disk verification:
-
-1. **Missing Favicon and Brand Logo Assets:**
-   - In `backend/routes/ui.py:40-43`:
-     ```python
-     ico_path = os.path.join(STATIC_DIR, "assets", "app_icon.ico")
-     if os.path.exists(ico_path):
-         return FileResponse(ico_path, media_type="image/x-icon")
-     return Response(status_code=404)
-     ```
-     `static/assets/app_icon.ico` does not exist on disk. `static/favicon.ico` exists at `15,611 bytes`. Therefore `/favicon.ico` unconditionally returns `404 Not Found`.
-   - In `static/login.html:50, 292`:
-     ```html
-     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-     ...
-     <img src="./assets/favicon.svg" alt="Kalshi AI Logo" class="brand-logo" onerror="this.style.display='none'">
-     ```
-     `static/assets/favicon.svg` does not exist anywhere in the repository. The brand logo `<img>` fires `onerror` and hides itself on every login page load.
-   - In `static/trades.html:7-8`:
-     ```html
-     <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
-     <link rel="alternate icon" href="./assets/app_icon.ico">
-     ```
-     Both referenced icon files do not exist on disk.
-
-2. **Capacitor Absolute Path and Route Failures:**
-   - In `static/saas_dashboard.html:6077`:
-     ```html
-     <a href="/admin/mobile" class="...">Admin Console</a>
-     ```
-     In iOS Capacitor (`capacitor://localhost/`), there is no directory or file `admin/mobile`. Clicking this link navigates to `capacitor://localhost/admin/mobile`, returning a 404/blank screen. The file is `admin_mobile.html`.
-   - In `static/saas_dashboard.html:19, 21-28`:
-     `<link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">`
-     `<link rel="apple-touch-startup-image" ... href="/static/assets/splash_1290x2796.png">`
-     Leading `/static/` fails in Capacitor WKWebView where assets reside under `capacitor://localhost/assets/...`.
-
-3. **Silent Data Fetch Fallback Failure:**
-   - In `static/js/app.js:630, 635, 661`:
+1. **File Locations & Roles**:
+   - `static/js/app.js` (5,671 lines, last modified 10/7/2026) is the active script loaded by `saas_dashboard.html` line 8550 (`<script src="./js/app.js?v=1791400000"></script>`) and targeted by `tests/test_frontend_contracts.py` (line 15: `JS_PATH = os.path.join(STATIC_DIR, "js", "app.js")`).
+   - `static/app.js` (5,598 lines, last modified 10/3/2026) is an older unreferenced root copy missing sports trade filtering.
+   - `static/saas_dashboard.html` (8,714 lines) contains the primary UI markup and inline JavaScript orchestrating `selectUniverse`, `setAutoTradingUniverse`, `openSettings`, `closeSettings`, `saveUserConfig`, and `populateUserSettings`.
+2. **Single Shared Settings Drawer**:
+   - `static/saas_dashboard.html` line 6989 to line 8408 defines a single container `<div id="settingsDrawer">`.
+   - Lines 231460–232100 in `window.selectUniverse` morph this single drawer by rewriting `#settings-drawer-title`, `#settings-universe-badge`, `#settings-drawer-subtitle`, and toggling classes `.finance-only-setting` and `.sports-only-setting`.
+3. **Tab Switch Stutter & Flicker**:
+   - When switching to Financial, `selectUniverse` invokes `selectDashboardAsset('BTC')` (lines 289260–289350), which executes `showChartLoader()`, resets HUD counters (`#exec-strike`, `#exec-spot`, `#kalshi-yes`, `#kalshi-no`) to `$--,---` and `--%`, and awaits network requests before calling `hideChartLoader()`.
+   - When switching to Sports, `selectUniverse` invokes `filterSportsEvents('ALL')` (lines 241550–241650), which wipes `#sports-events-container` with an `animate-pulse` loading string and queries `/api/engine/sports/events?t=${Date.now()}` with `cache: 'no-store'`.
+   - Toggling `#lw-chart-container` to `display: none` / `display: block` causes the TradingView canvas to lose its computed dimensions without an explicit resize.
+   - `window.renderTradesContainer` (line 184704) lacks dirty-checking and recreates 15 DOM cards via `container.innerHTML = ...` on every 1-second poll.
+   - Redundant 1-second timers exist: `setInterval(init, 1000)` (calls `loadConfig` and `loadDashboard`), `setInterval(loadDashboard, 1000)` (calls `loadDashboard` again), and `setInterval(fetchKalshiData, 1000)`.
+4. **Universe "BOTH" Memory Overwrite Bug**:
+   - Backend verification: `POST /api/auth/user/config` with `{"trading_universe": "BOTH"}` succeeds (HTTP 200), persists to `users` table, and returns `"trading_universe": "BOTH"` on `GET /api/auth/dashboard_stats`.
+   - In `static/saas_dashboard.html` line 237894 (inside `selectUniverse`):
      ```javascript
-     const tRes = await fetch('data/top5.json').catch(() => fetch('/static/data/top5.json'));
-     const tData = await tRes.json();
+     if (window.lastDashboardStats) {
+         window.lastDashboardStats.trading_universe = universe;
+         // ...
+     }
      ```
-     `fetch('data/top5.json')` returns HTTP 404 from FastAPI because `/data` is not mounted at root. In JavaScript Fetch API, HTTP 404 does NOT reject the promise; `.catch(...)` never runs. `tRes.json()` parses the 404 response body, leaving `top5Picks` as `undefined` or throwing `SyntaxError`.
-
-4. **Runaway Loop & API Spamming on Kalshi HTTP 429:**
-   - In `backend/worker.py:61-90`:
-     The loop iterates over `["BTC", "ETH", "GOLD"]`, calling `ae.check_and_execute_rollover()` every 1 second (`time.sleep(1)`).
-   - In `backend/btc/auto_executor/executor.py:653-656, 1147, 1228-1240`:
-     ```python
-     if current_interval_id == self.last_traded_interval:
-         return None
-     ...
-     order_res = kalshi_trader.place_order(...)
-     if order_res.get("success", False):
-         self.last_traded_interval = current_interval_id
-     else:
-         if order_res.get("ambiguous"):
-             self.last_traded_interval = current_interval_id
-         else:
-             logger.error(f"[AutoExecutor] Order failed: {order_res.get('error')}")
-         return None
-     ```
-     When Kalshi throttles orders with HTTP 429 (Too Many Requests), `order_res.get("success")` is `False` and `ambiguous` is `False`. `self.last_traded_interval` is NOT set. One second later, the worker re-evaluates the market, re-runs ML conviction, and sends another order to Kalshi. This repeats every second for the entire 15-minute interval.
-   - Similarly, in `backend/btc/auto_executor/saas_broadcaster.py:963-964, 1094-1096`:
-     If a live order fails, line 964 executes `return` without updating `_user_last_traded_cache`. Every 4 seconds, `evaluate_and_execute_saas_users()` retries the failed user against Kalshi.
-
-5. **Lock Release Concurrency Hole:**
-   - In `backend/btc/auto_executor/executor.py:1056-1068`:
-     If `execDelay > 0`, `self._rollover_lock.release()` is called and `time.sleep(exec_delay)` freezes the main worker thread for up to several seconds while leaving `self.last_traded_interval` unset, allowing concurrent executions of the same contract.
-
-6. **Frontend State Desynchronization and Polling Storm:**
-   - In `static/saas_dashboard.html:1320-1326`: `toggleAutoTrader()` references non-existent elements `auto-trader-toggle`, `auto-trader-status`, `header-auto-status`. It fails to update `nav-auto-badge` (line 497).
-   - In `static/saas_dashboard.html:1583`: `loadConfig()` hardcodes `/api/engine/btc/trade/config`, wiping toggles when viewing `ETH` or `GOLD`.
-   - In `backend/btc/auto_executor/executor.py:1216` & `saas_broadcaster.py:874`: `one_shot_ai` is reset to 0 in the backend upon execution, but frontend `dashboard_stats` polling never returns `one_shot_ai`, leaving the 1-Shot Snipe toggle and Dynamic Island glow stuck ON in the UI.
-   - In `static/saas_dashboard.html:1933, 2875`: 7–9 HTTP requests are dispatched every second. `loadDashboard()` runs every 1000ms with no `document.hidden` check, polling continuously in the background on mobile.
+     When the user clicks "SPORTS" or "MARKETS" tab, `selectUniverse` overwrites `trading_universe` in `lastDashboardStats` with `'SPORTS'` or `'FINANCIAL'`, destroying `'BOTH'` in memory.
+   - When `populateUserSettings(window.lastDashboardStats)` runs (on interval or drawer open), it reads the corrupted `trading_universe` and resets `setAutoTradingUniverse` away from `"BOTH"`.
+   - If the user saves settings, it persists `'FINANCIAL'` or `'SPORTS'` to the server, erasing `"BOTH"`.
+5. **Control Inventory**:
+   - Settings drawer contains 70+ controls: Financial-only (asset toggles, ATR, Kelly, second entry, stop loss, take profit, trailing stop, daily risk, AI style, ML hyperparameters), Sports-only (sports trade size, leagues, markets, price corridor, mid-game TP, live toggle, confidence/edge sliders), and Common (Paper/Live mode, Auto Trader master switch, Auto Universe selector with "BOTH", API keys, sound, sign out).
 
 ---
 
 ## 2. Logic Chain
-
-1. From **Observation 1**, `app_icon.ico` and `favicon.svg` do not exist anywhere in the filesystem. When referenced in HTML `<link>` and `<img>` tags and the FastAPI `/favicon.ico` handler, browsers make HTTP requests that fail with status 404. On the login page, the logo image tag has `onerror="this.style.display='none'"`, causing the visual branding to collapse and disappear.
-2. From **Observation 2**, Capacitor serves web assets via WKWebView at origin `capacitor://localhost/` directly from the `static/` directory specified by `webDir`. Paths with leading `/static/` resolve to `capacitor://localhost/static/...` which do not exist in the packaged root. Links pointing to `/admin/mobile` expect a server-side route rather than a local HTML file. On web, FastAPI routes `/admin/mobile` to `admin_mobile.html`, but on native iOS Capacitor, the request fails with a 404 because Capacitor acts as a static file server.
-3. From **Observation 3**, the ECMAScript Fetch specification dictates that `.catch()` only handles network rejection (DNS failure, offline, aborted request), not HTTP 4xx/5xx responses. Because `fetch('data/top5.json')` returns a 404 response object, the fallback chained in `.catch()` never executes, and subsequent attempts to parse the payload as JSON fail.
-4. From **Observation 4**, the background worker loop runs synchronously every 1 second in `worker.py`. The only gate preventing repeated orders on the same 15-minute contract is `current_interval_id == self.last_traded_interval`. Because this variable is only updated on order success or ambiguous timeout, any rate limit (HTTP 429) or non-ambiguous rejection leaves the variable unset. Consequently, the loop treats the interval as untraded on every subsequent 1-second tick, causing a persistent runaway loop that floods Kalshi's API with order placement requests.
-5. From **Observation 5**, releasing `_rollover_lock` during `execDelay` before marking the interval as traded creates a race window where another thread or manual execution can evaluate and submit orders for the same contract.
-6. From **Observation 6**, the mismatch between element IDs in JavaScript and the HTML DOM, combined with hardcoded `btc` in `loadConfig()` and the omission of `one_shot_ai` in `dashboard_stats`, results in frontend UI states that drift out of sync with the backend.
+1. *From Observation 1 & 2*: Because `saas_dashboard.html` contains only one `<div id="settingsDrawer">` that toggles CSS visibility classes, Requirement R1 ("two distinct, independently toggleable UI components: one strictly for Financial and one strictly for Sports") is violated and requires splitting the markup into `financialSettingsDrawer` and `sportsSettingsDrawer`.
+2. *From Observation 3*: Because `selectDashboardAsset('BTC')` calls `showChartLoader()` and blanks HUD numbers, and `filterSportsEvents` clears `innerHTML` for an animated loader on every tab switch, the UI stutters and flickers. Retaining cached chart/events and updating data silently in the background will eliminate this lag.
+3. *From Observation 4*: Because line 237894 mutates `window.lastDashboardStats.trading_universe = universe`, any tab switch mutates the user's configured universe in client memory. Subsequent polling or drawer interactions re-populate settings using this corrupted value, destroying `"BOTH"`. Removing this line and maintaining `window.configuredTradingUniverse` separately fixes the root cause.
+4. *From Observation 4 & 5*: Because users can open settings from either universe tab, rendering the Auto-Trading Universe 3-way toggle `[ Crypto ] [ Sports ] [ Both ]` in BOTH drawers (using synchronized class queries) satisfies Requirement R2 and ensures `"BOTH"` is visible and editable across both menus without resetting or hiding it.
 
 ---
 
 ## 3. Caveats
-
-- **Network Mode:** The survey was conducted in read-only analysis mode without modifying project source code.
-- **Hardware Device Testing:** iOS WKWebView behavior was verified by static analysis of `capacitor.config.json`, WebKit App-Bound Domains specifications, and local file resolution rules rather than deploying to a physical iPhone via Xcode.
-- **Live Kalshi Credentials:** Testing was conducted with simulation/audit inspection of Kalshi client handlers; live order submissions were not executed against live capital.
-- **Scope Limit:** Audit was constrained to R3 (Asset & Route Integrity) and R4 (Auto Trader Logic & UI Integration). Backend ML weights and ML training mathematics (R1/R2) were evaluated strictly in the context of their integration into execution loops.
+- No backend code changes were made (read-only investigation).
+- Tests in `tests/test_r2_r5_multi_universe_and_timestamps.py` include one failure in `test_route_effective_user_id_prioritizes_both_and_all` due to mock active user key structure; this is unrelated to frontend tab switching.
+- Browser WKWebView touch gestures (Capacitor iOS) rely on `touchmove` and `touchstart` listeners; both separated drawers must register independent swipe-to-close handlers.
 
 ---
 
 ## 4. Conclusion
-
-The ShadowTrader AI codebase contains high-value algorithmic components, but exhibits critical vulnerabilities in its asset delivery, routing, and execution safety boundaries:
-1. **Zero-404 Integrity Failure:** The app currently triggers multiple 404 errors on load due to non-existent icon files (`app_icon.ico`, `favicon.svg`) and misconfigured route paths in `ui.py`.
-2. **Capacitor Incompatibility:** Absolute paths and extensionless server routes break inside iOS Capacitor WKWebView.
-3. **Severe Runaway API Loop Risk:** The Auto Trader backend lacks rate-limit cooldown handling, resulting in aggressive 1-second order retry loops when Kalshi returns HTTP 429.
-4. **UI State Desynchronization:** Broken DOM references, asset hardcoding in `loadConfig()`, and missing visibility guards in high-frequency polling cause UI toggles and Dynamic Island indicators to fall out of sync with backend states.
-
-A comprehensive matrix of 14 specific fixes has been documented in `survey_report.md` to guide the implementation phase.
+The frontend UI refactor required for R1, R2, and R3 is well-defined and straightforward:
+1. **R1**: Replace `<div id="settingsDrawer">` in `static/saas_dashboard.html` with two distinct HTML drawers: `financialSettingsDrawer` (containing only Financial groups) and `sportsSettingsDrawer` (containing only Sports groups), routed via `openFinancialSettings()`, `openSportsSettings()`, and `openSettings()`.
+2. **R2**: Delete `window.lastDashboardStats.trading_universe = universe;` in `selectUniverse`. Embed the Auto-Trading Universe control with `[ Both ]` in both drawers, synchronized via `setAutoTradingUniverse`.
+3. **R3**: Suppress `showChartLoader()` and HUD element blanking on tab switches, render cached sports events immediately, add dirty-checking to `window.renderTradesContainer`, and deduplicate 1s intervals.
 
 ---
 
 ## 5. Verification Method
-
-To independently verify these findings:
-
-1. **Verify Missing Static Assets:**
-   ```powershell
-   Test-Path "C:\Users\Vill3\Desktop\ShadowTraderAi\static\assets\app_icon.ico" # Returns False
-   Test-Path "C:\Users\Vill3\Desktop\ShadowTraderAi\static\assets\favicon.svg"  # Returns False
+1. **Pytest Suite**:
+   ```bash
+   python -m pytest tests/test_frontend_contracts.py tests/test_r2_r5_multi_universe_and_timestamps.py tests/test_r3_r4_ui_and_rate_limits.py
    ```
-2. **Inspect Favicon Route in `ui.py`:**
-   Inspect `backend/routes/ui.py:40-43` to confirm `ico_path = os.path.join(STATIC_DIR, "assets", "app_icon.ico")` points to non-existent file.
-3. **Inspect Runaway Loop in `executor.py`:**
-   Inspect `backend/btc/auto_executor/executor.py:1228-1240` to confirm that `self.last_traded_interval` is only assigned when `order_res.get("success")` is True or `order_res.get("ambiguous")` is True, omitting failure cases.
-4. **Inspect DOM Elements in `saas_dashboard.html`:**
-   Search for `id="auto-trader-toggle"` in `static/saas_dashboard.html` to confirm 0 matches while line 1320 calls `document.getElementById('auto-trader-toggle')`.
-5. **Inspect Hardcoded BTC in `loadConfig()`:**
-   Inspect `static/saas_dashboard.html:1583` to confirm `fetch('/api/engine/btc/trade/config')` hardcodes `btc`.
+2. **DOM Separation Inspection**:
+   Verify `saas_dashboard.html` contains:
+   - `<div id="financialSettingsDrawer"`
+   - `<div id="sportsSettingsDrawer"`
+   - No duplicate IDs for shared controls (use classes like `.btn-auto-univ-both`, `.auto-universe-label-badge`).
+3. **"BOTH" End-to-End Persistence Check**:
+   - Submit `POST /api/auth/user/config` with `{"trading_universe": "BOTH"}`.
+   - Load `saas_dashboard.html` and confirm `[ Both ]` is highlighted in both Financial and Sports settings drawers.
+   - Switch back and forth between "SPORTS" and "MARKETS" tabs 5 times.
+   - Open settings in both tabs and verify `[ Both ]` remains selected and `window.configuredTradingUniverse` remains `'BOTH'`.

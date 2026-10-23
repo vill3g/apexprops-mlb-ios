@@ -1,10 +1,10 @@
 """
-Fit the RL DQN probability calibration (Platt scaling) on out-of-sample 15m candles.
+Fit the RL PPO Transformer probability calibration (Platt scaling) on out-of-sample 15m candles.
 
-The DQN outputs Q-values, not probabilities. This script maps the directional score
-(Q_yes - Q_no) to P(YES) = sigmoid(a * score + b), using candles the model was NOT
-trained on, and writes backend/data/model_cache/rl_calibration.json. The live RL
-signal refuses to trade (PASS) when that file is missing.
+The PPO Transformer outputs continuous directional conviction and pseudo-Q values. This script maps
+the directional score (Q_yes - Q_no) to P(YES) = sigmoid(a * score + b), using candles the model was NOT
+trained on, and writes backend/data/model_cache/rl_calibration.json. The live RL signal refuses to trade
+(PASS) when that file is missing.
 
 Usage (from the project root, with the app's venv):
     python backend/scripts/calibrate_rl.py
@@ -74,7 +74,7 @@ def calibrate(csv_path: str = DEFAULT_CSV, exclude_days: float = 60.0, minutes: 
     if len(states) < 2000:
         raise RuntimeError(f"Only {len(states)} out-of-sample candles before cutoff — need at least 2000.")
 
-    q = np.array([agent.q_values(s) for s in states])
+    q = agent.q_values_batch(states) if hasattr(agent, "q_values_batch") else np.array([agent.q_values(s) for s in states])
     score = q[:, 1] - q[:, 2]
     y = np.array(labels, dtype=np.float64)
 

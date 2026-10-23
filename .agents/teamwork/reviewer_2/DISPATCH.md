@@ -1,38 +1,55 @@
-# Task Assignment: Evaluation Report Review & Acceptance Criteria Verification
+# Dispatch: reviewer_2
 
-Working Directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_2
-Project Root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Authoritative Request: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md (see 2026-10-03T22:04:04Z entry)
-Scope Document: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\PROJECT.md
-Deliverable to Review: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md
+## Objective
+Agent-as-Judge review for Phase 1 End-to-End Suite & Parity Verification.
 
-## Acceptance Criteria to Verify (Agent-as-Judge):
-1. **Flaw Identification Criterion**: Confirm the report identifies at least two specific mathematical or logical flaws in the current interval or multiple-entry strategy.
-2. **Citation Criterion**: Verify the report cites exact file paths and specific functions/line numbers where the problematic logic resides.
-3. **Actionability Criterion**: Confirm the report provides concrete, actionable pseudocode or code snippets to fix the identified issues, rather than vague conceptual advice.
+## Inputs
+- Project Root: `C:\Users\Vill3\Desktop\kalshi-ai-trader`
+- Mirror Root: `C:\Users\Vill3\Desktop\ShadowTraderAi`
+- Original Request: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md`
+- Orchestrator Dispatch: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_9\DISPATCH.md`
+- Scope: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_9\SCOPE.md`
+- Worker Handoff: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_1\handoff.md`
 
-## Instructions:
-- Conduct an independent, rigorous review of `EVALUATION_REPORT.md`.
-- Validate empirical metrics cited against the underlying databases (`users.db`, `trades.db`) and check code snippet soundness.
-- Issue an explicit verdict: **APPROVE** if all acceptance criteria are satisfied, or **REQUEST_CHANGES** if any requirement is unfulfilled.
-- Write your review to `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_2\review.md` and standard `handoff.md`.
+## Verification Scope
+1. Execute `python -m pytest tests/test_quant_lab.py -v` in both `kalshi-ai-trader` and `ShadowTraderAi` and confirm all 8 tests pass cleanly with 0 failures.
+2. Verify that every modified file across `kalshi-ai-trader` and `ShadowTraderAi` has an identical SHA-256 checksum:
+   - `backend/engine/quant_lab/regime_classifier.py`
+   - `backend/engine/quant_lab/alpha_ideator.py`
+   - `backend/engine/quant_lab/history_builder.py`
+   - `backend/engine/quant_lab/incubator.py`
+   - `backend/engine/quant_lab/orchestrator.py`
+   - `backend/engine/quant_lab/strategy_coder.py`
+   - `backend/engine/quant_lab/validator.py`
+   - `tests/test_quant_lab.py`
+3. Execute a live test research cycle through `QuantLabOrchestrator().run_research_cycle()` for both a financial asset (e.g. BTC) and a sports asset (e.g. TEN) in both repositories and confirm error-free execution (`success: True`).
+4. Provide a clear, explicit verdict: `APPROVE` or `REQUEST_CHANGES`.
+
+## Output
+Write your review report to: `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reviewer_2\handoff.md`.
+Notify orchestrator via `send_message`.
 
 
-## 2026-10-03T22:26:47Z
-[Message] timestamp=2026-10-03T22:26:47Z sender=0b2ac47d-78c9-4393-ab2e-4e87b15afb01 priority=MESSAGE_PRIORITY_HIGH content=You are reviewer_2.
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_2
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Read your task assignment at: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_2\DISPATCH.md
-Authoritative user request: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
-Scope document: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\PROJECT.md
-Deliverable to Review: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md
+## 2026-10-13T03:46:15Z
+[Message] sender=bc91cecc-5501-4832-bd5f-b7b2dd3a837a
+You are reviewer_2.
+Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reviewer_2
+Project root: C:\Users\Vill3\Desktop\kalshi-ai-trader
+Mirror root: C:\Users\Vill3\Desktop\ShadowTraderAi
 
-Acceptance Criteria to Verify (Agent-as-Judge):
-1. Flaw Identification: Confirm the report identifies at least two specific mathematical or logical flaws in the current interval or multiple-entry strategy.
-2. Citation: Verify the report cites exact file paths and specific functions/line numbers where the problematic logic resides.
-3. Actionability: Confirm the report provides concrete, actionable pseudocode or code snippets to fix the identified issues, rather than vague conceptual advice.
+MANDATORY: Read ORIGINAL_REQUEST.md at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
+before starting work.
 
-STRICT CONSTRAINT: Read-only verification. Do NOT modify any source files.
-Write your review report to: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_2\review.md
-State your explicit verdict (APPROVE or REQUEST_CHANGES) in your review.md and handoff.md.
-Notify parent when complete.
+Read your dispatch instructions at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reviewer_2\DISPATCH.md
+And reference worker handoff at:
+C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_1\handoff.md
+
+Your role is Agent-as-Judge for End-to-End Suite & Parity Verification:
+1. Execute pytest tests/test_quant_lab.py in both kalshi-ai-trader and ShadowTraderAi (via python -m pytest tests/test_quant_lab.py -v) and confirm all 8 tests pass cleanly with 0 failures.
+2. Verify that every modified file has an identical SHA-256 checksum across kalshi-ai-trader and ShadowTraderAi.
+3. Execute live test research cycles through QuantLabOrchestrator().run_research_cycle() for both BTC and TEN in both repositories and confirm error-free execution.
+4. Record your detailed findings and explicit verdict (APPROVE or REQUEST_CHANGES) in:
+   C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reviewer_2\handoff.md
+When done, notify orchestrator (conversation ID: bc91cecc-5501-4832-bd5f-b7b2dd3a837a) via send_message.

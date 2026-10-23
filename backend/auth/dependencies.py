@@ -62,7 +62,9 @@ def is_owner_request(request: Request, x_api_token: Optional[str] = None) -> boo
     from backend.auth.security import is_valid_master_token
     if _is_local_client(request):
         return True
-    token = x_api_token or request.headers.get("X-API-Token")
+    token = x_api_token or request.headers.get("X-API-Token") or request.headers.get("x-api-token")
+    if token and str(token).strip() in ("null", "undefined", "None"):
+        token = None
     return is_valid_master_token(token)
 
 
@@ -105,12 +107,12 @@ def _user_is_admin(user_id) -> bool:
     if not user_id:
         return False
     try:
-        from backend.database.models import get_user_by_id
+        from backend.database.models import get_user_by_id, is_owner_account
         user = get_user_by_id(user_id)
     except Exception as e:
         logger.warning(f"Role lookup failed for user {user_id}: {e}")
         return False
-    return bool(user) and user.get("role") == "admin" and bool(user.get("is_active", 1))
+    return bool(user) and bool(user.get("is_active", 1)) and (user.get("role") == "admin" or is_owner_account(user))
 
 
 def caller_has_owner_access(request: Request) -> bool:

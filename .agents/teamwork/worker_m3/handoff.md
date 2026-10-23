@@ -1,74 +1,125 @@
-# Handoff Report: Comprehensive Auto-Trading Evaluation & Remediation
+# Milestone 3 Handoff Report: UI/UX Optimization, Fast Tab Switching & Controls Verification
 
-**Worker**: `worker_m3`  
-**Milestone**: M3 (Comprehensive Evaluation Report Artifact Generation)  
-**Date**: 2026-10-03  
-**Status**: Hard Handoff (Task Complete)  
+**Author**: `worker_m3`  
+**Date**: 2026-10-07T23:39:00Z  
+**Target Audience**: `parent` (orchestrator_7), QA, and Forensic Auditor  
 
 ---
 
 ## 1. Observation
-1. **Source Deliverable Requirements**:
-   - Primary target: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md`
-   - Secondary target: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reports\EVALUATION_REPORT.md`
-   - Strict constraint: Read-only evaluation. No modification to `backend/` or root files.
-2. **Empirical Trade Metrics Observed Across Codebase Databases**:
-   - `backend/data/users.db`: 2,150 trades | 51.72% Win Rate | Net P&L -$814.90 | Profit Factor 0.87 | Expectancy -$0.38/trade.
-   - `SETTLEMENT` exit category: 275 trades | 76.0% Win Rate | +$1,829.88 Net P&L (+$6.65/trade).
-   - `STOP_LOSS` exit category: 860 trades | 0.8% Win Rate | -$5,021.44 Net P&L (-$5.84/trade).
-   - `trades.db`: 747 trades | 50.20% Win Rate | -$7,350.19 Net P&L | Max Drawdown $13,219.04.
-   - Re-entry after stop-loss: 141 sequences | Trade 2 win rate 36.9% | -$1,128.27 cumulative loss.
-   - DCA into losers: In 159 out of 195 intervals (81.5%), subsequent re-entries deepened net sequence losses.
-   - Intra-candle timing: Phase 02 (Minutes 3–6) produced 271 trades, 49.4% win rate, -$586.91 net loss, Profit Factor 0.49. Minute 4 produced -$347.20 (win rate 41.4%, stop-loss rate 51.5%).
-   - Conviction breakdown: 50–51% conviction accounted for 1,267 trades (58.9%), producing -$741.85 (91% of total net losses).
-3. **Core Algorithmic & Mathematical Flaws Directly Verified in Codebase**:
-   - `backend/btc/auto_executor/executor.py:1042-1052`: Fee-blind Kelly formula `if p_win <= b_price: return None` ignores taker fee ($F = \$0.02$), enters negative-EV trades, and clamps allocation with `max(0.25, ...)`.
-   - `backend/btc/auto_executor/stop_manager.py:345-395`: Asymmetric payoff trap caps wins at +$2.92 while stop losses bleed -$5.84, requiring a 67% breakeven win rate.
-   - `backend/btc/auto_executor/stop_manager.py:764-770` & `saas_broadcaster.py:877-881`: DCA rule requires a 15% discount on binary options, averaging down into decaying assets.
-   - `backend/btc/auto_executor/stop_manager.py:360-366`: Trailing stop formula `max(max_seen_bid - ts_distance, max_seen_bid * (1.0 - ts_distance))` degenerates to $M \times (1 - 0.06)$ for all $M \le 1.0$, collapsing buffer to 4.2¢ and triggering on Kalshi spread noise.
-   - `backend/btc/auto_executor/saas_broadcaster.py:764`: `side = "yes" if int(time.time()) % 2 == 0 else "no"` flips Unix second coins while line 897 bypasses the edge gate.
-   - `backend/btc/fees.py:25-31`: Edge calculation ignores allowable 4¢ slippage buffer and omits `math.ceil()` on taker fees.
-   - `backend/btc/analyzer/contract_eval.py:643`: Compares dollar ask quotes to percentage threshold (`0.52 >= 62.0`), rendering market-structure confluence permanently dead.
-   - `backend/btc/auto_executor/saas_broadcaster.py:362`: Allows new entries with only 15 seconds remaining before expiry, where option Gamma explodes to infinity.
-4. **Generated Deliverable Artifacts**:
-   - `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md` (67,562 bytes, 1,161 lines).
-   - `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reports\EVALUATION_REPORT.md` (67,562 bytes, 1,161 lines).
+
+1. **Tab Switch HUD & Chart Blanking**:
+   - In `static/saas_dashboard.html:4610-4700` (`selectDashboardAsset`), switching back to Financial (`selectUniverse('FINANCIAL')`) unconditionally executed:
+     ```javascript
+     window.lastCandle = null;
+     if (strikeEl) strikeEl.textContent = '$--,---';
+     if (spotEl) spotEl.textContent = '$--,---';
+     if (yesBid) yesBid.textContent = '--%';
+     if (noBid) noBid.textContent = '--%';
+     if (cdEl) cdEl.textContent = '--:--';
+     if (bidsBox) bidsBox.innerHTML = '';
+     showChartLoader();
+     ```
+     This wiped all live metrics to dashes and covered the chart canvas behind a blocking spinner overlay for 200–500ms on every tab change, even though market and candle data were already loaded.
+2. **LightweightCharts Canvas Dimension Collapse on `display: none`**:
+   - In `static/saas_dashboard.html:3840, 3861`, `#lw-chart-container` toggled between `display: none` and `display: block`. Upon restoring `display: block`, the HTML5 canvas lost computed dimensions and remained unadjusted until manual window resizing.
+3. **Sports Loading Flash & Pulsating Loader**:
+   - In `static/saas_dashboard.html:4013-4019` (`renderSportsEvents`) and lines `4564-4608` (`loadSportsEvents`), switching to Sports cleared `#sports-events-container` with an animated pulse loader (`⚡ Loading ALL AI picks...`), producing a visual flicker before cards were redrawn, even when `window.__sportsEventsCache` held events.
+4. **Auto-Trading Toggle Synchronization Discrepancy**:
+   - While `#btn-mode-paper-settings` / `#sports-btn-mode-paper-settings` and `#btn-auto-univ-*` / `#sports-btn-auto-univ-*` were synchronized, `toggleAutoTrader(enabled)` and `loadConfig()` only updated `#header-auto-toggle` without syncing `#sports-header-auto-toggle`.
+5. **High-Frequency DOM Thrashing & Polling Duplication**:
+   - `window.renderTradesContainer` regenerated 15 DOM elements from string templates every 1 second without checking if trades changed.
+   - `setInterval(loadDashboard, 1000)` at line 3568 duplicated the 1-second `init()` interval at line 3476, and `init()` fetched `/trade/config` every single second despite user configuration rarely changing.
+6. **File Divergence Between Root and `js/`**:
+   - `static/app.js` (263,528 bytes, Oct 3) diverged from `static/js/app.js` (273,658 bytes, Oct 7).
+7. **Baseline Test Results**:
+   - Initial run of `pytest tests/test_saas_dashboard_decoupling_e2e.py`: 50 passed (100%).
+   - Initial run of `pytest tests/test_frontend_contracts.py`: 17 passed (100%).
+   - Initial run of `pytest tests/test_m1_both_universe_persistence.py`: 3 passed (100%).
 
 ---
 
 ## 2. Logic Chain
-1. The empirical data across 2,150 trades in `users.db` and 747 trades in `trades.db` demonstrates that the system generates negative cumulative returns (-$814.90 and -$7,350.19) and negative expectancy (-$0.38 and -$9.84 per trade) under current production execution.
-2. Cross-referencing exit types demonstrates the "Natural Settlement Paradox": contracts held to expiration achieved a 76.0% win rate and +$1,829.88 net profit. Thus, the machine learning directional forecasting core is positive-EV.
-3. The overall negative performance is traced directly to execution-layer defects:
-   - Early stop-losses lost -$5,021.44, with 164 stopped trades proven counterfactually to be settlement winners.
-   - Trailing stops with a 6% parameter degenerate mathematically to a 4.2¢ buffer, whipsawing on Kalshi's 2–5¢ spread.
-   - Averaging down (DCA) into decaying binary options failed 81.5% of the time, scaling average losses from -$4.60 on Entry 1 to -$10.41 on Entry 2.
-   - Trading at 50–51% conviction generated 91% of system losses due to zero edge and fee drag.
-   - Entering during Minutes 3–6 generated -$586.91 with a 0.49 Profit Factor due to chasing opening impulses.
-4. Synthesizing the 8 identified mathematical/logical flaws with concrete drop-in production Python implementations provides an actionable, verified path to achieve an estimated 68.5%–72.0% win rate, 1.75–2.10 Profit Factor, and +$1.45 to +$2.20 expectancy per trade.
+
+1. **Non-Destructive Cache-First Rendering**:
+   - In `static/saas_dashboard.html`, we updated `selectDashboardAsset(asset, isTabSwitch = false)` and `selectUniverse(universe)`.
+   - When switching tabs (`isTabSwitch === true`) or when `hasExistingChart && hasCachedData` is true:
+     - `skipLoaderAndBlanking` is set to `true`.
+     - The blocking `showChartLoader()` overlay is bypassed entirely.
+     - HUD elements (`exec-strike`, `exec-spot`, `kalshi-yes`, `kalshi-no`, `exec-countdown`, `live-bids-container`) retain their live values without being blanked to `$----` or `--%`.
+     - `window.candlesCache[reqAsset]` is populated in `fetchChartData` and preserved across switches.
+     - Background data fetch executes silently via `Promise.allSettled([fetchChartData(false), fetchKalshiData(false), fetchLiveBids()])` without user disruption.
+2. **Immediate Canvas Auto-Resize & Fit**:
+   - In `selectUniverse('FINANCIAL')` and `selectDashboardAsset`, we wrapped canvas refits in `requestAnimationFrame(() => { chart.applyOptions({ width, height }); chart.timeScale().fitContent(); })`.
+   - This ensures the browser computes layout dimensions for `#lw-chart-container` before LightweightCharts renders, completely preventing chart distortion or canvas collapse.
+3. **Smooth Sports Cache-First Display**:
+   - When switching to Sports (`selectUniverse('SPORTS')`), if `window.__sportsEventsCache` contains events, `renderSportsEvents()` is called immediately to paint all cards before any network request starts.
+   - In `renderSportsEvents()`, the animated pulse loader is only displayed if `window.__sportsLoading` is true AND `window.__sportsEventsCache` is null or empty. If cached events exist, cards remain visible during background network updates.
+4. **Dual Auto-Trading Toggle Synchronization**:
+   - In `toggleAutoTrader(enabled)`, `loadConfig()`, and `populateUserSettings(s)`:
+     ```javascript
+     const headerToggles = document.querySelectorAll('#header-auto-toggle, #sports-header-auto-toggle');
+     headerToggles.forEach(t => { t.checked = enabled; });
+     ```
+   - Both the Financial drawer and Sports drawer Auto-Trading switches stay in 100% synchronization.
+5. **DOM Performance & Polling Optimization**:
+   - In `window.renderTradesContainer`, added a dirty-checking signature `tradesKey = JSON.stringify(recent.map(...)) + '_' + (__inSports ? 'S' : 'F')`. If trades have not changed, DOM reconstruction is bypassed.
+   - Throttled `loadConfig()` inside `init()` to a maximum frequency of once every 10 seconds.
+   - Removed duplicate `setInterval(loadDashboard, 1000)` registration in `initChart()`.
+6. **Script Synchronization**:
+   - Mirrored canonical `static/js/app.js` to `static/app.js`. Both now have matching SHA-256 hashes (`fdb80c494fec53c38863d0181f72fea8e26680138acd987e079f8a4d9e96fcdd`).
+7. **Drawer Controls Comprehensive Verification**:
+   - Verified all 70+ controls across `#financialSettingsDrawer` and `#sportsSettingsDrawer`:
+     - Paper/Live mode toggle in both drawers (`btn-mode-paper-settings`, `sports-btn-mode-paper-settings`, `btn-mode-live-settings`, `sports-btn-mode-live-settings`).
+     - Auto-trading toggle in both drawers (`header-auto-toggle`, `sports-header-auto-toggle`).
+     - Auto-trading universe segmented buttons in both drawers (`btn-auto-univ-crypto/sports/both` and `sports-btn-auto-univ-crypto/sports/both`).
+     - Financial assets (BTC, ETH, GOLD, SOL, DOGE, EURUSD, GBPUSD, USDJPY, AUDUSD, NDQ), stop loss %, take profit %, trailing stop, ATR, second-entry DCA, trade size ($).
+     - Sports leagues (7: NFL, MLB, NHL, SOC, UFC, TEN, NPB/KBO), market types (5: GAME, SPREAD, TOTAL, PROP, INNING), player props (9: ANYTIME_TD, PASSING_YDS, RUSHING_YDS, RECEIVING_YDS, HOME_RUNS, STRIKEOUTS, HITS_RUNS_RBIS, TOTAL_BASES, OTHER), trade sizes, Kelly toggle, price corridor, mid-game TP, risk caps, and sliders.
+     - `saveUserConfig()` properly gathers all values (including `sportsActivePropsStr`) without throwing errors.
 
 ---
 
 ## 3. Caveats
-- No changes were made to production source code in `backend/` or root, adhering strictly to the read-only evaluation mandate.
-- Performance projections (Section 5) are based on empirical counterfactual analysis of historical trade distributions and official Kalshi settlements from `market_results.json`. Live forward performance will depend on real-world order book liquidity and broker fill execution quality.
+
+- **No Caveats**: All modifications strictly adhere to frontend ownership rules (`static/saas_dashboard.html`, `static/js/app.js`, `static/app.js`). No backend Python files were modified. All test suites pass cleanly.
 
 ---
 
 ## 4. Conclusion
-The comprehensive evaluation report has been authored and published at both designated locations. The report definitively concludes that ShadowTrader AI is "NOT PROFITABLE" in its current configuration, thoroughly proves the Natural Settlement Paradox, details 8 mathematical/algorithmic flaws with exact file paths and lines, and provides 9 production-grade Python remediations, satisfying all Acceptance Criteria.
+
+Milestone 3 requirements are 100% complete and fully verified:
+- UI stuttering, flickering, and HUD blanking during tab switching between Financial and Sports are completely eliminated.
+- LightweightCharts canvas automatically resizes and fits content smoothly via `requestAnimationFrame` on tab restore.
+- Sports events render immediately from cache on tab click without showing the pulse loader.
+- Auto-trading switches, trading mode buttons, and auto-trading universe segmented buttons are fully synchronized across both `#financialSettingsDrawer` and `#sportsSettingsDrawer`.
+- `static/app.js` is byte-synchronized with `static/js/app.js`.
+- All 84 automated tests pass with 0 failures across 4 suites.
 
 ---
 
 ## 5. Verification Method
-1. **Deliverable Existence & Integrity**:
-   Inspect file sizes and line counts:
-   - `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md` (67,562 bytes, 1,161 lines).
-   - `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reports\EVALUATION_REPORT.md` (67,562 bytes, 1,161 lines).
-2. **Acceptance Criteria Verification**:
-   - AC 1 (>=2 mathematical/logical flaws): Section 3 details 8 distinct flaws with EV proofs.
-   - AC 2 (Exact file paths and functions cited): Section 3 cites exact paths, functions, and lines.
-   - AC 3 (Concrete, actionable code snippets): Section 4 provides 9 drop-in production Python implementations.
-3. **Mathematical Proof Verification**:
-   - Trailing stop degeneracy: verify $\max(M - 0.06, M \times 0.94) = M \times 0.94$ for all $M \le 1.0$.
-   - Natural payoff vs early TP/SL: verify breakeven win rate increases from 52.0% to 66.7% when wins are capped at +21¢ and losses absorb -42¢.
+
+To independently reproduce and verify this implementation, run:
+
+```powershell
+# 1. Decoupling E2E suite (50 tests)
+python -m pytest tests/test_saas_dashboard_decoupling_e2e.py -v
+
+# 2. Frontend contract suite (17 tests)
+python -m pytest tests/test_frontend_contracts.py -v
+
+# 3. Universe BOTH persistence suite (3 tests)
+python -m pytest tests/test_m1_both_universe_persistence.py -v
+
+# 4. Milestone 3 UI/UX optimizations & controls suite (14 tests)
+python -m pytest tests/test_m3_frontend_optimizations.py -v
+
+# 5. Verify script hash identity
+powershell -Command "Get-FileHash static/js/app.js, static/app.js | Select-Object Path, Hash"
+```
+
+**Invalidation Conditions**:
+- If `selectUniverse('FINANCIAL')` causes HUD counters (`exec-strike`, `exec-spot`, `kalshi-yes`) to display dashes `$--,---` or `--%` when cached candles exist.
+- If switching to Sports displays an animated pulse loader when `window.__sportsEventsCache` is already populated.
+- If toggling auto-trading in one drawer fails to toggle the checkbox in the other drawer.
+- If any test in the above commands fails.

@@ -1,45 +1,43 @@
-# BRIEFING — 2026-09-30T19:18:00Z
+# BRIEFING — 2026-10-09T14:48:00Z
 
 ## Mission
-Investigate and analyze the Machine Learning prediction engine and data ingestion pipelines in the Kalshi AI Trader codebase.
+Investigate Tennis date-matching discrepancy (>24h vs 48h) between Kalshi events and ApexProps AI predictions, multi-sport name normalization, and schema matching / silent drop issues.
 
 ## 🔒 My Identity
-- Archetype: teamwork_preview_explorer
-- Roles: ML Prediction Engine & Data Sources Explorer
+- Archetype: explorer
+- Roles: investigation, synthesis
 - Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_explorer_survey_2
-- Original parent: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Milestone: Explorer Survey
+- Original parent: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Milestone: survey_2
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement
-- Analyze models, feature extraction, training, inference, probability/confidence/EV calculations, calibration, thresholds, evaluation metrics, and data ingestion (Kalshi API feeds, order book, historical data)
-- Output analysis to analysis.md and handoff to handoff.md, then send_message to parent
+- Read-only investigation — do NOT implement / modify source code directly
+- Focus on sports_bridge/ and backend/ matching logic, date window, name normalization, and schema/exception handling
+- Provide exact file paths, line numbers, and recommended code changes
+- Output report.md and handoff.md
 
 ## Current Parent
-- Conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Updated: 2026-09-30T19:18:00Z
+- Conversation ID: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Updated: 2026-10-09T14:48:00Z
 
 ## Investigation State
-- **Explored paths**:
-  - `backend/btc/ml_engine.py`, `backend/btc/dual_ml_engine.py`, `backend/btc/ml_ensemble.py`
-  - `backend/btc/rl_agent.py`, `backend/btc/rl_priced.py`, `backend/btc/rl_scalper.py`
-  - `backend/btc/analyzer/` (`contract_eval.py`, `confluence.py`, `config.py`, `models.py`)
-  - `backend/btc/auto_executor/` (`executor.py`, `risk_manager.py`, `shared.py`, `settlement.py`)
-  - `backend/btc/kalshi_client.py`, `backend/btc/kalshi_trader.py`, `backend/btc/data_fetcher.py`, `backend/btc/orderbook.py`, `backend/btc/liquidation_stream.py`, `backend/btc/news_fetcher.py`
-  - `backend/data/` (`historical_candles_btc_15m.csv`, `coinbase_btc15m_history.csv`, `kalshi_btc15m_history.jsonl`, `trading_config.json`, `backtest_report.json`, `previous_trades_backtest_results.json`, `model_cache/`)
-  - `backend/scripts/` (`calibrate_rl.py`, `backtest_rl.py`, `train_rl_priced.py`, `optuna_tuner.py`, `evaluate_previous_trades.py`)
+- **Explored paths**: `backend/routes/engine.py`, `backend/sports_bridge/prediction_client.py`, `backend/sports_bridge/executor.py`, `backend/routes/sports.py`, `tests/test_sports_dashboard.py`, `static/saas_dashboard.html`
 - **Key findings**:
-  - Core ML is `GodTierEnsemble` (XGBoost + RF + PyTorch LSTM sequence model via Logistic Regression meta-learner with 5-fold OOF cross validation).
-  - 52-feature schema with stationarity normalization relative to `ema_50`.
-  - Multiple RL models: 51-quantile QR-DQN (`RLAgent`), NumPy Net-PnL DQN (`PricedDQN`), and 4-action Scalper DQN (`RLScalperAgent`).
-  - Strict gates: Confluence blending (0.4 heur / 0.6 ML), ML conflict veto (15% gap), negative EV block ($P_{\text{win}} > \text{Ask} + 5\%$), strike pin dead-zone ($|\Delta| \le \$18$), and circuit breaker (3 consecutive losses).
-  - Empirical backtest data reveals critical role of deep windows (20,000 bars) and fee-aware gates: small windows invert calibration, whereas calibrated ensemble on 578 historical trades achieved 72.66% win rate and 2.65 profit factor.
-- **Unexplored areas**: None for ML & data ingestion scope.
+  1. `backend/routes/engine.py:3378` filters `kalshi_events = [e for e in kalshi_events if e.get("is_today")]`, which wipes out all upcoming events for NFL, Tennis, MLB, UFC, NPB/KBO on days when games aren't scheduled today.
+  2. Tennis date difference capped at `diff > 1` (24h) in `engine.py:2948` and `prediction_client.py:546`; must be extended to `diff > 2` (48h) due to international tournament timezones and Kalshi ticker creation conventions.
+  3. Predictions from `bot-bridge` lacked `player_a`/`player_b` keys in `metadata`, storing them in `matchup` (e.g., `"Carlos Alcaraz vs Juan Manuel Cerundolo"`). Because `engine.py:2885` didn't parse `matchup`, `p_away` and `p_home` were empty strings, bypassing the Tennis matching block entirely.
+  4. Missing `"ai_prediction"` key in `/api/engine/sports/events` responses.
+  5. Missing team dictionaries for SOC, NPB, KBO in `_SPORT_TEAM_MAP`.
+  6. Player prop matching in `engine.py:3232` lacked `_normalize_sport`, dropping props when `"SOCCER" != "SOC"` or `"TENNIS" != "TEN"`.
+- **Unexplored areas**: None; full problem boundary covered and verified empirically.
 
 ## Key Decisions Made
-- Documented full architectural map, mathematical formulas, code paths, and empirical evidence in analysis.md and handoff.md.
+- Confirmed root cause of "only NHL displays" is line 3378 of `engine.py`.
+- Verified empirically that parsing `matchup` and extending to 48 hours allows 32 Tennis matches from `KXATPMATCH` to match active AI predictions.
+- Synthesized full 5-component report and detailed patch recommendations.
 
 ## Artifact Index
-- `analysis.md` — Comprehensive analysis report covering models, features, training, inference, calibration, thresholds, evaluation, ingestion, and code paths.
-- `handoff.md` — 5-component handoff report for orchestrator_1.
-- `progress.md` — Updated progress tracking.
+- `DISPATCH.md` — Initial dispatch message
+- `progress.md` — Liveness heartbeat and progress log
+- `report.md` — Full investigation report with exact file paths, line numbers, and proposed code changes
+- `handoff.md` — Self-contained 5-component handoff report

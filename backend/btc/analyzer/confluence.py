@@ -316,7 +316,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     # --- F. Derivatives & Market Microstructure (Weight: up to +-40) ---
     cb_ob = {}
     try:
-        cb_ob = get_coinbase_orderbook_imbalance() or {}
+        cb_ob = get_coinbase_orderbook_imbalance(asset=asset) or {}
         imb = cb_ob.get('imbalance', 0.0)
         
         # Check resting liquidity walls
@@ -346,7 +346,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
         logger.warning(f"[Analyzer] Orderbook imbalance fetch failed: {_e}")
 
     try:
-        kalshi_market = get_kalshi_15m_market(allow_synthetic=True)
+        kalshi_market = get_kalshi_15m_market(series_ticker=f'KX{asset}15M', allow_synthetic=True)
         if kalshi_market:
             yes_prob = kalshi_market.get('yes_prob', 50.0)
             if yes_prob >= 75.0:
@@ -365,7 +365,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
         logger.warning(f"[Analyzer] Kalshi market fetch failed: {_e}")
 
     try:
-        futures = get_binance_futures_data()
+        futures = get_binance_futures_data(asset=asset)
         if futures:
             fr = futures.get('funding_rate', 0.0)
             if fr > 0.015:
@@ -526,7 +526,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
             _ANALYZER_EXECUTOR = ThreadPoolExecutor(max_workers=3)
 
         fut_kalshi = _ANALYZER_EXECUTOR.submit(get_kalshi_15m_market, series_ticker=f"KX{asset}15M")
-        fut_futures = _ANALYZER_EXECUTOR.submit(get_binance_futures_data)
+        fut_futures = _ANALYZER_EXECUTOR.submit(get_binance_futures_data, asset)
         fut_fng = _ANALYZER_EXECUTOR.submit(get_fear_and_greed_index)
 
         kalshi_m = fut_kalshi.result()
@@ -920,7 +920,7 @@ def analyze_btc(df: pd.DataFrame, asset: str = "BTC", timeframe: str = "15m") ->
     return {
         "timestamp": str(df_ind.iloc[-1]["datetime"]),
         "timeframe": timeframe.upper(),
-        "price": round(curr_price, 2),
+        "price": round(curr_price, 5 if str(asset).upper() == "DOGE" else 2),
         "direction": direction,
         "primary_bias": primary_bias,
         "confluence_score": score,

@@ -1,90 +1,93 @@
-# Project: ShadowTrader AI Audit & Remediation
+# Project: ShadowTrader AI Trading Engine Upgrade (PPO Transformer + Voting Ensemble)
 
 ## Architecture
-- **Supervision & Process Model**: `server_watchdog.py` supervises `launch_desktop.py` (which launches `backend/worker.py` and `uvicorn backend.main:app` on port 8058) and `ngrok`.
-- **Backend Core**: FastAPI application in `backend/main.py` routing to modular endpoints in `backend/routes/` and `backend/auth/`.
-- **Trading Engine**: `backend/btc/auto_executor/` (including `executor.py` and `saas_broadcaster.py`) executing 15-minute interval evaluations, Kalshi order placements via `kalshi_trader.py`, and trade settlement via `saas_settler.py`.
-- **Frontend Dashboard**: `static/saas_dashboard.html` with auxiliary pages `login.html`, `trades.html`, `admin_mobile.html`, and scripts `static/js/app.js`, `dashboard.js`, `admin_users.js`.
-- **Mobile Packaging**: iOS Capacitor wrapper configured via `capacitor.config.json` serving bundled assets from `static/`.
+- **Reinforcement Learning Engine (`backend/btc/rl_agent.py`)**:
+  - Upgraded from Dueling Double DQN / LSTM to Proximal Policy Optimization (PPO) Actor-Critic.
+  - Backbone: 2-layer Pre-LN PyTorch `nn.TransformerEncoder` ($d_{\text{model}}=64$, $n_{\text{head}}=4$, SiLU) with time-series positional encoding on 25 sequence features (5 lags $\times$ 5 indicators) fused with 41 static features.
+  - Continuous Action Space ($\mathbb{R}^3$): Directional conviction ($a_{\text{dir}} \in [-1, 1]$), dynamic order sizing ($a_{\text{size}} \in [0, 1] \implies N_{\text{contracts}}$), and target limit price ($a_{\text{price}} \in [0.01, 0.99]$).
+  - Critic Head: State value estimator $V(s) \in \mathbb{R}$.
+  - Loss Function: PPO clipped surrogate objective ($L^{\text{CLIP}}$), critic MSE loss ($L^{\text{VF}}$), entropy bonus ($S[\pi]$), and GAE-$\lambda$ advantage estimation.
+  - Backward Compatibility: Adapters for `select_action(state)` $\rightarrow \{0, 1, 2\}$, `q_values(state)` pseudo-Q values, `policy_net`, `target_net`, `epsilon`, `memory`, and safe checkpoint loading migration.
+
+- **Classical ML Engine (`backend/btc/ml_ensemble.py`, `ml_engine.py`)**:
+  - Upgraded to a unified `VotingEnsemble` simultaneously training and evaluating `XGBoost`, `LightGBM`, and `CatBoost` models (with fallback shims for environment resilience).
+  - Consensus Engine: Evaluates directional agreement ratio (unanimous 3/3 = 1.0 vs majority 2/3 = 0.67) and dispersion spread across all 3 models.
+  - Kelly Criterion Position Sizing: Closed-form binary contract formula $f^* = \frac{p - C}{1.0 - C}$ where $C = P_{\text{eff}} + \text{TakerFee}$.
+  - Consensus Amplification: Unanimous agreement triggers Half-Kelly ($\lambda = 0.50$, doubling allocation vs majority at $\lambda = 0.25$), bounded by a 15% single-trade bankroll cap and daily risk limits.
+  - Backward Compatibility: `GodTierEnsemble = VotingEnsemble` alias and backward-compatible prediction methods.
+
+- **Execution & Integration Engine (`backend/worker.py`, `saas_broadcaster.py`, `executor.py`, `contract_eval.py`)**:
+  - Live and paper trading execution loops consume PPO continuous action outputs (`target_limit_price`, `dynamic_contracts`) and ML consensus Kelly sizing.
+  - 1D 66-feature tensor dimension safety across all callers (`shadow_executor.py`, `contract_eval.py`).
+  - Zero regressions to existing trading styles (SNIPER, CAPITAL_GUARD, AUTO, etc.), user configs, and manual trading routes.
 
 ---
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Kalshi 429 Retry Fix | Fix `@retry` in `kalshi_trader.py` to inspect HTTP status and retry on 429 with exponential backoff across all trading methods | M1 | explorer_1 |
-| 2 | Settlement 429 Storm Elimination | Add per-ticker backoff/negative caching in `saas_settler.py` for unresolved contracts | M1 | explorer_1 |
-| 3 | Raw Features List Crash Fix | Fix `'list' object has no attribute 'get'` in `saas_broadcaster.py` and `executor.py` | M1 | explorer_1 |
-| 4 | Desktop Launcher Venv Fallback | Fix `launch_desktop.py` hardcoded `.venv` path to fall back to `sys.executable` | M1 | explorer_1 |
-| 5 | Worker Log Flooding & Mutex Collision | Throttle worker loop logging in `worker.py` and prevent mutex collision in `server_watchdog.py` | M1 | explorer_1 |
-| 6 | Forex Paper State Log Guard | Guard negative paper balance in `backend/forex/auto_executor.py` against spamming warnings | M1 | explorer_1 |
-| 7 | Indicator Import Re-export | Re-export `add_all_indicators` in `backend/btc/auto_executor/__init__.py` | M1 | explorer_1 |
-| 8 | Robust API Exception Boundaries | Broaden fragile 8-exception tuples in API routes to gracefully catch and return 500s | M1 | explorer_1 |
-| 9 | Settings Drawer Unclosed Div | Close `<div id="settingsDrawer">` at line 6097 in `saas_dashboard.html` | M2 | explorer_2 |
-| 10 | iOS Bottom Safe Area Insets | Add `env(safe-area-inset-bottom)` to sticky modal buttons, drawer, and main container | M2 | explorer_2 |
-| 11 | Corrupted Tailwind Classes Restoration | Restore `-2xl`, `-xl`, `-sm` to `backdrop-blur-*` in `saas_dashboard.html` | M2 | explorer_2 |
-| 12 | Retire Obsolete Update Modal | Remove duplicate `#updateAlertModal` with broken FontAwesome icons in `saas_dashboard.html` | M2 | explorer_2 |
-| 13 | iOS Safe Area Stylesheet Integration | Link and integrate responsive safe area rules from `app.css` into `saas_dashboard.html` | M2 | explorer_2 |
-| 14 | Trades Viewport & Safe Area | Add `viewport-fit=cover` and safe area insets to `trades.html` | M2 | explorer_2 |
-| 15 | Capacitor Content Inset Normalization | Set `"contentInset": "automatic"` in `capacitor.config.json` to eliminate double safe area gap | M2 | explorer_2 |
-| 16 | Missing Favicon & Icon 404s | Resolve missing `./assets/app_icon.ico` and `./assets/favicon.svg` to existing `favicon.ico`/icons | M3 | explorer_3 |
-| 17 | Favicon Backend Route 404 Fix | Point `/favicon.ico` in `backend/routes/ui.py` to `favicon.ico` on disk | M3 | explorer_3 |
-| 18 | Capacitor WKWebView Relative Routing | Change absolute navigation links (`/admin/mobile`) to relative (`./admin_mobile.html`) | M3 | explorer_3 |
-| 19 | Capacitor Relative Asset Paths | Convert `/static/assets/...` in HTML and manifest to relative `./assets/...` | M3 | explorer_3 |
-| 20 | Fetch Fallback Status Validation | Fix promise `.catch()` in `app.js` with explicit `res.ok` check for offline data fallbacks | M3 | explorer_3 |
-| 21 | Service Worker Root Scope Route | Mount root `/sw.js` in FastAPI with `Service-Worker-Allowed: /` header | M3 | explorer_3 |
-| 22 | Bundle Size Optimization | Exclude 8.3 MB dead `ai_avatar.gif` in `update_ipa.py` | M3 | explorer_3 |
-| 23 | Auto Trader Runaway 429 Loop Fix | Mark `self.last_traded_interval` and backoff on 429/rejections in `executor.py` and `saas_broadcaster.py` | M4 | explorer_3 |
-| 24 | Execution Delay Non-Blocking Lock Fix | Ensure interval is flagged inflight and worker thread is not stalled during `execDelay` | M4 | explorer_3 |
-| 25 | Paper Mode Order Intents Claim | Extend `order_intents.claim` to paper trading to prevent duplicate interval executions | M4 | explorer_3 |
-| 26 | Auto Trader UI Toggle & Badge Sync | Clean up obsolete toggle IDs and immediately update `nav-auto-badge` in `toggleAutoTrader` | M4 | explorer_3 |
-| 27 | Dynamic Island Position & 1-Shot Sync | Calibrate Dynamic Island top offset and sync state when 1-shot snipe executes | M4 | explorer_3 |
-| 28 | Dynamic Asset Config Resolution | Update `loadConfig()` to query `/api/engine/${curA}/trade/config` instead of hardcoded `btc` | M4 | explorer_3 |
-| 29 | Trade Config User Consistency | Fix `api_btc_trade_config_get` to respect `user_id` matching `api_btc_trade_ai_settings_get` | M4 | explorer_3 |
-| 30 | Client Polling Storm Consolidation | Deduplicate polling loops between `saas_dashboard.html` and `app.js`, add `document.hidden` check | M4 | explorer_2/3 |
-| 31 | E2E Testing Suite & Contract Realignment | Create comprehensive E2E test suite covering Tiers 1-4 and realign outdated contract tests | M5 | all |
+| 1 | PPO Actor-Critic Transformer Architecture | Replace LSTM with `nn.TransformerEncoder` ($d_{\text{model}}=64$, $n_{\text{head}}=4$, positional encodings) on sequence features fused with static features | M1 | Explorer 1 |
+| 2 | Continuous Action Space Heads | Actor heads for directional conviction ($a_{\text{dir}}$), dynamic order sizing ($a_{\text{size}}$), and target limit price ($a_{\text{price}}$) | M1 | Explorer 1 |
+| 3 | PPO Loss & GAE Rollout Buffer | Clipped surrogate policy loss, value MSE loss, entropy bonus, and Generalized Advantage Estimation (GAE) | M1 | Explorer 1 |
+| 4 | RL Backward Compatibility Layer | Adapters for `select_action`, `q_values`, `evaluate_contract`, `policy_net`, `epsilon`, `memory`, and safe checkpoint migration | M1 | Explorer 1 |
+| 5 | Environment Dependencies & Shims | Update `requirements.txt` with `lightgbm` and `catboost`, install libraries, and provide graceful import fallback shims | M2 | Explorer 2 |
+| 6 | Unified Voting Classifier Ensemble | `VotingEnsemble` training and predicting simultaneously across XGBoost, LightGBM, and CatBoost | M2 | Explorer 2 |
+| 7 | Multi-Model Consensus Engine | Calculate prediction consensus, directional agreement ratio (3/3 vs 2/3), and probability dispersion | M2 | Explorer 2 |
+| 8 | Kelly Criterion Consensus Sizing | Binary contract formula $f^* = (p - C) / (1 - C)$ with consensus amplification ($\lambda = 0.50$ on unanimity vs $\lambda = 0.25$ on majority) | M2 | Explorer 2 |
+| 9 | ML Backward Compatibility Layer | Maintain `GodTierEnsemble` alias, SHAP reasoning compatibility, and seamless integration with `MLEngine` & `DualMLEngine` | M2 | Explorer 2 |
+| 10 | Contract Evaluator Integration | Wire PPO continuous outputs and ML consensus Kelly sizing into `contract_eval.py` with 66-dim tensor shape safety | M3 | Explorer 3 |
+| 11 | Execution Paths (Live & Paper) Integration | Connect dynamic contract sizing and target limit pricing into `saas_broadcaster.py`, `executor.py`, and `shadow_executor.py` | M3 | Explorer 3 |
+| 12 | Zero-Regression & Config Safety | Ensure SQLite user configs, trading styles (AUTO, SNIPER, etc.), and manual 1-click execution remain completely unaffected | M3 | Explorer 3 |
+| 13 | E2E Opaque-Box Test Suite | Comprehensive test suite covering Tiers 1-4 (PPO Transformer, Voting Ensemble, Kelly sizing, and Paper Trading cycles) | E2E Track | Explorer 3 |
+| 14 | Adversarial Hardening & Forensic Audit | Stress testing, edge cases, zero-latency book walking, and forensic integrity verification | Final Milestone | All |
 
 ---
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Backend Stability & Kalshi 429 Resilience | Features 1-8: `kalshi_trader.py`, `saas_settler.py`, `saas_broadcaster.py`, `executor.py`, `launch_desktop.py`, `worker.py`, `server_watchdog.py`, `indicators` | None | PLANNED |
-| M2 | Frontend HTML/CSS Structure & iOS Smoothness | Features 9-15: `saas_dashboard.html`, `trades.html`, `capacitor.config.json`, safe area CSS | None | PLANNED |
-| M3 | Asset & Route Integrity (Zero 404s) | Features 16-22: `ui.py`, `login.html`, `trades.html`, `app.js`, `manifest.json`, `update_ipa.py`, `main.py` | M2 | PLANNED |
-| M4 | Auto Trader Logic & UI State Synchronization | Features 23-30: `executor.py`, `saas_broadcaster.py`, `saas_dashboard.html`, `engine.py`, polling deduplication | M1, M2 | PLANNED |
-| M5 | E2E Testing Track & Final Verification | Feature 31: Test harness, E2E test suite (Tiers 1-4), adversarial verification (Tier 5) | M1, M2, M3, M4 | PLANNED |
+| M1 | PPO Transformer RL Architecture (R1) | Features 1-4: `backend/btc/rl_agent.py`, `train_rl_full.py`, `calibrate_rl.py` | None | DONE |
+| M2 | ML Voting Classifier Ensemble & Kelly Sizing (R2) | Features 5-9: `requirements.txt`, `backend/btc/ml_ensemble.py`, `ml_engine.py`, `fees.py` | None | DONE |
+| M3 | Execution Paths Integration & Regression Hardening (R3) | Features 10-12: `contract_eval.py`, `shadow_executor.py`, `saas_broadcaster.py`, `executor.py` | M1, M2 | DONE |
+| E2E | E2E Testing Suite Track | Feature 13: Test harness, Tiers 1-4 opaque-box tests, `TEST_READY.md` | Independent | DONE |
+| M4 | Final Milestone: 100% Test Pass & Adversarial Hardening | Feature 14: Tier 5 adversarial verification, forensic integrity audit | M1, M2, M3, E2E | DONE |
 
 ---
 
 ## Interface Contracts
 
-### Frontend Dashboard ↔ Backend API
-- `GET /api/engine/{asset}/trade/config`: Returns `{ enabled: bool, mode: str, ... }` for the active asset and requesting user session.
-- `POST /api/engine/{asset}/trade/toggle?enabled={bool}`: Toggles trading for the active asset and returns `{ success: bool, enabled: bool }`.
-- `GET /api/auth/dashboard_stats`: Returns account statistics, open positions, and current trading state.
-- `GET /api/health`: Returns `{ status: "ok" }`.
+### RL Agent Contract (`backend/btc/rl_agent.py`)
+- `evaluate_contract(state, kalshi_market)`:
+  - Input: `state` (66-dim list/1D tensor), `kalshi_market` (dict).
+  - Output: `dict` containing `p_model` (float), `action` (int: 0, 1, 2), `action_name` (str), `target_limit_price` (float $\in [0.01, 0.99]$), `dynamic_sizing_factor` (float $\in [0.0, 1.0]$), `dynamic_contracts` (int $\ge 1$), `v_state` (float).
+- `select_action(state)`: Returns `int` in `{0, 1, 2}`.
+- `q_values(state)`: Returns `np.ndarray` of shape `(3,)` preserving directional calibration slope.
 
-### AutoExecutor ↔ KalshiTrader
-- `kalshi_trader.get_market_result(ticker)`: Must return `{ "success": bool, "result": "yes"|"no"|"", "error": str }`. Must retry on HTTP 429 with exponential backoff up to 3 attempts.
-- `kalshi_trader.place_order(...)`: Must return `{ "success": bool, "order_id": str, "error": str, "ambiguous": bool }`. Must not trigger runaway execution loops on rejection.
+### ML Ensemble Contract (`backend/btc/ml_ensemble.py`)
+- `predict_consensus(X)`:
+  - Input: feature vector or array of shape `(n_samples, n_features)` or `(n_features,)`.
+  - Output: `dict` containing:
+    - `p_ensemble`: float $\in [0, 1]$
+    - `individual_probs`: `{"xgb": float, "lgb": float, "cb": float}`
+    - `agreement_ratio`: float $\in [0.0, 1.0]$ (1.0 = unanimous 3/3, 0.67 = majority 2/3)
+    - `is_unanimous`: bool
+    - `consensus_direction`: str (`"YES"`, `"NO"`, or `"NEUTRAL"`)
+- `calculate_kelly_wager(p_win, ask_price, bankroll, is_unanimous)`:
+  - Input: `p_win` (float), `ask_price` (float), `bankroll` (float), `is_unanimous` (bool).
+  - Output: `dict` with `f_star` (float), `kelly_fraction` (float: 0.50 on unanimity, 0.25 on majority), `allocated_dollars` (float), `recommended_contracts` (int).
 
 ---
 
 ## Code Layout
-- Backend Source:
-  - `backend/main.py`: Main FastAPI entrypoint
-  - `backend/worker.py`: Background worker singleton loop
-  - `backend/saas_settler.py`: Trade settlement engine
-  - `backend/routes/`: Specialized API routers (`ui.py`, `engine.py`, `trading.py`, etc.)
-  - `backend/btc/`: Kalshi clients and auto execution engines (`kalshi_trader.py`, `auto_executor/`)
-- Frontend Source:
-  - `static/saas_dashboard.html`: Core SaaS web app
-  - `static/login.html`: Authentication view
-  - `static/trades.html`: Mobile trade ledger
-  - `static/admin_mobile.html`: Mobile admin console
-  - `static/js/`: Client JavaScript (`app.js`, `admin_users.js`, `dashboard.js`)
-  - `static/css/`: Stylesheets (`dashboard.css`, `app.css`)
-  - `static/assets/`: Icons, logos, and splash screens
+- RL Architecture: `backend/btc/rl_agent.py`, `backend/btc/train_rl_full.py`, `backend/scripts/calibrate_rl.py`
+- ML Ensemble: `backend/btc/ml_ensemble.py`, `backend/btc/ml_engine.py`, `backend/btc/fees.py`, `requirements.txt`
+- Execution & Integration:
+  - `backend/btc/analyzer/contract_eval.py`: Forecast evaluation router
+  - `backend/btc/shadow_executor.py`: RL shadow trading sandbox
+  - `backend/btc/auto_executor/saas_broadcaster.py`: Multi-tenant live/paper execution engine
+  - `backend/btc/auto_executor/executor.py`: Primary auto-executor loop
+  - `backend/worker.py`: Background worker daemon
 - Testing:
-  - `tests/`: Pytest test suite and test fixtures
+  - `tests/test_ppo_transformer.py`: RL PPO Transformer tests (Tier 1-2)
+  - `tests/test_voting_ensemble_kelly.py`: ML Voting Classifier & Kelly tests (Tier 1-2)
+  - `tests/test_m3_m4_model_integration.py`: End-to-end integration & paper trading tests (Tier 3-4)

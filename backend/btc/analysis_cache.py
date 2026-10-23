@@ -23,15 +23,62 @@ btc_timeframe_cache: Dict[str, Any] = {}
 _btc_cache_lock = threading.Lock()
 
 
-def get_cached_btc_analysis(asset: str = "BTC", timeframe: str = "15m", max_age_seconds: int = 10) -> Tuple[Any, Dict[str, Any]]:
-    """Retrieve or compute BTC analysis with smart per-timeframe caching."""
+_btc_refreshing = set()
+
+def get_cached_btc_analysis(asset: str = "BTC", timeframe: str = "15m", max_age_seconds: int = 15, non_blocking: bool = False) -> Tuple[Any, Dict[str, Any]]:
+    """Retrieve or compute BTC analysis with smart per-timeframe caching and stale-while-revalidate."""
     now = time.time()
+    asset = str(asset or "BTC").upper().strip()
     tf = timeframe.lower()
     cache_key = f"{asset}_{tf}"
     with _btc_cache_lock:
-        if cache_key in btc_timeframe_cache and (now - btc_timeframe_cache[cache_key]["last_fetched"]) < max_age_seconds:
-            if btc_timeframe_cache[cache_key].get("df") is not None:
-                return btc_timeframe_cache[cache_key]["df"], btc_timeframe_cache[cache_key]["analysis"]
+        entry = btc_timeframe_cache.get(cache_key)
+        if entry and entry.get("df") is not None:
+            if (now - entry["last_fetched"]) < max_age_seconds:
+                return entry["df"], entry["analysis"]
+            # Stale-while-revalidate: trigger background refresh and return cached immediately!
+            if cache_key not in _btc_refreshing:
+                _btc_refreshing.add(cache_key)
+                def _bg_refresh(a=asset, t=tf, ck=cache_key):
+                    try:
+                        df_new = fetch_asset_candles(a, timeframe=t, limit=1000)
+                        an_new = analyze_btc(df_new, asset=a, timeframe=t)
+                        an_new["generated_at"] = datetime.now(timezone.utc).isoformat()
+                        with _btc_cache_lock:
+                            btc_timeframe_cache[ck] = {
+                                "df": df_new,
+                                "analysis": an_new,
+                                "last_fetched": time.time()
+                            }
+                    except Exception as bg_err:
+                        logger.debug(f"[AnalysisCache] Background refresh error for {ck}: {bg_err}")
+                    finally:
+                        with _btc_cache_lock:
+                            _btc_refreshing.discard(ck)
+                threading.Thread(target=_bg_refresh, daemon=True, name=f"BtcAnalysis_{cache_key}").start()
+            return entry["df"], entry["analysis"]
+
+        if non_blocking:
+            if cache_key not in _btc_refreshing:
+                _btc_refreshing.add(cache_key)
+                def _bg_cold(a=asset, t=tf, ck=cache_key):
+                    try:
+                        df_new = fetch_asset_candles(a, timeframe=t, limit=1000)
+                        an_new = analyze_btc(df_new, asset=a, timeframe=t)
+                        an_new["generated_at"] = datetime.now(timezone.utc).isoformat()
+                        with _btc_cache_lock:
+                            btc_timeframe_cache[ck] = {
+                                "df": df_new,
+                                "analysis": an_new,
+                                "last_fetched": time.time()
+                            }
+                    except Exception as bg_err:
+                        logger.debug(f"[AnalysisCache] Cold background refresh error for {ck}: {bg_err}")
+                    finally:
+                        with _btc_cache_lock:
+                            _btc_refreshing.discard(ck)
+                threading.Thread(target=_bg_cold, daemon=True, name=f"BtcCold_{cache_key}").start()
+            return None, {}
 
     try:
         df = fetch_asset_candles(asset, timeframe=tf, limit=1000)

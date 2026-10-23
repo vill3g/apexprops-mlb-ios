@@ -1,14 +1,14 @@
 {
-  "enabled": true,
-  "mode": "LIVE",
+  "enabled": false,
+  "mode": "PAPER",
   "min_conviction": "GRADE A+ SETUP",
   "max_contracts": 7,
   "prediction_mode": true,
   "broadcast_trades": true,
   "max_daily_risk": 50.0,
-  "max_daily_trades": 1,
+  "max_daily_trades": 2,
   "ai_settings": {
-    "modelChoice": "RL_DQN",
+    "modelChoice": "VOTING_ENSEMBLE",
     "trainWindow": 4000,
     "regC": 0.6,
     "classWeight": "balanced",
@@ -21,7 +21,7 @@
     "execDelay": 1,
     "pollInterval": 5,
     "verboseLog": true,
-    "dryRun": false,
+    "dryRun": true,
     "ignorePass": false,
     "ignorePassTechnicalOnly": false,
     "tradingStyle": "AUTO",
@@ -41,7 +41,7 @@
     "reversalMinMinutesLeft": 6.0,
     "reversalMinConfidence": 75.0,
     "slippageBufferDollars": 0.04,
-    "useKellyCriterion": false,
-    "use_kelly_criterion": false
+    "useKellyCriterion": true,
+    "use_kelly_criterion": true
   }
 }

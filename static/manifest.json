@@ -1,7 +1,10 @@
 {
+  "id": "/",
   "name": "ShadowTrade AI",
-  "short_name": "ShadowTrade AI",
+  "short_name": "ShadowTrade",
+  "description": "AI trading copilot for Kalshi markets.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -11,18 +14,19 @@
       "src": "./assets/app_icon_192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./assets/app_icon_512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./assets/apple-touch-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

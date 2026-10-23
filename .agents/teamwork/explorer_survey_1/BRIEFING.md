@@ -1,49 +1,47 @@
-# BRIEFING — 2026-10-02T17:33:00Z
+# BRIEFING — 2026-10-07T22:48:00Z
 
 ## Mission
-Comprehensive survey of ShadowTrader AI backend stability, error handling (R1), architecture, Kalshi client & rate limiting, crash risks, and test harnesses.
+Survey saas_dashboard.html and related UI files to document settings drawer structure, elements, and decouple Financial vs Sports settings drawers.
 
 ## 🔒 My Identity
 - Archetype: explorer
-- Roles: survey, code analysis, backend stability audit
-- Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_1
-- Original parent: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Milestone: survey & backend analysis
+- Roles: frontend investigator, UI survey
+- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1
+- Original parent: 269a1b7a-33d9-4136-b7da-906e573af819
+- Milestone: survey
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement or modify any code files outside of own agent directory
-- Document exact file paths, line numbers, root causes, and risks
-- Produce survey_report.md and handoff.md in working directory
-- Send completion message to parent via send_message
+- Read-only investigation — do NOT implement
+- Write findings only within C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1
+- Communicate results back to parent via send_message
 
 ## Current Parent
-- Conversation ID: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Updated: 2026-10-02T17:33:00Z
+- Conversation ID: 269a1b7a-33d9-4136-b7da-906e573af819
+- Updated: not yet
 
 ## Investigation State
 - **Explored paths**:
-  - `backend/main.py`, `launch_desktop.py`, `server_watchdog.py`, `backend/worker.py`
-  - `backend/btc/kalshi_client.py`, `backend/btc/kalshi_trader.py`, `backend/saas_settler.py`
-  - `backend/btc/auto_executor/` (`executor.py`, `saas_broadcaster.py`, `__init__.py`)
-  - `backend/btc/analyzer/contract_eval.py`
-  - `backend/forex/auto_executor.py`, `backend/forex/paper_trader.py`
-  - `tests/` (all 32 test files, pytest test runner)
-  - `watchdog_error.log` and active running system processes
+  - `static/saas_dashboard.html` (lines 150-460, 560-585, 670-710, 1575-2370, 3770-3940, 6055-6075, 6980-8450, 8520-8570)
+  - `static/js/app.js` and `static/app.js`
+  - `static/css/mobile-polish.css`
+  - `backend/auth/routes.py`
+  - `backend/database/models.py`
+  - `backend/routes/engine.py`
+  - `tests/test_r3_r4_ui_and_rate_limits.py`, `tests/test_sports_trades_and_sizing.py`, `tests/test_r2_r5_multi_universe_and_timestamps.py`
 - **Key findings**:
-  - Defective Kalshi 429 retries in `kalshi_trader.py` because `self.session.get()` does not raise an exception on 429.
-  - Runaway 1-second settlement polling in `backend/saas_settler.py:734-750` repeatedly calls `get_market_result(ticker)` with no backoff on pending resolutions, causing 429 lockouts.
-  - Live crash `'list' object has no attribute 'get'` in `saas_broadcaster.py:748, 777` when `contract_eval.py` returns `"raw_features": []` for force-trade users.
-  - `launch_desktop.py:81` hardcodes `.venv\Scripts\python.exe` without fallback, failing on systems without local `.venv`.
-  - Legacy `kalshi-ai-trader` processes hold `"KalshiAITraderWatchdogLock"` and port 8058.
-  - Negative forex paper balance (`-1531.8`) produces continuous negative risk calculations and warning log spam.
-  - Test suite (180 tests: 138 passed, 38 failed, 4 skipped) documented.
-- **Unexplored areas**: None for backend stability survey milestone.
+  - Single shared drawer `#settingsDrawer` at lines 6988-8408 uses dynamic visibility toggling (`.finance-only-setting` / `.sports-only-setting`) and internal universe pills (`#btn-universe-fin-settings` / `#btn-universe-sports-settings`).
+  - Found unclosed `<div>` at line 7502 causing DOM hierarchy issues.
+  - Found critical `ReferenceError: sportsActivePropsStr is not defined` at line 1709 in `saveUserConfig()`.
+  - Identified all 105 interactive controls and mapped them strictly into Financial vs Sports universes.
+  - Verified backend contract supports `"BOTH"` universe persistence, and designed dual-drawer synchronization pattern.
+- **Unexplored areas**: None for frontend settings survey.
 
 ## Key Decisions Made
-- Documented findings in `survey_report.md` and `handoff.md`. Ready to communicate to orchestrator.
+- Produced comprehensive `survey_report.md` detailing element catalog, decoupling architecture, bug fixes, and tab optimization.
+- Produced 5-component `handoff.md`.
 
 ## Artifact Index
-- DISPATCH.md — Task dispatch record
-- progress.md — Liveness heartbeat and progress tracking
-- survey_report.md — Detailed survey report
-- handoff.md — 5-component handoff report
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1\survey_report.md` — Detailed survey report
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1\handoff.md` — 5-component handoff report
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1\drawer_elements.json` — Raw JSON catalog of all 105 interactive drawer elements
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_1\elements_summary.txt` — Formatted summary breakdown

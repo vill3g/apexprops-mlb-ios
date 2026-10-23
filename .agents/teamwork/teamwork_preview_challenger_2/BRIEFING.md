@@ -1,52 +1,58 @@
-# BRIEFING — 2026-09-30T19:39:00Z
+# BRIEFING — 2026-10-09T15:20:00Z
 
 ## Mission
-Adversarially challenge the mathematical friction, break-even hurdles, Binary Half-Kelly formula, and expected value regime claims in the Kalshi AI Trader system.
+Empirically stress-test and challenge the frontend filtering and display logic in `static/saas_dashboard.html`, specifically `isSportMatch`, cross-sport negative testing, empty state loading conditions, and settings gating.
 
 ## 🔒 My Identity
-- Archetype: teamwork_preview_challenger
+- Archetype: challenger
 - Roles: critic, specialist
 - Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_challenger_2
-- Original parent: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Milestone: E2E Acceptance & Quality Track
-- Instance: Challenger 2 (Friction & Mathematical Arbitrage Challenger)
+- Original parent: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Milestone: M2
+- Instance: 2 of 2
 
 ## 🔒 Key Constraints
-- Review-only — do NOT modify implementation code
-- Write only to your own folder (.agents/teamwork/teamwork_preview_challenger_2/)
-- Must empirically verify mathematical friction, break-even hurdles, and Kelly formula behavior with runnable scripts/tests
+- Review-only — do NOT modify implementation code. Report any failures as findings.
+- Must run verification code directly (empirical tests: generators, oracles, stress harnesses).
+- Do NOT trust worker claims or logs. If you cannot reproduce a bug empirically, it does not count.
+- Deliver hard handoff report with explicit verdict: APPROVE or FAIL.
 
 ## Current Parent
-- Conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a
-- Updated: not yet
+- Conversation ID: 79a13c8c-bb16-4406-ac17-c75d551d55ff
+- Updated: 2026-10-09T15:10:19Z
 
 ## Review Scope
-- **Files to review**: `backend/btc/fees.py`, `backend/btc/auto_executor/saas_broadcaster.py`, `backend/btc/analyzer/contract_eval.py`, `backend/btc/scalp_engine.py`, `backend/btc/auto_executor/stop_manager.py`, `reports/R1_strategy_risk_assessment.md`, `reports/FINAL_PROFITABILITY_REPORT.md`
-- **Interface contracts**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\PROJECT.md
-- **Review criteria**: Mathematical correctness of fee formulas, break-even win rates, early exit friction, Kelly formula behavior under probability inversion, and empirical existence of profitable regimes.
+- **Files to review**: `static/saas_dashboard.html` (specifically `isSportMatch`, `renderSportsEvents`, `loadSportsEvents`, `sportsEventAllowed`, `window.__sportsLoading`), `tests/test_sports_dashboard.py`
+- **Interface contracts**: `PROJECT.md` Feature 7, 8, 9, 10, 12; `GET /api/engine/sports/events`
+- **Review criteria**: Empirical correctness, boundary conditions, cross-sport isolation, false positive/negative matching, settings gating, loading states.
 
 ## Attack Surface
-- **Hypotheses tested**: 
-  1. Kalshi fee formula `0.07 * P * (1 - P)` equals $0.02 at P=0.50 and break-even win rate is exactly 52.00% (c=1) and 51.75% (c>=20). [CONFIRMED EMPIRICALLY]
-  2. Early-exit friction ($0.04 round-trip taker fee + $0.03-$0.06 spread) requires >58% win rate. [CONFIRMED EMPIRICALLY: requires 58.0% to 90.0% depending on spread/bracket]
-  3. Binary Half-Kelly formula $f^* = (p - b) / (1 - b)$ induces catastrophic over-allocation when $p$ is overconfident (e.g., $p=0.85$ vs realized $0.32$). [CONFIRMED EMPIRICALLY: true $f^* = -0.36$, Monte Carlo 100% ruin]
-  4. Possibility of any valid regime generating positive net expected value. [CONFIRMED EMPIRICALLY: NO regime generates positive net EV across 5,709 backtest intervals and 741 database trades; realized unit expectancy is -$0.0323/contract]
-- **Vulnerabilities confirmed**:
-  1. Insurmountable friction drag exceeding all empirical out-of-sample directional win rates (44.25% - 48.59%).
-  2. Kelly leverage inversion causing maximal capital allocation on lowest-accuracy trades.
-  3. Absence of any positive expectancy regime across all market slices (day/night, vol, styles, ITM/OTM).
-- **Untested angles**: None remaining for the 4 core mathematical and empirical challenge questions.
+- **Hypotheses tested**:
+  - Script AST syntax and compilation in browser and Node.js VM.
+  - Runtime definition of `isSportMatch`, `renderSportsEvents`, `filterSportsEvents` in headless Chromium.
+  - Multi-sport positive matching across TEN, NFL, MLB, NHL, SOC, UFC, NPB/KBO.
+  - 7x7 exhaustive cross-sport negative isolation matrix (42 tests).
+  - Alias matching (SOCCER, TENNIS, FOOTBALL, BASEBALL, HOCKEY, MMA, NPB_KBO, NPB-KBO).
+  - Empty state loading condition when `window.__sportsLoading` is true vs false.
+  - Settings gate bypass when browsing specific tab (f='TEN') vs enforcement when f='ALL'.
+  - Filter pipeline stress (Futures, win totals, completed games, duration caps, live toggle).
+  - Null/undefined event argument resilience.
+- **Vulnerabilities found**:
+  - CRITICAL: Stray code at `static/saas_dashboard.html:4119-4129` causing `SyntaxError: Illegal return statement` and unmatched `}`, preventing the entire 345 KB script from executing in any browser.
+  - MEDIUM: Lack of null guard in `isSportMatch(evt, f)` causing `TypeError: Cannot read properties of null` when `evt` is null/undefined.
+- **Untested angles**:
+  - Real-time WebSocket streaming feed interactions with sports events.
 
 ## Loaded Skills
-- None explicitly assigned via skill paths
+- None specified by orchestrator dispatch.
 
 ## Key Decisions Made
-- Executed empirical test harnesses in scratch directory for all 4 mandate tasks.
-- Confirmed full alignment between theoretical derivations in R1/FINAL report and ground truth code/data.
-- Formally APPROVE the FINAL_PROFITABILITY_REPORT conclusion ("NOT PROFITABLE (NEGATIVE EXPECTANCY)").
+- Created automated 11-test suite `tests/test_sports_frontend_empirical.py` using Node.js VM and Playwright Chromium.
+- Rendered verdict `FAIL` due to fatal browser syntax error breaking the entire sports UI.
 
 ## Artifact Index
-- DISPATCH.md — Parent instructions and task definition
-- BRIEFING.md — Situational awareness and state tracking
-- progress.md — Liveness heartbeat and milestone tracking
-- handoff.md — Final adversarial review report and verdict
+- `DISPATCH.md` — orchestrator instruction
+- `BRIEFING.md` — situational memory
+- `progress.md` — execution log and liveness heartbeat
+- `report.md` — detailed stress-testing findings
+- `handoff.md` — final handoff with verdict: FAIL

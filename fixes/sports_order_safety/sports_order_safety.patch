@@ -1,0 +1,509 @@
+diff -ruN a/backend/database/order_intents.py b/backend/database/order_intents.py
+--- a/backend/database/order_intents.py	2026-10-06 21:32:37.175301458 -0400
++++ b/backend/database/order_intents.py	2026-10-06 21:32:37.177342781 -0400
+@@ -138,6 +138,28 @@
+         return None
+ 
+ 
++def list_unresolved(account_key: str, prefix: str = "", min_age_seconds: float = 0.0) -> list:
++    """Claims for this account whose order outcome is still unknown: 'ambiguous' (the response
++    was lost) or 'sending' (the process died mid-order). Only claims older than
++    min_age_seconds are returned, so an order that is being sent right now is left alone."""
++    cutoff = time.time() - float(min_age_seconds or 0.0)
++    try:
++        conn = _connect()
++        try:
++            conn.row_factory = sqlite3.Row
++            rows = conn.execute(
++                "SELECT * FROM order_intents WHERE account_key = ? AND ticker LIKE ? "
++                "AND state IN ('ambiguous', 'sending') AND updated_at <= ?",
++                (account_key, f"{prefix}%", cutoff),
++            ).fetchall()
++            return [dict(r) for r in rows]
++        finally:
++            conn.close()
++    except Exception as e:
++        logger.error(f"[OrderIntents] Could not list unresolved intents for {account_key}: {e}")
++        return []
++
++
+ def settle_outcome(account_key: str, ticker: str, order_res: dict) -> str:
+     """Apply a place_order() result to the claim. Returns 'filled', 'ambiguous' or 'released'."""
+     order_res = order_res or {}
+diff -ruN a/backend/sports_bridge/executor.py b/backend/sports_bridge/executor.py
+--- a/backend/sports_bridge/executor.py	2026-10-06 21:32:37.184506130 -0400
++++ b/backend/sports_bridge/executor.py	2026-10-06 21:32:37.186503429 -0400
+@@ -13,6 +13,8 @@
+     deduct_user_paper_balance,
+     credit_user_paper_balance
+ )
++from backend.database import order_intents
++from backend.btc.fees import kalshi_order_fee, net_pnl
+ from backend.routes.engine import (
+     _fetch_kalshi_series_events,
+     _SPORTS_SERIES_MAP,
+@@ -80,6 +82,32 @@
+             pass
+     return 0.0
+ 
++SPORTS_INTENT_PREFIX = "sports:"
++# A claim still 'sending' after this long means the process died mid-order.
++UNRESOLVED_MIN_AGE_SECONDS = 60
++# Kalshi positions appear within seconds of a fill; after this long with no position the
++# uncertain order is treated as unfilled (the claim is kept, so the market is not re-bought).
++UNRESOLVED_GIVE_UP_SECONDS = 15 * 60
++
++
++def _sports_intent_ticker(ticker: str) -> str:
++    return f"{SPORTS_INTENT_PREFIX}{ticker}"
++
++
++def _size_sports_order(wager: float, price: float) -> tuple:
++    """(contracts, worst_case_cost) for a sports entry. The worst-case fill (ask + the 4c
++    slippage buffer place_sports_order allows) plus the Kalshi taker fee must fit inside the
++    wager. Returns (0, 0.0) when the wager can't buy one contract - the old sizing forced
++    max(1, ...) and could spend more than the user's wager."""
++    max_p = min(0.99, max(0.01, float(price) + 0.04))
++    count = int(float(wager) / max_p) if max_p > 0 else 0
++    while count > 0 and (count * max_p + kalshi_order_fee(max_p, count)) > float(wager):
++        count -= 1
++    if count < 1:
++        return 0, 0.0
++    return count, round(count * max_p + kalshi_order_fee(max_p, count), 2)
++
++
+ def _generate_kalshi_market(prediction: dict, require_today: bool = True) -> tuple:
+     """
+     Matches a sport prediction to an actual Kalshi event/market ticker and ask price.
+@@ -409,6 +437,10 @@
+                 logger.warning(f"[SportsBridge] Could not verify Kalshi live balance for user {uid}: {bal_res.get('error')}. Skipping auto-trade.")
+                 return
+             avail_live_cash = float(bal_res.get("balance_dollars", 0.0))
++            try:
++                self._reconcile_uncertain_sports_orders(user, kt)
++            except Exception as rec_err:
++                logger.error(f"[SportsBridge] Reconciling uncertain orders for user {uid} failed: {rec_err}")
+         elif mode != "PAPER":
+             return
+ 
+@@ -566,9 +598,11 @@
+                     continue
+ 
+                 trade_id = f"sports_auto_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+-                max_p = min(0.99, max(0.01, price + 0.04))
+-                count = max(1, int(wager / max_p))
+-                cost = round(price * count, 2)
++                count, worst_cost = _size_sports_order(wager, price)
++                if count < 1:
++                    logger.debug(f"[SportsBridge] Wager ${wager:.2f} can't buy one contract on {ticker} at ${price:.2f} incl. slippage + fee. Skipping.")
++                    continue
++                cost = round(price * count + kalshi_order_fee(price, count), 2)
+ 
+                 order_id = trade_id
+                 fill_price = price
+@@ -581,8 +615,18 @@
+                         logger.debug(f"[SportsBridge] Skipping non-real Kalshi ticker {ticker} for live user {uid}")
+                         continue
+ 
+-                    if avail_live_cash < cost:
+-                        logger.warning(f"[SportsBridge] User {uid} has insufficient live balance (${avail_live_cash:.2f}) for ${cost:.2f} sports trade on {ticker}")
++                    if avail_live_cash < worst_cost:
++                        logger.warning(f"[SportsBridge] User {uid} has insufficient live balance (${avail_live_cash:.2f}) for ${worst_cost:.2f} sports trade on {ticker}")
++                        continue
++
++                    # One automated LIVE entry per user per sports market, enforced in users.db so it
++                    # holds across cycles, processes and restarts (same guard the crypto auto-trader
++                    # uses - see backend/database/order_intents.py). Without it, an order whose
++                    # response was lost left no trade record, so the next 60s cycle bought again.
++                    intent_key = order_intents.account_key_for_user(uid)
++                    intent_ticker = _sports_intent_ticker(ticker)
++                    if not order_intents.claim(intent_key, intent_ticker, "yes"):
++                        logger.info(f"[SportsBridge] User {uid} already has an automated entry on {ticker} (order_intents). Skipping.")
+                         continue
+ 
+                     order_res = kt.place_sports_order(
+@@ -593,17 +637,32 @@
+                         dry_run=False,
+                         slippage_buffer_dollars=0.04
+                     )
++                    outcome = order_intents.settle_outcome(intent_key, intent_ticker, order_res)
+                     if not order_res.get("success"):
+-                        logger.warning(f"[SportsBridge] Live order failed for user {uid} on {ticker}: {order_res.get('error')}")
++                        if outcome == "ambiguous":
++                            # It MAY have filled. Never retry it; count it against this cycle's caps
++                            # and let _reconcile_uncertain_sports_orders record it if it did fill.
++                            logger.error(
++                                f"[SportsBridge] LIVE order outcome UNKNOWN for user {uid} on {ticker} "
++                                f"(client_order_id={order_res.get('client_order_id')}): {order_res.get('error')}. "
++                                f"Not retrying; will reconcile against Kalshi positions."
++                            )
++                            open_tickers.add(ticker)
++                            open_sports_count += 1
++                            daily_trades_count += 1
++                            daily_risk_spent += worst_cost
++                            avail_live_cash -= worst_cost
++                        else:
++                            logger.warning(f"[SportsBridge] Live order failed for user {uid} on {ticker}: {order_res.get('error')}")
+                         continue
+ 
+                     order_id = str(order_res.get("order_id") or order_res.get("client_order_id") or trade_id)
+                     fill_price = float(order_res.get("filled_price") or price)
+-                    fill_count = int(order_res.get("count") or count)
+-                    actual_cost = round(fill_price * fill_count, 2)
++                    fill_count = int(float(order_res.get("count") or count))
++                    actual_cost = round(fill_price * fill_count + kalshi_order_fee(fill_price, fill_count), 2)
+                     avail_live_cash -= actual_cost
+                 else:
+-                    # Deduct unified paper balance
++                    # Deduct unified paper balance (entry fee included, same as every other paper path)
+                     if not deduct_user_paper_balance(uid, cost):
+                         logger.warning(f"[SportsBridge] User {uid} has insufficient paper balance for ${cost:.2f} sports trade on {ticker}")
+                         continue
+@@ -677,6 +736,64 @@
+                 daily_risk_spent += actual_cost
+                 open_sports_count += 1
+ 
++    def _reconcile_uncertain_sports_orders(self, user, kt):
++        """Resolve automated LIVE sports orders whose outcome was unknown (response lost, or the
++        process died mid-order). If Kalshi shows the position and we have no trade record for it,
++        record it so it is tracked and settled like any other trade. If nothing shows up after
++        UNRESOLVED_GIVE_UP_SECONDS, mark it as not filled. Either way the claim stays in place,
++        so the market is never bought a second time automatically."""
++        from backend.database.trade_store import TradeStore
++        uid = user["id"]
++        key = order_intents.account_key_for_user(uid)
++        pending = order_intents.list_unresolved(key, prefix=SPORTS_INTENT_PREFIX,
++                                                min_age_seconds=UNRESOLVED_MIN_AGE_SECONDS)
++        if not pending:
++            return
++        pos_res = kt.get_positions()
++        if not pos_res.get("success"):
++            return  # try again next cycle
++        positions = {}
++        for p in pos_res.get("positions", []) or []:
++            if isinstance(p, dict):
++                tk = str(p.get("ticker") or p.get("market_ticker") or "").strip()
++                if tk:
++                    positions[tk] = p
++        known = {t.get("ticker") for t in TradeStore.get_open_trades(uid)}
++        now = time.time()
++        for row in pending:
++            intent_ticker = row["ticker"]
++            ticker = intent_ticker[len(SPORTS_INTENT_PREFIX):]
++            held = kt._extract_side_position(positions.get(ticker, {}), "YES")
++            if held > 0:
++                if ticker not in known:
++                    from backend.saas_settler import _position_avg_price
++                    avg = _position_avg_price(positions[ticker], held)
++                    if avg is None:
++                        logger.error(f"[SportsBridge] User {uid}: found {held} YES on {ticker} from an uncertain order "
++                                     f"but Kalshi gave no average price. MANUAL VERIFICATION REQUIRED.")
++                        continue
++                    count = int(held)
++                    trade_id = str(row.get("client_order_id") or f"sports_reconciled_{uuid.uuid4().hex[:8]}")
++                    rec = {
++                        "id": trade_id, "order_id": trade_id, "client_order_id": trade_id,
++                        "user_id": uid, "ticker": ticker, "side": "YES", "direction": "YES",
++                        "entry_price": avg, "count": count,
++                        "cost": round(avg * count + kalshi_order_fee(avg, count), 2),
++                        "pnl": 0.0, "status": "OPEN", "mode": "LIVE",
++                        "trading_style": "SPORTS_AI", "signal_source": "Sports AI Bot Bridge",
++                        "reason": "SPORTS_AI (reconciled after lost order response)",
++                        "reconciled_from_ambiguous": True,
++                        "timestamp": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p ET"),
++                    }
++                    rec["raw_json"] = json.dumps(rec)
++                    TradeStore.insert_trade(uid, rec)
++                    logger.warning(f"[SportsBridge] User {uid}: recorded {count} YES on {ticker} @ ${avg:.2f} "
++                                   f"from an order whose response was lost.")
++                order_intents.mark(key, intent_ticker, "filled_reconciled")
++            elif now - float(row.get("created_at") or now) > UNRESOLVED_GIVE_UP_SECONDS:
++                order_intents.mark(key, intent_ticker, "no_fill_found")
++                logger.info(f"[SportsBridge] User {uid}: uncertain order on {ticker} never showed a position; treating as unfilled.")
++
+     def _settle_open_trades(self, user):
+         from backend.database.trade_store import TradeStore
+         uid = user["id"]
+@@ -723,17 +840,23 @@
+                                     logger.warning(f"[SportsBridge] Live TP close failed for {t_id}: {close_res.get('error')}")
+                                     continue
+                                 cur_price = float(close_res.get("exit_price") or cur_price)
+-                                pnl = round((cur_price - entry_price) * contracts, 2)
+                                 payout = round(cur_price * contracts, 2)
+-                        elif payout > 0:
+-                            credit_user_paper_balance(uid, payout)
+-                        TradeStore.update_trade(t_id, {
+-                            "status": "CLOSED",
++                            else:
++                                # No Kalshi session: the position could not be sold, so the trade must
++                                # stay OPEN (previously it was marked CLOSED while still held on Kalshi).
++                                logger.warning(f"[SportsBridge] Live TP for {t_id} skipped: no Kalshi session for user {uid}")
++                                continue
++                        pnl = net_pnl(entry_price, cur_price, contracts)
++                        # Close exactly once (SQLite-guarded); only the caller that closes it credits.
++                        if not TradeStore.close_if_open(uid, t, {
+                             "exit_price": cur_price,
+                             "pnl": pnl,
+                             "exit_reason": f"TAKE_PROFIT (+{gain_pct:.1f}%)",
+                             "settled_at": time.time()
+-                        })
++                        }):
++                            continue
++                        if t_mode != "LIVE" and payout > 0:
++                            credit_user_paper_balance(uid, round(payout - kalshi_order_fee(cur_price, contracts), 2))
+                         logger.info(f"[SportsBridge] Mid-game Take-Profit triggered for {t_id} ({t_mode}) at {cur_price:.2f} (+{gain_pct:.1f}% gain, PnL: ${pnl:.2f})")
+                         continue
+ 
+@@ -744,25 +867,21 @@
+                 t_mode = (t.get("mode") or "PAPER").upper()
+ 
+                 is_win = (result == side)
+-                if is_win:
+-                    exit_price = 1.0
+-                    pnl = round((1.0 - entry_price) * contracts, 2)
+-                    payout = round(1.0 * contracts, 2)
+-                    # Credit winnings back to unified paper balance ONLY for PAPER trades
+-                    # (Live trades are settled and credited automatically by Kalshi into the user's cash portfolio)
+-                    if payout > 0 and t_mode == "PAPER":
+-                        credit_user_paper_balance(uid, payout)
+-                else:
+-                    exit_price = 0.0
+-                    pnl = round(-entry_price * contracts, 2)
+-
+-                TradeStore.update_trade(t_id, {
+-                    "status": "CLOSED",
++                exit_price = 1.0 if is_win else 0.0
++                pnl = net_pnl(entry_price, exit_price, contracts)  # entry fee included; none at settlement
++                # Close exactly once (SQLite-guarded) BEFORE crediting, so a failed or repeated
++                # update can never pay the same win twice.
++                if not TradeStore.close_if_open(uid, t, {
+                     "exit_price": exit_price,
+                     "pnl": pnl,
+                     "exit_reason": "SETTLEMENT",
+                     "settled_at": time.time()
+-                })
++                }):
++                    continue
++                # Credit winnings back to unified paper balance ONLY for PAPER trades
++                # (Live trades are settled and credited automatically by Kalshi into the user's cash portfolio)
++                if is_win and t_mode == "PAPER":
++                    credit_user_paper_balance(uid, round(1.0 * contracts, 2))
+                 logger.info(f"[SportsBridge] Settled sports trade {t_id} for ${pnl:.2f} (Win: {is_win})")
+             elif t_mode == "PAPER" and ticker.startswith("KALSHI-"):
+                 # Clean up legacy phantom/dummy trades and refund paper balance immediately
+diff -ruN a/tests/test_sports_dashboard.py b/tests/test_sports_dashboard.py
+--- a/tests/test_sports_dashboard.py	2026-10-06 21:32:37.193963273 -0400
++++ b/tests/test_sports_dashboard.py	2026-10-06 21:32:37.195891311 -0400
+@@ -287,11 +287,12 @@
+ 
+     assert settled_yes.get("status") == "CLOSED"
+     assert settled_yes.get("exit_price") == 1.0
+-    assert settled_yes.get("pnl") == 4.0  # (1.0 - 0.6) * 10
++    from backend.btc.fees import net_pnl
++    assert settled_yes.get("pnl") == net_pnl(0.60, 1.0, 10)  # (1.0 - 0.6) * 10, net of the entry fee
+ 
+     assert settled_no.get("status") == "CLOSED"
+     assert settled_no.get("exit_price") == 0.0
+-    assert settled_no.get("pnl") == -4.0  # -0.4 * 10
++    assert settled_no.get("pnl") == net_pnl(0.40, 0.0, 10)  # -0.4 * 10, net of the entry fee
+ 
+ def test_tennis_on_demand_simulation():
+     """Reviewer R3: Tennis event must run live on-demand simulation on port 8057."""
+diff -ruN a/tests/test_sports_live_execution.py b/tests/test_sports_live_execution.py
+--- a/tests/test_sports_live_execution.py	2026-10-06 21:32:37.203384771 -0400
++++ b/tests/test_sports_live_execution.py	2026-10-06 21:32:37.205320854 -0400
+@@ -563,7 +563,8 @@
+         settled = TradeStore.get_trade_by_id(trade_id)
+         assert settled["status"] == "CLOSED"
+         assert settled["exit_price"] == 0.65
+-        assert settled["pnl"] == round((0.65 - 0.40) * 25, 2)
++        from backend.btc.fees import net_pnl
++        assert settled["pnl"] == net_pnl(0.40, 0.65, 25)  # net of entry + exit fees
+         assert "TAKE_PROFIT" in settled["exit_reason"]
+     finally:
+         conn = get_db_connection()
+diff -ruN a/tests/test_sports_order_safety.py b/tests/test_sports_order_safety.py
+--- a/tests/test_sports_order_safety.py	1969-12-31 19:00:00.000000000 -0500
++++ b/tests/test_sports_order_safety.py	2026-10-06 21:32:37.219305883 -0400
+@@ -0,0 +1,181 @@
++"""Regression tests for the sports auto-trader order-safety fix (SPORTS_ORDER_SAFETY_FIX.md).
++
++1. A LIVE sports order whose outcome is unknown ("ambiguous") must never be re-sent by a later
++   cycle; a clean rejection may be retried.
++2. Uncertain orders are reconciled against Kalshi positions and recorded if they filled.
++3. Sizing keeps worst-case fill + Kalshi fee inside the wager, and never forces 1 contract.
++4. Settlement / take-profit close a trade and credit paper winnings exactly once.
++"""
++import uuid
++from datetime import datetime
++from unittest.mock import MagicMock, patch
++from zoneinfo import ZoneInfo
++
++import pytest
++
++import backend.database.models as models
++import backend.sports_bridge.executor as sx
++from backend.btc.fees import kalshi_order_fee
++from backend.database import order_intents
++from backend.database.trade_store import TradeStore
++
++_ET = ZoneInfo("America/New_York")
++
++
++def _user(mode="LIVE", **over):
++    uid = models.create_user(f"sports_safety_{uuid.uuid4().hex[:6]}", "pw-hash")
++    u = {"id": uid, "username": "sports_safety", "trading_mode": mode, "ai_enabled": 1,
++         "trading_universe": "SPORTS", "min_sports_confidence": 50.0, "min_sports_edge": 0.0,
++         "sports_trade_size_dollars": 10.0, "sports_max_wager": 10.0,
++         "sports_max_daily_trades": 10, "sports_max_open_trades": 5, "sports_max_daily_risk": 100.0,
++         "sports_active_leagues": "NFL", "sports_market_types": "GAME,SPREAD,TOTAL,PROP",
++         "sports_min_price": 0.20, "sports_max_price": 0.80, "paper_balance": 500.0}
++    u.update(over)
++    return u
++
++
++def _pick(ticker):
++    return {"sport": "NFL", "predicted_team": "Team A", "confidence_pct": 80.0, "edge_pct": 6.0,
++            "status": "scheduled", "metadata": {"is_upcoming": True}, "_ticker": ticker}
++
++
++def _kt(order_results):
++    kt = MagicMock()
++    kt.is_authenticated.return_value = True
++    kt.get_balance.return_value = {"success": True, "balance_dollars": 1000.0}
++    kt.get_positions.return_value = {"success": True, "positions": []}
++    kt.place_sports_order.side_effect = list(order_results)
++    kt._extract_side_position.side_effect = lambda p, side: float((p or {}).get("position", 0) or 0)
++    return kt
++
++
++def _run(user, picks, kt):
++    today = datetime.now(_ET).date()
++    with patch("backend.btc.kalshi_trader.get_authenticated_trader_for_user", return_value=kt), \
++         patch.object(sx, "_generate_kalshi_market",
++                      side_effect=lambda pred, require_today=True: (pred["_ticker"], 0.50, "Team A to win", {})), \
++         patch.object(sx, "extract_sports_event_date_and_time", return_value=(today, None)):
++        sx.SportsBridgeExecutor.__new__(sx.SportsBridgeExecutor)._process_user(user, picks)
++
++
++# ── 1. no repeated orders ────────────────────────────────────────────────────
++
++def test_ambiguous_live_sports_order_is_never_resent():
++    user = _user()
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-A"
++    ambiguous = {"success": False, "ambiguous": True, "client_order_id": "cid-1", "error": "timed out"}
++    kt = _kt([ambiguous, ambiguous])
++    _run(user, [_pick(ticker)], kt)
++    _run(user, [_pick(ticker)], kt)  # next 60s cycle
++    assert kt.place_sports_order.call_count == 1
++
++
++def test_clean_rejection_may_be_retried_next_cycle():
++    user = _user()
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-B"
++    rejected = {"success": False, "error": "Kalshi Order Unfilled"}
++    kt = _kt([rejected, rejected])
++    _run(user, [_pick(ticker)], kt)
++    _run(user, [_pick(ticker)], kt)
++    assert kt.place_sports_order.call_count == 2
++
++
++def test_filled_market_is_not_bought_again_after_the_trade_closes():
++    user = _user()
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-C"
++    filled = {"success": True, "count": 5, "filled_price": 0.51, "client_order_id": f"cid-{uuid.uuid4().hex[:6]}"}
++    kt = _kt([filled, filled])
++    _run(user, [_pick(ticker)], kt)
++    trade = TradeStore.get_trade_by_id(filled["client_order_id"])
++    TradeStore.close_if_open(user["id"], trade, {"exit_price": 1.0, "pnl": 2.0, "exit_reason": "SETTLEMENT"})
++    _run(user, [_pick(ticker)], kt)
++    assert kt.place_sports_order.call_count == 1
++
++
++def test_ambiguous_order_counts_against_the_cycle_caps():
++    user = _user(sports_max_open_trades=1)
++    t1 = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-D"
++    t2 = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-E"
++    kt = _kt([{"success": False, "ambiguous": True, "error": "dropped"},
++              {"success": True, "count": 5, "filled_price": 0.5, "client_order_id": "x"}])
++    _run(user, [_pick(t1), _pick(t2)], kt)
++    assert kt.place_sports_order.call_count == 1
++
++
++# ── 2. reconciliation ────────────────────────────────────────────────────────
++
++def test_uncertain_order_that_filled_is_recorded_once():
++    user = _user()
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-F"
++    key = order_intents.account_key_for_user(user["id"])
++    it = sx._sports_intent_ticker(ticker)
++    assert order_intents.claim(key, it, "yes")
++    order_intents.mark(key, it, "ambiguous", "cid-recon-" + uuid.uuid4().hex[:6])
++    kt = _kt([])
++    kt.get_positions.return_value = {"success": True, "positions": [
++        {"ticker": ticker, "position": 7, "market_exposure_dollars": "3.57"}]}
++    with patch.object(order_intents, "time") as fake_time:  # make the claim look old enough
++        import time as _t
++        fake_time.time.return_value = _t.time() + 120
++        executor = sx.SportsBridgeExecutor.__new__(sx.SportsBridgeExecutor)
++        executor._reconcile_uncertain_sports_orders(user, kt)
++        executor._reconcile_uncertain_sports_orders(user, kt)
++    rows = [t for t in TradeStore.get_open_trades(user["id"]) if t.get("ticker") == ticker]
++    assert len(rows) == 1
++    assert rows[0]["count"] == 7 and rows[0]["entry_price"] == pytest.approx(0.51)
++    assert order_intents.get(key, it)["state"] == "filled_reconciled"
++
++
++# ── 3. sizing ────────────────────────────────────────────────────────────────
++
++def test_sizing_keeps_worst_case_cost_plus_fee_inside_the_wager():
++    n, worst = sx._size_sports_order(10.0, 0.60)
++    assert n > 0
++    assert n * 0.64 + kalshi_order_fee(0.64, n) <= 10.0
++    assert worst <= 10.0
++
++
++def test_wager_too_small_for_one_contract_is_skipped_not_forced():
++    assert sx._size_sports_order(0.50, 0.70) == (0, 0.0)
++
++
++def test_paper_sports_entry_deducts_the_fee():
++    user = _user(mode="PAPER")
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-G"
++    with patch.object(sx, "deduct_user_paper_balance", return_value=True) as deduct:
++        _run(user, [_pick(ticker)], _kt([]))
++    n, _ = sx._size_sports_order(10.0, 0.50)
++    assert deduct.call_args.args[1] == pytest.approx(round(0.50 * n + kalshi_order_fee(0.50, n), 2))
++
++
++# ── 4. settle once ───────────────────────────────────────────────────────────
++
++def test_paper_win_is_credited_exactly_once():
++    user = _user(mode="PAPER")
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-H"
++    trade = {"id": f"t-{uuid.uuid4().hex[:8]}", "ticker": ticker, "side": "YES", "entry_price": 0.40,
++             "count": 5, "status": "OPEN", "mode": "PAPER", "trading_style": "SPORTS_AI", "sport": "NFL"}
++    TradeStore.insert_trade(user["id"], trade)
++    settled = {"status": "settled", "result": "yes", "cur_price": 1.0}
++    executor = sx.SportsBridgeExecutor.__new__(sx.SportsBridgeExecutor)
++    with patch.object(sx, "_check_kalshi_settlement", return_value=settled), \
++         patch.object(sx, "credit_user_paper_balance") as credit:
++        executor._settle_open_trades(user)
++        executor._settle_open_trades(user)
++    credit.assert_called_once_with(user["id"], 5.0)
++    stored = TradeStore.get_trade_by_id(trade["id"])
++    assert stored["status"] == "CLOSED"
++    assert stored["pnl"] == pytest.approx(round((1.0 - 0.40) * 5 - kalshi_order_fee(0.40, 5), 4))
++
++
++def test_live_take_profit_without_kalshi_session_leaves_trade_open():
++    user = _user(mode="LIVE", sports_tp_enabled=1, sports_tp_pct=10.0)
++    ticker = f"KXNFLGAME-{uuid.uuid4().hex[:6].upper()}-I"
++    trade = {"id": f"t-{uuid.uuid4().hex[:8]}", "ticker": ticker, "side": "YES", "entry_price": 0.40,
++             "count": 5, "status": "OPEN", "mode": "LIVE", "trading_style": "SPORTS_AI", "sport": "NFL"}
++    TradeStore.insert_trade(user["id"], trade)
++    executor = sx.SportsBridgeExecutor.__new__(sx.SportsBridgeExecutor)
++    with patch.object(sx, "_check_kalshi_settlement", return_value={"status": "open", "cur_price": 0.60}), \
++         patch("backend.btc.kalshi_trader.get_authenticated_trader_for_user", return_value=None):
++        executor._settle_open_trades(user)
++    assert TradeStore.get_trade_by_id(trade["id"])["status"] == "OPEN"

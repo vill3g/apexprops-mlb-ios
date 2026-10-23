@@ -129,9 +129,12 @@ def send_web_push_async(user_id: int, title: str, body: str, url: str = "/saas_d
                      name=f"webpush-{user_id}").start()
 
 
+_notified_trades_lock = threading.Lock()
+_notified_trades_cache = {}  # (user_id, ticker, side) -> timestamp
+
 def notify_trade_closed(user_id, trade: dict) -> None:
     """Called once when a trade goes from OPEN to closed. Sends 'Trade Won' for winning
-    trades (paper and live) if the user has trade-result notifications on."""
+    trades (paper and live) if the user has trade-result notifications on. Deduplicated by ticker and side."""
     try:
         pnl = float(trade.get("pnl") or 0)
         if pnl <= 0:
@@ -143,8 +146,25 @@ def notify_trade_closed(user_id, trade: dict) -> None:
         user = get_user_by_id(int(user_id))
         if not user or not user.get("notify_trade_results", 1) or not has_subscription(user_id):
             return
+
+        ticker = str(trade.get("ticker") or "").strip()
+        side = str(trade.get("side") or "").upper().strip()
+
+        # Deduplicate alerts within 300 seconds per (user_id, ticker, side)
+        now_ts = time.time()
+        dedup_key = (int(user_id), ticker, side)
+        with _notified_trades_lock:
+            # Clean expired keys > 600s
+            for k in list(_notified_trades_cache.keys()):
+                if now_ts - _notified_trades_cache[k] > 600.0:
+                    del _notified_trades_cache[k]
+            last_sent = _notified_trades_cache.get(dedup_key, 0.0)
+            if (now_ts - last_sent) < 300.0:
+                logger.info(f"[WebPush] Suppressing duplicate push for {ticker} ({side}) for user #{user_id}")
+                return
+            _notified_trades_cache[dedup_key] = now_ts
+
         mode = str(trade.get("mode") or "PAPER").upper()
-        side = str(trade.get("side") or "").upper()
         count = trade.get("count") or 0
         try:
             count = int(float(count)) if float(count).is_integer() else round(float(count), 2)
@@ -152,7 +172,7 @@ def notify_trade_closed(user_id, trade: dict) -> None:
             pass
         how = str(trade.get("exit_reason") or "").split(" (")[0].replace("_", " ").title()
         title = f"Trade Won! +${pnl:,.2f} ({'LIVE' if mode == 'LIVE' else 'Paper'})"
-        body = f"{side} x{count} on {trade.get('ticker', 'Kalshi')}" + (f" · {how}" if how else "")
+        body = f"{side} x{count} on {trade.get('ticker', 'Kalshi')}" + (f" - {how}" if how else "")
         send_web_push_async(user_id, title, body)
     except Exception as e:
         logger.warning(f"[WebPush] notify_trade_closed failed: {e}")

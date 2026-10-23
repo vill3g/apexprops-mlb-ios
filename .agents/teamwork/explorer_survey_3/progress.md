@@ -1,16 +1,14 @@
 # Progress Log - explorer_survey_3
 
-Last visited: 2026-10-02T17:34:00Z
-Status: Survey Completed — Handoff and Survey Report Delivered
+Last visited: 2026-10-07T22:53:00Z
+Status: Survey Completed — Detailed Survey Report and Handoff Delivered
 
-## Current Milestones
+## Completed Milestones
 - [x] Initialized BRIEFING and progress tracking
-- [x] 1. Asset & Route Integrity Survey (R3):
-  - [x] Inventory all static assets referenced in HTML, CSS, JS, manifest, and Capacitor config
-  - [x] Verify each asset on disk; check relative/absolute path resolutions and detect 404s
-  - [x] Audit routing and navigation integrity in standard web browsers and iOS Capacitor webview
-- [x] 2. Auto Trader Logic & UI Integration Survey (R4):
-  - [x] Audit backend execution logic (order placement, loops, runaway guards, rate limiting, thread safety)
-  - [x] Audit frontend UI integration (Dynamic Island glow, toggles, settings sync, API polling/websockets)
-- [x] 3. Synthesize findings, produce survey_report.md and handoff.md
-- [x] 4. Send completion message to orchestrator
+- [x] 1. Deeply inspect static/app.js, static/js/app.js, and saas_dashboard.html
+- [x] 2. Investigate tab switching logic (Financial vs Sports), UI stutter, re-renders, network calls, flicker
+- [x] 3. Examine settings loading, DOM population, and API saving flows
+- [x] 4. Audit all button, toggle, and slider handlers (naming collisions, missing listeners, race conditions)
+- [x] 5. Analyze "BOTH" universe selection handling across frontend UI & settings drawers
+- [x] 6. Synthesize findings, produce survey_report.md and handoff.md
+- [x] 7. Send completion message to parent

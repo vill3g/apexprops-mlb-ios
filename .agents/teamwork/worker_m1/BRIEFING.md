@@ -1,76 +1,61 @@
-# BRIEFING — 2026-10-02T17:59:00Z
+# BRIEFING — 2026-10-07T23:02:30Z
 
 ## Mission
-Implement Milestone 1: Backend Stability & Kalshi 429 Resilience across exclusively owned backend files.
+Implement Milestone 1: Backend "BOTH" trading universe persistence and API integrity fixes across backend/routes/engine.py and backend/database/models.py.
 
 ## 🔒 My Identity
 - Archetype: teamwork_preview_worker
 - Roles: implementer, qa, specialist
-- Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1
-- Original parent: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Milestone: M1 - Backend Stability & Kalshi 429 Resilience
+- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1
+- Original parent: 269a1b7a-33d9-4136-b7da-906e573af819
+- Milestone: M1 - Backend "BOTH" Persistence & API Integrity
 
 ## 🔒 Key Constraints
 - Exclusively owned files:
-  - backend/btc/kalshi_trader.py
-  - backend/saas_settler.py
-  - backend/btc/auto_executor/saas_broadcaster.py
-  - launch_desktop.py
-  - backend/worker.py
-  - server_watchdog.py
-  - backend/forex/auto_executor.py
-  - backend/btc/auto_executor/__init__.py
-- DO NOT CHEAT. Genuine implementations only. No hardcoded results, dummy facades, or shortcuts.
-- Mandatory test command: & "C:\Users\Vill3\AppData\Local\Programs\Python\Python312\python.exe" -m pytest tests
+  - backend/routes/engine.py
+  - backend/database/models.py
+- Do NOT modify static/saas_dashboard.html or static/js/app.js (owned by M2/M3).
+- DO NOT CHEAT. All implementations must be genuine. No hardcoded results, dummy facades, or shortcuts.
+- Mandatory test suite: python -m pytest tests/test_r2_r5_multi_universe_and_timestamps.py -v
 
 ## Current Parent
-- Conversation ID: 64adbb8f-6e60-424a-a1e3-00b93642f92a
-- Updated: 2026-10-02T17:59:00Z
+- Conversation ID: 269a1b7a-33d9-4136-b7da-906e573af819
+- Updated: 2026-10-07T23:02:30Z
 
 ## Task Summary
 - **What to build**:
-  1. `backend/btc/kalshi_trader.py`: Fixed tenacity `@retry` on `get_market_result` and `get_market_quote` with status checks and `retry_error_callback` to catch 429/5xx. Wrapped `get_balance()`, `get_positions()`, and `place_order()` with exponential backoff while preserving return schema contracts (`{"success": bool, "order_id": str, "ambiguous": bool}`).
-  2. `backend/saas_settler.py`: Added per-ticker settlement retry backoff / negative cache (`_unresolved_tickers_cache` with `UNRESOLVED_POLL_INTERVAL_SEC = 30.0`), skipping repeated polling storms on unresolved contracts.
-  3. `backend/btc/auto_executor/saas_broadcaster.py`: Validated `raw_features` is a dictionary before calling `.get()` across all forecasting log and access paths.
-  4. `launch_desktop.py`: Added fallback from `venv_python` to `sys.executable` when the virtualenv executable path is missing on disk.
-  5. `server_watchdog.py`: Registered `atexit` and `SIGINT`/`SIGTERM` handlers for kernel mutex cleanup, added restart/cleanup argument logic. `backend/worker.py`: Throttled repetitive loop logs from info to debug with periodic heartbeats every 60s and 2.0s sleep.
-  6. `backend/forex/auto_executor.py`: Guarded against `current_balance <= 0` to halt trading loop for 60s without spamming lot sizing warnings.
-  7. `backend/btc/auto_executor/__init__.py`: Re-exported `add_all_indicators`, `evaluate_next_15m_contract`, and `fetch_candles`.
-- **Success criteria**: All 7 tasks implemented, unit and integration tests passing, zero regressions.
-- **Interface contracts**: PROJECT.md § Interface Contracts
-- **Code layout**: PROJECT.md § Code Layout
+  1. `backend/routes/engine.py` (`api_btc_trade_toggle`): Removed forced `update_user_trading_universe(user_id, "SPORTS")`. Toggling auto-trade only toggles `ai_enabled`.
+  2. `backend/database/models.py` (`update_user_config`): Set signature to `trading_universe: Optional[str] = None` and SQL UPDATE to `trading_universe = COALESCE(?, trading_universe, 'FINANCIAL')`. Validates input against `VALID_TRADING_UNIVERSES` if provided.
+  3. `backend/routes/engine.py` (`api_btc_trade_config_post`): Pass `trading_universe=data.get("trading_universe") if data.get("trading_universe") else None` so omitting it defaults to `None`, preserving existing database value.
+  4. `backend/routes/engine.py` (`_resolve_user_id`): Set `is_owner = True` when `request is None` for internal caller/test execution fallback to owner account.
+  5. Built tests in `tests/test_m1_both_universe_persistence.py` verifying "BOTH" persistence under sports toggling and financial config saves.
+- **Success criteria**: All 35 tests across `test_m1_both_universe_persistence.py` and `test_r2_r5_multi_universe_and_timestamps.py` pass; zero regressions across test suite.
+- **Interface contracts**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_7\PROJECT.md § Interface Contracts
+- **Code layout**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_7\PROJECT.md § Code Layout
 
 ## Key Decisions Made
-- Handled tenacity retries on `get_market_result` and `get_market_quote` by checking HTTP status codes (429, 502, 503, 504) and raising `requests.RequestException` inside the decorated method so tenacity triggers exponential backoff.
-- Used `retry_error_callback` to return `None` rather than uncaught `RetryError` to maintain non-breaking contracts for callers.
-- Preserved negative caching in `saas_settler.py` specifically for real market contracts while allowing synthetic contracts (`"SYNTH"`, `"TEST"`) to resolve immediately.
-- Validated `raw_features` using `raw_rf if isinstance(raw_rf, dict) else {}` in `saas_broadcaster.py` to prevent `'list' object has no attribute 'get'`.
-- Created unit tests in `tests/test_m1_backend_stability.py` exercising all 7 components.
+- `update_user_config` uses `COALESCE(?, trading_universe, 'FINANCIAL')`, perfectly matching existing codebase patterns for optional configuration parameters while guaranteeing existing DB state persists when omitted.
+- In `api_btc_trade_toggle`, eliminated the unintended side effect where toggling sports auto-trading destroyed the multi-universe configuration.
+- Added comprehensive behavior tests in `tests/test_m1_both_universe_persistence.py` covering toggle, route config POST, and model function calls.
 
 ## Artifact Index
 - DISPATCH.md — Assignment instructions
 - progress.md — Liveness heartbeat and step tracking
 - handoff.md — 5-component handoff report
-- tests/test_m1_backend_stability.py — Test suite covering all M1 changes
+- tests/test_m1_both_universe_persistence.py — New unit/integration test suite
 
 ## Change Tracker
 - **Files modified**:
-  - `backend/btc/kalshi_trader.py`: Retries & backoffs for rate limiting (429/5xx) on endpoints and critical order methods.
-  - `backend/saas_settler.py`: Negative caching for unresolved tickers to eliminate polling storms.
-  - `backend/btc/auto_executor/saas_broadcaster.py`: Defensive dict type checks for raw_features.
-  - `launch_desktop.py`: Fallback to sys.executable if venv python path does not exist.
-  - `server_watchdog.py`: Clean mutex lifecycle management and signal handlers.
-  - `backend/worker.py`: Routine log throttling and loop interval stabilization.
-  - `backend/forex/auto_executor.py`: Non-positive balance guard against lot calculation errors.
-  - `backend/btc/auto_executor/__init__.py`: Indicator and contract evaluation symbol re-exports.
-  - `tests/test_m1_backend_stability.py`: 10 comprehensive unit tests covering all tasks.
-- **Build status**: Pass (10/10 in test_m1_backend_stability.py, full test suite executed)
+  - `backend/routes/engine.py`: Removed sports toggle universe overwrite, safely passed trading_universe in trade config post, and handled request=None in _resolve_user_id.
+  - `backend/database/models.py`: Made trading_universe optional (defaulting to None) with COALESCE in SQL UPDATE.
+  - `tests/test_m1_both_universe_persistence.py`: Added 3 comprehensive test cases for "BOTH" persistence.
+- **Build status**: Pass (35/35 in target suites, 20/20 in related suites, clean py_compile)
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: Pass (pytest tests/test_m1_backend_stability.py -> 10 passed in 7.63s)
+- **Build/test result**: Pass (pytest tests/test_m1_both_universe_persistence.py tests/test_r2_r5_multi_universe_and_timestamps.py -> 35 passed in 10.85s)
 - **Lint status**: Clean, zero syntax or import errors
-- **Tests added/modified**: `tests/test_m1_backend_stability.py` (10 tests added)
+- **Tests added/modified**: `tests/test_m1_both_universe_persistence.py` (3 new tests added)
 
 ## Loaded Skills
 None

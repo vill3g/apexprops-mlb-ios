@@ -16,11 +16,7 @@
         // Dynamic Island logic
         window._dynamicIslandEnabled = localStorage.getItem('di_enabled') !== 'false';
         function updateDynamicIsland(autoOn) {
-            if (!window._dynamicIslandEnabled) return;
-            const pill = document.getElementById('dynamic-island-pill');
-            const dot = document.getElementById('di-dot');
-            const label = document.getElementById('di-label');
-            if (!pill) return;
+    return;
             if (autoOn) {
                 pill.style.opacity = '1';
                 pill.style.borderColor = 'rgba(52,211,153,0.5)';

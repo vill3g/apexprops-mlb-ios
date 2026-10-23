@@ -1,0 +1,1394 @@
+{
+  "leg_count": 154,
+  "wrap_up_time": "08:00 PM EDT",
+  "compounded_price": 0.0008414334095914894,
+  "payout_multiplier": 1188.4481749845108,
+  "legs": [
+    {
+      "ticker": "KXATPEXACTMATCH-26OCT10UGOAUG-UGO20",
+      "series": "KXATPEXACTMATCH",
+      "title": "Will Camilo Ugo Carabelli win the Camilo Ugo Carabelli vs Felix Auger-Aliassime match by a set score of 2-0?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPEXACTMATCH-26OCT10UGOAUG-AUG20",
+      "series": "KXATPEXACTMATCH",
+      "title": "Will Felix Auger-Aliassime win the Camilo Ugo Carabelli vs Felix Auger-Aliassime match by a set score of 2-0?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPEXACTMATCH-26OCT10TABCAR-CAR20",
+      "series": "KXATPEXACTMATCH",
+      "title": "Will Pablo Carreno Busta win the Alejandro Tabilo vs Pablo Carreno Busta match by a set score of 2-0?",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.82,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPEXACTMATCH-26OCT10CERALC-CER21",
+      "series": "KXATPEXACTMATCH",
+      "title": "Will Juan Manuel Cerundolo win the Juan Manuel Cerundolo vs Carlos Alcaraz match by a set score of 2-1?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.96,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPEXACTMATCH-26OCT10CERALC-CER20",
+      "series": "KXATPEXACTMATCH",
+      "title": "Will Juan Manuel Cerundolo win the Juan Manuel Cerundolo vs Carlos Alcaraz match by a set score of 2-0?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.97,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPGTOTAL-26OCT10ARNFRI-18",
+      "series": "KXATPGTOTAL",
+      "title": "Over 17.5 games",
+      "side": "YES",
+      "price": 0.98,
+      "bid": 0.81,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPMATCH-26OCT10CERALC-CER",
+      "series": "KXATPMATCH",
+      "title": "Juan Manuel Cerundolo wins",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXATPMATCH-26OCT10CERALC-ALC",
+      "series": "KXATPMATCH",
+      "title": "Carlos Alcaraz wins",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "03:00 AM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10ARSLEE-LEE2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Leeds United wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.97,
+      "settlement_edt": "11:30 AM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10ARSLEE-LEE3",
+      "series": "KXEPLSPREAD",
+      "title": "Leeds United wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "11:30 AM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10ARSLEE-LEE2",
+      "series": "KXEPLSPREAD",
+      "title": "Leeds United wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "11:30 AM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10ARSLEE-6",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "11:30 AM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10ARSLEE-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "11:30 AM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1HSPREAD-26OCT10RVCATH-RVC2",
+      "series": "KXLALIGA1HSPREAD",
+      "title": "Vallecano wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.92,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1HSPREAD-26OCT10RVCATH-ATH2",
+      "series": "KXLALIGA1HSPREAD",
+      "title": "Bilbao wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RVCATH-RVC3",
+      "series": "KXLALIGASPREAD",
+      "title": "Vallecano wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RVCATH-ATH3",
+      "series": "KXLALIGASPREAD",
+      "title": "Bilbao wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10RVCATH-6",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10RVCATH-1",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "12:00 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGAGAME-26OCT10FCABMU-TIE",
+      "series": "KXBUNDESLIGAGAME",
+      "title": "Tie is the result",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "12:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGAGAME-26OCT10FCABMU-FCA",
+      "series": "KXBUNDESLIGAGAME",
+      "title": "Augsburg wins",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "12:30 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1HSPREAD-26OCT10GENFIO-GEN2",
+      "series": "KXSERIEA1HSPREAD",
+      "title": "Genoa wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1HSPREAD-26OCT10GENFIO-FIO2",
+      "series": "KXSERIEA1HSPREAD",
+      "title": "Fiorentina wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.91,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1HTOTAL-26OCT10GENFIO-3",
+      "series": "KXSERIEA1HTOTAL",
+      "title": "Over 2.5 1H goals scored",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10GENFIO-GEN3",
+      "series": "KXSERIEASPREAD",
+      "title": "Genoa wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10GENFIO-FIO3",
+      "series": "KXSERIEASPREAD",
+      "title": "Fiorentina wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEATOTAL-26OCT10GENFIO-6",
+      "series": "KXSERIEATOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.95,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEATOTAL-26OCT10GENFIO-1",
+      "series": "KXSERIEATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "01:00 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10UNISVE-UNI2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Union Berlin wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.89,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10UNISVE-SVE2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Elversberg wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.91,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10TSGHSV-HSV2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Hamburg wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10PADVFB-PAD2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Paderborn wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10M05LEV-M052",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Mainz wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.91,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10FCABMU-FCA2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Augsburg wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.97,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10UNISVE-UNI3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Union Berlin wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10UNISVE-SVE3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Elversberg wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10TSGHSV-HSV3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Hamburg wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10TSGHSV-HSV2",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Hamburg wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.95,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10PADVFB-PAD3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Paderborn wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10PADVFB-PAD2",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Paderborn wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10M05LEV-M053",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Mainz wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10FCABMU-FCA3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Augsburg wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10FCABMU-FCA2",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Augsburg wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10UNISVE-1",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10TSGHSV-1",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10PADVFB-1",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10M05LEV-1",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10FCABMU-2",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 1.5 goals be scored?",
+      "side": "YES",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "01:30 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10SUNBRI-SUN2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Sunderland wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10SUNBRI-BRI2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Brighton wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.9,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10IPSFUL-IPS2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Ipswich Town wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.92,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10IPSFUL-FUL2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Fulham wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.91,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10CFCBOU-BOU2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Bournemouth wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10AVLBRE-BRE2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Brentford wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.9,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10AVLBRE-AVL2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Aston Villa wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.91,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10SUNBRI-SUN3",
+      "series": "KXEPLSPREAD",
+      "title": "Sunderland wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10SUNBRI-BRI3",
+      "series": "KXEPLSPREAD",
+      "title": "Brighton wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10IPSFUL-IPS3",
+      "series": "KXEPLSPREAD",
+      "title": "Ipswich Town wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10IPSFUL-FUL3",
+      "series": "KXEPLSPREAD",
+      "title": "Fulham wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10CFCBOU-BOU3",
+      "series": "KXEPLSPREAD",
+      "title": "Bournemouth wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10CFCBOU-BOU2",
+      "series": "KXEPLSPREAD",
+      "title": "Bournemouth wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10AVLBRE-BRE3",
+      "series": "KXEPLSPREAD",
+      "title": "Brentford wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10AVLBRE-AVL3",
+      "series": "KXEPLSPREAD",
+      "title": "Aston Villa wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10SUNBRI-6",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10SUNBRI-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10IPSFUL-6",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10IPSFUL-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10CFCBOU-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10AVLBRE-6",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10AVLBRE-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1HSPREAD-26OCT10ALAATM-ALA2",
+      "series": "KXLALIGA1HSPREAD",
+      "title": "Alaves wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.95,
+      "settlement_edt": "02:15 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10ALAATM-ALA3",
+      "series": "KXLALIGASPREAD",
+      "title": "Alaves wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "02:15 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10ALAATM-ALA2",
+      "series": "KXLALIGASPREAD",
+      "title": "Alaves wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:15 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10ALAATM-6",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "02:15 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10ALAATM-1",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "02:15 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1H-26OCT10INTPAR-PAR",
+      "series": "KXSERIEA1H",
+      "title": "Parma Calcio wins 1st Half",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "03:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEAGAME-26OCT10INTPAR-TIE",
+      "series": "KXSERIEAGAME",
+      "title": "Tie is the result",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "03:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEAGAME-26OCT10INTPAR-PAR",
+      "series": "KXSERIEAGAME",
+      "title": "Parma Calcio wins",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "03:00 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10LILHAC-HAC2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Le Havre wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.97,
+      "settlement_edt": "03:15 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10LILHAC-HAC3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Le Havre wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "03:15 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10LILHAC-HAC2",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Le Havre wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "03:15 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10LILHAC-6",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "03:15 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10LILHAC-1",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "03:15 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1H-26OCT10BARGET-GET",
+      "series": "KXLALIGA1H",
+      "title": "Getafe wins 1st Half",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "03:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGAGAME-26OCT10BARGET-TIE",
+      "series": "KXLALIGAGAME",
+      "title": "Tie is the result",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "03:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGAGAME-26OCT10BARGET-GET",
+      "series": "KXLALIGAGAME",
+      "title": "Getafe wins",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "03:30 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1Q-26OCT10BALLNW-BALL",
+      "series": "KXNCAAF1Q",
+      "title": "Ball St. wins the 1st quarter",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.92,
+      "settlement_edt": "03:30 PM EDT"
+    },
+    {
+      "ticker": "KXNHLGOAL-26OCT10PHIBOS-PHITZEGRAS46-2",
+      "series": "KXNHLGOAL",
+      "title": "Trevor Zegras: 2+ goals",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXNHLGOAL-26OCT10PHIBOS-PHITSANHEIM6-1",
+      "series": "KXNHLGOAL",
+      "title": "Travis Sanheim: 1+ goals",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1HSPREAD-26OCT10INTPAR-PAR2",
+      "series": "KXSERIEA1HSPREAD",
+      "title": "Parma Calcio wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10INTPAR-PAR3",
+      "series": "KXSERIEASPREAD",
+      "title": "Parma Calcio wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10INTPAR-PAR2",
+      "series": "KXSERIEASPREAD",
+      "title": "Parma Calcio wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEATOTAL-26OCT10INTPAR-1",
+      "series": "KXSERIEATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "04:00 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGA1HSPREAD-26OCT10RBLSGE-SGE2",
+      "series": "KXBUNDESLIGA1HSPREAD",
+      "title": "Frankfurt wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10RBLSGE-SGE3",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Frankfurt wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGASPREAD-26OCT10RBLSGE-SGE2",
+      "series": "KXBUNDESLIGASPREAD",
+      "title": "Frankfurt wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10RBLSGE-2",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 1.5 goals be scored?",
+      "side": "YES",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXBUNDESLIGATOTAL-26OCT10RBLSGE-1",
+      "series": "KXBUNDESLIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.97,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXEPL1HSPREAD-26OCT10MUNTOT-TOT2",
+      "series": "KXEPL1HSPREAD",
+      "title": "Tottenham wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10MUNTOT-TOT3",
+      "series": "KXEPLSPREAD",
+      "title": "Tottenham wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.97,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXEPLSPREAD-26OCT10MUNTOT-TOT2",
+      "series": "KXEPLSPREAD",
+      "title": "Tottenham wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXEPLTOTAL-26OCT10MUNTOT-1",
+      "series": "KXEPLTOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1HSPREAD-26OCT10BARGET-GET2",
+      "series": "KXLALIGA1HSPREAD",
+      "title": "Getafe wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10BARGET-GET3",
+      "series": "KXLALIGASPREAD",
+      "title": "Getafe wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10BARGET-GET2",
+      "series": "KXLALIGASPREAD",
+      "title": "Getafe wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10BARGET-2",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 1.5 goals be scored?",
+      "side": "YES",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10BARGET-1",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "04:30 PM EDT"
+    },
+    {
+      "ticker": "KXMLS1HSPREAD-26OCT10TORMTL-MTL2",
+      "series": "KXMLS1HSPREAD",
+      "title": "Montreal wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "05:00 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11H-26OCT10PSGMAN-MAN",
+      "series": "KXLIGUE11H",
+      "title": "Le Mans wins 1st Half",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "05:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1GAME-26OCT10PSGMAN-TIE",
+      "series": "KXLIGUE1GAME",
+      "title": "Tie is the result",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "05:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1GAME-26OCT10PSGMAN-MAN",
+      "series": "KXLIGUE1GAME",
+      "title": "Le Mans wins",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "05:45 PM EDT"
+    },
+    {
+      "ticker": "KXMLS1HSPREAD-26OCT10CHINYC-NYC2",
+      "series": "KXMLS1HSPREAD",
+      "title": "New York City wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "06:30 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1Q-26OCT10STANND-TIE",
+      "series": "KXNCAAF1Q",
+      "title": "1st quarter tie",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.89,
+      "settlement_edt": "06:30 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1Q-26OCT10STANND-STAN",
+      "series": "KXNCAAF1Q",
+      "title": "Stanford wins the 1st quarter",
+      "side": "NO",
+      "price": 0.95,
+      "bid": 0.93,
+      "settlement_edt": "06:30 PM EDT"
+    },
+    {
+      "ticker": "KXNHLSPREAD-26OCT10VANNJ-VAN3",
+      "series": "KXNHLSPREAD",
+      "title": "Vancouver wins by over 2.5 goals",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "06:30 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10STBANG-ANG2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Angers wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10PSGMAN-MAN2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Le Mans wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10FCLPAR-PAR2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Paris FC wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.9,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10FCLPAR-FCL2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Lorient wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.94,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE11HSPREAD-26OCT10ASMTFC-TFC2",
+      "series": "KXLIGUE11HSPREAD",
+      "title": "Toulouse wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.95,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10STBANG-ANG3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Angers wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10STBANG-ANG2",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Angers wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10PSGMAN-MAN3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Le Mans wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.99,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10PSGMAN-MAN2",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Le Mans wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.98,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10FCLPAR-PAR3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Paris FC wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10FCLPAR-FCL3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Lorient wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10ASMTFC-TFC3",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Toulouse wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1SPREAD-26OCT10ASMTFC-TFC2",
+      "series": "KXLIGUE1SPREAD",
+      "title": "Toulouse wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10STBANG-6",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.92,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10STBANG-1",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.95,
+      "bid": 0.94,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10PSGMAN-2",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 1.5 goals be scored?",
+      "side": "YES",
+      "price": 0.92,
+      "bid": 0.91,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10PSGMAN-1",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10FCLPAR-6",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10FCLPAR-1",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.93,
+      "bid": 0.92,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10ASMTFC-6",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 5.5 goals be scored?",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLIGUE1TOTAL-26OCT10ASMTFC-1",
+      "series": "KXLIGUE1TOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEA1HSPREAD-26OCT10NAPFRO-FRO2",
+      "series": "KXSERIEA1HSPREAD",
+      "title": "Frosinone wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.96,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10NAPFRO-FRO3",
+      "series": "KXSERIEASPREAD",
+      "title": "Frosinone wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEASPREAD-26OCT10NAPFRO-FRO2",
+      "series": "KXSERIEASPREAD",
+      "title": "Frosinone wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.95,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXSERIEATOTAL-26OCT10NAPFRO-1",
+      "series": "KXSERIEATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "06:45 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGA1HSPREAD-26OCT10RMAVIL-VIL2",
+      "series": "KXLALIGA1HSPREAD",
+      "title": "Villarreal wins by more than 1.5 goals in the 1st Half",
+      "side": "NO",
+      "price": 0.97,
+      "bid": 0.96,
+      "settlement_edt": "07:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RMAVIL-VIL3",
+      "series": "KXLALIGASPREAD",
+      "title": "Villarreal wins by more than 2.5 goals?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "07:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGASPREAD-26OCT10RMAVIL-VIL2",
+      "series": "KXLALIGASPREAD",
+      "title": "Villarreal wins by more than 1.5 goals?",
+      "side": "NO",
+      "price": 0.96,
+      "bid": 0.95,
+      "settlement_edt": "07:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10RMAVIL-2",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 1.5 goals be scored?",
+      "side": "YES",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "07:00 PM EDT"
+    },
+    {
+      "ticker": "KXLALIGATOTAL-26OCT10RMAVIL-1",
+      "series": "KXLALIGATOTAL",
+      "title": "Will over 0.5 goals be scored?",
+      "side": "YES",
+      "price": 0.99,
+      "bid": 0.97,
+      "settlement_edt": "07:00 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1Q-26OCT10MDOSU-TIE",
+      "series": "KXNCAAF1Q",
+      "title": "1st quarter tie",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.89,
+      "settlement_edt": "07:15 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1Q-26OCT10MDOSU-MD",
+      "series": "KXNCAAF1Q",
+      "title": "Maryland wins the 1st quarter",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.89,
+      "settlement_edt": "07:15 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAF1QSPREAD-26OCT10MDOSU-OSU24",
+      "series": "KXNCAAF1QSPREAD",
+      "title": "Ohio St. wins 1Q by over 23.5 points",
+      "side": "NO",
+      "price": 0.94,
+      "bid": 0.93,
+      "settlement_edt": "07:15 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAFSPREAD-26OCT10MONTNAU-NAU15",
+      "series": "KXNCAAFSPREAD",
+      "title": "Northern Arizona wins by over 14.5 points",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.82,
+      "settlement_edt": "08:00 PM EDT"
+    },
+    {
+      "ticker": "KXNCAAFSPREAD-26OCT10MONTNAU-NAU11",
+      "series": "KXNCAAFSPREAD",
+      "title": "Northern Arizona wins by over 10.5 points",
+      "side": "NO",
+      "price": 0.98,
+      "bid": 0.82,
+      "settlement_edt": "08:00 PM EDT"
+    },
+    {
+      "ticker": "KXUFCMOF-26OCT10KARGAT-DRAW",
+      "series": "KXUFCMOF",
+      "title": "Fight ends in a draw/no contest",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "08:00 PM EDT"
+    },
+    {
+      "ticker": "KXUFCMOV-26OCT10KARGAT-KARSUB",
+      "series": "KXUFCMOV",
+      "title": "Ernesta Kareckaite wins by Submission?",
+      "side": "NO",
+      "price": 0.99,
+      "bid": 0.98,
+      "settlement_edt": "08:00 PM EDT"
+    },
+    {
+      "ticker": "KXUFCMOV-26OCT10KARGAT-KARKOTKODQ",
+      "series": "KXUFCMOV",
+      "title": "Ernesta Kareckaite wins by KO/TKO/DQ?",
+      "side": "NO",
+      "price": 0.91,
+      "bid": 0.9,
+      "settlement_edt": "08:00 PM EDT"
+    },
+    {
+      "ticker": "KXUFCROUNDS-26OCT10KARGAT-2",
+      "series": "KXUFCROUNDS",
+      "title": "Fight ends before round 2?",
+      "side": "NO",
+      "price": 0.92,
+      "bid": 0.89,
+      "settlement_edt": "08:00 PM EDT"
+    }
+  ]
+}

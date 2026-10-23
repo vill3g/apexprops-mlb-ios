@@ -1,34 +1,54 @@
-# E2E Test Writer Dispatch: Opaque-Box E2E Testing Suite
+## Dispatch: E2E Test Writer (Requirement-Driven Test Suite)
 
-## 2026-10-02T17:40:43Z
-You are test_writer_e2e.
-Role: teamwork_preview_test_writer
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\test_writer_e2e
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Mandatory reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
-Project plan: C:\Users\Vill3\Desktop\ShadowTraderAi\PROJECT.md
-Dispatch reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\test_writer_e2e\DISPATCH.md
+**Identity**: test_writer_e2e
+**Working Directory**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\test_writer_e2e
+**Parent Conversation ID**: 269a1b7a-33d9-4136-b7da-906e573af819
+**Original User Request**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
+**Project Plan**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_7\PROJECT.md
 
-MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All tests must be authentic. DO NOT hardcode test assertions to match dummy implementations. The test suite must rigorously verify genuine system behavior against acceptance criteria.
+### Exclusive File Ownership
+- `tests/test_saas_dashboard_decoupling_e2e.py`
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\TEST_INFRA.md`
+- `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\TEST_READY.md`
+(Do NOT modify application code in `static/` or `backend/`).
 
-Exclusively Owned Files:
-- TEST_INFRA.md (at project root)
-- TEST_READY.md (at project root)
-- tests/test_audit_e2e_suite.py (and any new files in tests/e2e/ or tests/)
+### Mandatory Integrity Warning
+DO NOT CHEAT. All tests must be genuine, requirement-driven, opaque-box tests that verify actual application behavior. DO NOT create trivial always-passing tests or mock out the core logic being verified.
 
-Mission:
-Build a comprehensive opaque-box E2E test suite derived strictly from `ORIGINAL_REQUEST.md` and `PROJECT.md`, covering:
-1. Tier 1: Feature Coverage (>=5 tests per core feature: Backend health & watchdog, Kalshi 429 rate limit handling, Static asset zero 404s, HTML structural integrity, Auto Trader logic and toggle synchronization).
-2. Tier 2: Boundary & Corner Cases (>=5 tests: empty payloads, network timeouts, invalid tickers, missing tokens, malformed requests).
-3. Tier 3: Cross-Feature Interactions (Auto Trader toggle sync with backend config, rate limit triggers during active trading loop, frontend asset references).
-4. Tier 4: Real-World Scenarios (Full startup to shutdown, simulated 15m candle evaluation, simulated 429 response handling without process crash, static file existence check across entire `static/` directory).
+### Objective
+Design and implement a comprehensive opaque-box E2E test suite in `tests/test_saas_dashboard_decoupling_e2e.py` that validates all requirements of the SaaS dashboard decoupling refactor (R1, R2, R3).
 
-Deliverables:
-- Create `TEST_INFRA.md` at project root documenting test architecture, methodology, and runner commands.
-- Implement executable test cases in `tests/test_audit_e2e_suite.py` that can be run with:
-  `& "C:\Users\Vill3\AppData\Local\Programs\Python\Python312\python.exe" -m pytest tests/test_audit_e2e_suite.py`
-- Run the test suite to verify baseline functionality.
-- Publish `TEST_READY.md` at project root summarizing test counts and pass/fail status.
-- Write handoff report to `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\test_writer_e2e\handoff.md`.
-- Send completion message via send_message to orchestrator `64adbb8f-6e60-424a-a1e3-00b93642f92a`.
+### Test Suite Structure (4 Tiers)
+1. **Tier 1: Feature Coverage (>=5 tests per feature)**:
+   - Dedicated Financial settings drawer structure (DOM checks, presence of crypto/forex options only)
+   - Dedicated Sports settings drawer structure (DOM checks, presence of sports/props options only)
+   - Universe "BOTH" backend persistence via API (`POST /api/auth/user/config`)
+   - Universe "BOTH" fetched correctly via `GET /api/auth/dashboard_stats`
+   - Preservation of "BOTH" during auto-trade toggles and asset config updates
+   - Proper input/toggle saving to database
+2. **Tier 2: Boundary & Corner Cases (>=5 tests per feature)**:
+   - Invalid universe strings (proper rejection)
+   - Empty sports props / leagues arrays
+   - Extreme trade sizes or slider values
+   - Missing fields in update payloads
+   - Repeated/rapid toggles
+3. **Tier 3: Cross-Feature Combinations (Pairwise Coverage)**:
+   - Toggling auto-trader while viewing sports when universe is "BOTH"
+   - Saving financial settings while universe is "BOTH"
+   - Switching between Financial and Sports drawer triggers
+   - Interactions between Paper/Live mode switch and Auto execution toggle across drawers
+4. **Tier 4: Real-World Scenarios (End-to-End Workflows)**:
+   - Scenario 1: New user configures "BOTH" auto-trading, updates sports trade size, updates BTC stop loss, reloads dashboard, verifies all settings intact.
+   - Scenario 2: Active trader toggles auto-trading off and on across sports and financial tabs, verifying execution states and "BOTH" persistence.
+   - Scenario 3: HTML DOM integrity check verifying no unclosed tags, proper nesting of `#financialSettingsDrawer` and `#sportsSettingsDrawer`, and absence of obsolete shared drawer classes.
+
+### Deliverables
+1. Test file: `tests/test_saas_dashboard_decoupling_e2e.py`
+2. Run pytest on the new test file to verify test definitions load cleanly.
+3. Write `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\TEST_INFRA.md` and `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\TEST_READY.md`.
+4. Write handoff report to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\test_writer_e2e\handoff.md`.
+5. Send a message to parent upon completion.
+
+
+## 2026-10-07T22:54:45Z
+You are test_writer_e2e. Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\test_writer_e2e. Read your dispatch at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\test_writer_e2e\DISPATCH.md and ORIGINAL_REQUEST.md at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md. Design and create the comprehensive 4-tier E2E test suite in tests/test_saas_dashboard_decoupling_e2e.py covering all requirements (R1 dedicated drawers, R2 "BOTH" persistence, R3 frontend optimization and input saving). Create TEST_INFRA.md and TEST_READY.md in C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\. Write your handoff report to C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\test_writer_e2e\handoff.md and send a message to parent (ID: 269a1b7a-33d9-4136-b7da-906e573af819).

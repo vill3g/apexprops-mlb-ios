@@ -1,95 +1,173 @@
-# Handoff Report: Evaluation Report Review & Acceptance Criteria Verification
+# Handoff Report: Reviewer 1 (Quality Review & Adversarial Challenge)
 
-**Agent**: `reviewer_1` (Reviewer & Adversarial Critic)  
-**Target Working Directory**: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_1`  
-**Deliverable Reviewed**: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md` (and mirrored at `.agents/teamwork/reports/EVALUATION_REPORT.md`)  
-**Scope Reference**: `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md` (2026-10-03T22:04:04Z entry) & `orchestrator_4/PROJECT.md`  
-**Date**: October 3, 2026  
-**Verdict**: **APPROVE**  
+**Milestone**: Independent Review & Verification (Requirements R1 & R2)  
+**Agent**: reviewer_1  
+**Target Project**: SaaS Dashboard Decoupling & Universe Persistence (`kalshi-ai-trader`)  
+**Verdict**: **REQUEST_CHANGES**  
 
 ---
 
 ## 1. Observation
 
-### 1.1 Acceptance Criteria Verification Observations
-Direct inspection of `EVALUATION_REPORT.md` (1,161 lines, 67,562 bytes) reveals:
-- **Criterion 1 (Flaw Identification)**: Section 3 explicitly identifies and mathematically proves **eight (8)** distinct flaws:
-  - 3.1: Fee-omitted and lower-clamped Kelly criterion formula (`executor.py:1042-1052`, `saas_broadcaster.py:946-955`).
-  - 3.2: Asymmetric payoff trap in early exits (`stop_manager.py:345-395`, `saas_settler.py:281-295`).
-  - 3.3: Multiple-entry DCA into decaying binary contracts (`stop_manager.py:764-770`, `saas_broadcaster.py:877-881`, `saas_settler.py:960, 1010-1025`).
-  - 3.4: Trailing stop mathematical degeneracy where $M - D$ is dead code (`stop_manager.py:364`, `saas_settler.py:294, 850`).
-  - 3.5: Force-trade logic executing even/odd Unix second coin-flips (`saas_broadcaster.py:763-764, 897-905`).
-  - 3.6: Omission of 4¢ slippage buffer and un-ceiled taker fee in edge gate (`fees.py:25-31`, `executor.py:1092`).
-  - 3.7: Dollar ($0.52$) vs Cent ($62.0$) quote mismatch disabling market structure gate (`contract_eval.py:638-644`, `config.py:25-26`).
-  - 3.8: Terminal expiry proximity entries ($T < 15$s) under infinite gamma (`saas_broadcaster.py:361-363`, `saas_settler.py:444, 1001`).
-- **Criterion 2 (Citations)**: Direct inspection of codebase files confirmed verbatim existence of all cited code segments:
-  - `backend/btc/auto_executor/executor.py` lines 1042–1052, 1092, 1346–1356.
-  - `backend/btc/auto_executor/saas_broadcaster.py` lines 228–238, 361–363, 752–768, 877–881, 897–905, 946–955.
-  - `backend/btc/auto_executor/stop_manager.py` lines 220–223, 345–356, 360–374, 381–395, 411–435, 648–650, 764–770.
-  - `backend/saas_settler.py` lines 281–295, 444, 849–856, 960, 1001, 1010–1025.
-  - `backend/btc/fees.py` lines 25–31.
-  - `backend/btc/analyzer/contract_eval.py` lines 638–657.
-  - `backend/btc/analyzer/config.py` lines 25–26.
-  - `backend/btc/kalshi_client.py` lines 139–142.
-- **Criterion 3 (Actionability)**: Section 4 contains **nine (9)** modular, complete Python implementations:
-  - 4.1: `calculate_binary_kelly_position(...)`
-  - 4.2: `evaluate_exit_discipline(...)`
-  - 4.3: `is_reentry_permitted(...)`
-  - 4.4: `calculate_anti_whipsaw_trailing_stop(...)`
-  - 4.5: `determine_execution_signal(...)`
-  - 4.6: `calculate_realized_edge_cents(...)`
-  - 4.7: `check_kalshi_market_structure_confluence(...)`
-  - 4.8: `is_entry_timing_valid(...)`
-  - 4.9: `evaluate_consecutive_interval_circuit_breaker(...)`
-- **Strict Read-Only Constraint**: PowerShell execution of `Get-ChildItem -Path backend -Recurse -Filter *.py | Sort-Object LastWriteTime -Descending | Select-Object -First 5 LastWriteTime, FullName` showed the latest file write occurred at `10/3/2026 4:47:08 PM`, prior to the orchestrator task launch. Zero production files were altered.
-- **Quantitative Database Integrity**: SQLite execution against `backend/data/users.db` and `backend/data/trades.db` verified:
-  - `users.db`: 2,151 trades; `SETTLEMENT` category: 275 trades, +$1,829.88 net P&L, 76.0% win rate.
-  - `trades.db`: 747 trades.
-  - Empirical figures match report tables exactly.
+### 1.1 Automated Test Execution
+Executed the test suites via `pytest`:
+```powershell
+python -m pytest tests/test_saas_dashboard_decoupling_e2e.py tests/test_m1_both_universe_persistence.py tests/test_frontend_contracts.py -v
+```
+- **Result**: 70 passed, 0 failed in 13.49s.
+- **Coverage breakdown**:
+  - `tests/test_saas_dashboard_decoupling_e2e.py`: 50 passed (Tier 1-4).
+  - `tests/test_m1_both_universe_persistence.py`: 3 passed.
+  - `tests/test_frontend_contracts.py`: 17 passed.
+
+### 1.2 Backend Implementation Inspection
+- **`backend/routes/engine.py:695-727` (`api_btc_trade_toggle`)**:
+  - Confirmed: No call to `update_user_trading_universe(user_id, "SPORTS")`.
+  - Line 703 calls `update_user_ai_enabled(user_id, enabled)` for sports assets.
+  - Line 721 calls `update_user_ai_enabled(user_id, enabled)` for crypto assets.
+  - Trading universe is preserved untouched on toggle.
+- **`backend/routes/engine.py:911-943` (`api_btc_trade_config_post`)**:
+  - Line 942: `trading_universe=data.get("trading_universe") if data.get("trading_universe") else None`.
+  - Passes `None` when omitted, preventing accidental resets.
+- **`backend/database/models.py:808-895` (`update_user_config`)**:
+  - Line 858: `trading_universe = COALESCE(?, trading_universe, 'FINANCIAL')`.
+  - Line 859: `sports_max_wager = COALESCE(?, sports_max_wager, 10.0), sports_trade_size_dollars = COALESCE(?, sports_trade_size_dollars, sports_max_wager)`.
+  - When parameters are `None`, SQLite `COALESCE` preserves the existing database column values.
+- **`backend/auth/routes.py:1053-1069` (`get_dashboard_stats`)**:
+  - Returns `trading_universe: current_user.get("trading_universe", "FINANCIAL")`.
+  - Accurately returns `"BOTH"` and `"ALL"` to the client.
+
+### 1.3 Frontend Implementation & HTML Structural Inspection
+- **`static/saas_dashboard.html:7049` & `:8083`**:
+  - Confirmed: `#financialSettingsDrawer` and `#sportsSettingsDrawer` exist as dedicated root-level containers.
+  - Confirmed: `#financialSettingsDrawer` contains strictly crypto/forex options and excludes sports leagues and player props.
+  - Confirmed: `#sportsSettingsDrawer` contains strictly sports options (leagues, market types, player props, sports trade size, Kelly toggle, price corridor, mid-game TP, risk caps) and excludes crypto options.
+- **Critical HTML DOM Defects in `static/saas_dashboard.html`**:
+  1. **Premature Drawer Closure & Floating Duplicate Settings in `<body>`**:
+     - At lines 7951-8005, the financial drawer contains:
+       - `GROUP 5: Kalshi API Keys` (lines 7951-7986) with `id="kalshi-key"` and `id="kalshi-priv"`
+       - `GROUP Admin` (lines 7988-7994) with `id="admin-console-group"`
+       - `GROUP 6: Sign Out` (lines 7996-8005)
+     - At lines 8007-8011, there are 4 closing `</div>` tags. Line 8010 closes `#financialSettingsDrawer`, and line 8011 is a stray/underflow closing `</div>`.
+     - At lines 8013-8077, there is an **identical duplicate copy** of the above sections:
+       - `GROUP 11: Kalshi API Keys` (lines 8020-8055)
+       - `GROUP 12: Admin Console` (lines 8058-8064)
+       - `GROUP 13: Sign Out` (lines 8067-8076)
+     - Because `#financialSettingsDrawer` was already closed at line 8010, this second copy is rendered **directly in `<body>`**, completely unhidden, floating at the bottom of the main dashboard webpage.
+     - At lines 8078-8080, three additional stray closing `</div>` tags appear with no matching opening tags, prematurely popping `<body>` and `<html>` from the parser stack.
+  2. **Duplicate DOM IDs**:
+     - `id="finance-risk-settings"`: duplicated at lines 7231 and 7234.
+     - `id="kalshi-key"`: duplicated at lines 7973 and 8042.
+     - `id="kalshi-priv"`: duplicated at lines 7978 and 8047.
+     - `id="admin-console-group"`: duplicated at lines 7989 and 8059.
+  3. **Mismatched Tag Nesting inside `<details>`**:
+     - At line 7872: `<div class="border-t border-white/[0.05] divide-y divide-white/[0.05]">` is immediately closed at line 7874 with `</div>`.
+     - At line 7944: a stray closing `</div>` is placed before line 7945 `</details>`, causing a tag mismatch error.
 
 ---
 
 ## 2. Logic Chain
 
-1. **Premise 1**: The task assignment mandates verifying three Acceptance Criteria: (1) at least two mathematical or logical flaws identified; (2) exact file paths and specific functions/line numbers cited; (3) concrete, actionable pseudocode or code snippets provided; plus strict read-only compliance.
-2. **Step 2 (Flaw Count)**: Observation 1.1 demonstrates that Section 3 of `EVALUATION_REPORT.md` identifies 8 distinct flaws with mathematical proofs. Since $8 \ge 2$, Criterion 1 is fully satisfied.
-3. **Step 3 (Citation Accuracy)**: Direct code inspection of 8 Python modules across `backend/` confirmed that every single cited line range, function name, and code snippet in Section 3 exists verbatim in the codebase. Therefore, Criterion 2 is fully satisfied.
-4. **Step 4 (Actionability)**: Observation 1.1 confirms that Section 4 contains 9 production-grade, syntactically complete Python functions with type hints, docstrings, and boundary safeguards, rather than high-level advice. Therefore, Criterion 3 is fully satisfied.
-5. **Step 5 (Integrity & Non-Modification)**: Observation 1.1 confirms zero files in `backend/` were touched, database metrics reflect real SQLite data with zero fabrication, and adversarial stress-testing identified no unmitigated blocking risks.
-6. **Inference / Conclusion**: Because all acceptance criteria and integrity standards are verified without defect, the appropriate verdict is **APPROVE**.
+1. **Requirement R2 (Universe "BOTH" Persistence)**:
+   - The backend changes in `backend/routes/engine.py` (removing the implicit universe overwrite on sports toggle and passing `None` default on config updates) and `backend/database/models.py` (implementing `COALESCE` for `trading_universe` and `sports_trade_size_dollars`) successfully prevent data loss.
+   - All API endpoints (`/api/auth/user/config`, `/api/engine/{asset}/trade/config`, `/api/auth/dashboard_stats`) correctly persist and return `"BOTH"`.
+   - The frontend synchronizer `window.setAutoTradingUniverse` correctly updates both drawers and persists `"BOTH"`.
+   - *Logic deduction*: Requirement R2 is fully implemented and functionally sound.
+
+2. **Requirement R1 (Dedicated Settings Menus) & Acceptance Criteria**:
+   - The prompt and dispatch require:
+     - Dedicated, independently toggleable UI components: `#financialSettingsDrawer` and `#sportsSettingsDrawer`.
+     - Strict separation of contents (crypto/forex vs sports/props).
+     - Valid HTML structure with zero unclosed tags.
+     - Acceptance criteria: *"A reviewer agent inspects the code and confirms the existence of strictly separated HTML containers for the Financial and Sports settings, and verifies no JavaScript errors are thrown when interacting with them."*
+   - While two drawers exist, lines 8013 to 8080 of `static/saas_dashboard.html` contain a duplicated chunk of settings that leaked outside `#financialSettingsDrawer` into the root `<body>`.
+   - Because these leaked elements reside in `<body>` without `class="hidden"`, they permanently render on the main page.
+   - The presence of 4 duplicate DOM IDs (`kalshi-key`, `kalshi-priv`, `admin-console-group`, `finance-risk-settings`) violates HTML DOM uniqueness contracts and causes JavaScript `document.getElementById` collisions.
+   - Furthermore, the stray `</div>` tags at lines 8011 and 8078-8080 violate the requirement for a valid HTML DOM tree.
+   - *Logic deduction*: Requirement R1 is corrupted by duplicate blocks and malformed HTML nesting, requiring a code fix before approval.
 
 ---
 
 ## 3. Caveats
 
-- **Broker API Execution**: Live broker order placement against Kalshi exchange servers was not executed due to the strict read-only audit constraint and lack of live production API keys.
-- **Dynamic ATR Spot Thresholds**: The proposed `evaluate_exit_discipline` logic introduces a structural spot invalidation threshold of `$75.0` (1.5x 15m ATR). In high-volatility regimes (e.g., major CPI or FOMC releases), this threshold may need dynamic scaling to prevent premature exits.
+1. **Browser Forgiveness**: Modern desktop browsers will attempt to auto-repair stray `</div>` tags and render the DOM; however, the duplicate settings block (lines 8013-8077) is still visibly rendered in the body below the dashboard.
+2. **Capacitor / Mobile View**: On mobile web and Capacitor wrappers, floating body elements cause unwanted scrollable space and visual artifacts.
+3. **Test Suite Blind Spot**: `tests/test_saas_dashboard_decoupling_e2e.py` passed because `test_scenario3_html_dom_integrity_and_drawer_nesting` only asserted `len(fin_drawer.find_all("div")) > 0`, which BeautifulSoup satisfies despite orphaned elements in `<body>`.
 
 ---
 
 ## 4. Conclusion
 
-The deliverable `EVALUATION_REPORT.md` meets and exceeds all requirements set forth in `ORIGINAL_REQUEST.md` and `PROJECT.md`. It provides a mathematically sound, empirically grounded, and actionable roadmap to convert the ShadowTrader AI auto-trading architecture into a statistically profitable engine.
+### Explicit Verdict: **REQUEST_CHANGES**
 
-**Explicit Verdict**: **APPROVE**
+The backend implementation for Requirement R2 is robust, fully verified, and passing all tests. However, Requirement R1 in `static/saas_dashboard.html` contains critical HTML structural defects that must be resolved:
+
+### Actionable Required Fixes:
+1. **Remove Duplicate Leaked Block**: In `static/saas_dashboard.html`, remove lines 8013 to 8080 (the second duplicate copy of Kalshi API Keys, Admin Console, and Sign Out, along with the stray underflow `</div></div></div>` tags).
+2. **Fix Underflow in Financial Drawer**: At line 8011, remove the stray 4th `</div>` tag so that `#financialSettingsDrawer` is cleanly closed by exactly 3 closing tags (`</div>` for scrollable content, `</div>` for panel, `</div>` for drawer).
+3. **Fix `<details>` Mismatch**: In lines 7872-7875, remove the premature closing `</div>` at line 7874, or remove the orphan closing `</div>` at line 7944, ensuring proper nesting inside `<details>`.
+4. **Remove Consecutive Duplicate ID**: At line 7231, remove the duplicate `<div id="finance-risk-settings">`.
+5. **Update Test Assertion**: Update `test_scenario3_html_dom_integrity_and_drawer_nesting` in `tests/test_saas_dashboard_decoupling_e2e.py` to assert that no duplicate IDs exist and that no settings containers are orphaned outside the drawers in `<body>`.
 
 ---
 
 ## 5. Verification Method
 
-To independently verify this evaluation and review:
-1. **Inspect Report Artifact**:
-   `view_file` on `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\orchestrator_4\EVALUATION_REPORT.md`
-2. **Inspect Review Report**:
-   `view_file` on `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\reviewer_1\review.md`
-3. **Verify Cited Code Locations**:
-   - `view_file` on `backend/btc/auto_executor/executor.py` (lines 1042–1052)
-   - `view_file` on `backend/btc/auto_executor/saas_broadcaster.py` (lines 760–765, 877–881, 946–955)
-   - `view_file` on `backend/btc/auto_executor/stop_manager.py` (lines 360–374)
-   - `view_file` on `backend/btc/analyzer/contract_eval.py` (lines 638–644)
-4. **Verify Database Consistency**:
-   Run: `python -c "import sqlite3; c = sqlite3.connect('backend/data/users.db'); print(c.execute('SELECT count(*), round(sum(pnl), 2) FROM trades WHERE exit_reason LIKE \"SETTLEMENT%\"').fetchall())"`
-   Expected output: `[(275, 1829.88)]`
-5. **Verify Read-Only Compliance**:
-   Run: `powershell -Command "Get-ChildItem -Path backend -Recurse -Filter *.py | Sort-Object LastWriteTime -Descending | Select-Object -First 3 LastWriteTime, FullName"`
-   Confirm no write timestamps occur during the review session.
+To verify the defects and validate future fixes:
+
+1. **Verify HTML Tag Balance & Stray Closures**:
+   ```powershell
+   python -c @"
+   from html.parser import HTMLParser
+   class C(HTMLParser):
+       def __init__(self):
+           super().__init__()
+           self.stack = []
+           self.errors = []
+       def handle_starttag(self, t, a):
+           if t not in {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}:
+               self.stack.append((t, self.getpos()))
+       def handle_endtag(self, t):
+           if t in {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}: return
+           if not self.stack: self.errors.append(('underflow', t, self.getpos())); return
+           l, p = self.stack.pop()
+           if l != t: self.errors.append(('mismatch', t, l, self.getpos(), p))
+   c = C()
+   c.feed(open('static/saas_dashboard.html', encoding='utf-8').read())
+   print('Unclosed tags:', len(c.stack), 'Errors:', len(c.errors))
+   for e in c.errors: print(' ', e)
+   "@
+   ```
+   *Pass Condition*: `Unclosed tags: 0, Errors: 0`.
+
+2. **Verify No Duplicate DOM IDs**:
+   ```powershell
+   python -c @"
+   from collections import Counter
+   from bs4 import BeautifulSoup
+   soup = BeautifulSoup(open('static/saas_dashboard.html', encoding='utf-8').read(), 'html.parser')
+   ids = [tag['id'] for tag in soup.find_all(id=True)]
+   dups = {k: v for k, v in Counter(ids).items() if v > 1}
+   print('Duplicate IDs:', dups)
+   assert len(dups) == 0, f'Found duplicate IDs: {dups}'
+   "@
+   ```
+   *Pass Condition*: `Duplicate IDs: {}`.
+
+3. **Verify Settings Elements are Confined to Dedicated Drawers**:
+   ```powershell
+   python -c @"
+   from bs4 import BeautifulSoup
+   soup = BeautifulSoup(open('static/saas_dashboard.html', encoding='utf-8').read(), 'html.parser')
+   key_inputs = soup.find_all(id='kalshi-key')
+   assert len(key_inputs) == 1, f'Expected exactly 1 kalshi-key input, found {len(key_inputs)}'
+   parent_drawer = [p for p in key_inputs[0].parents if p.get('id') in ['financialSettingsDrawer', 'sportsSettingsDrawer']]
+   assert len(parent_drawer) == 1, 'kalshi-key must be strictly inside a settings drawer'
+   "@
+   ```
+   *Pass Condition*: Passes without assertion error.
+
+4. **Run Full Test Suite**:
+   ```powershell
+   python -m pytest tests/test_saas_dashboard_decoupling_e2e.py tests/test_m1_both_universe_persistence.py tests/test_frontend_contracts.py -v
+   ```

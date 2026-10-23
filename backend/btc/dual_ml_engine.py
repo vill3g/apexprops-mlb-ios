@@ -93,6 +93,57 @@ class DualMLEngine:
             else:
                 return self.day_engine.predict_probability(raw_features)
                 
-    def apply_settings(self, settings: dict):
-        self.day_engine.apply_settings(settings)
-        self.night_engine.apply_settings(settings)
+    def predict_consensus(self, raw_features):
+        with self._lock:
+            if self._is_night_time():
+                if self.night_engine.is_trained:
+                    return self.night_engine.predict_consensus(raw_features)
+                return self.day_engine.predict_consensus(raw_features)
+            return self.day_engine.predict_consensus(raw_features)
+
+    def calculate_kelly_wager(self, current_raw_features=None, market_price=0.50, available_capital=None, max_position_cap=None, capital=None, max_cap=None, bankroll=None, p_win=None, is_unanimous=None, agreement_ratio=None, slippage_buffer=0.04, **kwargs):
+        with self._lock:
+            if self._is_night_time():
+                if self.night_engine.is_trained:
+                    return self.night_engine.calculate_kelly_wager(
+                        current_raw_features=current_raw_features,
+                        market_price=market_price,
+                        available_capital=available_capital,
+                        max_position_cap=max_position_cap,
+                        capital=capital,
+                        max_cap=max_cap,
+                        bankroll=bankroll,
+                        p_win=p_win,
+                        is_unanimous=is_unanimous,
+                        agreement_ratio=agreement_ratio,
+                        slippage_buffer=slippage_buffer,
+                        **kwargs
+                    )
+                return self.day_engine.calculate_kelly_wager(
+                    current_raw_features=current_raw_features,
+                    market_price=market_price,
+                    available_capital=available_capital,
+                    max_position_cap=max_position_cap,
+                    capital=capital,
+                    max_cap=max_cap,
+                    bankroll=bankroll,
+                    p_win=p_win,
+                    is_unanimous=is_unanimous,
+                    agreement_ratio=agreement_ratio,
+                    slippage_buffer=slippage_buffer,
+                    **kwargs
+                )
+            return self.day_engine.calculate_kelly_wager(
+                current_raw_features=current_raw_features,
+                market_price=market_price,
+                available_capital=available_capital,
+                max_position_cap=max_position_cap,
+                capital=capital,
+                max_cap=max_cap,
+                bankroll=bankroll,
+                p_win=p_win,
+                is_unanimous=is_unanimous,
+                agreement_ratio=agreement_ratio,
+                slippage_buffer=slippage_buffer,
+                **kwargs
+            )

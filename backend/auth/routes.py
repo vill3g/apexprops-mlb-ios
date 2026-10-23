@@ -70,10 +70,8 @@ class UserConfigRequest(BaseModel):
     @classmethod
     def validate_trading_universe(cls, v):
         if v is not None:
-            norm = str(v).strip().upper()
-            if norm not in {"FINANCIAL", "SPORTS", "BOTH", "ALL"}:
-                raise ValueError(f"Invalid trading_universe '{v}'. Allowed: 'FINANCIAL', 'SPORTS', 'BOTH', 'ALL'")
-            return norm
+            from backend.database.models import _normalize_trading_universe
+            return _normalize_trading_universe(v)
         return v
     min_sports_confidence: Optional[float] = None
     min_sports_edge: Optional[float] = None
@@ -91,6 +89,37 @@ class UserConfigRequest(BaseModel):
     sports_tp_pct: Optional[float] = None
     sports_use_kelly: Optional[bool] = None
     sports_market_types: Optional[str] = None
+    sports_active_props: Optional[str] = None
+    sports_sport_config: Optional[str] = None
+    sports_strategy: Optional[str] = None
+    sports_max_parlay_legs: Optional[int] = None
+    # Investments Universe Settings
+    investments_trade_size_dollars: Optional[float] = None
+    investments_paper_trade_size_dollars: Optional[float] = None
+    investments_asset_classes: Optional[str] = None
+    investments_watchlist: Optional[str] = None
+    investments_strategy: Optional[str] = None
+    investments_min_confidence: Optional[float] = None
+    investments_min_rvol: Optional[float] = None
+    investments_max_daily_trades: Optional[int] = None
+    investments_max_open_positions: Optional[int] = None
+    investments_max_daily_risk: Optional[float] = None
+    investments_stock_tp_pct: Optional[float] = None
+    investments_stock_sl_pct: Optional[float] = None
+    investments_option_tp_pct: Optional[float] = None
+    investments_option_sl_pct: Optional[float] = None
+    investments_trailing_stop_enabled: Optional[bool] = None
+    investments_trailing_stop_pct: Optional[float] = None
+    investments_eod_auto_flatten: Optional[bool] = None
+    investments_extended_hours: Optional[bool] = None
+    investments_allow_fractional: Optional[bool] = None
+    investments_options_delta_target: Optional[float] = None
+    investments_options_dte_window: Optional[str] = None
+    investments_options_max_spread_pct: Optional[float] = None
+    investments_options_min_oi: Optional[int] = None
+    investments_use_kelly: Optional[bool] = None
+    rh_auth_mode: Optional[str] = None
+    rh_account_type: Optional[str] = None
     xgb_learning_rate: Optional[float] = None
     ignore_pass_technical: Optional[bool] = None
     one_shot_ai: Optional[bool] = None
@@ -101,6 +130,10 @@ class UserConfigRequest(BaseModel):
     notify_market_trends: Optional[bool] = None
     use_kelly_criterion: Optional[bool] = None
     atr_risk_enabled: Optional[bool] = None
+    gemini_every_interval_enabled: Optional[bool] = None
+    regime_mode: Optional[str] = None
+    chop_engine_enabled: Optional[bool] = None
+    chop_take_profit_cents: Optional[float] = None
 
 class ExchangeTransferRequest(BaseModel):
     source_exchange: int = 0
@@ -195,9 +228,9 @@ def register(req: RegisterRequest, response: Response):
         value=token,
         max_age=60 * 60 * 24 * 90,  # 90 days persistent session
         path="/",
-        samesite="none",
-        secure=True,
-        httponly=True
+        samesite="lax",
+        secure=False,
+        httponly=False
     )
     return {"success": True, "token": token, "username": req.username}
 
@@ -215,9 +248,9 @@ def login(req: LoginRequest, response: Response):
         value=token,
         max_age=60 * 60 * 24 * 90,  # 90 days persistent session
         path="/",
-        samesite="none",
-        secure=True,
-        httponly=True
+        samesite="lax",
+        secure=False,
+        httponly=False
     )
     return {
         "success": True, 
@@ -229,18 +262,31 @@ def login(req: LoginRequest, response: Response):
 
 @router.post("/logout")
 def logout_endpoint(response: Response):
-    response.delete_cookie(key="saas_token", path="/")
+    response.delete_cookie(key="saas_token", path="/", samesite="lax", secure=False, httponly=False)
+    response.delete_cookie(key="saas_token", path="/", samesite="none", secure=True, httponly=True)
     return {"success": True, "message": "Logged out successfully."}
 
 @router.get("/me")
 def get_me(current_user: dict = Depends(get_current_user)):
+    has_rh = bool(
+        current_user.get('rh_mcp_token_enc') or
+        (current_user.get('rh_username_enc') and current_user.get('rh_password_enc')) or
+        (current_user.get('rh_api_key_id') and current_user.get('rh_api_private_key_enc'))
+    )
     return {
         "success": True, 
         "user_id": current_user['id'],
         "username": current_user['username'],
         "trading_mode": current_user.get("trading_mode", "PAPER"),
         "paper_balance": current_user.get("paper_balance", 500.0),
-        "has_kalshi_keys": bool(current_user['kalshi_key_id'] and current_user['kalshi_priv_key_encrypted']),
+        "investments_paper_balance": current_user.get("investments_paper_balance", 10000.0),
+        "has_kalshi_keys": bool(current_user.get('kalshi_key_id') and current_user.get('kalshi_priv_key_encrypted')),
+        "has_robinhood_keys": has_rh,
+        "has_robinhood_mcp_token": bool(current_user.get('rh_mcp_token_enc')),
+        "rh_mcp_url": current_user.get("rh_mcp_url") or "https://agent.robinhood.com/mcp/trading",
+        "rh_auth_mode": current_user.get("rh_auth_mode") or "ROBINHOOD_MCP",
+        "rh_account_type": current_user.get("rh_account_type", "CASH"),
+        "trading_universe": current_user.get("trading_universe", "FINANCIAL"),
         "profile_pic": current_user.get("profile_pic")
     }
 
@@ -275,8 +321,344 @@ def update_keys(req: UpdateKeysRequest, current_user: dict = Depends(get_current
     return {"success": True, "message": "Keys securely updated."}
 
 
+class UpdateRobinhoodCredentialsRequest(BaseModel):
+    auth_mode: Optional[str] = "ROBINHOOD_MCP"  # "ROBINHOOD_MCP", "ROBIN_STOCKS", or "OFFICIAL_API"
+    username: Optional[str] = None
+    password: Optional[str] = None
+    totp_secret: Optional[str] = None
+    api_key_id: Optional[str] = None
+    api_private_key: Optional[str] = None
+    mcp_url: Optional[str] = "https://agent.robinhood.com/mcp/trading"
+    mcp_token: Optional[str] = None
+    account_type: Optional[str] = "CASH"
+
+@router.post("/robinhood-keys")
+def update_robinhood_keys(
+    req: UpdateRobinhoodCredentialsRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    from backend.auth.security import encrypt_kalshi_key
+    from backend.database.models import save_user_robinhood_credentials
+
+    user_id = current_user["id"]
+    u_enc = encrypt_kalshi_key(req.username.strip()) if req.username else None
+    p_enc = encrypt_kalshi_key(req.password.strip()) if req.password else None
+    totp_enc = encrypt_kalshi_key(req.totp_secret.strip().replace(" ", "").upper()) if req.totp_secret else None
+    key_id = req.api_key_id.strip() if req.api_key_id else None
+    priv_enc = encrypt_kalshi_key(req.api_private_key.strip()) if req.api_private_key else None
+    mcp_url_val = (req.mcp_url or "https://agent.robinhood.com/mcp/trading").strip()
+    mcp_tok_enc = encrypt_kalshi_key(req.mcp_token.strip()) if req.mcp_token else None
+
+    save_user_robinhood_credentials(
+        user_id=user_id,
+        username_enc=u_enc,
+        password_enc=p_enc,
+        totp_secret_enc=totp_enc,
+        api_key_id=key_id,
+        api_private_key_enc=priv_enc,
+        mcp_url=mcp_url_val,
+        mcp_token_enc=mcp_tok_enc,
+        auth_mode=req.auth_mode or "ROBINHOOD_MCP",
+        account_type=req.account_type or "CASH"
+    )
+
+    return {
+        "success": True,
+        "message": "Robinhood credentials securely encrypted and stored.",
+        "auth_mode": req.auth_mode or "ROBINHOOD_MCP",
+        "mcp_url": mcp_url_val,
+        "account_type": req.account_type or "CASH",
+        "has_credentials": True
+    }
+
+@router.get("/robinhood-status")
+def get_robinhood_status(current_user: dict = Depends(get_current_user)):
+    has_rh = bool(
+        current_user.get('rh_mcp_token_enc') or
+        (current_user.get('rh_username_enc') and current_user.get('rh_password_enc')) or
+        (current_user.get('rh_api_key_id') and current_user.get('rh_api_private_key_enc'))
+    )
+    return {
+        "success": True,
+        "connected": has_rh,
+        "has_mcp_token": bool(current_user.get('rh_mcp_token_enc')),
+        "mcp_url": current_user.get("rh_mcp_url") or "https://agent.robinhood.com/mcp/trading",
+        "auth_mode": current_user.get("rh_auth_mode") or "ROBINHOOD_MCP",
+        "account_type": current_user.get("rh_account_type", "CASH"),
+        "paper_balance": float(current_user.get("investments_paper_balance", 10000.0)),
+        "trading_mode": current_user.get("trading_mode", "PAPER")
+    }
+
+
+
 _live_balance_cache = {} # user_id -> (timestamp, balance_dollars)
 _live_balance_lock = threading.Lock()
+
+_live_kalshi_sync_cache = {} # user_id -> timestamp
+_live_kalshi_sync_lock = threading.Lock()
+
+def _reconcile_kalshi_orders_for_user(user_id: int, current_user: dict):
+    """
+    Syncs external / manual Kalshi orders and open positions into TradeStore
+    so direct trades placed on Kalshi show up seamlessly in the dashboard.
+    Cached for 8 seconds to prevent API rate limits.
+    """
+    if str(current_user.get("trading_mode") or "PAPER").upper() != "LIVE":
+        return
+    if not current_user.get("kalshi_key_id") or not current_user.get("kalshi_priv_key_encrypted"):
+        return
+
+    now_ts = time.time()
+    with _live_kalshi_sync_lock:
+        last_sync = _live_kalshi_sync_cache.get(user_id, 0.0)
+        if (now_ts - last_sync) < 8.0:
+            return
+        _live_kalshi_sync_cache[user_id] = now_ts
+
+    try:
+        priv = decrypt_kalshi_key(current_user["kalshi_priv_key_encrypted"])
+        if not priv:
+            return
+        kt = KalshiTrader(key_id=current_user["kalshi_key_id"], private_key_pem=priv, fail_fast=True)
+        if not kt.is_authenticated():
+            return
+
+        from backend.btc.kalshi_trader import BASE_URL
+        orders_res = kt.session.get(
+            f"{BASE_URL}/trade-api/v2/portfolio/orders?limit=30",
+            headers=kt._sign_headers("GET", "/trade-api/v2/portfolio/orders"),
+            timeout=5.0
+        )
+        if orders_res.status_code != 200:
+            return
+        orders = orders_res.json().get("orders", [])
+        if not orders:
+            return
+
+        pos_res = kt.get_positions(fail_fast=True)
+        open_pos_map = {}
+        if pos_res.get("success", True) and isinstance(pos_res.get("positions"), list):
+            open_pos_map = {
+                p.get("ticker"): p
+                for p in pos_res["positions"]
+                if float(p.get("position_fp") or 0.0) != 0.0
+            }
+
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, entry_price, count, status, ticker, timestamp, raw_json FROM trades WHERE user_id = ?", (user_id,))
+            db_rows = {}
+            db_ids = set()
+            db_cids = set()
+            db_trades_list = []
+            for row in cursor.fetchall():
+                r_id, r_ep, r_cnt, r_stat, r_tk, r_ts, r_raw = row
+                db_rows[r_id] = {"entry_price": r_ep, "count": r_cnt, "status": r_stat, "ticker": r_tk, "raw_json": r_raw}
+                db_ids.add(r_id)
+                # Parse raw_json for existing order_id or client_order_id
+                r_meta = {}
+                if r_raw:
+                    try:
+                        r_meta = json.loads(r_raw)
+                        if r_meta.get("order_id"):
+                            db_ids.add(r_meta["order_id"])
+                        if r_meta.get("client_order_id"):
+                            db_cids.add(r_meta["client_order_id"])
+                    except Exception:
+                        pass
+                # Helper for approximate timestamp matching
+                r_epoch = 0.0
+                if isinstance(r_ts, (int, float)):
+                    r_epoch = float(r_ts)
+                elif isinstance(r_ts, str):
+                    try:
+                        r_epoch = dateutil.parser.isoparse(r_ts).timestamp()
+                    except Exception:
+                        r_epoch = 0.0
+                db_trades_list.append({
+                    "id": r_id, "ticker": r_tk, "count": r_cnt, "entry_price": r_ep,
+                    "status": r_stat, "epoch": r_epoch, "raw_json": r_raw
+                })
+        finally:
+            conn.close()
+
+        # Pre-index SELL fills by ticker so we can compute realized PnL on closed BUY orders
+        sell_fills_by_tk = {}
+        for o in orders:
+            st = str(o.get("status") or "").lower()
+            if st in ("canceled", "pending"):
+                continue
+            act_check = str(o.get("action") or "buy").upper()
+            if act_check == "SELL":
+                tk_s = o.get("ticker") or ""
+                c_s = float(o.get("fill_count_fp") or o.get("initial_count_fp") or 0.0)
+                p_s = float(o.get("yes_price_dollars") or o.get("no_price_dollars") or 0.0)
+                if tk_s and c_s > 0:
+                    sell_fills_by_tk.setdefault(tk_s, []).append((c_s, p_s))
+
+        def _avg_sell_price(tk_lookup: str):
+            fills = sell_fills_by_tk.get(tk_lookup) or []
+            if not fills:
+                return None
+            tot_c = sum(f[0] for f in fills)
+            if tot_c <= 0:
+                return None
+            return round(sum(f[0] * f[1] for f in fills) / tot_c, 4)
+
+        for o in orders:
+            oid = o.get("order_id")
+            cid = o.get("client_order_id")
+            status = str(o.get("status") or "").lower()
+            if status in ("canceled", "pending"):
+                continue
+
+            act = str(o.get("action") or "buy").upper()
+            # Never insert standalone SELL orders as separate trade rows; SELL orders close existing BUY positions
+            if act == "SELL":
+                continue
+
+            # Determine order timestamp in epoch seconds
+            o_created = o.get("created_time") or ""
+            o_epoch = 0.0
+            if o_created:
+                try:
+                    o_epoch = dateutil.parser.isoparse(o_created).timestamp()
+                except Exception:
+                    o_epoch = 0.0
+
+            tk = o.get("ticker") or ""
+            count_raw = float(o.get("fill_count_fp") or o.get("initial_count_fp") or 1.0)
+            if count_raw <= 0.0:
+                continue
+            count_val = int(count_raw) if count_raw.is_integer() else round(count_raw, 2)
+
+            # Match against existing trades by ID, client_order_id, or fuzzy ticker+count+timestamp (+/- 180s)
+            matched_trade_id = None
+            if oid in db_ids:
+                matched_trade_id = oid
+            elif cid and (cid in db_ids or cid in db_cids):
+                matched_trade_id = cid
+            else:
+                for db_t in db_trades_list:
+                    if db_t["ticker"] == tk and abs(float(db_t["count"] or 0) - float(count_val)) < 0.01:
+                        if o_epoch > 0 and db_t["epoch"] > 0 and abs(o_epoch - db_t["epoch"]) < 180.0:
+                            matched_trade_id = db_t["id"]
+                            break
+
+            if matched_trade_id:
+                # If matched to existing trade, link order_id if missing and update status if flat
+                if tk and tk not in open_pos_map:
+                    row_info = db_rows.get(matched_trade_id) or {}
+                    upd_fields = {"status": "CLOSED"}
+                    sell_p = _avg_sell_price(tk)
+                    if sell_p is not None and row_info.get("entry_price") is not None:
+                        ep = float(row_info["entry_price"])
+                        cnt = float(row_info.get("count") or 1.0)
+                        realized = round((sell_p - ep) * cnt, 2)
+                        upd_fields["exit_price"] = sell_p
+                        upd_fields["pnl"] = realized
+                        upd_fields["pnl_dollars"] = realized
+                    if oid:
+                        upd_fields["order_id"] = oid
+                    TradeStore.update_trade(matched_trade_id, upd_fields, only_if_open=True)
+                elif oid:
+                    TradeStore.update_trade(matched_trade_id, {"order_id": oid})
+                db_ids.add(oid)
+                continue
+
+            # In Kalshi V2, outcome_side specifies the true contract side ("no" or "yes")
+            outcome_val = str(o.get("outcome_side") or "").upper()
+            if outcome_val in ("YES", "NO"):
+                side = outcome_val
+            else:
+                side = str(o.get("side") or "yes").upper()
+            count_raw = float(o.get("fill_count_fp") or o.get("initial_count_fp") or 1.0)
+            if count_raw <= 0.0:
+                continue
+            count_val = int(count_raw) if count_raw.is_integer() else round(count_raw, 2)
+            price = float(o.get("yes_price_dollars") or o.get("no_price_dollars") or 0.5)
+            created = o.get("created_time") or ""
+
+            is_open = (tk in open_pos_map) and (act == "BUY")
+            trade_status = "OPEN" if is_open else "CLOSED"
+
+            trade_sport = None
+            trade_team = None
+            is_mve_combo = "MVE" in tk or "CROSSCATEGORY" in tk
+            legs_count = 0
+            # If MVE parlay/combo ticker, fetch market to check underlying sports legs
+            if is_mve_combo:
+                try:
+                    mkt_res = kt.session.get(f"{BASE_URL}/trade-api/v2/markets/{tk}", headers=kt._sign_headers("GET", f"/trade-api/v2/markets/{tk}"), timeout=3.0)
+                    if mkt_res.status_code == 200:
+                        m_obj = mkt_res.json().get("market", {})
+                        legs = m_obj.get("mve_selected_legs") or []
+                        legs_count = len(legs)
+                        sports_found = set()
+                        for leg in legs:
+                            leg_tk = str(leg.get("event_ticker") or leg.get("market_ticker") or "").upper()
+                            for sp in ("NHL", "NFL", "MLB", "NBA", "SOC", "UFC", "TEN"):
+                                if sp in leg_tk:
+                                    sports_found.add(sp)
+                        if len(sports_found) > 1 or legs_count >= 2:
+                            trade_sport = "MULTIVARIATE_COMBO"
+                        elif len(sports_found) == 1:
+                            trade_sport = list(sports_found)[0]
+                        else:
+                            trade_sport = "MULTIVARIATE_COMBO"
+
+                        if legs_count >= 2:
+                            trade_team = f"{legs_count}-Leg Master Combo"
+                        else:
+                            trade_team = m_obj.get("title") or "Multi-Game Parlay"
+                except Exception:
+                    trade_sport = "MULTIVARIATE_COMBO"
+                    trade_team = "Master Combo Parlay"
+
+            resolved_asset = trade_sport if trade_sport else _asset_from_ticker(tk)
+            trade_meta = {"kalshi_order": True, "action": act, "external": True}
+            if trade_sport:
+                trade_meta["sport"] = trade_sport
+                trade_meta["team"] = trade_team or f"{trade_sport} Parlay"
+                trade_meta["parlay"] = True
+                if legs_count >= 2:
+                    trade_meta["legs_count"] = legs_count
+
+            sell_p = None if is_open else _avg_sell_price(tk)
+            exit_val = None if is_open else (sell_p if sell_p is not None else price)
+            pnl_val = 0.0 if (is_open or exit_val is None) else round((exit_val - price) * float(count_val), 2)
+
+            trade_dict = {
+                "id": oid,
+                "user_id": user_id,
+                "ticker": tk,
+                "asset": resolved_asset,
+                "sport": trade_sport,
+                "predicted_team": trade_team,
+                "team": trade_team,
+                "matchup": f"{legs_count}-Leg Cross-Category Master Combo" if legs_count >= 2 else trade_team,
+                "line": f"{legs_count} Legs All-Hit" if legs_count >= 2 else None,
+                "side": side,
+                "entry_price": price,
+                "exit_price": exit_val,
+                "count": count_val,
+                "pnl": pnl_val,
+                "pnl_dollars": pnl_val,
+                "status": trade_status,
+                "mode": "LIVE",
+                "reason": f"Live Kalshi {legs_count}-Leg Combo" if legs_count >= 2 else ("Kalshi Direct Order" if is_open else "Kalshi Manual Trade"),
+                "trading_style": "SPORTS_COMBO" if is_mve_combo else ("SPORTS_MANUAL" if trade_sport else "MANUAL_KALSHI"),
+                "signal_source": "KALSHI_API",
+                "timestamp": created,
+                "created_at": created,
+                "order_id": oid,
+                "metadata": trade_meta
+            }
+            TradeStore.insert_trade(user_id, trade_dict)
+            db_ids.add(oid)
+    except Exception as e:
+        logger.warning(f"[KalshiReconciler] Error syncing orders for user {user_id}: {e}")
 
 _YES_WORDS = {"ABOVE", "UP", "YES", "BUY YES", "BID YES", "STRONG BULLISH (UP)", "BULLISH (UP)"}
 _NO_WORDS = {"BELOW", "DOWN", "NO", "BUY NO", "BID NO", "STRONG BEARISH (DOWN)", "BEARISH (DOWN)"}
@@ -533,7 +915,7 @@ def get_my_signal(current_user: dict = Depends(get_current_user)):
             elif side == "no" and delta > 25 and chart["close"] > chart["open"] and chart["ema9"] > chart["ema21"] \
                     and not any(k in cats for k in ("Rejection Pin", "Overbought Exhaustion", "Bearish Liquidity Sweep")):
                 reason = "Blocked: price is above target and trending up"
-    if reason is None and current_user.get("edge_gate_enabled", 1) and out["edge_cents"] is not None:
+    if reason is None and False and out["edge_cents"] is not None:  # EV edge guard removed
         min_edge = float(current_user.get("min_edge_cents", 0.0) or 0.0)
         if out["edge_cents"] <= min_edge:
             reason = (f"edge {out['edge_cents']:+.1f}\u00a2 is not above your {min_edge:.1f}\u00a2 minimum (Edge Guard)")
@@ -610,21 +992,51 @@ from fastapi import Request
 def get_dashboard_stats(request: Request, response: Response, current_user: dict = Depends(get_current_user)):
     
     user_id = current_user['id']
+    try:
+        _reconcile_kalshi_orders_for_user(user_id, current_user)
+    except Exception as _re:
+        logger.warning(f"Error in Kalshi live reconciliation: {_re}")
+
     open_trades = TradeStore.get_open_trades(user_id)
     recent = TradeStore.get_recent_trades(user_id, limit=200)
+    try:
+        recent = recent + TradeStore.get_recent_sports_trades(user_id, limit=50)
+    except Exception:
+        pass
     
     trades = []
-    seen = set()
+    seen_ids = set()
+    seen_keys = set()
     for t in open_trades + recent:
-        if t.get("id") not in seen:
-            seen.add(t.get("id"))
-            trades.append(t)
+        tid = t.get("id")
+        if not tid or tid in seen_ids:
+            continue
+        # Also deduplicate by (ticker, side, count, round(entry_price, 2)) for trades placed within 60s
+        tk = t.get("ticker")
+        side = str(t.get("side") or "").upper()
+        cnt = float(t.get("count") or 1.0)
+        ep = round(float(t.get("entry_price") or 0.0), 2)
+        ts_val = t.get("timestamp") or t.get("created_at") or ""
+        ts_epoch = 0
+        if isinstance(ts_val, (int, float)):
+            ts_epoch = int(ts_val // 60)
+        elif isinstance(ts_val, str):
+            try:
+                ts_epoch = int(dateutil.parser.isoparse(ts_val).timestamp() // 60)
+            except Exception:
+                ts_epoch = 0
+        key = (tk, side, cnt, ep, ts_epoch) if (tk and ts_epoch > 0) else None
+        if key and key in seen_keys:
+            continue
+        if key:
+            seen_keys.add(key)
+        seen_ids.add(tid)
+        trades.append(t)
     
     trading_mode = current_user.get('trading_mode', 'PAPER')
     
-    # Show ALL trades in recent executions (open trades, history regardless of mode switch)
-    # Stats (wins/losses/PnL) are still filtered to current active mode only
-    trades_filtered = trades
+    # Strictly filter trades to current active mode only (PAPER in PAPER mode, LIVE in LIVE mode)
+    trades_filtered = [t for t in trades if str(t.get("mode", "PAPER")).upper() == str(trading_mode).upper()]
             
     # All-time stats for the active mode (not just the most recent 100 trades)
     _mode_stats = TradeStore.get_closed_stats(user_id).get(str(trading_mode).upper(), {})
@@ -633,6 +1045,8 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
     total_pnl = float(_mode_stats.get("pnl", 0.0))
 
     
+    from backend.engine.live_pnl import annotate_trade_live_pnl, is_sports_trade as _is_sports_trade
+
     market_by_series = {}
     live_open_pnl = 0.0
     open_paper_value = 0.0
@@ -644,66 +1058,94 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         t["asset"] = _asset_from_ticker(tk, t.get("asset"))
 
         if t.get("status") == "OPEN":
-            series = tk.split("-")[0] if "-" in tk else f"KX{t['asset']}15M"
-            if tk not in market_by_series:
-                m_direct = get_kalshi_market_by_ticker(tk)
-                if m_direct:
-                    market_by_series[tk] = m_direct
+            if _is_sports_trade(t):
+                annotated = annotate_trade_live_pnl(t)
+                t.update(annotated)
+                live_pnl = float(t.get("live_pnl") or 0.0)
+                exit_price = float(t.get("exit_bid") or t.get("entry_price") or 0.5)
+                count = float(t.get("count") or 1.0)
+                live_open_pnl += live_pnl
+                if t.get("mode", "PAPER") == "PAPER":
+                    open_paper_value += (count * exit_price)
                 else:
-                    # Fallback
-                    if series not in market_by_series:
-                        market_by_series[series] = get_kalshi_15m_market(series_ticker=series)
-                    market_by_series[tk] = market_by_series.get(series)
+                    open_live_value += (count * exit_price)
+            else:
+                series = tk.split("-")[0] if "-" in tk else f"KX{t['asset']}15M"
+                if tk not in market_by_series:
+                    # Sub-millisecond (1ms) in-memory cache lookup
+                    try:
+                        from backend.engine.kalshi_market_cache import get_market_cache_instance
+                        _kmc = get_market_cache_instance()
+                        _cached_m = _kmc.get_market(tk) if _kmc else None
+                    except Exception:
+                        _cached_m = None
 
-            m = market_by_series.get(tk)
-
-            side = str(t.get("side") or "YES").upper()
-            entry = float(t.get("entry_price") or 0.5)
-            count = int(t.get("count") or 1)
-
-            exit_price = entry
-            if m and m.get("status") in ["active", "synthetic"]:
-                if m.get("ticker") == tk:
-                    if m.get("status") == "synthetic" and "strike" in t:
-                        spot = float(m.get("target_price", 0.0))
-                        strike = float(t.get("strike", 0.0))
-                        if spot > 0 and strike > 0:
-                            pct_move = (spot - strike) / strike
-                            sign = 1 if side == "YES" else -1
-                            edge = (pct_move * sign) * 500.0
-                            exit_price = max(0.01, min(0.99, entry + edge))
-                        else:
-                            exit_price = float(m.get("yes_bid", entry) if side == "YES" else m.get("no_bid", entry))
+                    if _cached_m:
+                        market_by_series[tk] = _cached_m
                     else:
-                        bid = float(m.get("yes_bid") or 0.0) if side == "YES" else float(m.get("no_bid") or 0.0)
-                        if bid > 0:
-                            exit_price = bid
+                        m_direct = get_kalshi_market_by_ticker(tk)
+                        if m_direct:
+                            market_by_series[tk] = m_direct
                         else:
-                            # If no bid, estimate from ask or default to entry to avoid showing arbitrary huge losses
-                            ask = float(m.get("yes_ask") or 0.0) if side == "YES" else float(m.get("no_ask") or 0.0)
-                            if ask > 0.05:
-                                exit_price = ask - 0.05
+                            # Fallback
+                            if series not in market_by_series:
+                                market_by_series[series] = get_kalshi_15m_market(series_ticker=series)
+                            market_by_series[tk] = market_by_series.get(series)
+
+                m = market_by_series.get(tk)
+
+                side = str(t.get("side") or "YES").upper()
+                entry = float(t.get("entry_price") or 0.5)
+                count = float(t.get("count") or 1.0)
+
+                exit_price = entry
+                if m and m.get("status") in ["active", "synthetic"]:
+                    if m.get("ticker") == tk:
+                        if m.get("status") == "synthetic" and "strike" in t:
+                            spot = float(m.get("target_price", 0.0))
+                            strike = float(t.get("strike", 0.0))
+                            if spot > 0 and strike > 0:
+                                pct_move = (spot - strike) / strike
+                                sign = 1 if side == "YES" else -1
+                                edge = (pct_move * sign) * 500.0
+                                exit_price = max(0.01, min(0.99, entry + edge))
                             else:
-                                exit_price = entry
+                                exit_price = float(m.get("yes_bid", entry) if side == "YES" else m.get("no_bid", entry))
+                        else:
+                            bid = float(m.get("yes_bid") or 0.0) if side == "YES" else float(m.get("no_bid") or 0.0)
+                            if bid > 0:
+                                exit_price = bid
+                            else:
+                                # If no bid, estimate from ask or default to entry to avoid showing arbitrary huge losses
+                                ask = float(m.get("yes_ask") or 0.0) if side == "YES" else float(m.get("no_ask") or 0.0)
+                                if ask > 0.05:
+                                    exit_price = ask - 0.05
+                                else:
+                                    exit_price = entry
+                    else:
+                        exit_price = entry
                 else:
                     exit_price = entry
-            else:
-                exit_price = entry
 
-            live_pnl = round((exit_price - entry) * count, 2)
-            t["live_pnl"] = live_pnl
-            t["exit_bid"] = exit_price
-            live_open_pnl += live_pnl
+                live_pnl = round((exit_price - entry) * count, 2)
+                t["live_pnl"] = live_pnl
+                t["exit_bid"] = exit_price
+                t["cur_price"] = exit_price
+                t["current_bid"] = exit_price
+                t["current_price"] = exit_price
+                live_open_pnl += live_pnl
 
-            if t.get("mode", "PAPER") == "PAPER":
-                open_paper_value += (count * exit_price)
-            else:
-                open_live_value += (count * exit_price)
+                if t.get("mode", "PAPER") == "PAPER":
+                    open_paper_value += (count * exit_price)
+                else:
+                    open_live_value += (count * exit_price)
         else:
             if "live_pnl" not in t:
                 t["live_pnl"] = float(t.get("pnl_dollars") or t.get("pnl") or 0.0)
 
-    total_pnl += live_open_pnl
+    # IMPORTANT: Keep total_pnl strictly equal to settled/closed PnL!
+    # Do NOT add live_open_pnl into total_pnl (open PnL is reported via live_open_pnl).
+    settled_pnl = round(total_pnl, 2)
     
     balance_dollars = None
     portfolio_value = 0.0
@@ -771,7 +1213,12 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         logger.debug(f"Failed to load global strikes cache: {_ge}")
 
     formatted_trades = []
-    for t in trades_filtered[:50]:
+    # Keep separate quotas per universe: high-frequency financial trades (15m BTC/ETH)
+    # otherwise push every closed sports trade out of the 50-row window.
+    _sports_slice = [t for t in trades_filtered if _is_sports_trade(t)][:50]
+    _fin_slice = [t for t in trades_filtered if not _is_sports_trade(t)][:50]
+    _keep_ids = {id(t) for t in _sports_slice + _fin_slice}
+    for t in [t for t in trades_filtered if id(t) in _keep_ids]:
         # Parse time
         ts = t.get("timestamp")
         iso_str = ""
@@ -928,14 +1375,16 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
                 prob_pct = None
 
         exit_p = t.get("exit_price")
-        if exit_p is None and t.get("status") != "OPEN":
-            c = int(t.get("count", 1)) or 1
-            e = float(t.get("entry_price", 0.5))
-            p = float(t.get("pnl", 0.0))
-            exit_p = round(max(0.0, min(1.0, (c * e + p) / c)), 2)
+        if str(t.get("status") or "").upper() == "OPEN":
+            exit_p = None
+        elif exit_p is None:
+            c = float(t.get("count") or 1.0) or 1.0
+            e = float(t.get("entry_price") or 0.5)
+            p = float(t.get("pnl") or 0.0)
+            exit_p = round(max(0.0, min(1.0, (c * e + p) / c)), 4)
         elif exit_p is not None:
             try:
-                exit_p = round(float(exit_p), 2)
+                exit_p = round(float(exit_p), 4)
             except (ValueError, TypeError) as e:
                 logger.warning(f"Failed to parse exit_price {exit_p}: {e}")
                 exit_p = None
@@ -960,6 +1409,10 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
             parts = ticker.split("-")
             if len(parts) > 2:
                 trade_team = parts[2]
+        if ("MVE" in ticker or "CROSSCATEGORY" in ticker) and (not trade_team or len(str(trade_team)) > 60 or str(trade_team).lower().startswith("yes ")):
+            leg_st = t.get("mve_leg_stats") or {}
+            n_l = leg_st.get("legs_total") or 0
+            trade_team = f"{n_l}-Leg Master Combo" if n_l >= 2 else "Master Combo Parlay"
 
         formatted_trades.append({
             "id": t.get("id"),
@@ -996,10 +1449,24 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
             "direction": t.get("direction") or t.get("prediction_direction") or t.get("side", ""),
             "asset": _asset_from_ticker(ticker, t.get("asset")),
             "live_pnl": t.get("live_pnl", pnl),
+            "cur_price": t.get("cur_price") or t.get("exit_bid"),
+            "exit_bid": t.get("exit_bid"),
+            "current_bid": t.get("current_bid") or t.get("exit_bid"),
+            "current_price": t.get("current_price") or t.get("exit_bid"),
+            "strike_details": t.get("strike_details"),
+            "market_ticker": t.get("market_ticker"),
             "sport": trade_sport,
             "predicted_team": trade_team,
-            "team": trade_team
+            "team": trade_team,
+            "matchup": t.get("matchup") or ml_data.get("matchup") or t.get("title") or t.get("strike_details"),
+            "line": t.get("line") or ml_data.get("line"),
+            "mve_leg_stats": t.get("mve_leg_stats"),
+            "game_time": t.get("game_time") or t.get("start_time") or ml_data.get("start_time_utc"),
+            "start_time": t.get("start_time") or t.get("game_time") or ml_data.get("start_time_utc"),
+            "start_label": t.get("start_label") or ml_data.get("start_label"),
+            "raw_json": t.get("raw_json") or json.dumps(t)
         })
+
 
     ret = {
         "success": True,
@@ -1020,7 +1487,7 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         "target_asset": current_user.get("target_asset", "BTC"),
         "trading_style": current_user.get("trading_style", "AUTO"),
         "signal_source": current_user.get("signal_source", "RL_DQN"),
-        "stop_loss_pct": float(current_user.get("stop_loss_pct", 50.0)),
+        "stop_loss_pct": float(current_user.get("stop_loss_pct", 75.0)),
         "stop_loss_enabled": bool(current_user.get("stop_loss_enabled", 1)),
         "take_profit_pct": float(current_user.get("take_profit_pct", 50.0)),
         "take_profit_enabled": bool(current_user.get("take_profit_enabled", 1)),
@@ -1030,10 +1497,11 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         "trailing_stop_activation_pct": float(current_user.get("trailing_stop_activation_pct", 35.0)),
         "trailing_stop_distance_pct": float(current_user.get("trailing_stop_distance_pct", 6.0)),
         "second_entry_enabled": bool(current_user.get("second_entry_enabled", 0)),
-        "second_entry_max_ask": float(current_user.get("second_entry_max_ask", 0.75)),
+        "second_entry_max_ask": float(current_user.get("second_entry_max_ask", 0.62)),
         "reentry_after_stop_loss": bool(current_user.get("reentry_after_stop_loss", 0)),
         "one_click_trade": bool(current_user.get("one_click_trade", 0)),
         "auto_force_trade": bool(current_user.get("auto_force_trade", 0)),
+        "gemini_every_interval_enabled": bool(current_user.get("gemini_every_interval_enabled", 0)),
         "model_choice": current_user.get("model_choice", "RL_DQN"),
         "train_window": int(current_user.get("train_window", 4000)),
         "regularization_c": float(current_user.get("regularization_c", 0.5)),
@@ -1064,8 +1532,43 @@ def get_dashboard_stats(request: Request, response: Response, current_user: dict
         "sports_tp_enabled": bool(current_user.get("sports_tp_enabled", 0)),
         "sports_tp_pct": float(current_user.get("sports_tp_pct") if current_user.get("sports_tp_pct") is not None else 35.0),
         "sports_use_kelly": bool(current_user.get("sports_use_kelly", 0)),
-        "sports_market_types": current_user.get("sports_market_types") or 'GAME,SPREAD,TOTAL',
-        "total_pnl": round(total_pnl, 2),
+        "sports_market_types": current_user.get("sports_market_types") or 'GAME,SPREAD,TOTAL,PROP',
+        "sports_active_props": current_user.get("sports_active_props") or 'ANYTIME_TD,PASSING_YDS,RUSHING_YDS,RECEIVING_YDS,HOME_RUNS,STRIKEOUTS,HITS_RUNS_RBIS,TOTAL_BASES,OTHER',
+        "sports_sport_config": current_user.get("sports_sport_config"),
+        # Investments Universe (Robinhood Stocks, ETFs & Equity Options)
+        "has_robinhood_keys": bool(
+            (current_user.get('rh_username_enc') and current_user.get('rh_password_enc')) or
+            (current_user.get('rh_api_key_id') and current_user.get('rh_api_private_key_enc'))
+        ),
+        "rh_auth_mode": current_user.get("rh_auth_mode") or "ROBIN_STOCKS",
+        "rh_account_type": current_user.get("rh_account_type") or "CASH",
+        "investments_paper_balance": float(current_user.get("investments_paper_balance") or 10000.0),
+        "investments_trade_size_dollars": float(current_user.get("investments_trade_size_dollars") or 250.0),
+        "investments_paper_trade_size_dollars": float(current_user.get("investments_paper_trade_size_dollars") or 500.0),
+        "investments_asset_classes": current_user.get("investments_asset_classes") or "STOCKS,ETFS,OPTIONS",
+        "investments_watchlist": current_user.get("investments_watchlist") or "SPY,QQQ,NVDA,TSLA,AAPL,META,AMD,AMZN,MSFT,IWM",
+        "investments_strategy": current_user.get("investments_strategy") or "ALL",
+        "investments_min_confidence": float(current_user.get("investments_min_confidence") or 72.0),
+        "investments_min_rvol": float(current_user.get("investments_min_rvol") or 1.3),
+        "investments_max_daily_trades": int(current_user.get("investments_max_daily_trades") or 8),
+        "investments_max_open_positions": int(current_user.get("investments_max_open_positions") or 4),
+        "investments_max_daily_risk": float(current_user.get("investments_max_daily_risk") or 500.0),
+        "investments_stock_tp_pct": float(current_user.get("investments_stock_tp_pct") or 2.5),
+        "investments_stock_sl_pct": float(current_user.get("investments_stock_sl_pct") or 1.0),
+        "investments_option_tp_pct": float(current_user.get("investments_option_tp_pct") or 35.0),
+        "investments_option_sl_pct": float(current_user.get("investments_option_sl_pct") or 20.0),
+        "investments_trailing_stop_enabled": bool(current_user.get("investments_trailing_stop_enabled") if current_user.get("investments_trailing_stop_enabled") is not None else 1),
+        "investments_trailing_stop_pct": float(current_user.get("investments_trailing_stop_pct") or 0.8),
+        "investments_eod_auto_flatten": bool(current_user.get("investments_eod_auto_flatten") if current_user.get("investments_eod_auto_flatten") is not None else 1),
+        "investments_extended_hours": bool(current_user.get("investments_extended_hours") or 0),
+        "investments_allow_fractional": bool(current_user.get("investments_allow_fractional") if current_user.get("investments_allow_fractional") is not None else 1),
+        "investments_options_delta_target": float(current_user.get("investments_options_delta_target") or 0.45),
+        "investments_options_dte_window": current_user.get("investments_options_dte_window") or "0DTE_WEEKLY",
+        "investments_options_max_spread_pct": float(current_user.get("investments_options_max_spread_pct") or 8.0),
+        "investments_options_min_oi": int(current_user.get("investments_options_min_oi") or 250),
+        "investments_use_kelly": bool(current_user.get("investments_use_kelly") if current_user.get("investments_use_kelly") is not None else 1),
+        "total_pnl": settled_pnl,
+        "settled_pnl": settled_pnl,
         "total_pnl_pct": total_pnl_pct,
         "live_open_pnl": round(live_open_pnl, 2),
         "win_rate": round((wins / (wins + losses)) * 100, 1) if (wins + losses) > 0 else 0.0,
@@ -1141,6 +1644,9 @@ def manual_trade(req: ManualTradeRequest, current_user: dict = Depends(get_curre
     amount = req.amount_dollars
     side = req.direction.upper()
     asset = req.asset or current_user.get("target_asset") or "BTC"
+    # If target_asset is a comma-separated list like "BTC,ETH", extract the primary/first asset
+    if "," in asset:
+        asset = asset.split(",")[0].strip() or "BTC"
     mode = current_user.get('trading_mode', 'PAPER')
     user_id = current_user["id"]
     
@@ -1637,7 +2143,7 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
         current_user["id"], 
         req.trade_size_dollars if req.trade_size_dollars is not None else float(current_user.get("trade_size_dollars", 5.0)),
         req.paper_trade_size_dollars if req.paper_trade_size_dollars is not None else float(current_user.get("paper_trade_size_dollars", 50.0)),
-        req.stop_loss_pct if req.stop_loss_pct is not None else float(current_user.get("stop_loss_pct", 50.0)),
+        req.stop_loss_pct if req.stop_loss_pct is not None else float(current_user.get("stop_loss_pct", 75.0)),
         req.stop_loss_enabled if req.stop_loss_enabled is not None else bool(current_user.get("stop_loss_enabled", 1)),
         req.one_click_trade if req.one_click_trade is not None else bool(current_user.get("one_click_trade", 0)),
         req.auto_force_trade if req.auto_force_trade is not None else bool(current_user.get("auto_force_trade", 0)),
@@ -1652,7 +2158,7 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
         req.trailing_stop_activation_pct if req.trailing_stop_activation_pct is not None else float(current_user.get("trailing_stop_activation_pct", 35.0)),
         req.trailing_stop_distance_pct if req.trailing_stop_distance_pct is not None else float(current_user.get("trailing_stop_distance_pct", 6.0)),
         req.second_entry_enabled if req.second_entry_enabled is not None else bool(current_user.get("second_entry_enabled", 0)),
-        req.second_entry_max_ask if req.second_entry_max_ask is not None else float(current_user.get("second_entry_max_ask", 0.75)),
+        req.second_entry_max_ask if req.second_entry_max_ask is not None else float(current_user.get("second_entry_max_ask", 0.62)),
         req.reentry_after_stop_loss if req.reentry_after_stop_loss is not None else bool(current_user.get("reentry_after_stop_loss", 0)),
         req.model_choice if req.model_choice is not None else current_user.get("model_choice", "RL_DQN"),
         req.train_window if req.train_window is not None else int(current_user.get("train_window", 4000)),
@@ -1681,8 +2187,38 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
         sports_tp_enabled=req.sports_tp_enabled,
         sports_tp_pct=req.sports_tp_pct,
         sports_use_kelly=req.sports_use_kelly,
-        sports_market_types=req.sports_market_types
+        sports_market_types=req.sports_market_types,
+        sports_active_props=req.sports_active_props,
+        sports_sport_config=req.sports_sport_config,
+        sports_strategy=req.sports_strategy,
+        sports_max_parlay_legs=req.sports_max_parlay_legs
     )
+
+    # Investments Universe config updates
+    investments_updates = {}
+    inv_fields = [
+        "investments_trade_size_dollars", "investments_paper_trade_size_dollars",
+        "investments_asset_classes", "investments_watchlist", "investments_strategy",
+        "investments_min_confidence", "investments_min_rvol",
+        "investments_max_daily_trades", "investments_max_open_positions", "investments_max_daily_risk",
+        "investments_stock_tp_pct", "investments_stock_sl_pct",
+        "investments_option_tp_pct", "investments_option_sl_pct",
+        "investments_trailing_stop_enabled", "investments_trailing_stop_pct",
+        "investments_eod_auto_flatten", "investments_extended_hours", "investments_allow_fractional",
+        "investments_options_delta_target", "investments_options_dte_window",
+        "investments_options_max_spread_pct", "investments_options_min_oi", "investments_use_kelly",
+        "rh_auth_mode", "rh_account_type"
+    ]
+    for fld in inv_fields:
+        val = getattr(req, fld, None)
+        if val is not None:
+            investments_updates[fld] = val
+    if investments_updates:
+        try:
+            from backend.database.models import update_user_investments_config
+            update_user_investments_config(current_user["id"], investments_updates)
+        except Exception as e:
+            logger.warning(f"Failed to update user investments config: {e}")
 
     if req.edge_gate_enabled is not None or req.min_edge_cents is not None:
         update_user_edge_gate(current_user["id"], req.edge_gate_enabled, req.min_edge_cents)
@@ -1690,6 +2226,37 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
     if req.atr_risk_enabled is not None:
         from backend.database.models import update_user_atr_risk
         update_user_atr_risk(current_user["id"], req.atr_risk_enabled)
+
+    if req.gemini_every_interval_enabled is not None:
+        from backend.database.models import update_user_gemini_every_interval
+        update_user_gemini_every_interval(current_user["id"], req.gemini_every_interval_enabled)
+
+    if req.regime_mode is not None:
+        from backend.database.models import get_db_connection
+        conn = get_db_connection()
+        try:
+            conn.execute("UPDATE users SET regime_mode = ? WHERE id = ?", (str(req.regime_mode).strip().upper(), int(current_user["id"])))
+            conn.commit()
+        finally:
+            conn.close()
+
+    if req.chop_engine_enabled is not None:
+        from backend.database.models import get_db_connection
+        conn = get_db_connection()
+        try:
+            conn.execute("UPDATE users SET chop_engine_enabled = ? WHERE id = ?", (1 if req.chop_engine_enabled else 0, int(current_user["id"])))
+            conn.commit()
+        finally:
+            conn.close()
+
+    if req.chop_take_profit_cents is not None:
+        from backend.database.models import get_db_connection
+        conn = get_db_connection()
+        try:
+            conn.execute("UPDATE users SET chop_take_profit_cents = ? WHERE id = ?", (float(req.chop_take_profit_cents), int(current_user["id"])))
+            conn.commit()
+        finally:
+            conn.close()
     
     if req.trading_mode:
         m = req.trading_mode.strip().upper()
@@ -1709,12 +2276,16 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
     new_settings = ex.ai_settings.copy() if hasattr(ex, 'ai_settings') else {}
     new_settings["trade_size_dollars"] = float(u_fresh.get("trade_size_dollars", 5.0))
     new_settings["paper_trade_size_dollars"] = float(u_fresh.get("paper_trade_size_dollars", 50.0))
-    new_settings["stop_loss_pct"] = float(u_fresh.get("stop_loss_pct", 50.0))
-    new_settings["stopLossPercent"] = float(u_fresh.get("stop_loss_pct", 50.0))
+    new_settings["stop_loss_pct"] = float(u_fresh.get("stop_loss_pct", 75.0))
+    new_settings["stopLossPercent"] = float(u_fresh.get("stop_loss_pct", 75.0))
     new_settings["stop_loss_enabled"] = bool(u_fresh.get("stop_loss_enabled", 1))
     new_settings["stopLossEnabled"] = bool(u_fresh.get("stop_loss_enabled", 1))
     new_settings["one_click_trade"] = bool(u_fresh.get("one_click_trade", 0))
     new_settings["auto_force_trade"] = bool(u_fresh.get("auto_force_trade", 0))
+    new_settings["gemini_every_interval_enabled"] = bool(u_fresh.get("gemini_every_interval_enabled", 0))
+    new_settings["regime_mode"] = u_fresh.get("regime_mode", "AUTO_ADAPTIVE")
+    new_settings["chop_engine_enabled"] = bool(u_fresh.get("chop_engine_enabled", 1))
+    new_settings["chop_take_profit_cents"] = float(u_fresh.get("chop_take_profit_cents", 12.0) or 12.0)
     new_settings["target_asset"] = u_fresh.get("target_asset", "BTC")
     new_settings["trading_style"] = u_fresh.get("trading_style", "AUTO")
     new_settings["signal_source"] = u_fresh.get("signal_source", "RL_DQN")
@@ -1730,7 +2301,7 @@ def set_user_config(req: UserConfigRequest, current_user: dict = Depends(get_cur
     new_settings["trailing_stop_distance_pct"] = float(u_fresh.get("trailing_stop_distance_pct", 6.0))
     new_settings["second_entry_enabled"] = bool(u_fresh.get("second_entry_enabled", 0))
     new_settings["secondEntryEnabled"] = bool(u_fresh.get("second_entry_enabled", 0))
-    new_settings["second_entry_max_ask"] = float(u_fresh.get("second_entry_max_ask", 0.75))
+    new_settings["second_entry_max_ask"] = float(u_fresh.get("second_entry_max_ask", 0.62))
     new_settings["reentry_after_stop_loss"] = bool(u_fresh.get("reentry_after_stop_loss", 0))
     new_settings["reentryAfterStopLoss"] = bool(u_fresh.get("reentry_after_stop_loss", 0))
     
@@ -2128,7 +2699,7 @@ def get_community_leaderboard(current_user: Optional[dict] = Depends(get_optiona
             "ai_enabled": bool(u.get("ai_enabled", 1)),
             "signal_source": u.get("signal_source", "RL_DQN"),
             "model_choice": u.get("model_choice", "RL_DQN"),
-            "stop_loss_pct": u.get("stop_loss_pct", 50.0),
+            "stop_loss_pct": u.get("stop_loss_pct", 75.0),
             "take_profit_pct": u.get("take_profit_pct", 50.0),
             "take_profit_enabled": bool(u.get("take_profit_enabled", 1)),
             "trailing_stop_enabled": bool(u.get("trailing_stop_enabled", 0)),

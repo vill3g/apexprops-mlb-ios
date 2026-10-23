@@ -1,43 +1,20 @@
-# Dispatch: Reviewer 1 (Requirements & Strategy Logic Review)
-
-## Identity & Role
-- Archetype: teamwork_preview_reviewer
-- Role: Primary Requirements & Strategy Reviewer
-- Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1
-- Parent Orchestrator: orchestrator_1 (conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a)
-
-## Mandatory Inputs (Read these first)
-1. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
-2. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\PROJECT.md
-3. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reports\R1_strategy_risk_assessment.md
-4. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reports\R2_empirical_backtest_report.md
-5. C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\reports\FINAL_PROFITABILITY_REPORT.md
-
-## Objective
-Independently review all deliverables against Requirement R1, R2, R3 and all 3 Acceptance Criteria:
-1. Programmatic backtest or simulation script successfully run and raw metric output logged (AC 1).
-2. Theoretical assessment identifies at least one specific market regime vulnerability or edge case in current logic (AC 2).
-3. Final report provides definitive "Profitable" or "Not Profitable" conclusion based explicitly on quantitative backtest data (AC 3).
-
-Verify code accuracy, mathematical derivations (taker fees, Half-Kelly sizing, break-even hurdles), and test execution. Run pytest suite:
-`.venv\Scripts\python.exe -m pytest tests/test_risk_budget.py tests/test_backtest.py -v`
-
-Deliver your verdict: `APPROVE` or `REQUEST_CHANGES` in `handoff.md`. Send a message when done.
-## 2026-09-30T19:33:34Z
-You are Reviewer 1 (Primary Requirements & Strategy Reviewer).
+## 2026-10-09T15:10:19Z
+Read C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md first.
+You are teamwork_preview_reviewer_1.
 Your working directory is: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1
-Your parent is orchestrator_1 (conversation ID: 69f1fc34-0f88-433d-8fc9-49626797374a).
 
-MANDATORY FIRST STEP:
-Read C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md, C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\PROJECT.md, and C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1\DISPATCH.md. Also read R1, R2, and FINAL_PROFITABILITY_REPORT in .agents/teamwork/reports/.
+Objective:
+Act as the designated Agent-as-Judge for Acceptance Criterion 1:
+"A reviewer agent verifies that querying the /api/engine/sports/events?sport=TEN endpoint returns events with the ai_prediction object successfully attached."
 
-TASK:
-Independently review all deliverables against Requirement R1, R2, R3 and all 3 Acceptance Criteria:
-1. Programmatic backtest or simulation script successfully run and raw metric output logged (AC 1).
-2. Theoretical assessment identifies at least one specific market regime vulnerability or edge case in current logic (AC 2).
-3. Final report provides definitive 'Profitable' or 'Not Profitable' conclusion based explicitly on quantitative backtest data (AC 3).
-
-Verify code accuracy, mathematical derivations (taker fees, Half-Kelly sizing, break-even hurdles), and test execution. Run pytest suite:
-.venv\Scripts\python.exe -m pytest tests/test_risk_budget.py tests/test_backtest.py -v
-
-Deliver your verdict: APPROVE or REQUEST_CHANGES in handoff.md. Send a message to orchestrator_1 when done.
+Tasks:
+1. Read the project scope in C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_8\PROJECT.md and the worker's handoff in C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_worker_m1\handoff.md.
+2. Review backend changes in `backend/routes/engine.py`, `backend/sports_bridge/prediction_client.py`, and `backend/sports_bridge/executor.py`.
+3. Run the test suite: `python -m pytest tests/test_sports_dashboard.py`.
+4. Programmatically query `/api/engine/sports/events?sport=TEN` using FastAPI TestClient and verify:
+   - Status code is 200.
+   - Returned `events` list is non-empty.
+   - Returned events have the `ai_prediction` dictionary object successfully attached.
+5. Verify that querying all sports (`NHL`, `MLB`, `NFL`, `TEN`, `SOC`, `UFC`, `NPB/KBO`) returns open events.
+6. Write your detailed review report to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\teamwork_preview_reviewer_1\report.md` and `handoff.md`.
+7. State your explicit verdict in `handoff.md`: `APPROVE` or `REQUEST_CHANGES`. Send a message to orchestrator_8 when done.

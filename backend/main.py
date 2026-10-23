@@ -1,4 +1,8 @@
 import logging
+import os
+os.environ.setdefault("OMP_NUM_THREADS", "2")
+os.environ.setdefault("MKL_NUM_THREADS", "2")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "2")
 import asyncio
 import json
 import sqlite3
@@ -89,15 +93,61 @@ async def lifespan(app: FastAPI):
     _setup_socket_exception_handler()
     # 2. Liquidation websocket feed
     _start_liquidation_feed()
-    # 3. Self-healing position reconciler for expired open contracts
+    # 2.5 Kalshi WebSocket feed
     try:
-        from backend.database.trade_repository import \
-            reconcile_expired_open_trades
-        reconciled = reconcile_expired_open_trades()
-        if reconciled > 0:
-            logger.info(f"[Startup] Self-healed {reconciled} expired open trades.")
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, json.JSONDecodeError, FileNotFoundError, OSError, ValueError, TypeError, sqlite3.OperationalError) as e:
-        logger.warning(f"[Startup] Startup position reconciliation skipped: {e}")
+        from backend.btc.kalshi_trader import kalshi_trader
+        from backend.btc.kalshi_ws import start_kalshi_ws
+        if kalshi_trader:
+            start_kalshi_ws(kalshi_trader)
+    except Exception as e:
+        logger.warning(f"[Startup] Kalshi WebSocket failed to start: {e}")
+    # 2.6 & 3. Kalshi Live Market Cache, self-healing position reconciler & sports cache warm-up in background
+    def _startup_bg_tasks():
+        try:
+            from backend.engine.kalshi_market_cache import get_market_cache_instance, USE_MARKET_CACHE
+            if USE_MARKET_CACHE:
+                get_market_cache_instance().start()
+                logger.info("[Startup] Kalshi Live Market Cache initialized & background engine started.")
+        except Exception as e:
+            logger.warning(f"[Startup] Kalshi Live Market Cache failed to start: {e}")
+        try:
+            from backend.database.trade_repository import reconcile_expired_open_trades
+            reconciled = reconcile_expired_open_trades()
+            if reconciled > 0:
+                logger.info(f"[Startup] Self-healed {reconciled} expired open trades.")
+        except Exception as e:
+            logger.warning(f"[Startup] Startup position reconciliation skipped: {e}")
+        try:
+            from backend.routes.engine_sports import prewarm_sports_events_cache
+            prewarm_sports_events_cache()
+        except Exception as e:
+            logger.debug(f"[Startup] Sports events warm-up skipped: {e}")
+
+        def _sqlite_wal_maintenance_loop():
+            import gc
+            data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+            db_files = ("trades.db", "users.db", "kalshi_markets_cache.db")
+            while True:
+                for db_name in db_files:
+                    db_path = os.path.join(data_dir, db_name)
+                    if os.path.exists(db_path):
+                        try:
+                            with sqlite3.connect(db_path, timeout=5.0) as conn:
+                                conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+                                conn.execute("PRAGMA optimize;")
+                        except Exception:
+                            pass
+                try:
+                    gc.collect()
+                except Exception:
+                    pass
+                time.sleep(600)
+
+        import threading as _wal_th
+        _wal_th.Thread(target=_sqlite_wal_maintenance_loop, daemon=True, name="SQLiteWalMaintenance").start()
+
+    import threading as _th
+    _th.Thread(target=_startup_bg_tasks, daemon=True, name="StartupBgTasks").start()
     # 4. Background autotrader & watchdog
     start_background_tasks()
     yield
@@ -106,7 +156,7 @@ async def lifespan(app: FastAPI):
 # tunnel doesn't advertise every endpoint. Set ENABLE_API_DOCS=1 in .env to turn them on.
 try:
     from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+    _load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"), override=True)
 except ImportError:
     pass
 _API_DOCS = os.environ.get("ENABLE_API_DOCS", "").strip().lower() in ("1", "true", "yes")
@@ -121,7 +171,6 @@ app = FastAPI(
     openapi_url="/openapi.json" if _API_DOCS else None,
 )
 from fastapi.middleware.gzip import GZipMiddleware
-app.add_middleware(GZipMiddleware, minimum_size=500)
 
 from collections import defaultdict
 import time
@@ -132,33 +181,49 @@ class SecurityMiddleware(BaseHTTPMiddleware):
     def __init__(self, app_to_wrap):
         super().__init__(app_to_wrap)
         self.rate_limit_records = defaultdict(list)
+        self.auth_rate_records = defaultdict(list)
+        self.exec_rate_records = defaultdict(list)
         self.lock = asyncio.Lock()
 
     async def dispatch(self, request, call_next):
         client_ip = request.client.host if request.client else "unknown"
         now = time.time()
-        
+        path = request.url.path
+
         # Only rate-limit API calls, not static assets
-        if request.url.path.startswith("/api/"):
+        if path.startswith("/api/"):
+            if request.method == "POST" and ("/auth/login" in path or "/auth/register" in path):
+                async with self.lock:
+                    self.auth_rate_records[client_ip] = [t for t in self.auth_rate_records[client_ip] if now - t < 60.0]
+                    if len(self.auth_rate_records[client_ip]) >= 30:
+                        return JSONResponse(status_code=429, content={"detail": "Too many authentication attempts. Please wait 60s."})
+                    self.auth_rate_records[client_ip].append(now)
+            elif request.method == "POST" and path.endswith("/execute"):
+                async with self.lock:
+                    self.exec_rate_records[client_ip] = [t for t in self.exec_rate_records[client_ip] if now - t < 10.0]
+                    if len(self.exec_rate_records[client_ip]) >= 20:
+                        return JSONResponse(status_code=429, content={"detail": "Execution rate limit exceeded (duplicate burst guard)."})
+                    self.exec_rate_records[client_ip].append(now)
+
             is_polling = request.method == "GET" and (
-                "/dashboard_stats" in request.url.path or
-                "/chart" in request.url.path or
-                "/kalshi" in request.url.path or
-                "/live/poll" in request.url.path
+                "/dashboard_stats" in path or
+                "/chart" in path or
+                "/kalshi" in path or
+                "/live/poll" in path
             )
             if not is_polling:
                 async with self.lock:
                     # Clean up old records (60s window)
                     self.rate_limit_records[client_ip] = [t for t in self.rate_limit_records[client_ip] if now - t < 60.0]
-                    
+
                     # 5000 requests per minute limit for API endpoints
                     if len(self.rate_limit_records[client_ip]) >= 5000:
                         return JSONResponse(status_code=429, content={"detail": "Rate Limit Exceeded. Please slow down."})
-                        
+
                     self.rate_limit_records[client_ip].append(now)
 
         response = await call_next(request)
-        
+
         # Add Security Headers
         csp = (
             "default-src 'self'; "
@@ -172,10 +237,11 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        
+
         return response
 
 app.add_middleware(SecurityMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=500, compresslevel=5)
 
 from backend.database.models import init_db
 
@@ -193,6 +259,59 @@ from backend.routes.engine import router as engine_router, _engine_root_router a
 
 app.include_router(engine_root_router)
 app.include_router(engine_router)
+from backend.routes.engine_investments import router as investments_router
+
+app.include_router(investments_router)
+_game_info_cache: dict = {}
+
+
+@app.get("/api/public/game_info")
+def public_game_info(tickers: str = ""):
+    """Game/match name and start time for Kalshi sports market tickers (open-positions display).
+    Uses Kalshi's public milestones API by event ticker; cached 30 minutes per event."""
+    import requests as _rq
+    out = {}
+    now = time.time()
+    for mt in [x.strip() for x in tickers.split(",") if x.strip()][:40]:
+        ev = mt.rsplit("-", 1)[0] if mt.count("-") >= 2 else mt
+        hit = _game_info_cache.get(ev)
+        if not hit or now - hit[0] > 1800:
+            info = None
+            try:
+                r = _rq.get("https://api.elections.kalshi.com/trade-api/v2/milestones",
+                            params={"related_event_ticker": ev, "limit": 5}, timeout=6)
+                ms = r.json().get("milestones", []) if r.status_code == 200 else []
+                m = next((x for x in ms if (x.get("details") or {}).get("main_game_event_ticker") == ev), ms[0] if ms else None)
+                if m:
+                    d = m.get("details") or {}
+                    extra = " ".join(x for x in [d.get("tournament_name") or d.get("league") or d.get("competition"), d.get("round")] if x)
+                    info = {"title": m.get("title"), "start": m.get("start_date"),
+                            "status": d.get("status") or m.get("status"), "extra": extra}
+                if not info:
+                    r = _rq.get(f"https://api.elections.kalshi.com/trade-api/v2/events/{ev}", timeout=6)
+                    e = (r.json() or {}).get("event", {}) if r.status_code == 200 else {}
+                    if e:
+                        start_time = None
+                        try:
+                            rm = _rq.get("https://api.elections.kalshi.com/trade-api/v2/markets",
+                                         params={"event_ticker": ev, "limit": 1}, timeout=4)
+                            if rm.status_code == 200:
+                                mkts = (rm.json() or {}).get("markets", [])
+                                if mkts:
+                                    start_time = mkts[0].get("expected_expiration_time") or mkts[0].get("close_time")
+                        except Exception:
+                            pass
+                        info = {"title": e.get("title") or e.get("sub_title"), "start": start_time, "status": None,
+                                "extra": (e.get("product_metadata") or {}).get("competition", "")}
+            except Exception:
+                info = None
+            hit = (now, info)
+            _game_info_cache[ev] = hit
+        if hit[1]:
+            out[mt] = hit[1]
+    return {"games": out}
+
+
 from backend.routes.sports import router as sports_router
 
 app.include_router(sports_router)
@@ -205,6 +324,9 @@ app.include_router(scalp_router)
 from backend.routes.ui import router as ui_router
 
 app.include_router(ui_router)
+from backend.routes.quant_lab import router as quant_lab_router
+
+app.include_router(quant_lab_router)
 
 
 
@@ -349,6 +471,8 @@ async def block_cross_site_writes(request: Request, call_next):
 @app.middleware("http")
 async def refresh_legacy_session_token(request: Request, call_next):
     response = await call_next(request)
+    if request.url.path.endswith("/logout"):
+        return response
     try:
         auth_header = request.headers.get("Authorization") or ""
         token = auth_header[7:].strip() if auth_header.startswith("Bearer ") else ""
@@ -363,7 +487,7 @@ async def refresh_legacy_session_token(request: Request, call_next):
                 response.headers["X-Refreshed-Token"] = new_token
                 response.set_cookie(
                     key="saas_token", value=new_token, max_age=60 * 60 * 24 * 90,
-                    path="/", samesite="none", secure=True, httponly=False,
+                    path="/", samesite="lax", secure=False, httponly=False,
                 )
     except Exception as e:
         logger.warning(f"[Auth] Legacy token refresh skipped: {e}")
@@ -507,8 +631,29 @@ _last_autotrader_heartbeat = time.time()
 
 
 
+_IN_PROCESS_WORKER_STARTED = False
+
 def start_background_tasks():
-    pass
+    global _IN_PROCESS_WORKER_STARTED
+    try:
+        import torch
+        torch.set_num_threads(2)
+    except Exception:
+        pass
+    if os.environ.get("IN_PROCESS_WORKER", "1").strip().lower() in ("0", "false", "no"):
+        return
+    if _IN_PROCESS_WORKER_STARTED:
+        return
+    _IN_PROCESS_WORKER_STARTED = True
+    def _run_in_process_worker():
+        try:
+            from backend.worker import run_worker
+            run_worker()
+        except Exception as e:
+            logger.error(f"[Startup] In-process worker error: {e}")
+    import threading as _w_th
+    _w_th.Thread(target=_run_in_process_worker, daemon=True, name="InProcessWorker").start()
+    logger.info("[Startup] Unified in-process background worker started (sharing MarketCache & ML models).")
 
 # Mount static directory and route index
 

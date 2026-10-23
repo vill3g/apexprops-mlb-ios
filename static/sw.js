@@ -19,7 +19,16 @@ self.addEventListener("push", (event) => {
         vibrate: [200, 100, 200],
         data: { url: data.url || "/saas_dashboard.html" }
     };
-    event.waitUntil(self.registration.showNotification(data.title, options));
+    event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+            const hasVisibleWindow = clientList.some(c => c.visibilityState === "visible" || c.focused);
+            if (hasVisibleWindow) {
+                // User is actively in the app, suppress system notification
+                return;
+            }
+            return self.registration.showNotification(data.title, options);
+        })
+    );
 });
 
 self.addEventListener("notificationclick", (event) => {

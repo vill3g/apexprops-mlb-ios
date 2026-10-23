@@ -52,10 +52,15 @@ def run_sports_bridge():
     if sys.platform == "win32":
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
+    sub_env = os.environ.copy()
+    sub_env["PYTHONIOENCODING"] = "utf-8"
+    sub_env["PYTHONUTF8"] = "1"
+
     logger.info("Starting Sports Bridge Server process: %s", " ".join(cmd))
     proc = subprocess.Popen(
         cmd,
         cwd=bridge_dir,
+        env=sub_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -77,10 +82,16 @@ def _sports_bridge_monitor():
                 continue
                 
             try:
-                for line in proc.stdout:
-                    line_str = line.strip()
-                    if line_str:
-                        logger.info("[SportsBridge] %s", line_str)
+                while True:
+                    line = proc.stdout.readline()
+                    if line:
+                        line_str = line.strip()
+                        if line_str:
+                            logger.info("[SportsBridge] %s", line_str)
+                    elif proc.poll() is not None:
+                        break
+                    else:
+                        time.sleep(0.02)
             except Exception as stream_err:
                 logger.debug(f"[Watchdog] SportsBridge stream error: {stream_err}")
 
@@ -115,10 +126,15 @@ def run_server():
     if sys.platform == "win32":
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
+    sub_env = os.environ.copy()
+    sub_env["PYTHONIOENCODING"] = "utf-8"
+    sub_env["PYTHONUTF8"] = "1"
+
     logger.info("Starting BTC 15M Server process: %s", " ".join(cmd))
     proc = subprocess.Popen(
         cmd,
         cwd=APP_DIR,
+        env=sub_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -134,53 +150,33 @@ APP_PORT = 8058  # keep in sync with PORT in launch_desktop.py
 
 import psutil
 
-def _ngrok_processes():
-    """(pid, command line) of ngrok processes serving this app's domain."""
-    procs = []
-    try:
-        for p in psutil.process_iter(['pid', 'name', 'cmdline']):
-            if p.info['name'] == 'ngrok.exe':
-                cmdline = ' '.join(p.info['cmdline'] or [])
-                if NGROK_DOMAIN in cmdline:
-                    procs.append((p.info['pid'], cmdline))
-    except Exception as e:
-        logger.warning(f"Error checking ngrok processes with psutil: {e}")
-    return procs
-
-
-def _ngrok_running() -> bool:
-    """True if this app's tunnel is up AND points at the current port. A tunnel left
-    over from before a port change is stopped so a correct one can start."""
-    ok = False
-    for pid, cmdline in _ngrok_processes():
-        if f" {APP_PORT} " in f" {cmdline} ":
-            ok = True
-        else:
-            logger.warning("[Watchdog] ngrok (pid %s) points at the wrong port; stopping it: %s", pid, cmdline)
-            subprocess.call(["taskkill", "/F", "/PID", str(pid)],
-                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000))
-    return ok
-
-
-def ensure_ngrok():
-    """Start the ngrok tunnel if it is not running (the authtoken comes from ngrok's own config)."""
-    try:
-        if _ngrok_running():
-            return
-        logger.info("[Watchdog] Starting ngrok tunnel %s -> port %s...", NGROK_DOMAIN, APP_PORT)
-        subprocess.Popen(
-            ["ngrok", "http", str(APP_PORT), f"--url={NGROK_DOMAIN}"],
-            cwd=APP_DIR,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000),
-            close_fds=True
-        )
-    except Exception as e:
-        logger.warning("[Watchdog] Could not start ngrok tunnel: %s", e)
-
+def ensure_tunnels():
+    import psutil, subprocess
+    domains = [
+        (NGROK_DOMAIN, APP_PORT),
+        ("mlb-predictz.ngrok.app", 8057)
+    ]
+    for domain, port in domains:
+        ok = False
+        try:
+            for p in psutil.process_iter(['pid', 'name', 'cmdline']):
+                if p.info['name'] == 'ngrok.exe':
+                    cmdline = ' '.join(p.info['cmdline'] or [])
+                    if domain in cmdline:
+                        if f" {port} " in f" {cmdline} " or f":{port} " in f" {cmdline} " or f":{port}" in f" {cmdline}":
+                            ok = True
+                        else:
+                            subprocess.call(["taskkill", "/F", "/PID", str(p.info['pid'])], creationflags=0x08000000)
+        except:
+            pass
+        if not ok:
+            logger.info(f"[Watchdog] Starting ngrok tunnel {domain} -> port {port}...")
+            ngrok_bin = r"C:\Users\Vill3\AppData\Local\ngrok\ngrok.exe" if os.path.exists(r"C:\Users\Vill3\AppData\Local\ngrok\ngrok.exe") else "ngrok"
+            subprocess.Popen([ngrok_bin, "http", "127.0.0.1:" + str(port), f"--url={domain}"], creationflags=0x08000000, close_fds=True)
 
 def _ngrok_monitor():
     while True:
-        ensure_ngrok()
+        ensure_tunnels()
         time.sleep(60)
 
 
@@ -238,20 +234,52 @@ def _terminate_conflicting_watchdogs():
     import psutil
     current_pid = os.getpid()
     parent_pid = os.getppid()
+    targets = ["server_watchdog.py", "launch_desktop.py", "backend/worker.py", "backend\\worker.py", "backend.main:app"]
     for p in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             if p.info['pid'] in (current_pid, parent_pid):
                 continue
             cmdline = ' '.join(p.info['cmdline'] or [])
-            if "server_watchdog.py" in cmdline:
-                logger.warning(f"[Watchdog] Graceful restart: Terminating existing watchdog process (PID {p.info['pid']})...")
-                p.terminate()
-                try:
-                    p.wait(timeout=3)
-                except psutil.TimeoutExpired:
+            if any(t in cmdline for t in targets):
+                logger.warning(f"[Watchdog] Graceful restart: Terminating existing process {cmdline[:60]} (PID {p.info['pid']})...")
+                if sys.platform == "win32":
+                    subprocess.call(["taskkill", "/F", "/T", "/PID", str(p.info['pid'])], creationflags=0x08000000)
+                else:
                     p.kill()
         except Exception:
             pass
+
+
+def _check_http_health(port: int = 8058, timeout: float = 3.0) -> bool:
+    """True if port responds to HTTP GET or TCP connect."""
+    import socket, urllib.request
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/", headers={"User-Agent": "WatchdogHealthCheck"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status < 500
+    except Exception:
+        # Fall back to TCP connection check
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+                return True
+        except Exception:
+            return False
+
+def _kill_port_owner(port: int = 8058):
+    """Kills any process currently listening on or holding the target port."""
+    import psutil
+    try:
+        for conn in psutil.net_connections(kind="inet"):
+            if conn.laddr and conn.laddr.port == port and conn.status == psutil.CONN_LISTEN:
+                pid = conn.pid
+                if pid and pid != os.getpid():
+                    logger.warning(f"[Watchdog] Killing orphan process PID {pid} holding port {port}...")
+                    if sys.platform == "win32":
+                        subprocess.call(["taskkill", "/F", "/T", "/PID", str(pid)], creationflags=0x08000000)
+                    else:
+                        psutil.Process(pid).kill()
+    except Exception as e:
+        logger.debug(f"[Watchdog] Error clearing port {port}: {e}")
 
 def main():
     if "--restart" in sys.argv or "--force" in sys.argv or os.environ.get("WATCHDOG_RESTART") == "1":
@@ -292,11 +320,44 @@ def main():
         try:
             proc = run_server()
             
+            last_health_check = time.time()
+            consecutive_health_fails = 0
+            HEALTH_STARTUP_GRACE_SEC = 45.0  # Allow server 45s to load weights & connect WS
             try:
-                for line in proc.stdout:
-                    line_str = line.strip()
-                    if line_str:
-                        logger.info("[Server] %s", line_str)
+                while True:
+                    line = proc.stdout.readline()
+                    if line:
+                        line_str = line.strip()
+                        if line_str:
+                            logger.info("[Server] %s", line_str)
+                    elif proc.poll() is not None:
+                        break
+                    else:
+                        time.sleep(0.02)
+
+                    # Periodic Port 8058 Health Check
+                    now_ts = time.time()
+                    if (now_ts - last_health_check) >= 20.0:
+                        last_health_check = now_ts
+                        elapsed_uptime = now_ts - start_time
+                        if elapsed_uptime > HEALTH_STARTUP_GRACE_SEC:
+                            healthy = _check_http_health(APP_PORT, timeout=2.5)
+                            if healthy:
+                                consecutive_health_fails = 0
+                            else:
+                                consecutive_health_fails += 1
+                                logger.warning(f"[Watchdog] Port {APP_PORT} health check FAILED ({consecutive_health_fails}/3)")
+                                if consecutive_health_fails >= 3:
+                                    logger.error(f"[Watchdog] Port {APP_PORT} unresponsive for >60s! Killing frozen process tree & respawning...")
+                                    try:
+                                        if sys.platform == "win32":
+                                            subprocess.call(["taskkill", "/F", "/T", "/PID", str(proc.pid)], creationflags=0x08000000)
+                                        else:
+                                            proc.kill()
+                                    except Exception:
+                                        pass
+                                    _kill_port_owner(APP_PORT)
+                                    break
             except Exception as stream_err:
                 logger.debug(f"[Watchdog] Server stream error: {stream_err}")
 

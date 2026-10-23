@@ -1,74 +1,42 @@
-# Worker M1 Dispatch: Backend Stability & Kalshi 429 Resilience
+## Dispatch: Worker M1 (Backend "BOTH" Persistence & API Integrity)
 
-You are worker_m1.
-Role: teamwork_preview_worker
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Mandatory reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
-Project plan: C:\Users\Vill3\Desktop\ShadowTraderAi\PROJECT.md
-Survey findings: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_1\survey_report.md
+**Identity**: worker_m1
+**Working Directory**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1
+**Parent Conversation ID**: 269a1b7a-33d9-4136-b7da-906e573af819
+**Original User Request**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md
+**Project Plan**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\orchestrator_7\PROJECT.md
+**Survey Findings**: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md
 
-MANDATORY INTEGRITY WARNING:
+### Exclusive File Ownership
+- `backend/routes/engine.py`
+- `backend/database/models.py`
+(Do NOT modify `static/saas_dashboard.html` or `static/js/app.js` — those are owned by M2/M3).
+
+### Mandatory Integrity Warning
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_preview_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
-Exclusively Owned Files:
-- backend/btc/kalshi_trader.py
-- backend/saas_settler.py
-- backend/btc/auto_executor/saas_broadcaster.py
-- launch_desktop.py
-- backend/worker.py
-- server_watchdog.py
-- backend/forex/auto_executor.py
-- backend/btc/auto_executor/__init__.py
+### Objective
+Implement the backend fixes to guarantee that when a user sets their `trading_universe` to `"BOTH"`, it is never overwritten or reset by toggling auto-trading or updating financial configurations.
 
-Tasks:
-1. In `backend/btc/kalshi_trader.py`: Fix defective `@retry` on `get_market_result` and `get_market_quote`. Ensure HTTP 429 status codes trigger retry with exponential backoff (e.g. check status code or raise for status inside retry loop). Wrap `get_balance()`, `get_positions()`, and `place_order()` with 429 backoff protection.
-2. In `backend/saas_settler.py`: Add per-ticker settlement retry backoff/negative caching (e.g. at most once every 30-60 seconds for unresolved contracts) to eliminate runaway 1-second 429 polling storms.
-3. In `backend/btc/auto_executor/saas_broadcaster.py:748, 777` (and `executor.py` if needed): Fix `'list' object has no attribute 'get'` crash by validating that `raw_features` is a dictionary before calling `.get()`.
-4. In `launch_desktop.py:81`: Add check `if os.path.exists(venv_python)` and fallback to `sys.executable` to prevent `FileNotFoundError` when `.venv` does not exist.
-5. In `server_watchdog.py`: Ensure watchdog handles existing mutex cleanly or handles graceful restarts. In `backend/worker.py`: Throttle repetitive routine loop logs to prevent multi-megabyte log flooding.
-6. In `backend/forex/auto_executor.py`: Add guard if `current_balance <= 0` to prevent endless negative lot calculation warnings.
-7. In `backend/btc/auto_executor/__init__.py`: Re-export `from backend.btc.indicators import add_all_indicators`.
+### Specific Tasks
+1. Read `survey_report.md` from `explorer_survey_2`.
+2. In `backend/routes/engine.py` (around line 706):
+   - In `api_btc_trade_toggle`, remove `update_user_trading_universe(user_id, "SPORTS")`. Toggling auto-trade must only toggle `ai_enabled` and never alter `trading_universe`.
+3. In `backend/database/models.py` (around line 808):
+   - In `update_user_config()`, change `trading_universe: Optional[str] = None`.
+   - In the SQL UPDATE statement, use `COALESCE(?, trading_universe, 'FINANCIAL')` so omitting `trading_universe` preserves the existing database value.
+4. In `backend/routes/engine.py` (around line 916):
+   - In `api_btc_trade_config_post`, pass `trading_universe=None` (or omit) so it never forces `"FINANCIAL"` over `"BOTH"`.
+5. Run the existing test suite:
+   `python -m pytest tests/test_r2_r5_multi_universe_and_timestamps.py -v`
+   Ensure all existing tests pass, and write a test or run a verification confirming that updating config or toggling auto-trade preserves `"BOTH"` in the database.
+6. Write a complete handoff report to `C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1\handoff.md` detailing:
+   - What was changed
+   - Exact lines modified
+   - Build/test execution commands and full passing results
+   - Verification evidence
+7. Send a message to parent upon completion.
 
-Verification:
-- Run the test suite: `& "C:\Users\Vill3\AppData\Local\Programs\Python\Python312\python.exe" -m pytest tests`
-- Document test outcomes and verified commands in your handoff report at `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1\handoff.md`.
-- Send a completion message via send_message to orchestrator `64adbb8f-6e60-424a-a1e3-00b93642f92a`.
 
-## 2026-10-02T17:40:43Z
-You are worker_m1.
-Role: teamwork_preview_worker
-Working directory: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1
-Project root: C:\Users\Vill3\Desktop\ShadowTraderAi
-Mandatory reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\ORIGINAL_REQUEST.md
-Project plan: C:\Users\Vill3\Desktop\ShadowTraderAi\PROJECT.md
-Survey findings: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\explorer_survey_1\survey_report.md
-Dispatch reference: C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1\DISPATCH.md
-
-MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A teamwork_preview_auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
-
-Exclusively Owned Files:
-- backend/btc/kalshi_trader.py
-- backend/saas_settler.py
-- backend/btc/auto_executor/saas_broadcaster.py
-- launch_desktop.py
-- backend/worker.py
-- server_watchdog.py
-- backend/forex/auto_executor.py
-- backend/btc/auto_executor/__init__.py
-
-Tasks:
-1. In `backend/btc/kalshi_trader.py`: Fix defective `@retry` on `get_market_result` and `get_market_quote`. Ensure HTTP 429 status codes trigger retry with exponential backoff (e.g. check status code or raise for status inside retry loop). Wrap `get_balance()`, `get_positions()`, and `place_order()` with 429 backoff protection.
-2. In `backend/saas_settler.py`: Add per-ticker settlement retry backoff/negative caching (e.g. at most once every 30-60 seconds for unresolved contracts) to eliminate runaway 1-second 429 polling storms.
-3. In `backend/btc/auto_executor/saas_broadcaster.py:748, 777` (and `executor.py` if needed): Fix `'list' object has no attribute 'get'` crash by validating that `raw_features` is a dictionary before calling `.get()`.
-4. In `launch_desktop.py:81`: Add check `if os.path.exists(venv_python)` and fallback to `sys.executable` to prevent `FileNotFoundError` when `.venv` does not exist.
-5. In `server_watchdog.py`: Ensure watchdog handles existing mutex cleanly or handles graceful restarts. In `backend/worker.py`: Throttle repetitive routine loop logs to prevent multi-megabyte log flooding.
-6. In `backend/forex/auto_executor.py`: Add guard if `current_balance <= 0` to prevent endless negative lot calculation warnings.
-7. In `backend/btc/auto_executor/__init__.py`: Re-export `from backend.btc.indicators import add_all_indicators`.
-
-Verification:
-- Run the test suite: `& "C:\Users\Vill3\AppData\Local\Programs\Python\Python312\python.exe" -m pytest tests`
-- Document test outcomes and verified commands in your handoff report at `C:\Users\Vill3\Desktop\ShadowTraderAi\.agents\teamwork\worker_m1\handoff.md`.
-- Send a completion message via send_message to orchestrator `64adbb8f-6e60-424a-a1e3-00b93642f92a`.
-
+## 2026-10-07T22:54:44Z
+You are worker_m1. Working directory: C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1. Read your dispatch at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1\DISPATCH.md, ORIGINAL_REQUEST.md at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\ORIGINAL_REQUEST.md, and survey report at C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\explorer_survey_2\survey_report.md. Implement the backend fixes for Milestone 1 in backend/routes/engine.py and backend/database/models.py to prevent any overwriting or loss of the "BOTH" trading universe. Run existing tests and verify that "BOTH" persists under all conditions. Write your handoff report to C:\Users\Vill3\Desktop\kalshi-ai-trader\.agents\teamwork\worker_m1\handoff.md and send a message to parent (ID: 269a1b7a-33d9-4136-b7da-906e573af819).
