@@ -1,115 +1,115 @@
 {
-  "updated": 1792799801.7688844,
+  "updated": 1792799839.9318545,
   "results": {
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792799801.7688844,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232000-00",
-      "strike": 2377.85,
-      "sec_left": 186,
+      "ts": 1792799839.9318545,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232000-00",
+      "strike": 0.07836,
+      "sec_left": 148,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.5266,
+      "ml_prob": 0.6738,
       "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 55.16,
-      "pre_gate_grade": "GRADE B SETUP",
+      "pre_gate_prob": 63.38,
+      "pre_gate_grade": "GRADE B+ SETUP",
       "catalysts": [
         "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 52.7%",
-        "\ud83d\udcc8 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples)."
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 67.4%",
+        "\ud83d\udcc9 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples). (conflicts with this setup - confidence trimmed)"
       ],
       "chart": {
-        "open": 2377.73,
-        "close": 2384.16,
-        "ema9": 2380.9330895158114,
-        "ema21": 2387.572907194018,
-        "flow": 0.689
+        "open": 0.0783099,
+        "close": 0.0785718,
+        "ema9": 0.07849824224051749,
+        "ema21": 0.07884488345888017,
+        "flow": 0.855
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792799801.7688844,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232000-00",
-      "strike": 2377.85,
-      "sec_left": 186,
+      "ts": 1792799839.9318545,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232000-00",
+      "strike": 0.07836,
+      "sec_left": 148,
       "effective_style": "GEMINI_REASONING",
       "direction": "NO",
-      "probability_percent": 69,
-      "ml_prob": 0.3433,
+      "probability_percent": 78,
+      "ml_prob": 0.3066,
       "conviction_grade": "GRADE A SETUP",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 66.5,
+      "pre_gate_prob": 75.2,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.71%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.84%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (65.7%), blended confidence 69.0%",
-        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+4 edge points)."
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (69.3%), blended confidence 71.2%",
+        "\ud83d\udcc8 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 2377.73,
-        "close": 2384.16,
-        "ema9": 2380.9330895158114,
-        "ema21": 2387.572907194018,
-        "flow": 0.689
+        "open": 0.0783099,
+        "close": 0.0785718,
+        "ema9": 0.07849824224051749,
+        "ema21": 0.07884488345888017,
+        "flow": 0.855
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792799801.7688844,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232000-00",
-      "strike": 2377.85,
-      "sec_left": 186,
+      "ts": 1792799839.9318545,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232000-00",
+      "strike": 0.07836,
+      "sec_left": 148,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
-      "probability_percent": 70,
-      "ml_prob": 0.3433,
+      "probability_percent": 74,
+      "ml_prob": 0.3066,
       "conviction_grade": "PREDICTION MODEL",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 63.17,
+      "pre_gate_prob": 73.34,
       "pre_gate_grade": "GRADE B+ SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 29.3%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 65.7%",
-        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 25.7%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 69.3%",
+        "\ud83d\udcc8 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples)."
       ],
       "chart": {
-        "open": 2377.73,
-        "close": 2384.16,
-        "ema9": 2380.9330895158114,
-        "ema21": 2387.572907194018,
-        "flow": 0.689
+        "open": 0.0783099,
+        "close": 0.0785718,
+        "ema9": 0.07849824224051749,
+        "ema21": 0.07884488345888017,
+        "flow": 0.855
       }
     },
     "AUTO|AUTO": {
-      "ts": 1792799801.7688844,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232000-00",
-      "strike": 2377.85,
-      "sec_left": 186,
+      "ts": 1792799839.9318545,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232000-00",
+      "strike": 0.07836,
+      "sec_left": 148,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.5266,
+      "ml_prob": 0.6738,
       "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 71.5,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
       "catalysts": [
-        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($2,384.1600) is above strike ($2,377.8500) with bullish live candle.",
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.71%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.84%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83d\udcc9 Pattern Watch: this series is 4 closes into a YES/NO zig-zag; historically that keeps alternating 44% of the time (80 samples). (conflicts with this setup - confidence trimmed)"
+        "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
+        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID NO (BELOW TARGET) (77.0%) but ML model disagrees (32.6%). The ML Engine has vetoed this trade."
       ],
       "chart": {
-        "open": 2377.73,
-        "close": 2384.16,
-        "ema9": 2380.9330895158114,
-        "ema21": 2387.572907194018,
-        "flow": 0.689
+        "open": 0.0783099,
+        "close": 0.0785718,
+        "ema9": 0.07849824224051749,
+        "ema21": 0.07884488345888017,
+        "flow": 0.855
       }
     }
   }
