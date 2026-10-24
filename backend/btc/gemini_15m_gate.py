@@ -52,10 +52,6 @@ logger = logging.getLogger(__name__)
 
 
 
-PRIMARY_GEMINI_KEYS = [
-    "AQ.Ab8RN6KMwUtDidbZv16kUguJ2zMKa5ahzhlSwGb_HzjbXYcQkA",
-    "AQ.Ab8RN6IT2dlcLG7nMA15vuTmrQ3fAz6hhrUnR08nNrM-lJmwzA",
-]
 _current_gemini_key_idx = 0
 _gemini_key_lock = threading.Lock()
 # Keys come from the repo .env (GEMINI_API_KEYS / GEMINI_API_KEY) so changing the key there is the only step needed.
@@ -70,10 +66,10 @@ def _load_env_gemini_keys():
     raw = os.environ.get("GEMINI_API_KEYS") or vals.get("GEMINI_API_KEYS") or os.environ.get("GEMINI_API_KEY") or vals.get("GEMINI_API_KEY") or ""
     return [k.strip() for k in raw.split(",") if k.strip()]
 
-_env_gemini_keys = _load_env_gemini_keys()
-if _env_gemini_keys:
-    PRIMARY_GEMINI_KEYS = _env_gemini_keys
-DEFAULT_GEMINI_KEY = PRIMARY_GEMINI_KEYS[0]
+PRIMARY_GEMINI_KEYS = _load_env_gemini_keys()
+if not PRIMARY_GEMINI_KEYS:
+    logger.error("[Gemini15mGate] No Gemini API key configured (set GEMINI_API_KEYS in .env).")
+DEFAULT_GEMINI_KEY = PRIMARY_GEMINI_KEYS[0] if PRIMARY_GEMINI_KEYS else ""
 
 
 
