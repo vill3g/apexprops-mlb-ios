@@ -934,9 +934,12 @@ def _settle_saas_trades_pass():
                                 loss_pct = (entry - mid_price) / entry
 
                                 # But max seen is based on actual bid since that's what you'd sell for
-                                max_seen_bid = float(t.get("max_seen_bid", curr_bid))
-                                if curr_bid > max_seen_bid:
-                                    max_seen_bid = curr_bid
+                                # The peak is the highest bid seen since entry. It must start from the entry price,
+                                # not the current bid, or a price that rose and fell is forgotten (and trailing stops
+                                # would measure from the current price instead of the real peak).
+                                max_seen_bid = float(t.get("max_seen_bid", entry))
+                                if curr_bid > max_seen_bid or "max_seen_bid" not in t:
+                                    max_seen_bid = max(max_seen_bid, curr_bid)
                                     t["max_seen_bid"] = max_seen_bid
                                     modified = True
 

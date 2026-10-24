@@ -5,9 +5,20 @@ Usage: python -I scripts/trade_breakdown.py
 import json
 import os
 import sqlite3
+import sys
 from collections import defaultdict
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", "data")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+from backend.core.trade_time import trade_epoch  # noqa: E402
+
+DATA = os.path.join(ROOT, "backend", "data")
+
+# Trades before this date ran on retired code (e.g. CONTRACT_STOP_LOSS, last seen 2026-09-24) and are excluded.
+SINCE = sys.argv[1] if len(sys.argv) > 1 else "2026-09-25"
+SINCE_EPOCH = datetime.fromisoformat(SINCE).replace(tzinfo=ZoneInfo("America/New_York")).timestamp()
 
 seen = {}
 for db in ("users.db", "trades.db"):
@@ -21,6 +32,8 @@ for db in ("users.db", "trades.db"):
         except (TypeError, ValueError):
             continue
         if str(t.get("status", "")).upper() not in ("CLOSED", "SETTLED"):
+            continue
+        if trade_epoch(t.get("timestamp")) < SINCE_EPOCH:
             continue
         seen[(t.get("id"), t.get("ticker"), str(t.get("timestamp")))] = t
 

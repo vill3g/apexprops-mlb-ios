@@ -1,112 +1,110 @@
 {
-  "updated": 1792807511.872731,
+  "updated": 1792808867.8988383,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1792807511.872731,
+      "ts": 1792808867.8988383,
       "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232215-15",
-      "strike": 2379.3,
-      "sec_left": 575,
+      "ticker": "KXETH15M-26OCT232230-30",
+      "strike": 2380.9,
+      "sec_left": 120,
       "effective_style": "SNIPER",
-      "direction": "NO",
-      "probability_percent": 57,
-      "ml_prob": 0.5108,
-      "conviction_grade": "GRADE A SETUP",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 57.35,
-      "pre_gate_grade": "GRADE A SETUP",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.5427,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 54.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "Bearish Ribbon Trend: EMA 21 dynamic resistance capped rally",
-        "Overhead Supply: Sellers rejected 15M moving average into close",
-        "\u2696\ufe0f ML Neutral: Model has no directional edge (48.9%), diluting non-A+ chart setup (70%) to blended 57.4%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 1)."
+        "ML Conviction: No chart setup fired, falling back to ML signal (54.0%).",
+        "Primary Driver: Voting Ensemble predicts UP (54% Edge). ML Reasoning: Prediction driven primarily by Bb Lower, Volume 24H, Roc 15M Lag 4. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]",
+        "CVD Volume Divergence: Spot selling pressure (-4419.7 < limit -2.0) opposes YES entry (historical loss pattern)"
       ],
       "chart": {
-        "open": 2379.07,
-        "close": 2379.67,
-        "ema9": 2376.72169261877,
-        "ema21": 2380.5448395997155,
-        "flow": 0.516
+        "open": 2380.7,
+        "close": 2379.45,
+        "ema9": 2377.4321540950154,
+        "ema21": 2380.5304326939563,
+        "flow": 0.357
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792807511.872731,
+      "ts": 1792808867.8988383,
       "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232215-15",
-      "strike": 2379.3,
-      "sec_left": 575,
+      "ticker": "KXETH15M-26OCT232230-30",
+      "strike": 2380.9,
+      "sec_left": 120,
       "effective_style": "SNIPER",
       "direction": "YES",
-      "probability_percent": 51,
-      "ml_prob": 0.5108,
+      "probability_percent": 54,
+      "ml_prob": 0.5427,
       "conviction_grade": "GRADE B SETUP",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 51.08,
+      "pre_gate_prob": 54.27,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 51.1%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 1)."
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 54.3%",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 2)."
       ],
       "chart": {
-        "open": 2379.07,
-        "close": 2379.67,
-        "ema9": 2376.72169261877,
-        "ema21": 2380.5448395997155,
-        "flow": 0.516
+        "open": 2380.7,
+        "close": 2379.45,
+        "ema9": 2377.4321540950154,
+        "ema21": 2380.5304326939563,
+        "flow": 0.357
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792807511.872731,
+      "ts": 1792808867.8988383,
       "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232215-15",
-      "strike": 2379.3,
-      "sec_left": 575,
+      "ticker": "KXETH15M-26OCT232230-30",
+      "strike": 2380.9,
+      "sec_left": 120,
       "effective_style": "PREDICTION",
-      "direction": "BELOW",
-      "probability_percent": 77,
-      "ml_prob": 0.277,
+      "direction": "ABOVE",
+      "probability_percent": 65,
+      "ml_prob": 0.6019,
       "conviction_grade": "PREDICTION MODEL",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 72.3,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 60.19,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 22.7%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 72.3%"
+        "\ud83d\udd2e Prediction Adjustment: Chart technicals confirm UP (+5%). ML P(YES) adjusted to 65.2%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 60.2%"
       ],
       "chart": {
-        "open": 2379.07,
-        "close": 2379.67,
-        "ema9": 2376.72169261877,
-        "ema21": 2380.5448395997155,
-        "flow": 0.516
+        "open": 2380.7,
+        "close": 2379.45,
+        "ema9": 2377.4321540950154,
+        "ema21": 2380.5304326939563,
+        "flow": 0.357
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792807511.872731,
+      "ts": 1792808867.8988383,
       "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232215-15",
-      "strike": 2379.3,
-      "sec_left": 575,
+      "ticker": "KXETH15M-26OCT232230-30",
+      "strike": 2380.9,
+      "sec_left": 120,
       "effective_style": "GEMINI_REASONING",
-      "direction": "NO",
-      "probability_percent": 71,
-      "ml_prob": 0.277,
-      "conviction_grade": "GRADE A SETUP",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 71.38,
-      "pre_gate_grade": "GRADE A SETUP",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.6019,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 60.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "Bearish Ribbon Trend: EMA 21 dynamic resistance capped rally",
-        "Overhead Supply: Sellers rejected 15M moving average into close",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (72.3%), blended confidence 71.4%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 1)."
+        "ML Conviction: No chart setup fired, falling back to ML signal (60.0%).",
+        "Primary Driver: Voting Ensemble predicts UP (60% Edge). ML Reasoning: Prediction driven primarily by Roc 15M Lag 3, Roc 15M Lag 4, Volume 15M Ratio Lag 4. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]",
+        "CVD Volume Divergence: Spot selling pressure (-4419.7 < limit -2.0) opposes YES entry (historical loss pattern)"
       ],
       "chart": {
-        "open": 2379.07,
-        "close": 2379.67,
-        "ema9": 2376.72169261877,
-        "ema21": 2380.5448395997155,
-        "flow": 0.516
+        "open": 2380.7,
+        "close": 2379.45,
+        "ema9": 2377.4321540950154,
+        "ema21": 2380.5304326939563,
+        "flow": 0.357
       }
     }
   }
