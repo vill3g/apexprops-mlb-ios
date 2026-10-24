@@ -1,110 +1,114 @@
 {
-  "updated": 1792808867.8988383,
+  "updated": 1792809168.1479144,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1792808867.8988383,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232230-30",
-      "strike": 2380.9,
-      "sec_left": 120,
+      "ts": 1792809168.1479144,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232245-45",
+      "strike": 0.078957,
+      "sec_left": 718,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.5427,
+      "ml_prob": 0.5363,
       "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 54.0,
+      "pre_gate_prob": 57.0,
       "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "ML Conviction: No chart setup fired, falling back to ML signal (54.0%).",
-        "Primary Driver: Voting Ensemble predicts UP (54% Edge). ML Reasoning: Prediction driven primarily by Bb Lower, Volume 24H, Roc 15M Lag 4. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]",
-        "CVD Volume Divergence: Spot selling pressure (-4419.7 < limit -2.0) opposes YES entry (historical loss pattern)"
+        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($0.0789) is below strike ($0.0790) with bearish live candle.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (53.0%).",
+        "Primary Driver: Voting Ensemble predicts UP (53% Edge). ML Reasoning: Prediction driven primarily by Range 24H Pos, Volume 24H, Vsa Absorption. [Voting Ensemble: dir=YES, agree=67%, unanimous=NO]",
+        "\ud83d\udcc8 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples)."
       ],
       "chart": {
-        "open": 2380.7,
-        "close": 2379.45,
-        "ema9": 2377.4321540950154,
-        "ema21": 2380.5304326939563,
-        "flow": 0.357
+        "open": 0.0789311,
+        "close": 0.0788634,
+        "ema9": 0.07868040021310858,
+        "ema21": 0.07869466969232063,
+        "flow": 0.786
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792808867.8988383,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232230-30",
-      "strike": 2380.9,
-      "sec_left": 120,
+      "ts": 1792809168.1479144,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232245-45",
+      "strike": 0.078957,
+      "sec_left": 718,
       "effective_style": "SNIPER",
       "direction": "YES",
-      "probability_percent": 54,
-      "ml_prob": 0.5427,
+      "probability_percent": 57,
+      "ml_prob": 0.5363,
       "conviction_grade": "GRADE B SETUP",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 54.27,
+      "pre_gate_prob": 57.63,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 54.3%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 2)."
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 53.6%",
+        "\ud83d\udcc8 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 0)."
       ],
       "chart": {
-        "open": 2380.7,
-        "close": 2379.45,
-        "ema9": 2377.4321540950154,
-        "ema21": 2380.5304326939563,
-        "flow": 0.357
+        "open": 0.0789311,
+        "close": 0.0788634,
+        "ema9": 0.07868040021310858,
+        "ema21": 0.07869466969232063,
+        "flow": 0.786
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792808867.8988383,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232230-30",
-      "strike": 2380.9,
-      "sec_left": 120,
+      "ts": 1792809168.1479144,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232245-45",
+      "strike": 0.078957,
+      "sec_left": 718,
       "effective_style": "PREDICTION",
-      "direction": "ABOVE",
-      "probability_percent": 65,
-      "ml_prob": 0.6019,
+      "direction": "BELOW",
+      "probability_percent": 87,
+      "ml_prob": 0.1738,
       "conviction_grade": "PREDICTION MODEL",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 60.19,
-      "pre_gate_grade": "GRADE B SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 78.62,
+      "pre_gate_grade": "GRADE A+ SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart technicals confirm UP (+5%). ML P(YES) adjusted to 65.2%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 60.2%"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 12.4%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 82.6%",
+        "\ud83d\udcc9 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples). (conflicts with this setup - confidence trimmed)"
       ],
       "chart": {
-        "open": 2380.7,
-        "close": 2379.45,
-        "ema9": 2377.4321540950154,
-        "ema21": 2380.5304326939563,
-        "flow": 0.357
+        "open": 0.0789311,
+        "close": 0.0788634,
+        "ema9": 0.07868040021310858,
+        "ema21": 0.07869466969232063,
+        "flow": 0.786
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792808867.8988383,
-      "asset": "ETH",
-      "ticker": "KXETH15M-26OCT232230-30",
-      "strike": 2380.9,
-      "sec_left": 120,
+      "ts": 1792809168.1479144,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232245-45",
+      "strike": 0.078957,
+      "sec_left": 718,
       "effective_style": "GEMINI_REASONING",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.6019,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 60.0,
+      "direction": "NO",
+      "probability_percent": 78,
+      "ml_prob": 0.1738,
+      "conviction_grade": "GRADE C / ML MODEL",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 78.0,
       "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "ML Conviction: No chart setup fired, falling back to ML signal (60.0%).",
-        "Primary Driver: Voting Ensemble predicts UP (60% Edge). ML Reasoning: Prediction driven primarily by Roc 15M Lag 3, Roc 15M Lag 4, Volume 15M Ratio Lag 4. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]",
-        "CVD Volume Divergence: Spot selling pressure (-4419.7 < limit -2.0) opposes YES entry (historical loss pattern)"
+        "ML Conviction: No chart setup fired, falling back to ML signal (82.0%).",
+        "Primary Driver: Voting Ensemble predicts DOWN (82% Edge). ML Reasoning: Prediction driven primarily by Volume 15M Ratio Lag 1, Roc 15M, Roc 4H. [Voting Ensemble: dir=NO, agree=100%, unanimous=YES]",
+        "\ud83d\udcc9 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples). (conflicts with this setup - confidence trimmed)",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 0)."
       ],
       "chart": {
-        "open": 2380.7,
-        "close": 2379.45,
-        "ema9": 2377.4321540950154,
-        "ema21": 2380.5304326939563,
-        "flow": 0.357
+        "open": 0.0789311,
+        "close": 0.0788634,
+        "ema9": 0.07868040021310858,
+        "ema21": 0.07869466969232063,
+        "flow": 0.786
       }
     }
   }
