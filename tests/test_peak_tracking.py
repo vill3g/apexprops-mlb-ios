@@ -36,14 +36,35 @@ def _open(user_id, entry):
     return trade
 
 
-def _pass(user, bid):
+def _pass(user, bid, fresh=None):
     get, _ = _fake_get_market({"KXETH15M": _market(ETH_TICKER, yes_bid=bid, yes_ask=bid + 0.02),
                                "KXBTC15M": _market(BTC_TICKER)})
     with patch.object(settler, "get_kalshi_15m_market", side_effect=get), \
          patch.object(settler, "get_all_active_users", return_value=[user]), \
-         patch.object(settler, "_fresh_quote", return_value=None), \
+         patch.object(settler, "_fresh_quote", return_value=fresh), \
          patch.object(settler, "credit_user_paper_balance"):
         settler.settle_saas_trades(blocking=True)
+
+
+def test_trailing_stop_exits_after_a_rise_and_fall_end_to_end():
+    # Entry 0.40 -> peak 0.70 (+75%, past the 35% activation). Trail is 6% of the peak, so the stop sits
+    # at 0.658. A fall to 0.60 must exit as a trailing stop, not ride down to the fixed stop-loss.
+    uid = models.create_user(f"trail_e2e_{uuid.uuid4().hex[:6]}", "pw-hash")
+    user = {"id": uid, "username": "trail_e2e", "trading_mode": "PAPER", "ai_enabled": 1,
+            "stop_loss_pct": 75.0, "take_profit_pct": 200.0, "take_profit_enabled": 0,
+            "trailing_stop_enabled": 1, "trailing_stop_activation_pct": 35.0,
+            "trailing_stop_distance_pct": 6.0, "second_entry_enabled": 0}
+    trade = _open(uid, entry=0.40)
+    try:
+        _pass(user, bid=0.70)
+        assert TradeStore.get_trade_by_id(trade["id"])["status"] == "OPEN"
+        fresh = {"success": True, "ticker": ETH_TICKER, "yes_bid": 0.60, "no_bid": 0.38}
+        _pass(user, bid=0.60, fresh=fresh)
+        stored = TradeStore.get_trade_by_id(trade["id"])
+        assert str(stored["status"]).upper() == "CLOSED"
+        assert "TRAILING_STOP" in str(stored.get("exit_reason"))
+    finally:
+        TradeStore.close_if_open(uid, trade, {"exit_reason": "TEST_CLEANUP", "exit_price": 0.0, "pnl": 0.0})
 
 
 def test_peak_survives_a_price_drop_between_passes():
