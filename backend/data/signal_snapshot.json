@@ -1,116 +1,115 @@
 {
-  "updated": 1792801084.3652835,
+  "updated": 1792801105.7528822,
   "results": {
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792801084.3652835,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232030-30",
-      "strike": 80869.39,
-      "sec_left": 703,
-      "effective_style": "SNIPER",
-      "direction": "NO",
-      "probability_percent": 57,
-      "ml_prob": 0.4553,
-      "conviction_grade": "GRADE B SETUP",
+      "ts": 1792801105.7528822,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232030-30",
+      "strike": 0.078458,
+      "sec_left": 682,
+      "effective_style": "MOMENTUM_SURFER",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.2179,
+      "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 54.47,
-      "pre_gate_grade": "GRADE B SETUP",
+      "pre_gate_prob": 78.21,
+      "pre_gate_grade": "GRADE A+ SETUP",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 54.5%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
+        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 78.2%"
       ],
       "chart": {
-        "open": 80831.17,
-        "close": 80841.31,
-        "ema9": 80929.34573091385,
-        "ema21": 81077.38724495273,
-        "flow": -0.218
+        "open": 0.0783,
+        "close": 0.0782641,
+        "ema9": 0.07840202362023495,
+        "ema21": 0.07845085844243752,
+        "flow": -0.553
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792801084.3652835,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232030-30",
-      "strike": 80869.39,
-      "sec_left": 703,
+      "ts": 1792801105.7528822,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232030-30",
+      "strike": 0.078458,
+      "sec_left": 682,
       "effective_style": "GEMINI_REASONING",
-      "direction": "NO",
-      "probability_percent": 77,
-      "ml_prob": 0.271,
-      "conviction_grade": "GRADE A SETUP",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.1828,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 78.63,
+      "pre_gate_grade": "GRADE A SETUP",
+      "catalysts": [
+        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
+        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.1x depth ratio)",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-1.83%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (81.7%), blended confidence 78.6%"
+      ],
+      "chart": {
+        "open": 0.07841,
+        "close": 0.0782641,
+        "ema9": 0.0784370262339312,
+        "ema21": 0.07875553110801516,
+        "flow": -0.248
+      }
+    },
+    "AUTO|AUTO": {
+      "ts": 1792801105.7528822,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232030-30",
+      "strike": 0.078458,
+      "sec_left": 682,
+      "effective_style": "MOMENTUM_SURFER",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.2179,
+      "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "BELOW",
       "pre_gate_prob": 74.0,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,793.71 (3.7x depth ratio)",
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -59%, Skew: -33%)",
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
-        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (72.9%), blended confidence 74.0%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
+        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
+        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.1x depth ratio)",
+        "Triple Red Trend Continuation: 3 consecutive bear bars aligned with Bearish Macro/Momentum",
+        "Downward Acceleration: Trend continuation riding heavy selling pressure",
+        "Oversold Flush: Low RSI (27.9) pressing lower BB limit",
+        "\ud83d\udcca Signal Isolation: 100% Chart Setup active, ignoring ML model."
       ],
       "chart": {
-        "open": 80831.17,
-        "close": 80841.31,
-        "ema9": 80929.34573091385,
-        "ema21": 81077.38724495273,
-        "flow": -0.218
-      }
-    },
-    "AUTO|AUTO": {
-      "ts": 1792801084.3652835,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232030-30",
-      "strike": 80869.39,
-      "sec_left": 703,
-      "effective_style": "SNIPER",
-      "direction": "NO",
-      "probability_percent": 66,
-      "ml_prob": 0.4553,
-      "conviction_grade": "GRADE A SETUP",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 63.48,
-      "pre_gate_grade": "GRADE A SETUP",
-      "catalysts": [
-        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,793.71 (3.7x depth ratio)",
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -59%, Skew: -33%)",
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
-        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (54.5%), blended confidence 63.5%"
-      ],
-      "chart": {
-        "open": 80831.17,
-        "close": 80841.31,
-        "ema9": 80929.34573091385,
-        "ema21": 81077.38724495273,
-        "flow": -0.218
+        "open": 0.0783,
+        "close": 0.0782641,
+        "ema9": 0.07840202362023495,
+        "ema21": 0.07845085844243752,
+        "flow": -0.553
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792801084.3652835,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232030-30",
-      "strike": 80869.39,
-      "sec_left": 703,
+      "ts": 1792801105.7528822,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232030-30",
+      "strike": 0.078458,
+      "sec_left": 682,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
-      "probability_percent": 77,
-      "ml_prob": 0.271,
+      "probability_percent": 86,
+      "ml_prob": 0.1828,
       "conviction_grade": "PREDICTION MODEL",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 72.9,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_prob": 81.72,
+      "pre_gate_grade": "GRADE A+ SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 22.1%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 72.9%"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 13.3%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 81.7%"
       ],
       "chart": {
-        "open": 80831.17,
-        "close": 80841.31,
-        "ema9": 80929.34573091385,
-        "ema21": 81077.38724495273,
-        "flow": -0.218
+        "open": 0.07841,
+        "close": 0.0782641,
+        "ema9": 0.0784370262339312,
+        "ema21": 0.07875553110801516,
+        "flow": -0.248
       }
     }
   }
