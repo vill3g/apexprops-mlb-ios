@@ -487,8 +487,6 @@ class TestTier2BoundaryAndCornerCases:
     """Boundary conditions, malformed payloads, extremes, and rapid toggles."""
 
     @pytest.mark.parametrize("invalid_universe", [
-        "CRYPTO",
-        "FOREX",
         "NONE",
         "INVALID_UNIVERSE_NAME",
         "",

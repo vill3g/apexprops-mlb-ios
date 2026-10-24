@@ -449,13 +449,12 @@ class TestTier1HTMLStructuralIntegrity:
             assert "</body>" in content
             assert "</html>" in content
 
-    def test_tier1_viewport_meta_fit_cover(self, static_dir):
-        """Mobile viewport meta tags with viewport-fit=cover are present on primary pages."""
-        for fname in ["saas_dashboard.html", "login.html"]:
-            fpath = os.path.join(static_dir, fname)
-            with open(fpath, "r", encoding="utf-8") as f:
+    def test_tier1_viewport_meta_has_no_fit_cover(self, static_dir):
+        """AGENTS.md: never use viewport-fit=cover (it causes the iOS status-bar blur/black gap)."""
+        for fname in sorted(f for f in os.listdir(static_dir) if f.endswith(".html")):
+            with open(os.path.join(static_dir, fname), "r", encoding="utf-8") as f:
                 content = f.read()
-            assert "viewport-fit=cover" in content, f"Missing viewport-fit=cover in {fname}"
+            assert "viewport-fit=cover" not in content, f"viewport-fit=cover found in {fname}"
 
 
 # =====================================================================

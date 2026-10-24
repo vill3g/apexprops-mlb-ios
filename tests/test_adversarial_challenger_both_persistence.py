@@ -369,9 +369,8 @@ class TestAdversarialPayloadFuzzing:
         user_id = adversarial_user["id"]
         headers = adversarial_user["headers"]
 
+        # CRYPTO and FOREX are legacy aliases (they map to FINANCIAL), so they are not attacks here.
         adversarial_strings = [
-            "CRYPTO",
-            "FOREX",
             "BITCOIN",
             "SPORTS_ONLY",
             "BOTH_AND_MORE",

@@ -477,7 +477,12 @@ def update_user_ai_enabled(user_id: int, enabled: bool):
 VALID_TRADING_UNIVERSES = {"FINANCIAL", "SPORTS", "INVESTMENTS", "BOTH", "ALL"}
 
 def _normalize_trading_universe(universe: str) -> str:
-    if not universe:
+    """Map a trading_universe value to one of VALID_TRADING_UNIVERSES.
+
+    Legacy names (CRYPTO, FOREX, ...) map to FINANCIAL. Anything else raises ValueError, so a
+    typo can't silently put a user into the wrong universe. None means "not provided" and is
+    handled by callers before this is reached."""
+    if universe is None:
         return "FINANCIAL"
     raw = str(universe).strip().upper()
     if raw in VALID_TRADING_UNIVERSES:
@@ -491,8 +496,10 @@ def _normalize_trading_universe(universe: str) -> str:
             norm_parts.add("SPORTS")
         elif p == "INVESTMENTS":
             norm_parts.add("INVESTMENTS")
+        else:
+            raise ValueError(f"Invalid trading_universe: {universe!r}")
     if not norm_parts:
-        return "FINANCIAL"
+        raise ValueError(f"Invalid trading_universe: {universe!r}")
     if norm_parts == {"FINANCIAL", "SPORTS", "INVESTMENTS"}:
         return "ALL"
     if norm_parts == {"FINANCIAL", "SPORTS"}:
@@ -1202,7 +1209,6 @@ def copy_user_settings(source_user_id: int, target_user_id: int) -> dict:
         "min_edge_cents": float(source_user.get("min_edge_cents", 0.0) or 0.0),
         "use_kelly_criterion": int(bool(source_user.get("use_kelly_criterion", 0))),
         "atr_risk_enabled": int(bool(source_user.get("atr_risk_enabled", 0))),
-        "trading_universe": str(source_user.get("trading_universe", "FINANCIAL") or "FINANCIAL"),
         "min_sports_confidence": float(source_user.get("min_sports_confidence", 70.0)),
         "min_sports_edge": float(source_user.get("min_sports_edge", 3.0)),
         "sports_include_live": int(bool(source_user.get("sports_include_live", 0))),

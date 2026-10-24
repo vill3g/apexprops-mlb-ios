@@ -72,10 +72,9 @@ def test_update_user_trading_universe_db_acceptance(universe_input, expected_sto
 
 
 @pytest.mark.parametrize("invalid_universe", [
-    "CRYPTO",
     "INVALID",
-    "FOREX",
     "NONE",
+    "BOGUS",
     "",
 ])
 def test_update_user_trading_universe_db_rejection(invalid_universe):
@@ -92,6 +91,10 @@ def test_update_user_trading_universe_db_rejection(invalid_universe):
     ("all", "ALL"),
     ("FINANCIAL", "FINANCIAL"),
     ("SPORTS", "SPORTS"),
+    # Legacy names still work and map to FINANCIAL
+    ("CRYPTO", "FINANCIAL"),
+    ("FOREX", "FINANCIAL"),
+    ("CRYPTO/FOREX", "FINANCIAL"),
 ])
 def test_user_config_request_schema_validation_success(valid_val, expected):
     """Verify Pydantic UserConfigRequest accepts and normalizes valid universes."""
@@ -100,7 +103,6 @@ def test_user_config_request_schema_validation_success(valid_val, expected):
 
 
 @pytest.mark.parametrize("invalid_val", [
-    "CRYPTO",
     "STOCK",
     "NOT_A_UNIVERSE",
     "foo",
