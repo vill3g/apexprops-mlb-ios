@@ -1197,7 +1197,7 @@ if (document.readyState === 'loading') {
                 </div>
 
                 <!-- 🧠 Gemini Head Trader Dossier Card (Financial Universe) — compact, same height as before;
-                     tap the footer for signals, warnings, recent calls and a stake calculator. -->
+                     tap the footer for signals, warnings and recent calls. -->
                 <style>
                     #gemini-live-dossier-card { background:#0d121f; border:1px solid rgba(168,85,247,.3); padding:14px; box-shadow:0 10px 15px -3px rgba(0,0,0,.3); transition:all .2s; }
                     #gemini-live-dossier-card .gd-mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; }
@@ -1266,11 +1266,6 @@ if (document.readyState === 'loading') {
                             <div id="gemini-dossier-signals" style="display:flex;flex-direction:column;gap:2px"></div>
                             <div id="gemini-dossier-history-row" class="gd-sig gd-mono" style="font-size:9.5px"></div>
                             <div id="gemini-dossier-models" class="gd-tags gd-mono"></div>
-                            <div id="gemini-dossier-stake-row" class="gd-sig gd-mono">
-                                <span class="gd-muted" style="flex-shrink:0">Stake $</span>
-                                <input id="gemini-dossier-stake" type="number" min="1" step="1" value="25" class="gd-mono">
-                                <span id="gemini-dossier-stake-out" style="color:#9ca3af;white-space:nowrap"></span>
-                            </div>
                             <div id="gemini-dossier-meta" class="gd-mono gd-muted" style="font-size:9px;text-align:right"></div>
                         </div>
                     </details>
@@ -4335,21 +4330,10 @@ if (document.readyState === 'loading') {
             }
             if (m.tech_gate_direction) tags.push(`<span class="gd-tag ${agree(m.tech_gate_direction) ? 'bull' : 'bear'}">Tech gate ${_gdEsc(m.tech_gate_direction)} ${agree(m.tech_gate_direction) ? '✓' : '✗'}</span>`);
             if (m.voting_direction) tags.push(`<span class="gd-tag ${agree(m.voting_direction) ? 'bull' : 'bear'}">Voting ${_gdEsc(m.voting_direction)}${m.voting_agreement != null ? ` ${Math.round(m.voting_agreement * 100)}%` : ''} ${agree(m.voting_direction) ? '✓' : '✗'}</span>`);
-            if (d.strike != null && d.spot != null) tags.push(`<span class="gd-tag">Strike ${Number(d.strike).toLocaleString()} · spot ${Number(d.spot).toLocaleString()}</span>`);
             $('gemini-dossier-models').innerHTML = tags.join('');
 
-            $('gemini-dossier-stake-row').style.display = t.ask ? '' : 'none';
-            _gdStake();
             const ago = d.timestamp ? Math.max(0, Math.round(Date.now() / 1000 - d.timestamp)) : null;
             $('gemini-dossier-meta').textContent = [d.model, d.latency_s ? `${d.latency_s}s` : null, ago != null ? `called ${ago}s ago` : null, 'not financial advice'].filter(Boolean).join(' · ');
-        }
-
-        function _gdStake() {
-            const t = (_gdLast && _gdLast.trade) || {}, out = document.getElementById('gemini-dossier-stake-out');
-            if (!out || !t.ask) return;
-            const cost = t.ask + (t.fee || 0), stake = Math.max(0, Number(document.getElementById('gemini-dossier-stake').value) || 0);
-            const q = Math.floor(stake / cost);
-            out.innerHTML = `<span class="gd-white">${q}</span> ${_gdEsc(t.side)} · win <span class="bull" style="font-weight:700">+$${(q * (1 - cost)).toFixed(2)}</span> · lose <span class="bear" style="font-weight:700">−$${(q * cost).toFixed(2)}</span>`;
         }
 
         function _gdTick() {
@@ -4360,7 +4344,6 @@ if (document.readyState === 'loading') {
             el.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
         }
 
-        document.getElementById('gemini-dossier-stake')?.addEventListener('input', _gdStake);
         setInterval(_gdTick, 1000);
         setInterval(updateGeminiLiveDossier, 10000);
         setTimeout(updateGeminiLiveDossier, 2500);
