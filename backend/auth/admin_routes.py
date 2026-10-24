@@ -71,6 +71,8 @@ def _protect_owner_account(auth, target_user: dict):
 ADMIN_MAX_TRADE_SIZE = float(os.environ.get("ADMIN_MAX_TRADE_SIZE", "250"))
 ADMIN_MAX_DAILY_RISK = float(os.environ.get("ADMIN_MAX_DAILY_RISK", "1000"))
 _TOKEN = r"^[A-Za-z0-9_\-]{1,32}$"
+# Model names include dots (gemini-3.5-flash), so they get their own pattern.
+_MODEL_NAME = r"^[A-Za-z0-9_.\-]{1,64}$"
 
 
 class AdminConfigPayload(BaseModel):
@@ -148,7 +150,7 @@ class AdminConfigPayload(BaseModel):
     one_shot_ai: Optional[bool] = None
     max_daily_trades: Optional[int] = Field(None, ge=0, le=500)
     max_daily_risk: Optional[float] = Field(None, ge=0, le=ADMIN_MAX_DAILY_RISK)
-    model_choice: Optional[str] = Field(None, pattern=_TOKEN)
+    model_choice: Optional[str] = Field(None, pattern=_MODEL_NAME)
     train_window: Optional[int] = Field(None, ge=100, le=200_000)
     regularization_c: Optional[float] = Field(None, gt=0, le=1000)
     class_weight: Optional[str] = Field(None, pattern=_TOKEN)

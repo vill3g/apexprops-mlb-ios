@@ -1,114 +1,111 @@
 {
-  "updated": 1792809208.2257836,
+  "updated": 1792811281.645409,
   "results": {
-    "AUTO|AUTO": {
-      "ts": 1792809208.2257836,
+    "PREDICTION|AI_ONLY": {
+      "ts": 1792811281.645409,
       "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232245-45",
-      "strike": 0.078957,
-      "sec_left": 679,
-      "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.5363,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 57.0,
-      "pre_gate_grade": "GRADE C / ML MODEL",
+      "ticker": "KXDOGE15M-26OCT232315-15",
+      "strike": 0.078887,
+      "sec_left": 405,
+      "effective_style": "PREDICTION",
+      "direction": "BELOW",
+      "probability_percent": 62,
+      "ml_prob": 0.422,
+      "conviction_grade": "PREDICTION MODEL",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 57.8,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($0.0789) is below strike ($0.0790) with bearish live candle.",
-        "ML Conviction: No chart setup fired, falling back to ML signal (53.0%).",
-        "Primary Driver: Voting Ensemble predicts UP (53% Edge). ML Reasoning: Prediction driven primarily by Range 24H Pos, Volume 24H, Vsa Absorption. [Voting Ensemble: dir=YES, agree=67%, unanimous=NO]",
-        "\ud83d\udcc8 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples)."
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 37.2%",
+        "\ud83d\uded1 Trend Alignment Block: Blocked BELOW (NO) prediction because EMA9 is above EMA21 and price is over VWAP, and RSI is not overbought.",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 57.8%"
       ],
       "chart": {
-        "open": 0.0789311,
-        "close": 0.0788634,
-        "ema9": 0.07868040021310858,
-        "ema21": 0.07869466969232063,
-        "flow": 0.786
+        "open": 0.0788298,
+        "close": 0.0788165,
+        "ema9": 0.0787289481363895,
+        "ema21": 0.07871510455413423,
+        "flow": -0.623
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792809208.2257836,
+      "ts": 1792811281.645409,
       "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232245-45",
-      "strike": 0.078957,
-      "sec_left": 679,
+      "ticker": "KXDOGE15M-26OCT232315-15",
+      "strike": 0.078887,
+      "sec_left": 405,
       "effective_style": "SNIPER",
       "direction": "YES",
-      "probability_percent": 57,
-      "ml_prob": 0.5363,
+      "probability_percent": 58,
+      "ml_prob": 0.5563,
       "conviction_grade": "GRADE B SETUP",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 57.63,
+      "pre_gate_prob": 55.63,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 53.6%",
-        "\ud83d\udcc8 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples).",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 0)."
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 55.6%",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+4 edge points)."
       ],
       "chart": {
-        "open": 0.0789311,
-        "close": 0.0788634,
-        "ema9": 0.07868040021310858,
-        "ema21": 0.07869466969232063,
-        "flow": 0.786
-      }
-    },
-    "PREDICTION|AI_ONLY": {
-      "ts": 1792809208.2257836,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232245-45",
-      "strike": 0.078957,
-      "sec_left": 679,
-      "effective_style": "PREDICTION",
-      "direction": "BELOW",
-      "probability_percent": 87,
-      "ml_prob": 0.1738,
-      "conviction_grade": "PREDICTION MODEL",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 78.62,
-      "pre_gate_grade": "GRADE A+ SETUP",
-      "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 12.4%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 82.6%",
-        "\ud83d\udcc9 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples). (conflicts with this setup - confidence trimmed)"
-      ],
-      "chart": {
-        "open": 0.0789311,
-        "close": 0.0788634,
-        "ema9": 0.07868040021310858,
-        "ema21": 0.07869466969232063,
-        "flow": 0.786
+        "open": 0.0788298,
+        "close": 0.0788165,
+        "ema9": 0.0787289481363895,
+        "ema21": 0.07871510455413423,
+        "flow": -0.623
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792809208.2257836,
+      "ts": 1792811281.645409,
       "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232245-45",
-      "strike": 0.078957,
-      "sec_left": 679,
+      "ticker": "KXDOGE15M-26OCT232315-15",
+      "strike": 0.078887,
+      "sec_left": 405,
       "effective_style": "GEMINI_REASONING",
-      "direction": "NO",
-      "probability_percent": 78,
-      "ml_prob": 0.1738,
-      "conviction_grade": "GRADE C / ML MODEL",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.422,
+      "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 78.0,
+      "pre_gate_prob": 57.0,
       "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "ML Conviction: No chart setup fired, falling back to ML signal (82.0%).",
-        "Primary Driver: Voting Ensemble predicts DOWN (82% Edge). ML Reasoning: Prediction driven primarily by Volume 15M Ratio Lag 1, Roc 15M, Roc 4H. [Voting Ensemble: dir=NO, agree=100%, unanimous=YES]",
-        "\ud83d\udcc9 Pattern Watch: the 22:00 ET close has resolved YES 72% of the time historically (18 samples). (conflicts with this setup - confidence trimmed)",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 0)."
+        "\ud83d\uded1 Trend Alignment Block: Blocked BELOW (NO) prediction because EMA9 is above EMA21 and price is over VWAP, and RSI is not overbought.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (57.0%).",
+        "Primary Driver: Voting Ensemble predicts DOWN (57% Edge). ML Reasoning: Prediction driven primarily by Roc 15M Lag 1, Bb Percent B Lag 1, Roc 4H. [Voting Ensemble: dir=NO, agree=67%, unanimous=NO]"
       ],
       "chart": {
-        "open": 0.0789311,
-        "close": 0.0788634,
-        "ema9": 0.07868040021310858,
-        "ema21": 0.07869466969232063,
-        "flow": 0.786
+        "open": 0.0788298,
+        "close": 0.0788165,
+        "ema9": 0.0787289481363895,
+        "ema21": 0.07871510455413423,
+        "flow": -0.623
+      }
+    },
+    "AUTO|AUTO": {
+      "ts": 1792811281.645409,
+      "asset": "DOGE",
+      "ticker": "KXDOGE15M-26OCT232315-15",
+      "strike": 0.078887,
+      "sec_left": 405,
+      "effective_style": "SNIPER",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.5563,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 55.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
+      "catalysts": [
+        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($0.0788) is below strike ($0.0789) with bearish live candle.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (55.0%).",
+        "Primary Driver: Voting Ensemble predicts UP (55% Edge). ML Reasoning: Prediction driven primarily by Volume 24H, Range 24H Pos, Bb Lower. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]"
+      ],
+      "chart": {
+        "open": 0.0788298,
+        "close": 0.0788165,
+        "ema9": 0.0787289481363895,
+        "ema21": 0.07871510455413423,
+        "flow": -0.623
       }
     }
   }

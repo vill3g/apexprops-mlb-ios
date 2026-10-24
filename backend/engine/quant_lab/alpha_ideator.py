@@ -46,8 +46,9 @@ class AlphaIdeator:
             f"with {len(negative_constraints)} negative constraints from Graveyard..."
         )
 
-        # Attempt LLM generation if API key is configured
-        if self.api_key:
+        # LLM ideation is a paid Gemini call per attempt. It is off unless QUANT_LAB_LLM_IDEATION=1 is set,
+        # so the quant lab uses only the deterministic generator by default.
+        if self.api_key and os.environ.get("QUANT_LAB_LLM_IDEATION", "0").strip() == "1":
             try:
                 hypothesis = self._generate_with_llm(asset_norm, target_interval, negative_constraints, market_regime)
                 if hypothesis:
