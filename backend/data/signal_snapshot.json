@@ -1,115 +1,118 @@
 {
-  "updated": 1792801105.7528822,
+  "updated": 1792801666.50287,
   "results": {
-    "AUTO|ML_ENSEMBLE": {
-      "ts": 1792801105.7528822,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232030-30",
-      "strike": 0.078458,
-      "sec_left": 682,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.2179,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 78.21,
-      "pre_gate_grade": "GRADE A+ SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 78.2%"
-      ],
-      "chart": {
-        "open": 0.0783,
-        "close": 0.0782641,
-        "ema9": 0.07840202362023495,
-        "ema21": 0.07845085844243752,
-        "flow": -0.553
-      }
-    },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792801105.7528822,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232030-30",
-      "strike": 0.078458,
-      "sec_left": 682,
+      "ts": 1792801666.50287,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232030-30",
+      "strike": 2379.43,
+      "sec_left": 121,
       "effective_style": "GEMINI_REASONING",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.1828,
-      "conviction_grade": "GRADE C / PASS",
+      "direction": "NO",
+      "probability_percent": 79,
+      "ml_prob": 0.4836,
+      "conviction_grade": "GRADE A SETUP",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 78.63,
+      "pre_gate_prob": 76.81,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.1x depth ratio)",
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-1.83%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-1.21%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (81.7%), blended confidence 78.6%"
+        "\u2696\ufe0f ML Neutral: Model has no directional edge (51.6%), relying on technical chart confluence (74% edge)",
+        "\ud83d\udcc8 Pattern Watch: after 1 consecutive NO closes, this series has gone on to extend the streak 57% of the time (398 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 0.07841,
-        "close": 0.0782641,
-        "ema9": 0.0784370262339312,
-        "ema21": 0.07875553110801516,
-        "flow": -0.248
-      }
-    },
-    "AUTO|AUTO": {
-      "ts": 1792801105.7528822,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232030-30",
-      "strike": 0.078458,
-      "sec_left": 682,
-      "effective_style": "MOMENTUM_SURFER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.2179,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 74.0,
-      "pre_gate_grade": "GRADE A SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Swarm Debate Veto: Red-Team Veto: Chief Risk Officer vetoed BID NO (BELOW TARGET) (Adverse Selection: Candidate is shorting directly into an institutional BID WALL.).",
-        "\ud83e\uddf1 Microstructure Wall: BID WALL detected at $0.08 (4.1x depth ratio)",
-        "Triple Red Trend Continuation: 3 consecutive bear bars aligned with Bearish Macro/Momentum",
-        "Downward Acceleration: Trend continuation riding heavy selling pressure",
-        "Oversold Flush: Low RSI (27.9) pressing lower BB limit",
-        "\ud83d\udcca Signal Isolation: 100% Chart Setup active, ignoring ML model."
-      ],
-      "chart": {
-        "open": 0.0783,
-        "close": 0.0782641,
-        "ema9": 0.07840202362023495,
-        "ema21": 0.07845085844243752,
-        "flow": -0.553
+        "open": 2378.36,
+        "close": 2375.38,
+        "ema9": 2379.45685729012,
+        "ema21": 2385.730111129542,
+        "flow": 0.235
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792801105.7528822,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232030-30",
-      "strike": 0.078458,
-      "sec_left": 682,
+      "ts": 1792801666.50287,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232030-30",
+      "strike": 2379.43,
+      "sec_left": 121,
       "effective_style": "PREDICTION",
-      "direction": "BELOW",
-      "probability_percent": 86,
-      "ml_prob": 0.1828,
-      "conviction_grade": "PREDICTION MODEL",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.4836,
+      "conviction_grade": "PREDICTION PASS",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 81.72,
-      "pre_gate_grade": "GRADE A+ SETUP",
+      "pre_gate_prob": 54.45,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 13.3%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 81.7%"
+        "\ud83d\udd2e Prediction Style Pass: Edge too weak (56.6% < 58.0% min threshold). Sitting out.",
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 43.4%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 51.6%",
+        "\ud83d\udcc8 Pattern Watch: after 1 consecutive NO closes, this series has gone on to extend the streak 57% of the time (398 samples)."
       ],
       "chart": {
-        "open": 0.07841,
-        "close": 0.0782641,
-        "ema9": 0.0784370262339312,
-        "ema21": 0.07875553110801516,
-        "flow": -0.248
+        "open": 2378.36,
+        "close": 2375.38,
+        "ema9": 2379.45685729012,
+        "ema21": 2385.730111129542,
+        "flow": 0.235
+      }
+    },
+    "AUTO|ML_ENSEMBLE": {
+      "ts": 1792801666.50287,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232030-30",
+      "strike": 2379.43,
+      "sec_left": 121,
+      "effective_style": "SNIPER",
+      "direction": "NO",
+      "probability_percent": 58,
+      "ml_prob": 0.4709,
+      "conviction_grade": "GRADE B SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 55.72,
+      "pre_gate_grade": "GRADE B SETUP",
+      "catalysts": [
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 52.9%",
+        "\ud83d\udcc8 Pattern Watch: after 1 consecutive NO closes, this series has gone on to extend the streak 57% of the time (398 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
+      ],
+      "chart": {
+        "open": 2378.36,
+        "close": 2375.38,
+        "ema9": 2379.45685729012,
+        "ema21": 2385.730111129542,
+        "flow": 0.235
+      }
+    },
+    "AUTO|AUTO": {
+      "ts": 1792801666.50287,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232030-30",
+      "strike": 2379.43,
+      "sec_left": 121,
+      "effective_style": "SNIPER",
+      "direction": "NO",
+      "probability_percent": 68,
+      "ml_prob": 0.4709,
+      "conviction_grade": "GRADE A SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 65.36,
+      "pre_gate_grade": "GRADE A SETUP",
+      "catalysts": [
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-1.21%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
+        "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (52.9%), blended confidence 62.5%",
+        "\ud83d\udcc8 Pattern Watch: after 1 consecutive NO closes, this series has gone on to extend the streak 57% of the time (398 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
+      ],
+      "chart": {
+        "open": 2378.36,
+        "close": 2375.38,
+        "ema9": 2379.45685729012,
+        "ema21": 2385.730111129542,
+        "flow": 0.235
       }
     }
   }
