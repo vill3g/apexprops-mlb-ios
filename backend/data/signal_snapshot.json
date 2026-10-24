@@ -1,114 +1,111 @@
 {
-  "updated": 1792803723.7786837,
+  "updated": 1792805401.5978432,
   "results": {
-    "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792803723.7786837,
+    "AUTO|AUTO": {
+      "ts": 1792805401.5978432,
       "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232115-15",
-      "strike": 80544.0,
-      "sec_left": 763,
-      "effective_style": "GEMINI_REASONING",
+      "ticker": "KXBTC15M_SYNTH",
+      "strike": 80690.7,
+      "sec_left": 889,
+      "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.2632,
+      "ml_prob": 0.4514,
       "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 74.0,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_prob": 54.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
       "catalysts": [
-        "\ud83d\uded1 Loss Guard Veto: Repeating failure pattern active (Oversold Breakdown Bounce). RSI 32.8 (recent low 32.8) < 38.0. Blocking NO entry.",
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -65%, Skew: -55%)",
-        "Triple Red Trend Continuation: 3 consecutive bear bars aligned with Bearish Macro/Momentum",
-        "Downward Acceleration: Trend continuation riding heavy selling pressure",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (73.7%), blended confidence 74.0%"
+        "\ud83d\uded1 Loss Guard Veto: Repeating failure pattern active (Oversold Breakdown Bounce). RSI 39.1 (recent low 32.8) < 38.0. Blocking NO entry.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (54.0%).",
+        "Primary Driver: Voting Ensemble predicts DOWN (54% Edge). ML Reasoning: Prediction driven primarily by Range 24H Pos, Vol Regime Percentile, Delta To Target. [Voting Ensemble: dir=NO, agree=100%, unanimous=YES]"
       ],
       "chart": {
-        "open": 80508.25,
-        "close": 80535.31,
-        "ema9": 80716.0447102279,
-        "ema21": 80929.22920596132,
-        "flow": -0.416
-      }
-    },
-    "PREDICTION|AI_ONLY": {
-      "ts": 1792803723.7786837,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232115-15",
-      "strike": 80544.0,
-      "sec_left": 763,
-      "effective_style": "PREDICTION",
-      "direction": "BELOW",
-      "probability_percent": 78,
-      "ml_prob": 0.2632,
-      "conviction_grade": "PREDICTION MODEL",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 73.68,
-      "pre_gate_grade": "GRADE A SETUP",
-      "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 21.3%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 73.7%"
-      ],
-      "chart": {
-        "open": 80508.25,
-        "close": 80535.31,
-        "ema9": 80716.0447102279,
-        "ema21": 80929.22920596132,
-        "flow": -0.416
+        "open": 80668.62,
+        "close": 80712.66,
+        "ema9": 80736.69736818233,
+        "ema21": 80920.55845170037,
+        "flow": 0.237
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792803723.7786837,
+      "ts": 1792805401.5978432,
       "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232115-15",
-      "strike": 80544.0,
-      "sec_left": 763,
+      "ticker": "KXBTC15M_SYNTH",
+      "strike": 80690.7,
+      "sec_left": 889,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.5814,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 58.14,
+      "direction": "NO",
+      "probability_percent": 54,
+      "ml_prob": 0.4855,
+      "conviction_grade": "GRADE B SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 51.45,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 58.1%"
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 51.4%",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 80508.25,
-        "close": 80535.31,
-        "ema9": 80716.0447102279,
-        "ema21": 80929.22920596132,
-        "flow": -0.416
+        "open": 80668.62,
+        "close": 80712.66,
+        "ema9": 80736.69736818233,
+        "ema21": 80920.55845170037,
+        "flow": 0.237
       }
     },
-    "AUTO|AUTO": {
-      "ts": 1792803723.7786837,
+    "PREDICTION|AI_ONLY": {
+      "ts": 1792805401.5978432,
       "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232115-15",
-      "strike": 80544.0,
-      "sec_left": 763,
-      "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.5814,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "PASS",
-      "pre_gate_prob": 50.0,
-      "pre_gate_grade": "GRADE C / PASS",
+      "ticker": "KXBTC15M_SYNTH",
+      "strike": 80690.7,
+      "sec_left": 889,
+      "effective_style": "PREDICTION",
+      "direction": "ABOVE",
+      "probability_percent": 60,
+      "ml_prob": 0.5511,
+      "conviction_grade": "PREDICTION MODEL",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 55.11,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -65%, Skew: -55%)",
-        "Triple Red Trend Continuation: 3 consecutive bear bars aligned with Bearish Macro/Momentum",
-        "Downward Acceleration: Trend continuation riding heavy selling pressure",
-        "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
-        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID NO (BELOW TARGET) (77.0%) but ML model disagrees (41.9%). The ML Engine has vetoed this trade."
+        "\ud83d\udd2e Prediction Adjustment: Chart technicals confirm UP (+5%). ML P(YES) adjusted to 60.1%",
+        "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 55.1%"
       ],
       "chart": {
-        "open": 80508.25,
-        "close": 80535.31,
-        "ema9": 80716.0447102279,
-        "ema21": 80929.22920596132,
-        "flow": -0.416
+        "open": 80668.62,
+        "close": 80712.66,
+        "ema9": 80736.69736818233,
+        "ema21": 80920.55845170037,
+        "flow": 0.237
+      }
+    },
+    "GEMINI_REASONING|GEMINI_REASONING": {
+      "ts": 1792805401.5978432,
+      "asset": "BTC",
+      "ticker": "KXBTC15M_SYNTH",
+      "strike": 80690.7,
+      "sec_left": 889,
+      "effective_style": "GEMINI_REASONING",
+      "direction": "PASS",
+      "probability_percent": 50,
+      "ml_prob": 0.5511,
+      "conviction_grade": "GRADE C / PASS",
+      "pre_gate_direction": "ABOVE",
+      "pre_gate_prob": 55.0,
+      "pre_gate_grade": "GRADE C / ML MODEL",
+      "catalysts": [
+        "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
+        "ML Conviction: No chart setup fired, falling back to ML signal (55.0%).",
+        "Primary Driver: Voting Ensemble predicts UP (55% Edge). ML Reasoning: Prediction driven primarily by Minutes Remaining, Bb Percent B Lag 2, Roc 15M Lag 2. [Voting Ensemble: dir=YES, agree=67%, unanimous=NO]"
+      ],
+      "chart": {
+        "open": 80668.62,
+        "close": 80712.66,
+        "ema9": 80736.69736818233,
+        "ema21": 80920.55845170037,
+        "flow": 0.237
       }
     }
   }

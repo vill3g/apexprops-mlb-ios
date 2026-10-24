@@ -54,8 +54,8 @@ logger = logging.getLogger(__name__)
 
 _current_gemini_key_idx = 0
 _gemini_key_lock = threading.Lock()
-# Keys come from the repo .env (GEMINI_API_KEYS / GEMINI_API_KEY) so changing the key there is the only step needed.
-# The hardcoded list above is only a last-resort default if .env has no key.
+# Keys come only from the environment or the repo .env (GEMINI_API_KEYS / GEMINI_API_KEY). Nothing is hard-coded,
+# so keys never end up in source control.
 def _load_env_gemini_keys():
     try:
         from pathlib import Path
@@ -1916,7 +1916,7 @@ def _get_key_lock(cache_key: tuple) -> threading.Lock:
 
 
 
-def _is_cached_decision_valid(cached: Optional[Dict[str, Any]], sec_elapsed: float) -> bool:
+def _is_cached_decision_valid(cached: Optional[Dict[str, Any]], sec_elapsed: float, allow_pass: bool = True) -> bool:
 
     if cached is None:
 
@@ -1930,11 +1930,13 @@ def _is_cached_decision_valid(cached: Optional[Dict[str, Any]], sec_elapsed: flo
 
     # A directional YES/NO decision prefetched during the opening window expires after MAX_DECISION_AGE_SEC
 
-    # or once the opening entry window (195s) has closed so stale T+35s calls never execute at T+8m.
+    # or, in PASS mode, once the opening entry window (195s) has closed so stale T+35s calls never execute at T+8m.
+    # Force mode (allow_pass=False) has no such cutoff: its trades are allowed late, so the same market's
+    # decision stays reusable. Without this, every evaluation after 195s paid for a new Gemini call.
 
     if str(cached.get("direction", "PASS")).upper() in ("YES", "NO"):
 
-        if age > MAX_DECISION_AGE_SEC or sec_elapsed > 195.0:
+        if age > MAX_DECISION_AGE_SEC or (allow_pass and sec_elapsed > 195.0):
 
             return False
 
@@ -1986,7 +1988,7 @@ def prefetch_master_decision_async(
     cache_key = (str(asset).upper(), str(interval_id), bool(allow_pass))
     with _CACHE_LOCK:
         cached = _MASTER_CACHE.get(cache_key)
-        if _is_cached_decision_valid(cached, sec_elapsed) or cache_key in _MASTER_INFLIGHT:
+        if _is_cached_decision_valid(cached, sec_elapsed, allow_pass) or cache_key in _MASTER_INFLIGHT:
             return
         _MASTER_INFLIGHT.add(cache_key)
 
@@ -1996,7 +1998,7 @@ def prefetch_master_decision_async(
             try:
                 with _CACHE_LOCK:
                     cached_now = _MASTER_CACHE.get(cache_key)
-                    if _is_cached_decision_valid(cached_now, sec_elapsed):
+                    if _is_cached_decision_valid(cached_now, sec_elapsed, allow_pass):
                         return
                 dossier = _build_intelligence_dossier(
                     asset=asset,
@@ -2121,7 +2123,7 @@ def get_or_create_master_decision(
 
         cached = _MASTER_CACHE.get(cache_key)
 
-        if _is_cached_decision_valid(cached, sec_elapsed):
+        if _is_cached_decision_valid(cached, sec_elapsed, allow_pass):
 
             return cached
 
@@ -2143,7 +2145,7 @@ def get_or_create_master_decision(
 
             cached = _MASTER_CACHE.get(cache_key)
 
-            if _is_cached_decision_valid(cached, sec_elapsed):
+            if _is_cached_decision_valid(cached, sec_elapsed, allow_pass):
 
                 return cached
 
