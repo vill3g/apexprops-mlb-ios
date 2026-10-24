@@ -2,6 +2,7 @@ import pytest
 import time
 import json
 import uuid
+from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 from starlette.testclient import TestClient
 
@@ -13,6 +14,13 @@ from backend.routes.engine_sports import _execute_sports_trade
 from backend.routes.engine import _resolve_user_id
 from backend.sports_bridge.executor import SportsBridgeExecutor, _parse_trade_timestamp
 from backend.auth.security import create_jwt_token
+
+# The bot refuses events whose date has passed, so fixture games are dated 30 days ahead.
+_MONTHS = "JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split()
+_GAME_DAY = date.today() + timedelta(days=30)
+GAME_DATE = f"{_GAME_DAY.year % 100:02d}{_MONTHS[_GAME_DAY.month - 1]}{_GAME_DAY.day:02d}"
+GAME_TICKER = f"KXNFLGAME-{GAME_DATE}TBDAL-DAL"
+GAME_TICKER_GB = f"KXNFLGAME-{GAME_DATE}GB-GB"
 
 @pytest.fixture
 def client():
@@ -28,7 +36,7 @@ def fake_kalshi_get(url, *args, **kwargs):
         resp.status_code = 200
         resp.json.return_value = {
             "market": {
-                "ticker": "KXNFLGAME-26OCT08TBDAL-DAL",
+                "ticker": GAME_TICKER,
                 "yes_ask_dollars": "0.55",
                 "no_ask_dollars": "0.45",
                 "last_price_dollars": "0.55",
@@ -123,7 +131,7 @@ def test_place_sports_order_live_insufficient_balance():
 
     with patch.object(trader, "get_balance", return_value={"success": True, "balance_dollars": 2.00, "raw": {}}):
         with patch.object(trader, "get_market_quote", return_value={"success": True, "market": {"yes_ask_dollars": "0.50"}}):
-            res = trader.place_sports_order("KXNFLGAME-26OCT08TBDAL-DAL", side="yes", count=10, limit_price_dollars=0.50, dry_run=False)
+            res = trader.place_sports_order(GAME_TICKER, side="yes", count=10, limit_price_dollars=0.50, dry_run=False)
             assert res["success"] is False
             assert "Insufficient funds" in res["error"]
 
@@ -150,7 +158,7 @@ def test_place_sports_order_live_success():
                 with patch.object(trader, "_sign_headers", return_value={"KALSHI-ACCESS-KEY": "test"}):
                     with patch.object(trader.order_session, "post", return_value=mock_resp) as mock_post:
                         res = trader.place_sports_order(
-                            ticker="KXNFLGAME-26OCT08TBDAL-DAL",
+                            ticker=GAME_TICKER,
                             side="yes",
                             count=5,
                             limit_price_dollars=0.50,
@@ -164,7 +172,7 @@ def test_place_sports_order_live_success():
                         assert mock_post.called
                         call_kwargs = mock_post.call_args[1]
                         payload = call_kwargs["json"]
-                        assert payload["ticker"] == "KXNFLGAME-26OCT08TBDAL-DAL"
+                        assert payload["ticker"] == GAME_TICKER
                         assert payload["side"] == "bid"
                         assert payload["time_in_force"] == "immediate_or_cancel"
 
@@ -188,7 +196,7 @@ def test_execute_sports_trade_paper_mode():
     try:
         with patch("backend.routes.engine.requests.get", side_effect=fake_kalshi_get):
             pred = {"predicted_team": "Dallas Cowboys", "confidence_pct": 80.0, "edge_pct": 5.0, "sport": "NFL"}
-            trade, err = _execute_sports_trade("KXNFLGAME-26OCT08TBDAL-DAL", pred, user_id=1, trade_size=10.0)
+            trade, err = _execute_sports_trade(GAME_TICKER, pred, user_id=1, trade_size=10.0)
 
             assert err is None
             assert trade is not None
@@ -227,7 +235,7 @@ def test_execute_sports_trade_live_guards_and_execution():
     try:
         with patch("backend.routes.engine.requests.get", side_effect=fake_kalshi_get):
             pred = {"predicted_team": "Dallas Cowboys", "confidence_pct": 80.0, "edge_pct": 5.0, "sport": "NFL"}
-            trade, err = _execute_sports_trade("KXNFLGAME-26OCT08TBDAL-DAL", pred, user_id=1, trade_size=10.0)
+            trade, err = _execute_sports_trade(GAME_TICKER, pred, user_id=1, trade_size=10.0)
             assert trade is None
             assert "User is in LIVE mode but has no valid Kalshi API keys" in err
 
@@ -267,7 +275,7 @@ def test_execute_sports_trade_live_mocked_success():
         with patch("backend.routes.engine.requests.get", side_effect=fake_kalshi_get):
             with patch("backend.btc.kalshi_trader.get_authenticated_trader_for_user", return_value=mock_trader):
                 pred = {"predicted_team": "Dallas Cowboys", "confidence_pct": 82.0, "edge_pct": 6.0, "sport": "NFL"}
-                trade, err = _execute_sports_trade("KXNFLGAME-26OCT08TBDAL-DAL", pred, user_id=1, trade_size=10.0)
+                trade, err = _execute_sports_trade(GAME_TICKER, pred, user_id=1, trade_size=10.0)
 
                 assert err is None
                 assert trade is not None
@@ -400,14 +408,14 @@ def test_sports_bridge_executor_safeguards():
         "predicted_team": "Packers",
         "confidence_pct": 65.0,
         "edge_pct": 0.5,
-        "metadata": {"is_upcoming": True, "date": "26OCT08"}
+        "metadata": {"is_upcoming": True, "date": GAME_DATE}
     }
 
     mock_trader = MagicMock()
     mock_trader.is_authenticated.return_value = True
     mock_trader.get_balance.return_value = {"success": True, "balance_dollars": 100.0}
 
-    with patch("backend.sports_bridge.executor._generate_kalshi_market", return_value=("KXNFLGAME-26OCT08GB-GB", 0.50, "Packers Win")):
+    with patch("backend.sports_bridge.executor._generate_kalshi_market", return_value=(GAME_TICKER_GB, 0.50, "Packers Win")):
         with patch.object(executor.client, "fetch_latest_picks", return_value=[low_edge_pred]):
             with patch("backend.sports_bridge.executor.get_all_active_users", return_value=[user_conf]):
                 with patch("backend.btc.kalshi_trader.get_authenticated_trader_for_user", return_value=mock_trader):
@@ -508,7 +516,7 @@ def test_sports_bridge_live_take_profit_close(monkeypatch):
     live_trade = {
         "id": trade_id,
         "user_id": 1,
-        "ticker": "KXNFLGAME-26OCT08TBDAL-DAL",
+        "ticker": GAME_TICKER,
         "side": "YES",
         "entry_price": 0.40,
         "count": 25,
@@ -555,7 +563,7 @@ def test_sports_bridge_live_take_profit_close(monkeypatch):
 
         assert mock_trader.close_position.called
         call_kwargs = mock_trader.close_position.call_args[1]
-        assert call_kwargs["ticker"] == "KXNFLGAME-26OCT08TBDAL-DAL"
+        assert call_kwargs["ticker"] == GAME_TICKER
         assert call_kwargs["purchased_side"] == "YES"
         assert call_kwargs["count"] == 25
         assert call_kwargs["dry_run"] is False
