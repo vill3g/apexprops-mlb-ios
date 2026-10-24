@@ -1,12 +1,12 @@
 {
-  "updated": 1792809168.1479144,
+  "updated": 1792809208.2257836,
   "results": {
     "AUTO|AUTO": {
-      "ts": 1792809168.1479144,
+      "ts": 1792809208.2257836,
       "asset": "DOGE",
       "ticker": "KXDOGE15M-26OCT232245-45",
       "strike": 0.078957,
-      "sec_left": 718,
+      "sec_left": 679,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
@@ -30,11 +30,11 @@
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792809168.1479144,
+      "ts": 1792809208.2257836,
       "asset": "DOGE",
       "ticker": "KXDOGE15M-26OCT232245-45",
       "strike": 0.078957,
-      "sec_left": 718,
+      "sec_left": 679,
       "effective_style": "SNIPER",
       "direction": "YES",
       "probability_percent": 57,
@@ -57,11 +57,11 @@
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792809168.1479144,
+      "ts": 1792809208.2257836,
       "asset": "DOGE",
       "ticker": "KXDOGE15M-26OCT232245-45",
       "strike": 0.078957,
-      "sec_left": 718,
+      "sec_left": 679,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
       "probability_percent": 87,
@@ -84,11 +84,11 @@
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792809168.1479144,
+      "ts": 1792809208.2257836,
       "asset": "DOGE",
       "ticker": "KXDOGE15M-26OCT232245-45",
       "strike": 0.078957,
-      "sec_left": 718,
+      "sec_left": 679,
       "effective_style": "GEMINI_REASONING",
       "direction": "NO",
       "probability_percent": 78,
