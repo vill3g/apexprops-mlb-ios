@@ -376,19 +376,8 @@ def fast_exit_check() -> int:
 
 
 def _trade_epoch(ts) -> float:
-    if isinstance(ts, (int, float)):
-        return float(ts)
-    if isinstance(ts, str) and ts:
-        try:
-            import datetime
-            from zoneinfo import ZoneInfo
-            if "ET" in ts:
-                return datetime.datetime.strptime(ts, "%Y-%m-%d %I:%M:%S %p ET").replace(
-                    tzinfo=ZoneInfo("America/New_York")).timestamp()
-            return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
-        except (ValueError, TypeError):
-            pass
-    return 0.0
+    from backend.core.trade_time import trade_epoch
+    return trade_epoch(ts)
 
 
 def _second_entry_mode(user: dict, trade_mode: str, live_kt):
@@ -1013,7 +1002,8 @@ def _settle_saas_trades_pass():
                                             reason = f"STOP_LOSS (-{bid_loss_pct*100:.1f}%)"
                                         elif is_bid_wick:
                                             _log_exit_skip(t.get("id"), f"STOP_LOSS 1-second bid wick observed (${curr_bid:.3f}, -{bid_loss_pct*100:.1f}% vs mid -{loss_pct*100:.1f}%), awaiting anti-wick persistence confirmation", logging.INFO)
-                                    elif tp_enabled and profit_pct >= tp_pct and curr_bid > entry:
+                                    # Take-profit is its own check: it must run even when stop-loss is on and not in its grace period.
+                                    if not trigger_exit and tp_enabled and profit_pct >= tp_pct and curr_bid > entry:
                                         trigger_exit = True
                                         reason = f"TAKE_PROFIT (+{profit_pct*100:.1f}%)"
                                     elif sl_enabled and in_grace_period and max(loss_pct, bid_loss_pct) >= sl_pct:

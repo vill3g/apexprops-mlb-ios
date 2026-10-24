@@ -1,114 +1,114 @@
 {
-  "updated": 1792801834.2394078,
+  "updated": 1792802562.8713243,
   "results": {
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792801834.2394078,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232045-45",
-      "strike": 80693.88,
-      "sec_left": 860,
+      "ts": 1792802562.8713243,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232045-45",
+      "strike": 2373.32,
+      "sec_left": 125,
       "effective_style": "GEMINI_REASONING",
       "direction": "NO",
-      "probability_percent": 67,
-      "ml_prob": 0.2754,
+      "probability_percent": 68,
+      "ml_prob": 0.3834,
       "conviction_grade": "GRADE B+ SETUP",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 64.0,
+      "pre_gate_prob": 65.51,
       "pre_gate_grade": "GRADE B+ SETUP",
       "catalysts": [
-        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,747.71 (4.6x depth ratio)",
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -76%, Skew: -43%)",
         "Dual Red Trend Alignment: Bearish continuation with 1H Macro",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (72.5%), blended confidence 64.0%",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (61.7%), blended confidence 62.6%",
+        "\ud83d\udcc8 Pattern Watch: after 2 consecutive NO closes, this series has gone on to extend the streak 57% of the time (227 samples).",
         "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 80680.03,
-        "close": 80681.58,
-        "ema9": 80853.95898473109,
-        "ema21": 81028.06096648594,
-        "flow": -0.722
+        "open": 2373.04,
+        "close": 2367.78,
+        "ema9": 2376.748685832096,
+        "ema21": 2383.9057208615673,
+        "flow": -0.661
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792801834.2394078,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232045-45",
-      "strike": 80693.88,
-      "sec_left": 860,
+      "ts": 1792802562.8713243,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232045-45",
+      "strike": 2373.32,
+      "sec_left": 125,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
-      "probability_percent": 77,
-      "ml_prob": 0.2754,
+      "probability_percent": 66,
+      "ml_prob": 0.3834,
       "conviction_grade": "PREDICTION MODEL",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 72.46,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_prob": 64.57,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 22.5%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 72.5%"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 33.3%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 61.7%",
+        "\ud83d\udcc8 Pattern Watch: after 2 consecutive NO closes, this series has gone on to extend the streak 57% of the time (227 samples)."
       ],
       "chart": {
-        "open": 80680.03,
-        "close": 80681.58,
-        "ema9": 80853.95898473109,
-        "ema21": 81028.06096648594,
-        "flow": -0.722
+        "open": 2373.04,
+        "close": 2367.78,
+        "ema9": 2376.748685832096,
+        "ema21": 2383.9057208615673,
+        "flow": -0.661
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792801834.2394078,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232045-45",
-      "strike": 80693.88,
-      "sec_left": 860,
+      "ts": 1792802562.8713243,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232045-45",
+      "strike": 2373.32,
+      "sec_left": 125,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.5722,
+      "ml_prob": 0.5259,
       "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 57.22,
+      "pre_gate_prob": 50.5,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
         "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 57.2%"
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 52.6%",
+        "\ud83d\udcc9 Pattern Watch: after 2 consecutive NO closes, this series has gone on to extend the streak 57% of the time (227 samples). (conflicts with this setup - confidence trimmed)"
       ],
       "chart": {
-        "open": 80680.03,
-        "close": 80681.58,
-        "ema9": 80853.95898473109,
-        "ema21": 81028.06096648594,
-        "flow": -0.722
+        "open": 2373.04,
+        "close": 2367.78,
+        "ema9": 2376.748685832096,
+        "ema21": 2383.9057208615673,
+        "flow": -0.661
       }
     },
     "AUTO|AUTO": {
-      "ts": 1792801834.2394078,
-      "asset": "BTC",
-      "ticker": "KXBTC15M-26OCT232045-45",
-      "strike": 80693.88,
-      "sec_left": 860,
+      "ts": 1792802562.8713243,
+      "asset": "ETH",
+      "ticker": "KXETH15M-26OCT232045-45",
+      "strike": 2373.32,
+      "sec_left": 125,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.5722,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "PASS",
-      "pre_gate_prob": 50.0,
-      "pre_gate_grade": "GRADE C / PASS",
+      "direction": "NO",
+      "probability_percent": 72,
+      "ml_prob": 0.5259,
+      "conviction_grade": "GRADE B+ SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 69.91,
+      "pre_gate_grade": "GRADE B+ SETUP",
       "catalysts": [
-        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,747.71 (4.6x depth ratio)",
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -76%, Skew: -43%)",
         "Dual Red Trend Alignment: Bearish continuation with 1H Macro",
         "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
-        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID NO (BELOW TARGET) (67.0%) but ML model disagrees (42.8%). The ML Engine has vetoed this trade."
+        "\ud83d\udcc8 Pattern Watch: after 2 consecutive NO closes, this series has gone on to extend the streak 57% of the time (227 samples).",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 80680.03,
-        "close": 80681.58,
-        "ema9": 80853.95898473109,
-        "ema21": 81028.06096648594,
-        "flow": -0.722
+        "open": 2373.04,
+        "close": 2367.78,
+        "ema9": 2376.748685832096,
+        "ema21": 2383.9057208615673,
+        "flow": -0.661
       }
     }
   }

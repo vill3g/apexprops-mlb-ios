@@ -17,6 +17,7 @@ except ImportError:
 
 from backend.btc.backtest import analyze_calibration_overconfidence
 from backend.btc.ml_engine import get_ml_engine
+from backend.core.trade_time import trade_epoch
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "data")
 HISTORY_FILE = os.path.join(DATA_DIR, "trades_history.json")
@@ -65,7 +66,7 @@ class RiskManagerMixin:
 
             # Circuit Breaker: Halt trading after 3 consecutive losing INTERVALS
             interval_pnl_map = {}
-            for trade in sorted(today_trades, key=lambda x: str(x.get("timestamp", ""))):
+            for trade in sorted(today_trades, key=lambda x: trade_epoch(x.get("timestamp"))):
                 ticker = trade.get("ticker")
                 if trade.get("status") in ["SETTLED", "CLOSED"]:
                     pnl = float(trade.get("pnl", 0.0))
