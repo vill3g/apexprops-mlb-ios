@@ -1,115 +1,115 @@
 {
-  "updated": 1792799839.9318545,
+  "updated": 1792801064.2178435,
   "results": {
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792799839.9318545,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232000-00",
-      "strike": 0.07836,
-      "sec_left": 148,
+      "ts": 1792801064.2178435,
+      "asset": "BTC",
+      "ticker": "KXBTC15M-26OCT232030-30",
+      "strike": 80869.39,
+      "sec_left": 723,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.6738,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 63.38,
-      "pre_gate_grade": "GRADE B+ SETUP",
-      "catalysts": [
-        "\ud83d\uded1 Trend Alignment Block: Blocked ABOVE (YES) prediction because EMA9 is below EMA21 and price is under VWAP, and RSI is not oversold.",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 67.4%",
-        "\ud83d\udcc9 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples). (conflicts with this setup - confidence trimmed)"
-      ],
-      "chart": {
-        "open": 0.0783099,
-        "close": 0.0785718,
-        "ema9": 0.07849824224051749,
-        "ema21": 0.07884488345888017,
-        "flow": 0.855
-      }
-    },
-    "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792799839.9318545,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232000-00",
-      "strike": 0.07836,
-      "sec_left": 148,
-      "effective_style": "GEMINI_REASONING",
       "direction": "NO",
-      "probability_percent": 78,
-      "ml_prob": 0.3066,
-      "conviction_grade": "GRADE A SETUP",
+      "probability_percent": 57,
+      "ml_prob": 0.4553,
+      "conviction_grade": "GRADE B SETUP",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 75.2,
-      "pre_gate_grade": "GRADE A SETUP",
+      "pre_gate_prob": 54.47,
+      "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.84%) followed by weak upward consolidation flag. Downward continuation favored.",
-        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (69.3%), blended confidence 71.2%",
-        "\ud83d\udcc8 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples).",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 54.5%",
         "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 0.0783099,
-        "close": 0.0785718,
-        "ema9": 0.07849824224051749,
-        "ema21": 0.07884488345888017,
-        "flow": 0.855
+        "open": 80831.17,
+        "close": 80841.31,
+        "ema9": 80929.34573091385,
+        "ema21": 81077.38724495273,
+        "flow": -0.218
       }
     },
-    "PREDICTION|AI_ONLY": {
-      "ts": 1792799839.9318545,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232000-00",
-      "strike": 0.07836,
-      "sec_left": 148,
-      "effective_style": "PREDICTION",
-      "direction": "BELOW",
-      "probability_percent": 74,
-      "ml_prob": 0.3066,
-      "conviction_grade": "PREDICTION MODEL",
+    "GEMINI_REASONING|GEMINI_REASONING": {
+      "ts": 1792801064.2178435,
+      "asset": "BTC",
+      "ticker": "KXBTC15M-26OCT232030-30",
+      "strike": 80869.39,
+      "sec_left": 723,
+      "effective_style": "GEMINI_REASONING",
+      "direction": "NO",
+      "probability_percent": 77,
+      "ml_prob": 0.2649,
+      "conviction_grade": "GRADE A SETUP",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 73.34,
-      "pre_gate_grade": "GRADE B+ SETUP",
+      "pre_gate_prob": 74.0,
+      "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 25.7%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 69.3%",
-        "\ud83d\udcc8 Pattern Watch: the 19:00 ET close has resolved YES 18% of the time historically (17 samples)."
+        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -55%, Skew: -28%)",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "Trend Continuation: Weak flag consolidation into 15M downward thrust",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (73.5%), blended confidence 74.0%",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 0.0783099,
-        "close": 0.0785718,
-        "ema9": 0.07849824224051749,
-        "ema21": 0.07884488345888017,
-        "flow": 0.855
+        "open": 80831.17,
+        "close": 80841.31,
+        "ema9": 80929.34573091385,
+        "ema21": 81077.38724495273,
+        "flow": -0.218
       }
     },
     "AUTO|AUTO": {
-      "ts": 1792799839.9318545,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232000-00",
-      "strike": 0.07836,
-      "sec_left": 148,
+      "ts": 1792801064.2178435,
+      "asset": "BTC",
+      "ticker": "KXBTC15M-26OCT232030-30",
+      "strike": 80869.39,
+      "sec_left": 723,
       "effective_style": "SNIPER",
-      "direction": "PASS",
-      "probability_percent": 50,
-      "ml_prob": 0.6738,
-      "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "PASS",
-      "pre_gate_prob": 50.0,
-      "pre_gate_grade": "GRADE C / PASS",
+      "direction": "NO",
+      "probability_percent": 66,
+      "ml_prob": 0.4553,
+      "conviction_grade": "GRADE A SETUP",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 63.48,
+      "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.84%) followed by weak upward consolidation flag. Downward continuation favored.",
+        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -55%, Skew: -28%)",
+        "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
         "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
-        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID NO (BELOW TARGET) (77.0%) but ML model disagrees (32.6%). The ML Engine has vetoed this trade."
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (54.5%), blended confidence 63.5%",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
-        "open": 0.0783099,
-        "close": 0.0785718,
-        "ema9": 0.07849824224051749,
-        "ema21": 0.07884488345888017,
-        "flow": 0.855
+        "open": 80831.17,
+        "close": 80841.31,
+        "ema9": 80929.34573091385,
+        "ema21": 81077.38724495273,
+        "flow": -0.218
+      }
+    },
+    "PREDICTION|AI_ONLY": {
+      "ts": 1792801064.2178435,
+      "asset": "BTC",
+      "ticker": "KXBTC15M-26OCT232030-30",
+      "strike": 80869.39,
+      "sec_left": 723,
+      "effective_style": "PREDICTION",
+      "direction": "BELOW",
+      "probability_percent": 78,
+      "ml_prob": 0.2649,
+      "conviction_grade": "PREDICTION MODEL",
+      "pre_gate_direction": "BELOW",
+      "pre_gate_prob": 73.51,
+      "pre_gate_grade": "GRADE A SETUP",
+      "catalysts": [
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 21.5%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 73.5%"
+      ],
+      "chart": {
+        "open": 80831.17,
+        "close": 80841.31,
+        "ema9": 80929.34573091385,
+        "ema21": 81077.38724495273,
+        "flow": -0.218
       }
     }
   }

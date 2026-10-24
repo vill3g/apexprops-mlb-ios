@@ -1,5 +1,5 @@
 {
-  "enabled": false,
+  "enabled": true,
   "mode": "PAPER",
   "min_conviction": "GRADE A+ SETUP",
   "max_contracts": 7,
