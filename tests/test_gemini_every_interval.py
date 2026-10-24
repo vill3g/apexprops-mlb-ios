@@ -127,4 +127,6 @@ def test_dual_model_debate_every_interval_no_pass():
         # When allow_pass=True
         res_pass = run_dual_model_debate(synthetic_dossier, api_key="dummy_key", allow_pass=True)
         assert res_pass["consensus_direction"] == "PASS"
+        # Shown to users: brain, call, confidence and reason only, never the model name
+        assert res_pass["combined_reasoning"] == "🧠 PASS (75%) — chop"
 

@@ -200,7 +200,7 @@ Return ONLY valid JSON:
                     "is_unanimous": True,
                     "primary_call": res_dir,
                     "auditor_call": res_dir,
-                    "combined_reasoning": f"🧠 {model_name.upper()} (Lite Vision): {res_dir} ({res_conf:.0f}%) — {res_reason}",
+                    "combined_reasoning": f"🧠 {res_dir} ({res_conf:.0f}%) — {res_reason}",
                     "debate_status": "LITE_VISION_DECISION",
                     "model_pair": model_name,
                     "cascade_tier": "TIER_LITE_VISION",
