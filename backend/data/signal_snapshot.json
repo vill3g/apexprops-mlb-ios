@@ -1,111 +1,115 @@
 {
-  "updated": 1792811281.645409,
+  "updated": 1792811301.1733665,
   "results": {
     "PREDICTION|AI_ONLY": {
-      "ts": 1792811281.645409,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232315-15",
-      "strike": 0.078887,
-      "sec_left": 405,
+      "ts": 1792811301.1733665,
+      "asset": "SOL",
+      "ticker": "KXSOL15M-26OCT232315-15",
+      "strike": 102.6363,
+      "sec_left": 393,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
-      "probability_percent": 62,
-      "ml_prob": 0.422,
+      "probability_percent": 78,
+      "ml_prob": 0.2645,
       "conviction_grade": "PREDICTION MODEL",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 57.8,
-      "pre_gate_grade": "GRADE B SETUP",
+      "pre_gate_prob": 77.08,
+      "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 37.2%",
-        "\ud83d\uded1 Trend Alignment Block: Blocked BELOW (NO) prediction because EMA9 is above EMA21 and price is over VWAP, and RSI is not overbought.",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 57.8%"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 21.5%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 73.6%",
+        "\ud83d\udcc8 Pattern Watch: after 3 consecutive YES closes, this series has gone on to reverse the streak 41% of the time (34 samples)."
       ],
       "chart": {
-        "open": 0.0788298,
-        "close": 0.0788165,
-        "ema9": 0.0787289481363895,
-        "ema21": 0.07871510455413423,
-        "flow": -0.623
+        "open": 102.62,
+        "close": 102.68,
+        "ema9": 102.51461883665739,
+        "ema21": 102.66385159619875,
+        "flow": 0.148
       }
     },
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792811281.645409,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232315-15",
-      "strike": 0.078887,
-      "sec_left": 405,
+      "ts": 1792811301.1733665,
+      "asset": "SOL",
+      "ticker": "KXSOL15M-26OCT232315-15",
+      "strike": 102.6363,
+      "sec_left": 393,
       "effective_style": "SNIPER",
       "direction": "YES",
-      "probability_percent": 58,
-      "ml_prob": 0.5563,
+      "probability_percent": 54,
+      "ml_prob": 0.5796,
       "conviction_grade": "GRADE B SETUP",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 55.63,
+      "pre_gate_prob": 54.43,
       "pre_gate_grade": "GRADE B SETUP",
       "catalysts": [
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 55.6%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+4 edge points)."
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 58.0%",
+        "\ud83d\udcc9 Pattern Watch: after 3 consecutive YES closes, this series has gone on to reverse the streak 41% of the time (34 samples). (conflicts with this setup - confidence trimmed)",
+        "\ud83c\udf0c Swarm Debate Consensus: Swarm Cleared: Signal passed adversarial scrutiny (net margin 1)."
       ],
       "chart": {
-        "open": 0.0788298,
-        "close": 0.0788165,
-        "ema9": 0.0787289481363895,
-        "ema21": 0.07871510455413423,
-        "flow": -0.623
+        "open": 102.62,
+        "close": 102.68,
+        "ema9": 102.51461883665739,
+        "ema21": 102.66385159619875,
+        "flow": 0.148
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792811281.645409,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232315-15",
-      "strike": 0.078887,
-      "sec_left": 405,
+      "ts": 1792811301.1733665,
+      "asset": "SOL",
+      "ticker": "KXSOL15M-26OCT232315-15",
+      "strike": 102.6363,
+      "sec_left": 393,
       "effective_style": "GEMINI_REASONING",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.422,
+      "ml_prob": 0.2645,
       "conviction_grade": "GRADE C / PASS",
-      "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 57.0,
-      "pre_gate_grade": "GRADE C / ML MODEL",
+      "pre_gate_direction": "PASS",
+      "pre_gate_prob": 50.0,
+      "pre_gate_grade": "GRADE C / PASS",
       "catalysts": [
-        "\ud83d\uded1 Trend Alignment Block: Blocked BELOW (NO) prediction because EMA9 is above EMA21 and price is over VWAP, and RSI is not overbought.",
-        "ML Conviction: No chart setup fired, falling back to ML signal (57.0%).",
-        "Primary Driver: Voting Ensemble predicts DOWN (57% Edge). ML Reasoning: Prediction driven primarily by Roc 15M Lag 1, Bb Percent B Lag 1, Roc 4H. [Voting Ensemble: dir=NO, agree=67%, unanimous=NO]"
+        "Market Implied Bullish Edge: Order book odds favor YES (0.7%)",
+        "Institutional Order Flow: Net bid depth imbalance (+0.0%)",
+        "\ud83d\udeab ML Veto (Conflict): Chart setup favors BID YES (ABOVE TARGET) (64%) but ML model disagrees (26.5%). The ML Engine has vetoed this trade."
       ],
       "chart": {
-        "open": 0.0788298,
-        "close": 0.0788165,
-        "ema9": 0.0787289481363895,
-        "ema21": 0.07871510455413423,
-        "flow": -0.623
+        "open": 102.62,
+        "close": 102.68,
+        "ema9": 102.51461883665739,
+        "ema21": 102.66385159619875,
+        "flow": 0.148
       }
     },
     "AUTO|AUTO": {
-      "ts": 1792811281.645409,
-      "asset": "DOGE",
-      "ticker": "KXDOGE15M-26OCT232315-15",
-      "strike": 0.078887,
-      "sec_left": 405,
+      "ts": 1792811301.1733665,
+      "asset": "SOL",
+      "ticker": "KXSOL15M-26OCT232315-15",
+      "strike": 102.6363,
+      "sec_left": 393,
       "effective_style": "SNIPER",
       "direction": "PASS",
       "probability_percent": 50,
-      "ml_prob": 0.5563,
+      "ml_prob": 0.5796,
       "conviction_grade": "GRADE C / PASS",
       "pre_gate_direction": "ABOVE",
-      "pre_gate_prob": 55.0,
-      "pre_gate_grade": "GRADE C / ML MODEL",
+      "pre_gate_prob": 58.05,
+      "pre_gate_grade": "GRADE B+ SETUP",
       "catalysts": [
-        "\ud83d\uded1 Sniper Counter-Strike Block: Spot ($0.0788) is below strike ($0.0789) with bearish live candle.",
-        "ML Conviction: No chart setup fired, falling back to ML signal (55.0%).",
-        "Primary Driver: Voting Ensemble predicts UP (55% Edge). ML Reasoning: Prediction driven primarily by Volume 24H, Range 24H Pos, Bb Lower. [Voting Ensemble: dir=YES, agree=100%, unanimous=YES]"
+        "Market Implied Bullish Edge: Order book odds favor YES (0.7%)",
+        "Institutional Order Flow: Net bid depth imbalance (+0.0%)",
+        "\ud83d\ude80 Microstructure Confluence: Order book depth confirms aggressive institutional bidding.",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID YES (ABOVE TARGET) (58.0%), blended confidence 61.6%",
+        "\ud83d\udcc9 Pattern Watch: after 3 consecutive YES closes, this series has gone on to reverse the streak 41% of the time (34 samples). (conflicts with this setup - confidence trimmed)",
+        "CVD Volume Divergence: Spot selling pressure (-30198.6 < limit -2.0) opposes YES entry (historical loss pattern)"
       ],
       "chart": {
-        "open": 0.0788298,
-        "close": 0.0788165,
-        "ema9": 0.0787289481363895,
-        "ema21": 0.07871510455413423,
-        "flow": -0.623
+        "open": 102.62,
+        "close": 102.68,
+        "ema9": 102.51461883665739,
+        "ema21": 102.66385159619875,
+        "flow": 0.148
       }
     }
   }
