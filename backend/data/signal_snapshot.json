@@ -1,12 +1,12 @@
 {
-  "updated": 1792801064.2178435,
+  "updated": 1792801084.3652835,
   "results": {
     "AUTO|ML_ENSEMBLE": {
-      "ts": 1792801064.2178435,
+      "ts": 1792801084.3652835,
       "asset": "BTC",
       "ticker": "KXBTC15M-26OCT232030-30",
       "strike": 80869.39,
-      "sec_left": 723,
+      "sec_left": 703,
       "effective_style": "SNIPER",
       "direction": "NO",
       "probability_percent": 57,
@@ -28,24 +28,25 @@
       }
     },
     "GEMINI_REASONING|GEMINI_REASONING": {
-      "ts": 1792801064.2178435,
+      "ts": 1792801084.3652835,
       "asset": "BTC",
       "ticker": "KXBTC15M-26OCT232030-30",
       "strike": 80869.39,
-      "sec_left": 723,
+      "sec_left": 703,
       "effective_style": "GEMINI_REASONING",
       "direction": "NO",
       "probability_percent": 77,
-      "ml_prob": 0.2649,
+      "ml_prob": 0.271,
       "conviction_grade": "GRADE A SETUP",
       "pre_gate_direction": "BELOW",
       "pre_gate_prob": 74.0,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -55%, Skew: -28%)",
+        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,793.71 (3.7x depth ratio)",
+        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -59%, Skew: -33%)",
         "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (73.5%), blended confidence 74.0%",
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (72.9%), blended confidence 74.0%",
         "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
       ],
       "chart": {
@@ -57,11 +58,11 @@
       }
     },
     "AUTO|AUTO": {
-      "ts": 1792801064.2178435,
+      "ts": 1792801084.3652835,
       "asset": "BTC",
       "ticker": "KXBTC15M-26OCT232030-30",
       "strike": 80869.39,
-      "sec_left": 723,
+      "sec_left": 703,
       "effective_style": "SNIPER",
       "direction": "NO",
       "probability_percent": 66,
@@ -71,12 +72,12 @@
       "pre_gate_prob": 63.48,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -55%, Skew: -28%)",
+        "\ud83e\uddf1 Microstructure Wall: ASK WALL detected at $80,793.71 (3.7x depth ratio)",
+        "\ud83c\udf0a Depth Microstructure: HEAVY ASK (Top 5 Depth Imbalance: -59%, Skew: -33%)",
         "\ud83d\udcc9 Bear Flag: Sharp impulse drop (-0.83%) followed by weak upward consolidation flag. Downward continuation favored.",
         "Trend Continuation: Weak flag consolidation into 15M downward thrust",
         "\ud83d\udd3b Microstructure Confluence: Order book depth confirms heavy institutional supply.",
-        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (54.5%), blended confidence 63.5%",
-        "\ud83c\udf0c Swarm Debate Consensus: Swarm Consensus: Robust multi-agent agreement (+7 edge points)."
+        "\ud83e\udde0 ML Confirmation: Model agrees with BID NO (BELOW TARGET) (54.5%), blended confidence 63.5%"
       ],
       "chart": {
         "open": 80831.17,
@@ -87,22 +88,22 @@
       }
     },
     "PREDICTION|AI_ONLY": {
-      "ts": 1792801064.2178435,
+      "ts": 1792801084.3652835,
       "asset": "BTC",
       "ticker": "KXBTC15M-26OCT232030-30",
       "strike": 80869.39,
-      "sec_left": 723,
+      "sec_left": 703,
       "effective_style": "PREDICTION",
       "direction": "BELOW",
-      "probability_percent": 78,
-      "ml_prob": 0.2649,
+      "probability_percent": 77,
+      "ml_prob": 0.271,
       "conviction_grade": "PREDICTION MODEL",
       "pre_gate_direction": "BELOW",
-      "pre_gate_prob": 73.51,
+      "pre_gate_prob": 72.9,
       "pre_gate_grade": "GRADE A SETUP",
       "catalysts": [
-        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 21.5%",
-        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 73.5%"
+        "\ud83d\udd2e Prediction Adjustment: Chart leans bearish (-5%). ML P(YES) adjusted to 22.1%",
+        "\ud83e\udde0 Signal Isolation: 100% AI Ensemble active. Raw Prob: 72.9%"
       ],
       "chart": {
         "open": 80831.17,
